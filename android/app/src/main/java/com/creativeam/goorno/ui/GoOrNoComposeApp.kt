@@ -523,7 +523,21 @@ fun GoOrNoComposeApp(
                                 } else if (latestDbOffer != null) {
                                     HistoricalOfferCardContent(
                                         entity = latestDbOffer,
+                                        config = config,
                                         onOpenStreetView = { addr -> openStreetViewExternal(context, addr) },
+                                        onMarkAddressAsRisk = { rawAddr ->
+                                            val cleanTerm = RiskAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
+                                            if (cleanTerm.length >= 3) {
+                                                val currentList = RiskAreaEvaluator.parseCustomZonesList(config.customRiskZones)
+                                                val updatedList = (currentList + cleanTerm).distinct()
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(
+                                                        config.copy(customRiskZones = updatedList.joinToString(", "))
+                                                    )
+                                                    notifyUser("⚠️ '$cleanTerm' marcado como Área de Risco!")
+                                                }
+                                            }
+                                        },
                                         onUpdateReceivedPrice = { newVal ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(latestDbOffer.id, newVal)

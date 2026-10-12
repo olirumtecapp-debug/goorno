@@ -165,6 +165,8 @@ object RiskAreaEvaluator {
             .distinctBy { normalizeText(it) }
     }
 
+    fun parseCustomZonesList(rawCsv: String): List<String> = parseCustomZones(rawCsv)
+
     /**
      * Extrai uma sugestão inteligente de rua ou bairro a partir de um endereço completo
      * para facilitar o botão de "Marcar como Área de Risco" com 1 toque no Histórico.
