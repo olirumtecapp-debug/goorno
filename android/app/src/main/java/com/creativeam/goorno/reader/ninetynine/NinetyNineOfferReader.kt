@@ -147,7 +147,7 @@ object NinetyNineOfferReader {
         if (captureMethod == CaptureMethod.OCR) confidence *= 0.90
         if (conflictNotes.isNotEmpty()) confidence *= 0.50
 
-        val isOffer = priceField.isPresent && (totalKmVal != null || totalMinVal != null)
+        val isOffer = priceField.isPresent && totalKmVal != null && totalKmVal > 0.0
         val classification = if (isOffer) {
             ScreenClassification.NEW_OFFER
         } else {

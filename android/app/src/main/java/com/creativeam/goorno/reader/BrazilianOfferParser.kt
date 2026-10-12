@@ -16,15 +16,22 @@ import kotlin.math.abs
  */
 object BrazilianOfferParser {
 
-    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "R$ 2,18 / km", "R$ 1,16 por deslocamento", "R$ 45/h")
-    private val NON_OFFER_PRICE_NOISE_REGEX = Regex(
-        pattern = """R\$\s*\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do)""",
+    // Remove bônus de dinâmico com sinal de "+" (ex: "+R$ 1,00 incluído", "+R$ 6,25", "+ R$ 4,50")
+    // que aparecem no mapa da Uber ou dentro do card do Radar de Viagens e NUNCA são o valor total da corrida.
+    private val PLUS_SURGE_PRICE_REGEX = Regex(
+        pattern = """\+\s*R\$\s*\d{1,3}(?:\.\d{3})*(?:\s*[.,]\s*\d{1,2})?(?:\s*(?:inclu[íi]do|incl\.?))?""",
         option = RegexOption.IGNORE_CASE
     )
 
-    // Ex: "R$ 12,50", "R$8,10", "R$ 1.250,00", "R$18,00", "R$ 24"
+    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "R$1,44/km aprox.", "R$ 1,16 por deslocamento", "R$ 45/h")
+    private val NON_OFFER_PRICE_NOISE_REGEX = Regex(
+        pattern = """R\$\s*\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus)""",
+        option = RegexOption.IGNORE_CASE
+    )
+
+    // Ex: "R$ 12,50", "R$8,10", "R$ 1.250,00", "R$18,00", "R$ 24", "R$ 15,84"
     private val CURRENCY_REGEX = Regex(
-        pattern = """R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)""",
+        pattern = """(?<!\+)R\$\s*(\d{1,3}(?:\.\d{3})*(?:\s*[.,]\s*\d{1,2})?|\d+(?:\s*[.,]\s*\d{1,2})?)""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -81,11 +88,12 @@ object BrazilianOfferParser {
     )
 
     private val PURE_NUMBER_START_REGEX = Regex("""^\(?(\d{1,4}(?:[.,]\d{1,2})?)\)?.*""")
+    private val PURE_DECIMAL_PRICE_TOKEN_REGEX = Regex("""^\d{1,3}[.,]\d{2}$""")
 
     /**
      * Reconstrução inteligente de nós fragmentados pela árvore de Acessibilidade da 99 e Uber.
-     * Ex: Na 99, o símbolo "R$" costuma ficar em um TextView menor e "8,10" em outro TextView maior ao lado;
-     * ou "5" e "min" e "(1,2" e "km)" separados. Este método junta esses fragmentos na mesma frase.
+     * Ex: Na 99/Uber, o símbolo "R$" costuma ficar em um TextView menor e "15,84" em outro TextView maior ao lado;
+     * ou "+" separado de "R$ 1,00" e "incluído"; ou "5" e "min" e "(1,2" e "km)" separados.
      */
     fun normalizeFragmentedNodes(rawNodes: List<String>): List<String> {
         val flatTokens = rawNodes
@@ -100,19 +108,56 @@ object BrazilianOfferParser {
         while (i < flatTokens.size) {
             var current = flatTokens[i]
 
-            // Caso 1: Nó atual é apenas "R$" ou termina com "R$" e o próximo começa com número (ex: "R$" + "8,10")
-            if ((current.equals("R$", ignoreCase = true) || current.endsWith("R$", ignoreCase = true)) &&
+            // Caso 0: Sinal "+" isolado antes de "R$" (ex: "+" + "R$ 1,00 incluído" -> "+R$ 1,00 incluído")
+            if ((current == "+" || current.endsWith("+")) &&
+                i + 1 < flatTokens.size &&
+                flatTokens[i + 1].startsWith("R$", ignoreCase = true)
+            ) {
+                current = "$current${flatTokens[i + 1]}"
+                i++
+            }
+
+            // Caso 0b: Número decimal de preço (ex: "15,84" com fonte gigante cujo topY veio antes) seguido de "R$" isolado
+            if (PURE_DECIMAL_PRICE_TOKEN_REGEX.matches(current) &&
+                i + 1 < flatTokens.size &&
+                flatTokens[i + 1].equals("R$", ignoreCase = true)
+            ) {
+                current = "R$ $current"
+                i++
+            }
+
+            // Caso 1: Nó atual é apenas "R$" (ou "+R$") ou termina com "R$" e o próximo começa com número (ex: "R$" + "15,84")
+            if ((current.equals("R$", ignoreCase = true) ||
+                    current.equals("+R$", ignoreCase = true) ||
+                    current.endsWith("R$", ignoreCase = true)) &&
                 i + 1 < flatTokens.size && PURE_NUMBER_START_REGEX.matches(flatTokens[i + 1])
             ) {
                 current = "$current ${flatTokens[i + 1]}"
                 i++
-                // Se o próximo após o número for "/km" ou "por deslocamento", junta também para o filtro de ruído reconhecer!
+                // Se o próximo após o número for "/km", "por deslocamento", "incluído" ou "aprox", junta também para o filtro de ruído reconhecer!
                 if (i + 1 < flatTokens.size) {
                     val nextLower = flatTokens[i + 1].lowercase(Locale.getDefault())
-                    if (nextLower.startsWith("/km") || nextLower.startsWith("por deslocamento")) {
+                    if (nextLower.startsWith("/km") ||
+                        nextLower.startsWith("por deslocamento") ||
+                        nextLower.startsWith("inclu") ||
+                        nextLower.startsWith("aprox")
+                    ) {
                         current = "$current ${flatTokens[i + 1]}"
                         i++
                     }
+                }
+            }
+
+            // Caso 1b: Nó atual já tem "R$ X,XX" e o nó seguinte é "incluído", "/km" ou "aprox."
+            if (current.contains("R$", ignoreCase = true) && i + 1 < flatTokens.size) {
+                val nextLower = flatTokens[i + 1].lowercase(Locale.getDefault())
+                if (nextLower.startsWith("inclu") ||
+                    nextLower.startsWith("/km") ||
+                    nextLower.startsWith("por deslocamento") ||
+                    nextLower.startsWith("aprox")
+                ) {
+                    current = "$current ${flatTokens[i + 1]}"
+                    i++
                 }
             }
 
@@ -136,10 +181,11 @@ object BrazilianOfferParser {
     }
 
     /**
-     * Limpa ruídos como "R$2,18/km" e "R$1,16 por deslocamento incl." antes de buscar o valor da oferta.
+     * Limpa ruídos como "+R$ 1,00 incluído", "+R$ 6,25", "R$1,44/km aprox." e "R$1,16 por deslocamento incl." antes de buscar o valor da oferta.
      */
     fun stripNonOfferPriceNoise(text: String): String {
-        return NON_OFFER_PRICE_NOISE_REGEX.replace(text, " ")
+        val withoutPlusSurge = PLUS_SURGE_PRICE_REGEX.replace(text, " ")
+        return NON_OFFER_PRICE_NOISE_REGEX.replace(withoutPlusSurge, " ")
     }
 
     /**
@@ -156,7 +202,7 @@ object BrazilianOfferParser {
                 ExtractedField.Missing
             }
         }
-        val rawNumber = match.groupValues[1].trim()
+        val rawNumber = match.groupValues[1].replace(" ", "").trim()
         val parsed = parseBrazilianDecimal(rawNumber)
             ?: return ExtractedField.Unrecognized(match.value)
 
@@ -167,17 +213,25 @@ object BrazilianOfferParser {
     }
 
     /**
-     * Extrai todos os valores monetários principais de oferta (ignorando R$/km e bônus de deslocamento incluso).
+     * Extrai todos os valores monetários principais de oferta (ignorando R$/km, +R$ dinâmico e bônus de deslocamento incluso).
      */
     fun extractAllCurrencies(lines: List<String>): List<Double> {
         val normalized = normalizeFragmentedNodes(lines)
         val results = mutableListOf<Double>()
         for (line in normalized) {
             val lower = line.lowercase(Locale.getDefault())
-            if (lower.contains("por deslocamento") || lower.contains("deslocamento incl")) continue
+            if (lower.contains("por deslocamento") ||
+                lower.contains("deslocamento incl") ||
+                lower.contains("incluído") ||
+                lower.contains("incluido") ||
+                lower.contains("/km") ||
+                lower.contains("aprox")
+            ) {
+                continue
+            }
             val sanitized = stripNonOfferPriceNoise(line)
             CURRENCY_REGEX.findAll(sanitized).forEach { m ->
-                val v = parseBrazilianDecimal(m.groupValues[1])
+                val v = parseBrazilianDecimal(m.groupValues[1].replace(" ", ""))
                 if (v != null && v >= 3.0 && v <= 5000.0) {
                     results.add(v)
                 }
@@ -464,7 +518,9 @@ object BrazilianOfferParser {
                         nextLower.contains("uber") ||
                         nextLower.contains("escolha") ||
                         nextLower.contains("escolher") ||
+                        nextLower.contains("selecionar") ||
                         nextLower.contains("aceitar") ||
+                        nextLower.contains("verificado") ||
                         nextLower.contains("isso é tudo") ||
                         nextLower.contains("corridas") ||
                         nextLower.contains("perfil ") ||
@@ -509,14 +565,35 @@ object BrazilianOfferParser {
      * ao mesmo tempo (ex: Lista de Ofertas da 99 ou Radar de Viagens da Uber).
      */
     fun splitIntoMultipleOfferClusters(rawNodes: List<String>): List<List<String>> {
-        val cleaned = normalizeFragmentedNodes(rawNodes)
-        if (cleaned.isEmpty()) return emptyList()
+        val normalized = normalizeFragmentedNodes(rawNodes)
+        if (normalized.isEmpty()) return emptyList()
+
+        // Se a tela possui o cabeçalho "Radar de viagens" ou "Solicitações", ignora qualquer texto de mapa/ganhos
+        // do fundo que tenha aparecido antes do cabeçalho!
+        val listHeaderIdx = normalized.indexOfFirst { line ->
+            val l = line.lowercase(Locale.getDefault())
+            l.contains("radar de viagens") || l == "solicitações" || l == "solicitacoes"
+        }
+        val cleaned = if (listHeaderIdx > 0 && listHeaderIdx < normalized.size - 1) {
+            normalized.subList(listHeaderIdx, normalized.size)
+        } else {
+            normalized
+        }
 
         val offerHeaderIndices = mutableListOf<Int>()
         for (i in cleaned.indices) {
             val line = cleaned[i]
             val lower = line.lowercase(Locale.getDefault())
-            if (lower.contains("por deslocamento") || lower.contains("deslocamento incl") || lower.contains("meta")) {
+            if (lower.contains("por deslocamento") ||
+                lower.contains("deslocamento incl") ||
+                lower.contains("incluído") ||
+                lower.contains("incluido") ||
+                lower.contains("/km") ||
+                lower.contains("aprox") ||
+                lower.contains("meta") ||
+                lower.contains("saldo") ||
+                lower.contains("ganhos")
+            ) {
                 continue
             }
             val pricesInLine = extractAllCurrencies(listOf(line))
@@ -539,7 +616,9 @@ object BrazilianOfferParser {
             }
             if (startIdx < endIdx) {
                 val slice = cleaned.subList(startIdx, endIdx)
-                if (extractAllDistancesKm(slice).isNotEmpty() || extractAllDurationsMinutes(slice).isNotEmpty()) {
+                // Toda oferta real (Uber ou 99) possui obrigatoriamente distância em km/m!
+                // Isso descarta falsos positivos do mapa (ex: saldo/dinâmico R$ 6,25 + "5 min" sem km).
+                if (extractAllDistancesKm(slice).isNotEmpty()) {
                     clusters.add(slice)
                 }
             }
@@ -583,16 +662,16 @@ object BrazilianOfferParser {
             joined.contains("uber comfort") ||
             joined.contains("uber black") ||
             joined.contains("uber flash") ||
-            joined.contains("radar de viagens")
+            joined.contains("radar de viagens") ||
+            joined.contains("selecionar")
         ) {
             return SourceApp.UBER_DRIVER
         }
 
-        // Qualquer tela que apresente R$ + (km ou min) é tratada como oferta válida de corrida!
+        // Qualquer tela que apresente R$ + km é tratada como oferta válida de corrida!
         val hasPrice = extractAllCurrencies(normalized).isNotEmpty()
         val hasKm = extractAllDistancesKm(normalized).isNotEmpty()
-        val hasMin = extractAllDurationsMinutes(normalized).isNotEmpty()
-        if (hasPrice && (hasKm || hasMin)) {
+        if (hasPrice && hasKm) {
             return SourceApp.NINETY_NINE_DRIVER
         }
 

@@ -64,7 +64,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private data class PositionedText(
         val text: String,
         val topY: Int,
-        val leftX: Int
+        val leftX: Int,
+        val centerY: Int = topY
     )
 
     override fun onServiceConnected() {
@@ -208,7 +209,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val positionedNodes = mutableListOf<PositionedText>()
         for ((pkg, rootNode) in candidateWindows) {
             if (rideWindow == null || pkg == targetPkg || SourceApp.fromPackageName(pkg) != SourceApp.UNKNOWN) {
-                collectPositionedTexts(rootNode, positionedNodes, depth = 0)
+                collectPositionedTexts(rootNode, positionedNodes, depth = 0, requireVisible = true)
+            }
+        }
+        // Fallback caso alguma ROM customize isVisibleToUser como false em toda a janela
+        if (positionedNodes.size < 3) {
+            positionedNodes.clear()
+            for ((pkg, rootNode) in candidateWindows) {
+                if (rideWindow == null || pkg == targetPkg || SourceApp.fromPackageName(pkg) != SourceApp.UNKNOWN) {
+                    collectPositionedTexts(rootNode, positionedNodes, depth = 0, requireVisible = false)
+                }
             }
         }
 
@@ -246,16 +256,24 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 .ifEmpty { extractOffersForApp(SourceApp.UBER_DRIVER, normalizedTexts, CaptureMethod.ACCESSIBILITY, now) }
         }
 
-        if (parsedOffers.isNotEmpty()) {
+        // Exige que a oferta extraída por Acessibilidade tenha Preço + Distância (km) + Tempo (min).
+        // Se no Radar de Viagens da Uber (ou Solicitações da 99) a árvore de Acessibilidade ocultar as distâncias
+        // ou os tempos, prosseguimos imediatamente para a 2ª Tentativa (Leitura Visual via takeScreenshot + OCR)!
+        val completeAccessibilityOffers = parsedOffers.filter { offer ->
+            val km = offer.totalDistanceKmExplicit ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
+            val min = offer.totalDurationMinExplicit ?: ((offer.pickupDurationMin ?: 0) + (offer.tripDurationMin ?: 0))
+            (offer.offeredPrice ?: 0.0) > 0.0 && km > 0.0 && min > 0
+        }
+
+        if (completeAccessibilityOffers.isNotEmpty()) {
             consecutiveScansWithoutOffers = 0
-            processAndShowOffers(parsedOffers, normalizedTexts, now)
+            processAndShowOffers(completeAccessibilityOffers, normalizedTexts, now)
             return
         }
 
         // 2º Tentativa Automática (Leitura Visual Silenciosa via takeScreenshot + ML Kit OCR):
         // Sempre executada quando não estamos dentro do próprio GoOrNo!
-        // Assim, mesmo que o motorista tenha acabado de sair do WhatsApp e voltado para a 99 (que oculta os nós),
-        // o leitor NUNCA perde a leitura da tela!
+        // Assim, mesmo no Radar de Viagens da Uber ou após alternar com o WhatsApp, o leitor lê a imagem real da tela!
         val fallbackApp = if (effectiveApp != SourceApp.UNKNOWN) effectiveApp else SourceApp.NINETY_NINE_DRIVER
         triggerAutomaticAccessibilityOcrIfNeeded(fallbackApp, targetPkg, now)
     }
@@ -382,11 +400,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                             !txt.startsWith("🏁 Destino:") &&
                                             !txt.startsWith("Embarque:")
                                         ) {
+                                            val topY = box?.top ?: 0
+                                            val centerY = if (box != null) (box.top + box.bottom) / 2 else topY
                                             positionedOcr.add(
                                                 PositionedText(
                                                     text = txt,
-                                                    topY = box?.top ?: 0,
-                                                    leftX = box?.left ?: 0
+                                                    topY = topY,
+                                                    leftX = box?.left ?: 0,
+                                                    centerY = centerY
                                                 )
                                             )
                                         }
@@ -491,13 +512,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val currentScreenMode = when {
             joinedLower.contains("solicitações") ||
                 joinedLower.contains("solicitacoes") ||
-                joinedLower.contains("escolha uma") -> "LIST_VIEW"
+                joinedLower.contains("escolha uma") ||
+                joinedLower.contains("radar de viagens") ||
+                joinedLower.contains("selecionar") -> "LIST_VIEW"
             else -> "DETAIL_VIEW"
         }
 
-        if (lastScreenContextMode == "LIST_VIEW" && currentScreenMode == "DETAIL_VIEW") {
-            val detailKeys = shownOfferTimestamps.keys.filter { it.startsWith("DETAIL_VIEW|") }
-            detailKeys.forEach { shownOfferTimestamps.remove(it) }
+        if (lastScreenContextMode.isNotEmpty() && lastScreenContextMode != currentScreenMode) {
+            val prefixToClear = "$currentScreenMode|"
+            val keysToRemove = shownOfferTimestamps.keys.filter { it.startsWith(prefixToClear) }
+            keysToRemove.forEach { shownOfferTimestamps.remove(it) }
         }
         lastScreenContextMode = currentScreenMode
 
@@ -517,7 +541,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (!hasUnshownOfferInThisMode) {
             serviceScope.launch {
                 val config = app.preferencesRepository.getConfigOnce()
-                val evaluations = parsedOffers.map { FinancialEngine.evaluate(it, config) }
+                val evaluations = parsedOffers
+                    .map { FinancialEngine.evaluate(it, config) }
+                    .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
+                if (evaluations.isEmpty()) return@launch
                 val richestEval = evaluations.maxByOrNull { eval ->
                     (if (!eval.offer.originAddress.isNullOrBlank()) 3 else 0) +
                         (if (!eval.offer.destinationAddress.isNullOrBlank()) 3 else 0) +
@@ -534,18 +561,24 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        for (offer in parsedOffers) {
-            val key = buildStableOfferKey(currentScreenMode, offer)
-            shownOfferTimestamps[key] = now
-        }
-
-        RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.OFFER_DETECTED)
-
         serviceScope.launch {
             val config = app.preferencesRepository.getConfigOnce()
-            val evaluations = parsedOffers.map { offer ->
-                FinancialEngine.evaluate(offer, config)
+            val evaluations = parsedOffers
+                .map { offer -> FinancialEngine.evaluate(offer, config) }
+                .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
+
+            // Nunca exibe o card flutuante com "DADOS INSUFICIENTES" no monitoramento automático,
+            // evitando cobrir o preço da tela ou travar a leitura do Radar de Viagens da Uber!
+            if (evaluations.isEmpty()) {
+                return@launch
             }
+
+            for (eval in evaluations) {
+                val key = buildStableOfferKey(currentScreenMode, eval.offer)
+                shownOfferTimestamps[key] = now
+            }
+
+            RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.OFFER_DETECTED)
 
             // Escolhe a avaliação mais completa (com Origem, Destino e Tempo) para persistir na Notificação do Topo!
             val richestEval = evaluations.maxByOrNull { eval ->
@@ -607,12 +640,12 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
     private fun mergeSameRowNodes(nodes: List<PositionedText>): List<String> {
         if (nodes.isEmpty()) return emptyList()
-        val sorted = nodes.sortedWith(compareBy<PositionedText>({ it.topY }, { it.leftX }))
+        val sorted = nodes.sortedWith(compareBy<PositionedText>({ it.centerY }, { it.leftX }))
 
         val rows = mutableListOf<MutableList<PositionedText>>()
         for (item in sorted) {
             val lastRow = rows.lastOrNull()
-            if (lastRow != null && kotlin.math.abs(lastRow.first().topY - item.topY) <= 24) {
+            if (lastRow != null && kotlin.math.abs(lastRow.first().centerY - item.centerY) <= 28) {
                 if (lastRow.none { it.text == item.text }) {
                     lastRow.add(item)
                 }
@@ -635,27 +668,36 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private fun collectPositionedTexts(
         node: AccessibilityNodeInfo?,
         output: MutableList<PositionedText>,
-        depth: Int
+        depth: Int,
+        requireVisible: Boolean = true
     ) {
-        if (node == null || depth > 35 || output.size >= 220) return
+        if (node == null || depth > 50 || output.size >= 600) return
+        if (requireVisible && !node.isVisibleToUser) return
+
         val rect = Rect()
         try {
             node.getBoundsInScreen(rect)
         } catch (_: Exception) {
         }
 
+        if (requireVisible && (rect.width() <= 0 || rect.height() <= 0)) {
+            return
+        }
+
+        val centerY = if (rect.height() > 0) (rect.top + rect.bottom) / 2 else rect.top
+
         node.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { txt ->
-            output.add(PositionedText(txt, rect.top, rect.left))
+            output.add(PositionedText(txt, rect.top, rect.left, centerY))
         }
         node.contentDescription?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { desc ->
-            if (output.none { it.text == desc && kotlin.math.abs(it.topY - rect.top) <= 10 }) {
-                output.add(PositionedText(desc, rect.top, rect.left))
+            if (output.none { it.text == desc && kotlin.math.abs(it.centerY - centerY) <= 14 }) {
+                output.add(PositionedText(desc, rect.top, rect.left, centerY))
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             node.hintText?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { hint ->
                 if (output.none { it.text == hint }) {
-                    output.add(PositionedText(hint, rect.top, rect.left))
+                    output.add(PositionedText(hint, rect.top, rect.left, centerY))
                 }
             }
         }
@@ -668,7 +710,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 null
             }
             if (child != null) {
-                collectPositionedTexts(child, output, depth + 1)
+                collectPositionedTexts(child, output, depth + 1, requireVisible)
             }
         }
     }

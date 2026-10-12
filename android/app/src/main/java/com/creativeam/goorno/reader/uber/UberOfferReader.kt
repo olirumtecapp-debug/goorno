@@ -126,7 +126,9 @@ object UberOfferReader {
             conflictNotes.add("Distância (${totalKmVal} km) inconsistente com tempo (${totalMinVal} min)")
         }
 
-        val isOfferScreen = priceField.isPresent && (totalKmVal != null || totalMinVal != null)
+        // Toda oferta real da Uber (seja chamada direta ou Radar de Viagens) possui obrigatoriamente preço (R$) e distância (km/m).
+        // Telas de mapa com saldo/dinâmico (ex: R$ 6,25 + "5 min" sem km) NÃO são ofertas e não devem disparar "DADOS INSUFICIENTES".
+        val isOfferScreen = priceField.isPresent && totalKmVal != null && totalKmVal > 0.0
 
         var confidence = 0.0
         if (priceField.isPresent) confidence += 0.45

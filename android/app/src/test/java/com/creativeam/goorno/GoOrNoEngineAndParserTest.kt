@@ -351,6 +351,48 @@ class GoOrNoEngineAndParserTest {
         assertEquals("Rua Itapiruna, 193, Jardim Petroni", offer.originAddress)
         assertEquals("Rua Estr. dos Vianas, 321 , Sítio dos Vianas", offer.destinationAddress)
     }
+
+    // 14. TESTE EXATO DO PRINT REAL DO "RADAR DE VIAGENS" DA UBER ENVIADO PELO MOTORISTA
+    @Test
+    fun `test uber radar de viagens screenshot with map noise surge included and dot decimals`() {
+        val uberRadarNodes = listOf(
+            "R$ 6,25",
+            "5 min",
+            "Radar de viagens",
+            "UberX",
+            "R$ 15,84",
+            "R$1,44/km aprox.",
+            "★ 4,97 (595)",
+            "Verificado",
+            "+R$ 1,00 incluído",
+            "8 min (3.2 km)",
+            "Av. Armando Ítalo Setti, Baeta",
+            "Neves, São Bernardo do Campo",
+            "20 minutos (7.8 km)",
+            "Travessa Salvador, 40, Canhema,",
+            "Diadema",
+            "Selecionar"
+        )
+
+        val offers = UberOfferReader.parseMultipleOffersFromScreen(uberRadarNodes)
+        assertEquals(1, offers.size)
+
+        val offer = offers.first()
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+
+        assertEquals(15.84, offer.offeredPrice!!, 0.001)
+        assertEquals(3.2, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(7.8, offer.tripDistanceKm!!, 0.001)
+        assertEquals(11.0, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(28, eval.totalConsideredDurationMin)
+        assertEquals(1.44, eval.grossPerKm!!, 0.01)
+        assertEquals(4.97, offer.passengerRating!!, 0.001)
+        assertEquals(PassengerRatingVerdict.GOOD, eval.passengerRatingVerdict)
+        assertEquals("Av. Armando Ítalo Setti, Baeta Neves, São Bernardo do Campo", offer.originAddress)
+        assertEquals("Travessa Salvador, 40, Canhema, Diadema", offer.destinationAddress)
+        assertNotEquals(TrafficLightVerdict.GRAY_NEUTRAL, eval.verdict)
+    }
 }
+
 
 

@@ -142,7 +142,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v3.0.0",
+                                            text = "v3.0.1",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
