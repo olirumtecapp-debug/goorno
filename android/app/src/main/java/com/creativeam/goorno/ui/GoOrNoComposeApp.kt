@@ -36,7 +36,7 @@ import com.creativeam.goorno.R
 import com.creativeam.goorno.data.cloud.CloudSyncManager
 import com.creativeam.goorno.data.local.RideOfferEntity
 import com.creativeam.goorno.detector.ForegroundAppDetector
-import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
+import com.creativeam.goorno.diagnostics.*
 import com.creativeam.goorno.engine.FinancialEngine
 import com.creativeam.goorno.model.*
 import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
