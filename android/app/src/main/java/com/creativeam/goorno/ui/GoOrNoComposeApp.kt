@@ -43,23 +43,24 @@ import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
 import com.creativeam.goorno.reader.uber.UberOfferReader
 import com.creativeam.goorno.service.CopilotNotificationReceiver
 import com.creativeam.goorno.ui.theme.*
+import com.creativeam.goorno.util.StreetViewLauncher
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
- * As 10 Telas Oficiais do GoOrNo v2.2.0 — Interface Clean, Clara e Moderna.
+ * Telas Oficiais do GoOrNo v2.7.0 — Interface Clean, Clara e Moderna.
  */
 enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: String) {
     HOME(1, "Painel Principal — Copiloto", "Início"),
-    DRIVER_SETUP(2, "Motorista & Janela Flutuante", "Motorista"),
-    VEHICLE_COSTS(3, "Veículo e Custos Operacionais", "Custos"),
+    DRIVER_SETUP(2, "Formato da Janela & Motorista", "Janela"),
+    VEHICLE_COSTS(3, "Custos do Carro & O que é Lucro", "Custos"),
     FINANCIAL_TARGETS(4, "Metas Financeiras e Semáforo", "Metas"),
     SERVICES_ACTIVATION(5, "Permissões e Serviços de Leitura", "Serviços"),
     CONNECTION_STATUS(6, "Conexão com Uber e 99", "Uber / 99"),
-    HISTORY(7, "Histórico e Auditoria de Chamadas", "Histórico"),
-    FINANCIAL_SUMMARY(8, "Resumo Financeiro", "Resumo"),
+    HISTORY(7, "Histórico, Endereços e Street View 360°", "Histórico"),
+    FINANCIAL_SUMMARY(8, "Estatísticas de Ofertas Lidas", "Estatísticas"),
     DIAGNOSTICS_TESTS(9, "Diagnóstico, OCR e Simulador", "Testes"),
     PRIVACY_BACKUP(10, "Privacidade e Troca de Aparelho", "Backup")
 }
@@ -140,7 +141,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v2.6.0",
+                                            text = "v2.7.0",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
@@ -263,10 +264,10 @@ fun GoOrNoComposeApp(
                 ) {
                     val quickTabs = listOf(
                         Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
+                        Triple(GoOrNoScreen.DRIVER_SETUP, Icons.Default.Layers, "Janela"),
                         Triple(GoOrNoScreen.VEHICLE_COSTS, Icons.Default.LocalGasStation, "Custos"),
                         Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
-                        Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico"),
-                        Triple(GoOrNoScreen.FINANCIAL_SUMMARY, Icons.Default.BarChart, "Resumo")
+                        Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico")
                     )
                     quickTabs.forEach { (screen, icon, label) ->
                         NavigationBarItem(
@@ -542,12 +543,15 @@ fun GoOrNoComposeApp(
                 }
 
                 // =====================================================
-                // TELA 2: CONFIGURAÇÃO DO MOTORISTA & TRANSPARÊNCIA
+                // TELA 2: FORMATO DA JANELA FLUTUANTE & MOTORISTA
                 // =====================================================
                 GoOrNoScreen.DRIVER_SETUP -> {
                     item {
                         var driverName by remember(config.driverName) { mutableStateOf(config.driverName) }
                         var vehicleModel by remember(config.vehicleModel) { mutableStateOf(config.vehicleModel) }
+                        var selectedStyle by remember(config.overlayDisplayStyle) {
+                            mutableStateOf(OverlayDisplayStyle.fromName(config.overlayDisplayStyle))
+                        }
                         var opacity by remember(config.overlayOpacityPercent) {
                             mutableFloatStateOf(config.overlayOpacityPercent.toFloat())
                         }
@@ -566,23 +570,71 @@ fun GoOrNoComposeApp(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                OutlinedTextField(
-                                    value = driverName,
-                                    onValueChange = { driverName = it; savedFlag = false },
-                                    label = { Text("Nome ou Apelido do Motorista") },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
+                                Text(
+                                    text = "Escolha o Formato da Janelinha Flutuante",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 14.5.sp,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = "Quando aparecer mais de uma chamada na tela (ex: Solicitações da 99), o app mostra uma oferta, apaga, e mostra a próxima (sem nunca empilhar e sem botões de rua para não poluir a tela!).",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
                                 )
 
-                                OutlinedTextField(
-                                    value = vehicleModel,
-                                    onValueChange = { vehicleModel = it; savedFlag = false },
-                                    label = { Text("Modelo do Veículo (ex: Onix 1.0, HB20, Kwid)") },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
-                                )
+                                OverlayDisplayStyle.entries.forEach { style ->
+                                    val isChosen = selectedStyle == style
+                                    Surface(
+                                        color = if (isChosen) TrafficGreenSoft.copy(alpha = 0.65f) else SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(14.dp),
+                                        border = BorderStroke(if (isChosen) 2.dp else 1.dp, if (isChosen) TrafficGreen else CleanCardBorder),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                selectedStyle = style
+                                                savedFlag = false
+                                                val updated = config.copy(overlayDisplayStyle = style.name)
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(updated)
+                                                    app.overlayPanel.applyConfig(updated)
+                                                    notifyUser("Formato '${style.title}' ativado!")
+                                                }
+                                            }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = isChosen,
+                                                onClick = {
+                                                    selectedStyle = style
+                                                    savedFlag = false
+                                                    val updated = config.copy(overlayDisplayStyle = style.name)
+                                                    scope.launch {
+                                                        app.preferencesRepository.saveConfig(updated)
+                                                        app.overlayPanel.applyConfig(updated)
+                                                        notifyUser("Formato '${style.title}' ativado!")
+                                                    }
+                                                }
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = style.title,
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 12.5.sp,
+                                                    color = PetrolDarkText
+                                                )
+                                                Text(
+                                                    text = style.subtitle,
+                                                    fontSize = 11.sp,
+                                                    color = MutedText
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
 
                                 HorizontalDivider(color = CleanCardBorder)
 
@@ -624,19 +676,40 @@ fun GoOrNoComposeApp(
                                     singleLine = true
                                 )
 
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                OutlinedTextField(
+                                    value = driverName,
+                                    onValueChange = { driverName = it; savedFlag = false },
+                                    label = { Text("Nome ou Apelido do Motorista") },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = vehicleModel,
+                                    onValueChange = { vehicleModel = it; savedFlag = false },
+                                    label = { Text("Modelo do Veículo (ex: Onix 1.0, HB20, Kwid)") },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+
                                 Button(
                                     onClick = {
                                         val updated = config.copy(
                                             driverName = driverName.ifBlank { "Motorista" },
                                             vehicleModel = vehicleModel.ifBlank { "Veículo" },
+                                            overlayDisplayStyle = selectedStyle.name,
                                             overlayOpacityPercent = opacity.toInt().coerceIn(25, 100),
-                                            overlayAutoMinimizeSec = (autoMinSec.toIntOrNull() ?: 10).coerceIn(3, 60)
+                                            overlayAutoMinimizeSec = (autoMinSec.toIntOrNull() ?: 7).coerceIn(3, 60)
                                         )
                                         scope.launch {
                                             app.preferencesRepository.saveConfig(updated)
                                             app.overlayPanel.applyConfig(updated)
                                             savedFlag = true
-                                            notifyUser("Configurações do motorista e janelinha salvas com sucesso!")
+                                            notifyUser("Formato da janelinha e dados salvos com sucesso!")
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
@@ -651,7 +724,7 @@ fun GoOrNoComposeApp(
                                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (savedFlag) Color.White else LimeBright)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = if (savedFlag) "✓ Configuração Salva com Sucesso!" else "Salvar Configuração do Motorista",
+                                        text = if (savedFlag) "✓ Configuração Salva com Sucesso!" else "Salvar Formato e Configuração",
                                         fontWeight = FontWeight.Black
                                     )
                                 }
@@ -690,13 +763,34 @@ fun GoOrNoComposeApp(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Surface(
+                                    color = TrafficGreenSoft.copy(alpha = 0.55f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, TrafficGreen)
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text(
+                                            text = "💡 Entenda: O que é CUSTO e o que é LUCRO?",
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 13.sp,
+                                            color = PetrolHeader
+                                        )
+                                        Text(
+                                            text = "• CUSTO: É quanto o seu carro gasta do seu bolso (Combustível + Pneu/Óleo/Manutenção) para rodar os KMs da corrida.\n" +
+                                                "• LUCRO: É o que SOBRA LIMPO no seu bolso depois de descontar esse gasto do carro (Valor da Corrida − Custo do Carro).",
+                                            fontSize = 11.5.sp,
+                                            color = PetrolDarkText
+                                        )
+                                    }
+                                }
+
+                                Surface(
                                     color = SoftSurfaceVariant,
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text(
                                         text = String.format(
                                             Locale.forLanguageTag("pt-BR"),
-                                            "Custo Operacional Atual: R$ %.2f / km\n(Combustível: R$ %.2f/km + Manutenção: R$ %.2f/km)",
+                                            "Gasto Atual do Seu Carro: R$ %.2f por cada km rodado\n(Combustível: R$ %.2f/km + Manutenção: R$ %.2f/km)",
                                             config.totalVariableCostPerKm,
                                             config.fuelCostPerKm,
                                             config.maintenanceCostPerKm
@@ -1675,7 +1769,7 @@ fun GoOrNoComposeApp(
                                 OutlinedTextField(
                                     value = recoveryCode,
                                     onValueChange = { recoveryCode = it },
-                                    label = { Text("Seu Código de Motorista (ex: murilo2026 ou telefone)") },
+                                    label = { Text("Seu Código de Motorista (ex: motorista2026 ou placa)") },
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
@@ -2027,7 +2121,12 @@ private fun HistoricalOfferCardContent(
         else -> TrafficGray
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    val totalKmStr = entity.totalDistanceKm?.let {
+        String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it)
+    } ?: "-- km"
+    val totalMinStr = entity.totalDurationMin?.let { "$it min" } ?: "-- min"
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -2035,7 +2134,7 @@ private fun HistoricalOfferCardContent(
         ) {
             Surface(color = badgeColor, shape = RoundedCornerShape(8.dp)) {
                 Text(
-                    text = "${entity.sourceApp} · R$ ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", entity.offeredPrice)}",
+                    text = "${entity.sourceApp} · R$ ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", entity.offeredPrice)}  ($totalKmStr · $totalMinStr)",
                     fontWeight = FontWeight.Black,
                     fontSize = 12.sp,
                     color = Color.White,
@@ -2058,7 +2157,106 @@ private fun HistoricalOfferCardContent(
             color = PetrolHeader
         )
 
-        // Auditoria de Valor Pago pela Uber / 99
+        // EXIBIÇÃO COMPLETA DO ENDEREÇO DE ORIGEM E DESTINO (Clicável para abrir direto o Street View 360° da rua!)
+        Surface(
+            color = SoftSurfaceVariant,
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, CleanCardBorder),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !entity.originAddress.isNullOrBlank()) {
+                    entity.originAddress?.let { onOpenStreetView(it) }
+                }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "📍 ENDEREÇO DE ORIGEM (EMBARQUE)",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = PetrolHeader
+                    )
+                    Text(
+                        text = entity.originAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na tela da oferta",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PetrolDarkText
+                    )
+                }
+                if (!entity.originAddress.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = PetrolHeader,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "Ver Rua 360°",
+                            color = Color.White,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Surface(
+            color = TrafficGreenSoft.copy(alpha = 0.55f),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, TrafficGreen.copy(alpha = 0.5f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !entity.destinationAddress.isNullOrBlank()) {
+                    entity.destinationAddress?.let { onOpenStreetView(it) }
+                }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "🏁 ENDEREÇO DE DESTINO (DESEMBARQUE)",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = PetrolHeader
+                    )
+                    Text(
+                        text = entity.destinationAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na tela da oferta",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PetrolDarkText
+                    )
+                }
+                if (!entity.destinationAddress.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = TrafficGreen,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "Ver Rua 360°",
+                            color = Color.White,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Auditoria de Valor Pago pela Uber / 99 (Layout limpo sem quebrar linhas na vertical)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -2069,23 +2267,39 @@ private fun HistoricalOfferCardContent(
                 Text(
                     text = String.format(
                         Locale.forLanguageTag("pt-BR"),
-                        "Pago no Fim: R$ %.2f (%s)",
+                        "✅ Aceita · Pago: R$ %.2f (%s)",
                         entity.actualReceivedPrice,
                         if (diff < -0.05) "Pagou a menor!" else "Valor OK ✓"
                     ),
-                    fontSize = 12.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (diff < -0.05) TrafficRed else TrafficGreen
+                    color = if (diff < -0.05) TrafficRed else TrafficGreen,
+                    modifier = Modifier.weight(1f)
                 )
             } else {
                 Text(
-                    text = "Valor pago no final ainda não conferido",
+                    text = "Aceitou esta corrida? Confira o valor pago:",
                     fontSize = 11.sp,
-                    color = MutedText
+                    color = MutedText,
+                    modifier = Modifier.weight(1f)
                 )
             }
-            TextButton(onClick = { showAuditInput = !showAuditInput }) {
-                Text("Conferir Valor Pago", color = PetrolHeader, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+            FilledTonalButton(
+                onClick = { showAuditInput = !showAuditInput },
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = SoftSurfaceVariant,
+                    contentColor = PetrolHeader
+                ),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier.height(30.dp)
+            ) {
+                Text(
+                    text = if (entity.actualReceivedPrice != null) "Editar Valor" else "Conferir Valor",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
             }
         }
 
@@ -2118,48 +2332,6 @@ private fun HistoricalOfferCardContent(
                 }
             }
         }
-
-        // Botões Modernos de Origem e Destino no Street View
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (!entity.originAddress.isNullOrBlank()) {
-                FilledTonalButton(
-                    onClick = { onOpenStreetView(entity.originAddress) },
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = SoftSurfaceVariant,
-                        contentColor = PetrolHeader
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "📍 Origem (360°)",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
-            }
-            if (!entity.destinationAddress.isNullOrBlank()) {
-                FilledTonalButton(
-                    onClick = { onOpenStreetView(entity.destinationAddress) },
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = TrafficGreenSoft,
-                        contentColor = PetrolHeader
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "🏁 Destino (360°)",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -2182,12 +2354,5 @@ private fun MetricBox(modifier: Modifier = Modifier, label: String, value: Strin
 }
 
 private fun openStreetViewExternal(context: Context, address: String) {
-    try {
-        val uri = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(address)}")
-        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(intent)
-    } catch (_: Exception) {
-    }
+    StreetViewLauncher.openDirectStreetView(context, address)
 }

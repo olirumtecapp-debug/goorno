@@ -110,6 +110,30 @@ data class StandardRideOffer(
 }
 
 /**
+ * Formato visual da janelinha flutuante quando toca corrida.
+ */
+enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
+    SEMAFORO_COMPACT(
+        title = "Bolinha Semáforo Compacta (Recomendado)",
+        subtitle = "Mostra a bolinha (🟢/🟡/🔴) + R$/km, R$/h, Lucro e botões 360° em espaço reduzido"
+    ),
+    MINI_BALL(
+        title = "Só Bolinha Semáforo + R$/km (Ultra Discreto)",
+        subtitle = "Pílula mínima com a bolinha colorida, valor, R$/km e R$/h (zero poluição na tela)"
+    ),
+    FULL_CARD(
+        title = "Card Completo Detalhado",
+        subtitle = "Mostra faixa completa do semáforo, métricas, custos de embarque e endereços"
+    );
+
+    companion object {
+        fun fromName(name: String?): OverlayDisplayStyle {
+            return entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: SEMAFORO_COMPACT
+        }
+    }
+}
+
+/**
  * Configurações financeiras e de painel do motorista.
  */
 data class DriverFinancialConfig(
@@ -129,8 +153,9 @@ data class DriverFinancialConfig(
     val requireNetPerKm: Boolean = false,
     val requireNetPerHour: Boolean = false,
     val minConfidenceThreshold: Double = 0.65,
-    val overlayOpacityPercent: Int = 90,
-    val overlayAutoMinimizeSec: Int = 12,
+    val overlayOpacityPercent: Int = 92,
+    val overlayAutoMinimizeSec: Int = 7,
+    val overlayDisplayStyle: String = OverlayDisplayStyle.SEMAFORO_COMPACT.name,
     val copilotMonitoringEnabled: Boolean = true,
     val saveHistoryEnabled: Boolean = true,
     val cloudBackupConsent: Boolean = false,

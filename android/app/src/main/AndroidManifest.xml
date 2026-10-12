@@ -63,13 +63,15 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
 
-        <!-- Receptor do Botão "Desativar GoOrNo" direto na Notificação da Barra de Status -->
+        <!-- Receptor do Botão "Desativar GoOrNo" e "Street View 360°" direto na Notificação da Barra de Status -->
         <receiver
             android:name=".service.CopilotNotificationReceiver"
             android:enabled="true"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.creativeam.goorno.ACTION_DISABLE_COPILOT" />
+                <action android:name="com.creativeam.goorno.ACTION_OPEN_ORIGIN_STREET_VIEW" />
+                <action android:name="com.creativeam.goorno.ACTION_OPEN_DEST_STREET_VIEW" />
                 <action android:name="com.creativeam.goorno.ACTION_DISMISS_OVERLAY_CARD" />
             </intent-filter>
         </receiver>

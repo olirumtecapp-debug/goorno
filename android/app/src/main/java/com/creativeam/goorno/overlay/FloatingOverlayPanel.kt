@@ -2,17 +2,14 @@ package com.creativeam.goorno.overlay
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.MotionEvent
@@ -24,22 +21,22 @@ import com.creativeam.goorno.diagnostics.CopilotRuntimeState
 import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.model.DriverFinancialConfig
 import com.creativeam.goorno.model.FinancialEvaluationResult
+import com.creativeam.goorno.model.OverlayDisplayStyle
 import com.creativeam.goorno.model.TrafficLightVerdict
 import java.util.Locale
 import kotlin.math.abs
 
 /**
- * Painel Flutuante Nativo v2.6.0 — Zero Flutuação em Espera + Fechamento 1-Toque Instantâneo.
+ * Painel Flutuante Nativo v2.7.0 — Formatos Otimizados (Bolinha Semáforo) + Exibição Sequencial 1 a 1.
  *
- * - Enquanto o motorista está trabalhando e aguardando corrida, NADA fica flutuando na tela!
- *   O status de ativo fica exclusivamente no ícone da barra superior do Android (ao lado do relógio e do ícone da 99),
- *   onde há o botão "Desativar GoOrNo".
- * - Quando toca corrida (ou o motorista abre a lista de Solicitações / clica no mapinha da 99),
- *   a janela de cálculo abre automaticamente, mostra o Semáforo + R$/km + R$/h + Lucro Líquido,
- *   conta os segundos regressivamente e:
- *   1. Fecha sozinha ao fim da contagem (removendo totalmente a janela da tela).
- *   2. Fecha IMEDIATAMENTE com 1 simples toque em QUALQUER lugar do card (ou no botão grande "✕ Fechar").
- *   3. Nunca reabre sozinha para a mesma corrida já exibida/fechada!
+ * - ZERO botões de Origem/Destino na janela flutuante (eles ficam exclusivamente na Notificação do Topo e no Histórico,
+ *   para não poluir a tela na hora da chamada!).
+ * - Quando há várias ofertas na tela (ex: Lista de Solicitações da 99), NUNCA empilha uma embaixo da outra!
+ *   Mostra a Oferta 1 -> apaga -> mostra a Oferta 2 -> apaga -> e assim por diante!
+ * - 3 Formatos selecionáveis pelo motorista:
+ *   1. SEMAFORO_COMPACT (Bolinha Semáforo Compacta — Padrão)
+ *   2. MINI_BALL (Só Bolinha Semáforo + R$/km — Ultra Discreto)
+ *   3. FULL_CARD (Card Completo sem botões de rua)
  */
 class FloatingOverlayPanel(private val context: Context) {
 
@@ -47,35 +44,41 @@ class FloatingOverlayPanel(private val context: Context) {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private var rootContainer: LinearLayout? = null
-    private var cardContainer: LinearLayout? = null
-    private var offersListLayout: LinearLayout? = null
-    private var tvHeaderTitle: TextView? = null
-    private var tvTimerHint: TextView? = null
+    private var contentWrapper: LinearLayout? = null
 
     private var layoutParams: WindowManager.LayoutParams? = null
     private var isAdded = false
     private var isAccessibilityActive = false
-    private var lastResultsShown: List<FinancialEvaluationResult> = emptyList()
 
-    private var currentOpacityPercent: Int = 94
-    private var displayDurationSec: Int = 8
-    private var remainingSeconds: Int = 8
+    private var offerQueue: List<FinancialEvaluationResult> = emptyList()
+    private var currentQueueIndex: Int = 0
+    private var isTransitioningBetweenOffers: Boolean = false
+
+    private var currentOpacityPercent: Int = 92
+    private var displayDurationSec: Int = 7
+    private var displayStyle: OverlayDisplayStyle = OverlayDisplayStyle.SEMAFORO_COMPACT
+    private var remainingSeconds: Int = 7
     private var isMonitoringEnabled: Boolean = true
+    private var activeTimerLabel: TextView? = null
+
     var onUserRequestedDisableCopilot: (() -> Unit)? = null
     var onOfferCardClosed: (() -> Unit)? = null
 
-    // Contagem regressiva de 1 em 1 segundo que remove completamente a janela ao terminar
     private val countdownRunnable = object : Runnable {
         override fun run() {
             remainingSeconds--
             if (remainingSeconds <= 0) {
-                hidePanel()
-                onOfferCardClosed?.invoke()
+                advanceToNextOfferOrFinish()
             } else {
-                tvTimerHint?.text = "⏱ ${remainingSeconds}s"
+                activeTimerLabel?.text = "${remainingSeconds}s"
                 mainHandler.postDelayed(this, 1000L)
             }
         }
+    }
+
+    private val showNextOfferAfterPauseRunnable = Runnable {
+        isTransitioningBetweenOffers = false
+        showCurrentQueuedOffer()
     }
 
     fun hasOverlayPermission(): Boolean {
@@ -94,12 +97,13 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun isCopilotMonitoringEnabled(): Boolean = isMonitoringEnabled
 
-    fun isCardCurrentlyVisible(): Boolean = isAdded && cardContainer?.visibility == View.VISIBLE
+    fun isCardCurrentlyVisible(): Boolean = isAdded || isTransitioningBetweenOffers
 
     fun applyConfig(config: DriverFinancialConfig) {
         mainHandler.post {
             currentOpacityPercent = config.overlayOpacityPercent.coerceIn(25, 100)
             displayDurationSec = config.overlayAutoMinimizeSec.coerceIn(3, 45)
+            displayStyle = OverlayDisplayStyle.fromName(config.overlayDisplayStyle)
             isMonitoringEnabled = config.copilotMonitoringEnabled
             rootContainer?.alpha = currentOpacityPercent / 100f
             if (!isMonitoringEnabled) {
@@ -108,10 +112,6 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
-    /**
-     * Atualiza apenas o estado interno de acessibilidade — NUNCA desenha barrinha flutuante em espera,
-     * deixando a tela do motorista 100% limpa enquanto trabalha!
-     */
     fun showOrUpdateTopStatusBar(accessibilityEnabled: Boolean, statusSubtext: String? = null) {
         isAccessibilityActive = accessibilityEnabled
         if (!isMonitoringEnabled) {
@@ -124,7 +124,8 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     /**
-     * Exibe 1 ou mais viagens simultâneas diretamente na janela flutuante e agenda o fechamento total automático.
+     * Exibe 1 ou mais ofertas em fila sequencial (mostra uma -> apaga -> mostra a próxima -> apaga),
+     * sem nunca empilhar várias janelas uma embaixo da outra!
      */
     fun showEvaluations(results: List<FinancialEvaluationResult>) {
         if (results.isEmpty()) return
@@ -137,72 +138,104 @@ class FloatingOverlayPanel(private val context: Context) {
                 return@post
             }
 
-            lastResultsShown = results
-            ensureViewsCreated()
-            attachWindowIfNeeded()
-
-            rootContainer?.alpha = currentOpacityPercent / 100f
-            cardContainer?.visibility = View.VISIBLE
-            offersListLayout?.removeAllViews()
-
-            val primary = results.first()
-            val (primaryBadge, _, _) = verdictPalette(primary.verdict)
-            cardContainer?.background = roundedCardBg("#FFFFFF", primaryBadge, 20f, 2)
-
-            val appName = primary.offer.sourceApp.displayName
-            val simTag = if (primary.offer.isSimulated) " · TESTE" else ""
-            tvHeaderTitle?.text = if (results.size > 1) {
-                "$appName (${results.size} Ofertas)$simTag"
-            } else {
-                "$appName (${primary.offer.rideCategory ?: "Oferta"})$simTag"
-            }
-
-            remainingSeconds = displayDurationSec
-            tvTimerHint?.text = "⏱ ${remainingSeconds}s"
-
-            results.take(3).forEachIndexed { index, eval ->
-                val itemView = buildOfferItemView(
-                    index = index + 1,
-                    totalCount = results.size,
-                    result = eval
-                )
-                offersListLayout?.addView(itemView)
-            }
-
-            // Inicia contagem regressiva de 1 em 1 segundo para fechar e remover totalmente a janela da tela
             mainHandler.removeCallbacks(countdownRunnable)
-            mainHandler.postDelayed(countdownRunnable, 1000L)
+            mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
+            isTransitioningBetweenOffers = false
+
+            offerQueue = results.take(5)
+            currentQueueIndex = 0
+            showCurrentQueuedOffer()
+        }
+    }
+
+    private fun showCurrentQueuedOffer() {
+        if (currentQueueIndex >= offerQueue.size) {
+            hidePanel()
+            onOfferCardClosed?.invoke()
+            return
+        }
+
+        val currentEval = offerQueue[currentQueueIndex]
+        val totalInQueue = offerQueue.size
+        val oneBasedIndex = currentQueueIndex + 1
+
+        ensureViewsCreated()
+        attachWindowIfNeeded()
+
+        rootContainer?.alpha = currentOpacityPercent / 100f
+        contentWrapper?.removeAllViews()
+
+        // Quando há várias ofertas na tela, cada uma fica visível por um tempo ágil (ex: 4s) antes de apagar e mostrar a próxima
+        remainingSeconds = if (totalInQueue > 1) {
+            displayDurationSec.coerceIn(3, 5)
+        } else {
+            displayDurationSec
+        }
+
+        val builtView = when (displayStyle) {
+            OverlayDisplayStyle.MINI_BALL -> buildMiniBallView(currentEval, oneBasedIndex, totalInQueue)
+            OverlayDisplayStyle.SEMAFORO_COMPACT -> buildSemaforoCompactView(currentEval, oneBasedIndex, totalInQueue)
+            OverlayDisplayStyle.FULL_CARD -> buildFullCardView(currentEval, oneBasedIndex, totalInQueue)
+        }
+
+        contentWrapper?.addView(builtView)
+
+        mainHandler.removeCallbacks(countdownRunnable)
+        mainHandler.postDelayed(countdownRunnable, 1000L)
+    }
+
+    /**
+     * Quando o tempo de 1 oferta termina (ou o motorista dá 1 toque no card):
+     * - Se houver mais ofertas na fila, APAGA a janela atual por 350ms e em seguida mostra a próxima oferta!
+     * - Se for a última oferta, fecha tudo definitivamente.
+     */
+    private fun advanceToNextOfferOrFinish() {
+        mainHandler.removeCallbacks(countdownRunnable)
+        currentQueueIndex++
+        if (currentQueueIndex < offerQueue.size) {
+            // Apaga a janela atual da tela ("mostra uma, aí apaga, aí mostra outra")
+            removeWindowViewOnly()
+            isTransitioningBetweenOffers = true
+            mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
+            mainHandler.postDelayed(showNextOfferAfterPauseRunnable, 350L)
+        } else {
+            hidePanel()
+            onOfferCardClosed?.invoke()
         }
     }
 
     /**
-     * Acionado quando o motorista toca no card ou no botão "✕ Fechar" para fechar a janela imediatamente.
+     * Fecha tudo imediatamente (cancelando inclusive próximas ofertas da fila).
      */
     fun dismissCurrentOfferCardByUser() {
+        offerQueue = emptyList()
+        currentQueueIndex = 0
+        isTransitioningBetweenOffers = false
         hidePanel()
         onOfferCardClosed?.invoke()
     }
 
     fun hideOfferCardOnly() {
-        hidePanel()
-        onOfferCardClosed?.invoke()
+        dismissCurrentOfferCardByUser()
     }
 
-    /**
-     * Remove completamente a janela flutuante da tela (deixando a tela 100% livre).
-     */
+    private fun removeWindowViewOnly() {
+        if (isAdded && rootContainer != null) {
+            try {
+                windowManager.removeView(rootContainer)
+            } catch (_: Exception) {
+            }
+            isAdded = false
+            RuntimeDiagnosticsBus.setOverlayVisible(false)
+        }
+    }
+
     fun hidePanel() {
         mainHandler.post {
             mainHandler.removeCallbacks(countdownRunnable)
-            cardContainer?.visibility = View.GONE
-            if (isAdded && rootContainer != null) {
-                try {
-                    windowManager.removeView(rootContainer)
-                } catch (_: Exception) {
-                }
-                isAdded = false
-                RuntimeDiagnosticsBus.setOverlayVisible(false)
-            }
+            mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
+            isTransitioningBetweenOffers = false
+            removeWindowViewOnly()
         }
     }
 
@@ -217,26 +250,248 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
-    private fun buildOfferItemView(
+    // =========================================================================
+    // FORMATO 1: BOLINHA SEMÁFORO COMPACTA (Padrão Recomendado — Zero Poluição)
+    // =========================================================================
+    private fun buildSemaforoCompactView(
+        result: FinancialEvaluationResult,
         index: Int,
-        totalCount: Int,
-        result: FinancialEvaluationResult
+        totalCount: Int
+    ): View {
+        val offer = result.offer
+        val (badgeHex, _, _) = verdictPalette(result.verdict)
+
+        val pill = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(10), dp(8))
+            background = roundedCardBg("#0A1916", badgeHex, 28f, 2)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                elevation = dp(8).toFloat()
+            }
+            setOnClickListener { advanceToNextOfferOrFinish() }
+        }
+
+        // Bolinha Luminosa do Semáforo (Verde / Amarela / Vermelha)
+        val ball = View(context).apply {
+            background = circleBg(badgeHex, "#FFFFFF", 2)
+            layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply {
+                marginEnd = dp(10)
+            }
+        }
+        pill.addView(ball)
+
+        val priceStr = offer.offeredPrice?.let { formatCurrency(it) } ?: "R$ --"
+        val distStr = result.totalConsideredDistanceKm?.let {
+            String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it)
+        } ?: "-- km"
+        val minStr = result.totalConsideredDurationMin?.let { "$it min" } ?: "-- min"
+        val grossKmStr = result.grossPerKm?.let { formatCurrency(it) + "/km" } ?: "--/km"
+        val grossHrStr = result.grossPerHour?.let {
+            String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", it)
+        } ?: "--/h"
+        val netStr = result.estimatedNetProfit?.let { formatCurrency(it) } ?: "--"
+        val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
+
+        val textCol = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = dp(10)
+            }
+            setOnClickListener { advanceToNextOfferOrFinish() }
+        }
+
+        val tvLine1 = TextView(context).apply {
+            text = "$seqTag$priceStr  •  Total: $distStr · $minStr"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+
+        val tvLine2 = TextView(context).apply {
+            text = "$grossKmStr  •  $grossHrStr  •  Lucro: $netStr"
+            setTextColor(Color.parseColor("#A7F3D0"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+
+        textCol.addView(tvLine1)
+        textCol.addView(tvLine2)
+        pill.addView(textCol)
+
+        val tvTimer = TextView(context).apply {
+            text = "${remainingSeconds}s"
+            setTextColor(Color.parseColor("#CBD5E1"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(4), dp(2), dp(6), dp(2))
+        }
+        activeTimerLabel = tvTimer
+        pill.addView(tvTimer)
+
+        val btnCloseAll = TextView(context).apply {
+            text = "✕"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+            background = roundedBg("#DC2626", 14f)
+            setOnClickListener { dismissCurrentOfferCardByUser() }
+        }
+        pill.addView(btnCloseAll)
+
+        return pill
+    }
+
+    // =========================================================================
+    // FORMATO 2: SÓ BOLINHA SEMÁFORO + TOTAL KM/TEMPO + R$/KM (Ultra Discreto)
+    // =========================================================================
+    private fun buildMiniBallView(
+        result: FinancialEvaluationResult,
+        index: Int,
+        totalCount: Int
+    ): View {
+        val offer = result.offer
+        val (badgeHex, _, _) = verdictPalette(result.verdict)
+
+        val miniPill = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(10), dp(6), dp(8), dp(6))
+            background = roundedCardBg("#0A1916", badgeHex, 24f, 2)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                elevation = dp(8).toFloat()
+            }
+            setOnClickListener { advanceToNextOfferOrFinish() }
+        }
+
+        val ball = View(context).apply {
+            background = circleBg(badgeHex, "#FFFFFF", 2)
+            layoutParams = LinearLayout.LayoutParams(dp(20), dp(20)).apply {
+                marginEnd = dp(8)
+            }
+        }
+        miniPill.addView(ball)
+
+        val priceStr = offer.offeredPrice?.let { formatCurrency(it) } ?: "R$ --"
+        val distStr = result.totalConsideredDistanceKm?.let {
+            String.format(Locale.forLanguageTag("pt-BR"), "%.1fkm", it)
+        } ?: "--km"
+        val minStr = result.totalConsideredDurationMin?.let { "${it}m" } ?: "--m"
+        val grossKmStr = result.grossPerKm?.let { formatCurrency(it) + "/km" } ?: "--/km"
+        val grossHrStr = result.grossPerHour?.let {
+            String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", it)
+        } ?: "--/h"
+        val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
+
+        val tvCompact = TextView(context).apply {
+            text = "$seqTag$priceStr ($distStr · $minStr)  •  $grossKmStr · $grossHrStr"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(0, 0, dp(8), 0)
+            setOnClickListener { advanceToNextOfferOrFinish() }
+        }
+        miniPill.addView(tvCompact)
+
+        activeTimerLabel = null
+
+        val btnClose = TextView(context).apply {
+            text = "✕"
+            setTextColor(Color.parseColor("#FCA5A5"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(6), dp(2), dp(4), dp(2))
+            setOnClickListener { dismissCurrentOfferCardByUser() }
+        }
+        miniPill.addView(btnClose)
+
+        return miniPill
+    }
+
+    // =========================================================================
+    // FORMATO 3: CARD COMPLETO (Sem botões de rua para não poluir a tela)
+    // =========================================================================
+    private fun buildFullCardView(
+        result: FinancialEvaluationResult,
+        index: Int,
+        totalCount: Int
     ): View {
         val offer = result.offer
         val (badgeHex, softBgHex, borderHex) = verdictPalette(result.verdict)
 
+        val card = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = roundedCardBg("#FFFFFF", badgeHex, 18f, 2)
+            minimumWidth = dp(310)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                elevation = dp(10).toFloat()
+            }
+            setOnClickListener { advanceToNextOfferOrFinish() }
+        }
+
+        val topRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setOnClickListener { advanceToNextOfferOrFinish() }
+        }
+
+        val seqLabel = if (totalCount > 1) " · Oferta $index de $totalCount" else ""
+        val tvTitle = TextView(context).apply {
+            text = "${offer.sourceApp.displayName}$seqLabel"
+            setTextColor(Color.parseColor("#073B32"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+
+        val tvTimer = TextView(context).apply {
+            text = "${remainingSeconds}s"
+            setTextColor(Color.parseColor("#073B32"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(8), dp(3), dp(8), dp(3))
+            background = roundedBg("#E2E8F0", 10f)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = dp(6)
+            }
+        }
+        activeTimerLabel = tvTimer
+
+        val btnClose = TextView(context).apply {
+            text = "✕ Fechar"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(10), dp(4), dp(10), dp(4))
+            background = roundedBg("#DC2626", 12f)
+            setOnClickListener { dismissCurrentOfferCardByUser() }
+        }
+
+        topRow.addView(tvTitle)
+        topRow.addView(tvTimer)
+        topRow.addView(btnClose)
+        card.addView(topRow)
+
         val box = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            background = roundedCardBg(softBgHex, borderHex, 14f, 1)
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            background = roundedCardBg(softBgHex, borderHex, 12f, 1)
             val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            if (index > 1) lp.topMargin = dp(8)
+            lp.topMargin = dp(6)
             layoutParams = lp
-            // Tocar em qualquer área do card fecha a janela imediatamente sem esforço!
-            setOnClickListener { dismissCurrentOfferCardByUser() }
+            setOnClickListener { advanceToNextOfferOrFinish() }
         }
 
         val priceStr = offer.offeredPrice?.let { formatCurrency(it) } ?: "R$ --"
@@ -248,108 +503,32 @@ class FloatingOverlayPanel(private val context: Context) {
         val grossHrStr = result.grossPerHour?.let { formatCurrency(it) + "/h" } ?: "--/h"
         val netStr = result.estimatedNetProfit?.let { formatCurrency(it) } ?: "--"
 
-        // Faixa Pílula Moderna do Semáforo + Valor da Oferta
         val tvBadge = TextView(context).apply {
-            val prefix = if (totalCount > 1) "#$index " else ""
-            text = "$prefix${result.verdict.label}  ·  $priceStr  ($distStr · $minStr)"
+            text = "${result.verdict.label}  ·  $priceStr  ($distStr · $minStr)"
             setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(10), dp(5), dp(10), dp(5))
-            background = roundedBg(badgeHex, 10f)
-            setOnClickListener { dismissCurrentOfferCardByUser() }
+            setPadding(dp(10), dp(4), dp(10), dp(4))
+            background = roundedBg(badgeHex, 8f)
         }
         box.addView(tvBadge)
 
-        // Linha Principal Clean de Alto Contraste: R$/km | R$/hora | Lucro Líquido
         val tvMetrics = TextView(context).apply {
             text = "$grossKmStr   •   $grossHrStr   •   Lucro: $netStr"
             setTextColor(Color.parseColor("#073B32"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setTypeface(typeface, Typeface.BOLD)
             val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            lp.topMargin = dp(6)
+            lp.topMargin = dp(5)
             layoutParams = lp
-            setOnClickListener { dismissCurrentOfferCardByUser() }
         }
         box.addView(tvMetrics)
 
-        // Detalhe de Embarque + Viagem quando for 1 oferta
-        if (totalCount == 1) {
-            val costStr = result.estimatedTotalCost?.let { formatCurrency(it) } ?: "--"
-            val tvSub = TextView(context).apply {
-                val pKm = offer.pickupDistanceKm?.let { String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it) }
-                val tKm = offer.tripDistanceKm?.let { String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it) }
-                val routeInfo = if (pKm != null && tKm != null) "Embarque: $pKm + Viagem: $tKm  ·  " else ""
-                text = "${routeInfo}Custo: $costStr"
-                setTextColor(Color.parseColor("#334155"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                val lp = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                lp.topMargin = dp(2)
-                layoutParams = lp
-                setOnClickListener { dismissCurrentOfferCardByUser() }
-            }
-            box.addView(tvSub)
-        }
-
-        // Botões Pílula Modernos 1-Toque para abrir Origem e Destino no Google Street View / Maps
-        if (!offer.originAddress.isNullOrBlank() || !offer.destinationAddress.isNullOrBlank()) {
-            val btnRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                val lp = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                lp.topMargin = dp(7)
-                layoutParams = lp
-            }
-
-            if (!offer.originAddress.isNullOrBlank()) {
-                val btnOrig = TextView(context).apply {
-                    text = "📍 Origem: ${offer.originAddress.take(18)}"
-                    setTextColor(Color.WHITE)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                    setTypeface(typeface, Typeface.BOLD)
-                    gravity = Gravity.CENTER
-                    ellipsize = TextUtils.TruncateAt.END
-                    maxLines = 1
-                    setPadding(dp(10), dp(6), dp(10), dp(6))
-                    background = roundedBg("#073B32", 20f)
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                        marginEnd = dp(5)
-                    }
-                    setOnClickListener { launchStreetViewOrMap(offer.originAddress) }
-                }
-                btnRow.addView(btnOrig)
-            }
-
-            if (!offer.destinationAddress.isNullOrBlank()) {
-                val btnDest = TextView(context).apply {
-                    text = "🏁 Destino: ${offer.destinationAddress.take(18)}"
-                    setTextColor(Color.WHITE)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                    setTypeface(typeface, Typeface.BOLD)
-                    gravity = Gravity.CENTER
-                    ellipsize = TextUtils.TruncateAt.END
-                    maxLines = 1
-                    setPadding(dp(10), dp(6), dp(10), dp(6))
-                    background = roundedBg("#059669", 20f)
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                    setOnClickListener { launchStreetViewOrMap(offer.destinationAddress) }
-                }
-                btnRow.addView(btnDest)
-            }
-
-            box.addView(btnRow)
-        }
-
-        return box
+        card.addView(box)
+        return card
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -374,111 +553,23 @@ class FloatingOverlayPanel(private val context: Context) {
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             x = 0
-            y = dp(18)
+            y = dp(16)
         }
 
         rootContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             alpha = currentOpacityPercent / 100f
-            // Essencial: impede que a janela do GoOrNo apareça na árvore de Acessibilidade
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         }
 
-        // CARD DE ANÁLISE DE OFERTA (Só existe na tela enquanto está mostrando o cálculo!)
-        cardContainer = LinearLayout(context).apply {
+        contentWrapper = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            visibility = View.GONE
-            setPadding(dp(14), dp(10), dp(14), dp(10))
-            background = roundedCardBg("#FFFFFF", "#059669", 20f, 2)
-            minimumWidth = dp(330)
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            layoutParams = lp
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                elevation = dp(10).toFloat()
-            }
+            gravity = Gravity.CENTER_HORIZONTAL
         }
 
-        val topRow = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setOnClickListener { dismissCurrentOfferCardByUser() }
-        }
+        rootContainer?.addView(contentWrapper)
 
-        tvHeaderTitle = TextView(context).apply {
-            text = "GoOrNo Copiloto"
-            setTextColor(Color.parseColor("#073B32"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-            setTypeface(typeface, Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            setOnClickListener { dismissCurrentOfferCardByUser() }
-        }
-
-        tvTimerHint = TextView(context).apply {
-            text = "⏱ 8s"
-            setTextColor(Color.parseColor("#073B32"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
-            setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(8), dp(4), dp(8), dp(4))
-            background = roundedBg("#E2E8F0", 12f)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                marginEnd = dp(6)
-            }
-            setOnClickListener { dismissCurrentOfferCardByUser() }
-        }
-
-        // Botão grande e fácil de tocar "✕ Fechar"
-        val btnClose = TextView(context).apply {
-            text = "✕ Fechar"
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
-            setTypeface(typeface, Typeface.BOLD)
-            gravity = Gravity.CENTER
-            setPadding(dp(12), dp(5), dp(12), dp(5))
-            background = roundedBg("#DC2626", 14f)
-            setOnClickListener { dismissCurrentOfferCardByUser() }
-        }
-
-        topRow.addView(tvHeaderTitle)
-        topRow.addView(tvTimerHint)
-        topRow.addView(btnClose)
-
-        offersListLayout = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            lp.topMargin = dp(8)
-            layoutParams = lp
-        }
-
-        val tvTapAnywhereHint = TextView(context).apply {
-            text = "👆 Toque em qualquer parte da janela para fechar"
-            setTextColor(Color.parseColor("#64748B"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
-            gravity = Gravity.CENTER
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            lp.topMargin = dp(6)
-            layoutParams = lp
-            setOnClickListener { dismissCurrentOfferCardByUser() }
-        }
-
-        cardContainer?.addView(topRow)
-        cardContainer?.addView(offersListLayout)
-        cardContainer?.addView(tvTapAnywhereHint)
-        rootContainer?.addView(cardContainer)
-
-        // Permite arrastar o card caso queira mover, e se for um toque rápido (click) fecha na hora!
         val dragOrTapListener = object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
@@ -515,7 +606,7 @@ class FloatingOverlayPanel(private val context: Context) {
                     }
                     MotionEvent.ACTION_UP -> {
                         if (!wasDragged) {
-                            dismissCurrentOfferCardByUser()
+                            advanceToNextOfferOrFinish()
                         }
                         return true
                     }
@@ -524,32 +615,28 @@ class FloatingOverlayPanel(private val context: Context) {
             }
         }
 
-        cardContainer?.setOnTouchListener(dragOrTapListener)
+        rootContainer?.setOnTouchListener(dragOrTapListener)
     }
 
     private fun verdictPalette(verdict: TrafficLightVerdict): Triple<String, String, String> {
         return when (verdict) {
-            TrafficLightVerdict.GREEN -> Triple("#059669", "#F0FDF4", "#86EFAC")
-            TrafficLightVerdict.YELLOW -> Triple("#D97706", "#FFFBEB", "#FCD34D")
-            TrafficLightVerdict.RED -> Triple("#DC2626", "#FEF2F2", "#FCA5A5")
-            TrafficLightVerdict.GRAY_NEUTRAL -> Triple("#475569", "#F8FAFC", "#CBD5E1")
-        }
-    }
-
-    private fun launchStreetViewOrMap(address: String) {
-        try {
-            val encoded = Uri.encode(address)
-            val mapUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$encoded")
-            val intent = Intent(Intent.ACTION_VIEW, mapUri).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-        } catch (_: Exception) {
+            TrafficLightVerdict.GREEN -> Triple("#10B981", "#F0FDF4", "#86EFAC")
+            TrafficLightVerdict.YELLOW -> Triple("#F59E0B", "#FFFBEB", "#FCD34D")
+            TrafficLightVerdict.RED -> Triple("#EF4444", "#FEF2F2", "#FCA5A5")
+            TrafficLightVerdict.GRAY_NEUTRAL -> Triple("#64748B", "#F8FAFC", "#CBD5E1")
         }
     }
 
     private fun formatCurrency(value: Double): String =
         String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", value)
+
+    private fun circleBg(fillHex: String, strokeHex: String, strokeDp: Int): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.parseColor(fillHex))
+            setStroke(dp(strokeDp), Color.parseColor(strokeHex))
+        }
+    }
 
     private fun roundedBg(hexColor: String, radiusDp: Float): GradientDrawable {
         return GradientDrawable().apply {

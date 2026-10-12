@@ -506,6 +506,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             RuntimeDiagnosticsBus.publishEvaluation(evaluations.first())
             app.overlayPanel.applyConfig(config)
             app.overlayPanel.showEvaluations(evaluations)
+            CopilotNotificationReceiver.showActiveNotification(
+                this@GoOrNoAccessibilityService,
+                evaluations.first()
+            )
 
             // Grava todas as ofertas reais detectadas no banco local Room
             if (config.saveHistoryEnabled) {

@@ -40,6 +40,7 @@ class DriverPreferencesRepository(private val context: Context) {
         val MIN_CONFIDENCE = doublePreferencesKey("min_confidence")
         val OVERLAY_OPACITY = intPreferencesKey("overlay_opacity")
         val OVERLAY_AUTO_MIN_SEC = intPreferencesKey("overlay_auto_min_sec")
+        val OVERLAY_DISPLAY_STYLE = stringPreferencesKey("overlay_display_style")
         val COPILOT_MONITORING_ENABLED = booleanPreferencesKey("copilot_monitoring_enabled")
         val SAVE_HISTORY = booleanPreferencesKey("save_history")
         val CLOUD_BACKUP_CONSENT = booleanPreferencesKey("cloud_backup_consent")
@@ -64,8 +65,9 @@ class DriverPreferencesRepository(private val context: Context) {
             requireNetPerKm = prefs[Keys.REQ_NET_KM] ?: false,
             requireNetPerHour = prefs[Keys.REQ_NET_HOUR] ?: false,
             minConfidenceThreshold = prefs[Keys.MIN_CONFIDENCE] ?: 0.65,
-            overlayOpacityPercent = prefs[Keys.OVERLAY_OPACITY] ?: 90,
-            overlayAutoMinimizeSec = prefs[Keys.OVERLAY_AUTO_MIN_SEC] ?: 12,
+            overlayOpacityPercent = prefs[Keys.OVERLAY_OPACITY] ?: 92,
+            overlayAutoMinimizeSec = prefs[Keys.OVERLAY_AUTO_MIN_SEC] ?: 7,
+            overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: "SEMAFORO_COMPACT",
             copilotMonitoringEnabled = prefs[Keys.COPILOT_MONITORING_ENABLED] ?: true,
             saveHistoryEnabled = prefs[Keys.SAVE_HISTORY] ?: true,
             cloudBackupConsent = prefs[Keys.CLOUD_BACKUP_CONSENT] ?: false,
@@ -95,6 +97,7 @@ class DriverPreferencesRepository(private val context: Context) {
             prefs[Keys.MIN_CONFIDENCE] = config.minConfidenceThreshold
             prefs[Keys.OVERLAY_OPACITY] = config.overlayOpacityPercent.coerceIn(25, 100)
             prefs[Keys.OVERLAY_AUTO_MIN_SEC] = config.overlayAutoMinimizeSec.coerceIn(3, 60)
+            prefs[Keys.OVERLAY_DISPLAY_STYLE] = config.overlayDisplayStyle
             prefs[Keys.COPILOT_MONITORING_ENABLED] = config.copilotMonitoringEnabled
             prefs[Keys.SAVE_HISTORY] = config.saveHistoryEnabled
             prefs[Keys.CLOUD_BACKUP_CONSENT] = config.cloudBackupConsent
