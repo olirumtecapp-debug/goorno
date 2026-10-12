@@ -110,17 +110,32 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
         @Volatile
         private var cachedLastEvaluation: FinancialEvaluationResult? = null
 
+        @Volatile
+        private var cachedShowProfit: Boolean = false
+
+        @Volatile
+        private var cachedShowCost: Boolean = false
+
         /**
          * Exibe ou atualiza na barra superior do Android a notificação silenciosa com:
-         * - Resumo completo da última corrida lida (Valor, R$/km, R$/h, Lucro, Origem e Destino)
+         * - Resumo completo da última corrida lida (Valor, Total KM/Tempo, R$/km, R$/h, Origem e Destino,
+         *   e Lucro/Custo apenas se o motorista ativou nas configurações!)
          * - Botões para abrir Origem 360° (Street View), Destino 360° (Street View) e Desativar GoOrNo.
          */
         fun showActiveNotification(
             context: Context,
-            latestEvaluation: FinancialEvaluationResult? = cachedLastEvaluation
+            latestEvaluation: FinancialEvaluationResult? = cachedLastEvaluation,
+            showProfit: Boolean? = null,
+            showCost: Boolean? = null
         ) {
             if (latestEvaluation != null) {
                 cachedLastEvaluation = latestEvaluation
+            }
+            if (showProfit != null) {
+                cachedShowProfit = showProfit
+            }
+            if (showCost != null) {
+                cachedShowCost = showCost
             }
             val eval = cachedLastEvaluation
 
@@ -178,18 +193,24 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val kmStr = eval.grossPerKm?.let { formatCurr(it) + "/km" } ?: "--/km"
                     val hrStr = eval.grossPerHour?.let { formatCurr(it) + "/h" } ?: "--/h"
                     val netStr = eval.estimatedNetProfit?.let { formatCurr(it) } ?: "--"
+                    val costStr = eval.estimatedTotalCost?.let { formatCurr(it) } ?: "--"
                     val distStr = eval.totalConsideredDistanceKm?.let {
                         String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it)
                     } ?: "-- km"
                     val minStr = eval.totalConsideredDurationMin?.let { "$it min" } ?: "-- min"
 
+                    val extraParts = mutableListOf<String>()
+                    if (cachedShowProfit) extraParts.add("Lucro: $netStr")
+                    if (cachedShowCost) extraParts.add("Custo: $costStr")
+                    val extraSuffix = if (extraParts.isEmpty()) "" else " · " + extraParts.joinToString(" · ")
+
                     val title = "$emoji $priceStr (Total: $distStr · $minStr) · $kmStr"
                     val origLine = offer.originAddress?.takeIf { it.isNotBlank() } ?: "Não informado na tela"
                     val destLine = offer.destinationAddress?.takeIf { it.isNotBlank() } ?: "Não informado na tela"
-                    val shortText = "Lucro: $netStr ($hrStr) | 📍 $origLine ➔ 🏁 $destLine"
+                    val shortText = "$hrStr$extraSuffix | 📍 $origLine ➔ 🏁 $destLine"
                     val expandedText = buildString {
                         append("${offer.sourceApp.displayName} · Total: $distStr em $minStr\n")
-                        append("$kmStr · $hrStr · Lucro Líq.: $netStr\n")
+                        append("$kmStr · $hrStr$extraSuffix\n")
                         append("📍 Origem: $origLine\n")
                         append("🏁 Destino: $destLine")
                     }

@@ -507,8 +507,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             app.overlayPanel.applyConfig(config)
             app.overlayPanel.showEvaluations(evaluations)
             CopilotNotificationReceiver.showActiveNotification(
-                this@GoOrNoAccessibilityService,
-                evaluations.first()
+                context = this@GoOrNoAccessibilityService,
+                latestEvaluation = evaluations.first(),
+                showProfit = config.showProfitOnOverlay,
+                showCost = config.showCostOnOverlay
             )
 
             // Grava todas as ofertas reais detectadas no banco local Room

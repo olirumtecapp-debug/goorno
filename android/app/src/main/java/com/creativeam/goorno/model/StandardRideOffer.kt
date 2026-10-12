@@ -115,15 +115,15 @@ data class StandardRideOffer(
 enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
     SEMAFORO_COMPACT(
         title = "Bolinha Semáforo Compacta (Recomendado)",
-        subtitle = "Mostra a bolinha (🟢/🟡/🔴) + R$/km, R$/h, Lucro e botões 360° em espaço reduzido"
+        subtitle = "Mostra a bolinha (🟢/🟡/🔴) + Valor, KM/Tempo Total, R$/km e R$/h em espaço reduzido"
     ),
     MINI_BALL(
         title = "Só Bolinha Semáforo + R$/km (Ultra Discreto)",
-        subtitle = "Pílula mínima com a bolinha colorida, valor, R$/km e R$/h (zero poluição na tela)"
+        subtitle = "Pílula mínima com a bolinha colorida, valor, KM/Tempo Total, R$/km e R$/h (zero poluição)"
     ),
     FULL_CARD(
         title = "Card Completo Detalhado",
-        subtitle = "Mostra faixa completa do semáforo, métricas, custos de embarque e endereços"
+        subtitle = "Mostra faixa completa do semáforo, KM/Tempo Total, R$/km e R$/h"
     );
 
     companion object {
@@ -156,6 +156,8 @@ data class DriverFinancialConfig(
     val overlayOpacityPercent: Int = 92,
     val overlayAutoMinimizeSec: Int = 7,
     val overlayDisplayStyle: String = OverlayDisplayStyle.SEMAFORO_COMPACT.name,
+    val showProfitOnOverlay: Boolean = false,
+    val showCostOnOverlay: Boolean = false,
     val copilotMonitoringEnabled: Boolean = true,
     val saveHistoryEnabled: Boolean = true,
     val cloudBackupConsent: Boolean = false,

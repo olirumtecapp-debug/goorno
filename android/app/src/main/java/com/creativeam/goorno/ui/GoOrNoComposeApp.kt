@@ -141,7 +141,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v2.7.0",
+                                            text = "v2.8.0",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
@@ -552,6 +552,12 @@ fun GoOrNoComposeApp(
                         var selectedStyle by remember(config.overlayDisplayStyle) {
                             mutableStateOf(OverlayDisplayStyle.fromName(config.overlayDisplayStyle))
                         }
+                        var showProfitOnOverlay by remember(config.showProfitOnOverlay) {
+                            mutableStateOf(config.showProfitOnOverlay)
+                        }
+                        var showCostOnOverlay by remember(config.showCostOnOverlay) {
+                            mutableStateOf(config.showCostOnOverlay)
+                        }
                         var opacity by remember(config.overlayOpacityPercent) {
                             mutableFloatStateOf(config.overlayOpacityPercent.toFloat())
                         }
@@ -570,6 +576,41 @@ fun GoOrNoComposeApp(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
+                                Surface(
+                                    color = TrafficGreenSoft.copy(alpha = 0.55f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, TrafficGreen)
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(
+                                            text = "🖐️ Janela Livremente Arrastável na Tela!",
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 13.sp,
+                                            color = PetrolHeader
+                                        )
+                                        Text(
+                                            text = "Quando a janelinha abrir (ícone ⠿), você pode segurar e arrastar com o dedo para qualquer lugar da tela (meio, lateral ou embaixo) para nunca atrapalhar o botão de recusar/desistir de um chamado! O app grava a posição que você escolher.",
+                                            fontSize = 11.5.sp,
+                                            color = PetrolDarkText
+                                        )
+                                        OutlinedButton(
+                                            onClick = {
+                                                app.overlayPanel.resetSavedPosition()
+                                                notifyUser("Posição da janela redefinida para o padrão!")
+                                            },
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = "Voltar Janela para Posição Inicial Padrão",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 11.5.sp,
+                                                color = PetrolHeader
+                                            )
+                                        }
+                                    }
+                                }
+
                                 Text(
                                     text = "Escolha o Formato da Janelinha Flutuante",
                                     fontWeight = FontWeight.Black,
@@ -639,6 +680,98 @@ fun GoOrNoComposeApp(
                                 HorizontalDivider(color = CleanCardBorder)
 
                                 Text(
+                                    text = "Informações Extras na Janela e na Notificação (Opcional)",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 14.sp,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = "Por padrão, Lucro e Custo ficam ocultos na janela flutuante e na notificação da corrida para deixar a leitura bem limpa. Ative abaixo se quiser exibi-los:",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Mostrar Lucro Líquido (Janela + Notificação)",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = PetrolDarkText
+                                        )
+                                        Text(
+                                            text = "Exibe quanto sobra limpo descontando o gasto do carro",
+                                            fontSize = 11.sp,
+                                            color = MutedText
+                                        )
+                                    }
+                                    Switch(
+                                        checked = showProfitOnOverlay,
+                                        onCheckedChange = { checked ->
+                                            showProfitOnOverlay = checked
+                                            savedFlag = false
+                                            val updated = config.copy(showProfitOnOverlay = checked)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                                if (updated.copilotMonitoringEnabled) {
+                                                    CopilotNotificationReceiver.showActiveNotification(
+                                                        context = context,
+                                                        showProfit = checked,
+                                                        showCost = showCostOnOverlay
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Mostrar Custo do Carro (Janela + Notificação)",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = PetrolDarkText
+                                        )
+                                        Text(
+                                            text = "Exibe quanto o veículo gasta de combustível/manutenção na corrida",
+                                            fontSize = 11.sp,
+                                            color = MutedText
+                                        )
+                                    }
+                                    Switch(
+                                        checked = showCostOnOverlay,
+                                        onCheckedChange = { checked ->
+                                            showCostOnOverlay = checked
+                                            savedFlag = false
+                                            val updated = config.copy(showCostOnOverlay = checked)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                                if (updated.copilotMonitoringEnabled) {
+                                                    CopilotNotificationReceiver.showActiveNotification(
+                                                        context = context,
+                                                        showProfit = showProfitOnOverlay,
+                                                        showCost = checked
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                Text(
                                     text = "Transparência da Janelinha Flutuante: ${opacity.toInt()}%",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 14.sp,
@@ -702,6 +835,8 @@ fun GoOrNoComposeApp(
                                             driverName = driverName.ifBlank { "Motorista" },
                                             vehicleModel = vehicleModel.ifBlank { "Veículo" },
                                             overlayDisplayStyle = selectedStyle.name,
+                                            showProfitOnOverlay = showProfitOnOverlay,
+                                            showCostOnOverlay = showCostOnOverlay,
                                             overlayOpacityPercent = opacity.toInt().coerceIn(25, 100),
                                             overlayAutoMinimizeSec = (autoMinSec.toIntOrNull() ?: 7).coerceIn(3, 60)
                                         )

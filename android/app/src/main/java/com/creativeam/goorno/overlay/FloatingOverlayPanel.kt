@@ -27,21 +27,20 @@ import java.util.Locale
 import kotlin.math.abs
 
 /**
- * Painel Flutuante Nativo v2.7.0 — Formatos Otimizados (Bolinha Semáforo) + Exibição Sequencial 1 a 1.
+ * Painel Flutuante Nativo v2.8.0 — Livremente Arrastável na Tela + Semáforo Otimizado + Lucro/Custo Opcionais.
  *
- * - ZERO botões de Origem/Destino na janela flutuante (eles ficam exclusivamente na Notificação do Topo e no Histórico,
- *   para não poluir a tela na hora da chamada!).
- * - Quando há várias ofertas na tela (ex: Lista de Solicitações da 99), NUNCA empilha uma embaixo da outra!
- *   Mostra a Oferta 1 -> apaga -> mostra a Oferta 2 -> apaga -> e assim por diante!
- * - 3 Formatos selecionáveis pelo motorista:
- *   1. SEMAFORO_COMPACT (Bolinha Semáforo Compacta — Padrão)
- *   2. MINI_BALL (Só Bolinha Semáforo + R$/km — Ultra Discreto)
- *   3. FULL_CARD (Card Completo sem botões de rua)
+ * - TOTALMENTE ARRASTÁVEL: O motorista pode segurar e arrastar a janelinha para qualquer lugar da tela
+ *   (meio, lateral, embaixo) para não atrapalhar o botão de recusar/desistir de um chamado da Uber ou 99.
+ *   A posição escolhida fica salva automaticamente para todas as próximas chamadas!
+ * - LUCRO E CUSTO OPCIONAIS (Ocultos por padrão na janela flutuante, ativáveis em "2. Janela").
+ * - ZERO botões de Origem/Destino na janela flutuante (ficam apenas na Notificação do Topo e no Histórico).
+ * - Quando há várias ofertas na tela (ex: Lista de Solicitações da 99), mostra 1 por vez (mostra -> apaga -> mostra a outra).
  */
 class FloatingOverlayPanel(private val context: Context) {
 
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val posPrefs = context.getSharedPreferences("goorno_overlay_position", Context.MODE_PRIVATE)
 
     private var rootContainer: LinearLayout? = null
     private var contentWrapper: LinearLayout? = null
@@ -57,6 +56,8 @@ class FloatingOverlayPanel(private val context: Context) {
     private var currentOpacityPercent: Int = 92
     private var displayDurationSec: Int = 7
     private var displayStyle: OverlayDisplayStyle = OverlayDisplayStyle.SEMAFORO_COMPACT
+    private var showProfitOnOverlay: Boolean = false
+    private var showCostOnOverlay: Boolean = false
     private var remainingSeconds: Int = 7
     private var isMonitoringEnabled: Boolean = true
     private var activeTimerLabel: TextView? = null
@@ -104,10 +105,31 @@ class FloatingOverlayPanel(private val context: Context) {
             currentOpacityPercent = config.overlayOpacityPercent.coerceIn(25, 100)
             displayDurationSec = config.overlayAutoMinimizeSec.coerceIn(3, 45)
             displayStyle = OverlayDisplayStyle.fromName(config.overlayDisplayStyle)
+            showProfitOnOverlay = config.showProfitOnOverlay
+            showCostOnOverlay = config.showCostOnOverlay
             isMonitoringEnabled = config.copilotMonitoringEnabled
             rootContainer?.alpha = currentOpacityPercent / 100f
             if (!isMonitoringEnabled) {
                 hidePanel()
+            }
+        }
+    }
+
+    /**
+     * Volta a janela flutuante para a posição inicial padrão (abaixo do topo, sem cobrir botões).
+     */
+    fun resetSavedPosition() {
+        posPrefs.edit().clear().apply()
+        mainHandler.post {
+            layoutParams?.let { lp ->
+                lp.x = 0
+                lp.y = dp(90)
+                if (isAdded && rootContainer != null) {
+                    try {
+                        windowManager.updateViewLayout(rootContainer, lp)
+                    } catch (_: Exception) {
+                    }
+                }
             }
         }
     }
@@ -165,7 +187,6 @@ class FloatingOverlayPanel(private val context: Context) {
         rootContainer?.alpha = currentOpacityPercent / 100f
         contentWrapper?.removeAllViews()
 
-        // Quando há várias ofertas na tela, cada uma fica visível por um tempo ágil (ex: 4s) antes de apagar e mostrar a próxima
         remainingSeconds = if (totalInQueue > 1) {
             displayDurationSec.coerceIn(3, 5)
         } else {
@@ -184,16 +205,10 @@ class FloatingOverlayPanel(private val context: Context) {
         mainHandler.postDelayed(countdownRunnable, 1000L)
     }
 
-    /**
-     * Quando o tempo de 1 oferta termina (ou o motorista dá 1 toque no card):
-     * - Se houver mais ofertas na fila, APAGA a janela atual por 350ms e em seguida mostra a próxima oferta!
-     * - Se for a última oferta, fecha tudo definitivamente.
-     */
     private fun advanceToNextOfferOrFinish() {
         mainHandler.removeCallbacks(countdownRunnable)
         currentQueueIndex++
         if (currentQueueIndex < offerQueue.size) {
-            // Apaga a janela atual da tela ("mostra uma, aí apaga, aí mostra outra")
             removeWindowViewOnly()
             isTransitioningBetweenOffers = true
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
@@ -204,9 +219,6 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
-    /**
-     * Fecha tudo imediatamente (cancelando inclusive próximas ofertas da fila).
-     */
     fun dismissCurrentOfferCardByUser() {
         offerQueue = emptyList()
         currentQueueIndex = 0
@@ -250,9 +262,23 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
+    private fun buildOptionalProfitAndCostSuffix(result: FinancialEvaluationResult): String {
+        val parts = mutableListOf<String>()
+        if (showProfitOnOverlay) {
+            val netStr = result.estimatedNetProfit?.let { formatCurrency(it) } ?: "--"
+            parts.add("Lucro: $netStr")
+        }
+        if (showCostOnOverlay) {
+            val costStr = result.estimatedTotalCost?.let { formatCurrency(it) } ?: "--"
+            parts.add("Custo: $costStr")
+        }
+        return if (parts.isEmpty()) "" else "  •  " + parts.joinToString("  •  ")
+    }
+
     // =========================================================================
     // FORMATO 1: BOLINHA SEMÁFORO COMPACTA (Padrão Recomendado — Zero Poluição)
     // =========================================================================
+    @SuppressLint("ClickableViewAccessibility")
     private fun buildSemaforoCompactView(
         result: FinancialEvaluationResult,
         index: Int,
@@ -264,13 +290,22 @@ class FloatingOverlayPanel(private val context: Context) {
         val pill = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(8), dp(10), dp(8))
+            setPadding(dp(10), dp(8), dp(10), dp(8))
             background = roundedCardBg("#0A1916", badgeHex, 28f, 2)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(8).toFloat()
             }
-            setOnClickListener { advanceToNextOfferOrFinish() }
+            setOnTouchListener(createDragOrTapTouchListener())
         }
+
+        // Ícone de alça (⠿) indicando que o motorista pode arrastar a janela
+        val dragHandle = TextView(context).apply {
+            text = "⠿"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+            setPadding(0, 0, dp(6), 0)
+        }
+        pill.addView(dragHandle)
 
         // Bolinha Luminosa do Semáforo (Verde / Amarela / Vermelha)
         val ball = View(context).apply {
@@ -290,7 +325,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val grossHrStr = result.grossPerHour?.let {
             String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", it)
         } ?: "--/h"
-        val netStr = result.estimatedNetProfit?.let { formatCurrency(it) } ?: "--"
+        val optionalSuffix = buildOptionalProfitAndCostSuffix(result)
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
 
         val textCol = LinearLayout(context).apply {
@@ -301,7 +336,6 @@ class FloatingOverlayPanel(private val context: Context) {
             ).apply {
                 marginEnd = dp(10)
             }
-            setOnClickListener { advanceToNextOfferOrFinish() }
         }
 
         val tvLine1 = TextView(context).apply {
@@ -312,7 +346,7 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val tvLine2 = TextView(context).apply {
-            text = "$grossKmStr  •  $grossHrStr  •  Lucro: $netStr"
+            text = "$grossKmStr  •  $grossHrStr$optionalSuffix"
             setTextColor(Color.parseColor("#A7F3D0"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTypeface(typeface, Typeface.BOLD)
@@ -350,6 +384,7 @@ class FloatingOverlayPanel(private val context: Context) {
     // =========================================================================
     // FORMATO 2: SÓ BOLINHA SEMÁFORO + TOTAL KM/TEMPO + R$/KM (Ultra Discreto)
     // =========================================================================
+    @SuppressLint("ClickableViewAccessibility")
     private fun buildMiniBallView(
         result: FinancialEvaluationResult,
         index: Int,
@@ -361,13 +396,21 @@ class FloatingOverlayPanel(private val context: Context) {
         val miniPill = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(10), dp(6), dp(8), dp(6))
+            setPadding(dp(8), dp(6), dp(8), dp(6))
             background = roundedCardBg("#0A1916", badgeHex, 24f, 2)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(8).toFloat()
             }
-            setOnClickListener { advanceToNextOfferOrFinish() }
+            setOnTouchListener(createDragOrTapTouchListener())
         }
+
+        val dragHandle = TextView(context).apply {
+            text = "⠿"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            setPadding(0, 0, dp(5), 0)
+        }
+        miniPill.addView(dragHandle)
 
         val ball = View(context).apply {
             background = circleBg(badgeHex, "#FFFFFF", 2)
@@ -386,15 +429,15 @@ class FloatingOverlayPanel(private val context: Context) {
         val grossHrStr = result.grossPerHour?.let {
             String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", it)
         } ?: "--/h"
+        val optionalSuffix = buildOptionalProfitAndCostSuffix(result)
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
 
         val tvCompact = TextView(context).apply {
-            text = "$seqTag$priceStr ($distStr · $minStr)  •  $grossKmStr · $grossHrStr"
+            text = "$seqTag$priceStr ($distStr · $minStr)  •  $grossKmStr · $grossHrStr$optionalSuffix"
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTypeface(typeface, Typeface.BOLD)
             setPadding(0, 0, dp(8), 0)
-            setOnClickListener { advanceToNextOfferOrFinish() }
         }
         miniPill.addView(tvCompact)
 
@@ -416,6 +459,7 @@ class FloatingOverlayPanel(private val context: Context) {
     // =========================================================================
     // FORMATO 3: CARD COMPLETO (Sem botões de rua para não poluir a tela)
     // =========================================================================
+    @SuppressLint("ClickableViewAccessibility")
     private fun buildFullCardView(
         result: FinancialEvaluationResult,
         index: Int,
@@ -432,20 +476,19 @@ class FloatingOverlayPanel(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(10).toFloat()
             }
-            setOnClickListener { advanceToNextOfferOrFinish() }
+            setOnTouchListener(createDragOrTapTouchListener())
         }
 
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setOnClickListener { advanceToNextOfferOrFinish() }
         }
 
         val seqLabel = if (totalCount > 1) " · Oferta $index de $totalCount" else ""
         val tvTitle = TextView(context).apply {
-            text = "${offer.sourceApp.displayName}$seqLabel"
+            text = "⠿ ${offer.sourceApp.displayName}$seqLabel (segure p/ mover)"
             setTextColor(Color.parseColor("#073B32"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTypeface(typeface, Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
@@ -491,7 +534,6 @@ class FloatingOverlayPanel(private val context: Context) {
             )
             lp.topMargin = dp(6)
             layoutParams = lp
-            setOnClickListener { advanceToNextOfferOrFinish() }
         }
 
         val priceStr = offer.offeredPrice?.let { formatCurrency(it) } ?: "R$ --"
@@ -501,10 +543,10 @@ class FloatingOverlayPanel(private val context: Context) {
         val minStr = result.totalConsideredDurationMin?.let { "$it min" } ?: "-- min"
         val grossKmStr = result.grossPerKm?.let { formatCurrency(it) + "/km" } ?: "--/km"
         val grossHrStr = result.grossPerHour?.let { formatCurrency(it) + "/h" } ?: "--/h"
-        val netStr = result.estimatedNetProfit?.let { formatCurrency(it) } ?: "--"
+        val optionalSuffix = buildOptionalProfitAndCostSuffix(result)
 
         val tvBadge = TextView(context).apply {
-            text = "${result.verdict.label}  ·  $priceStr  ($distStr · $minStr)"
+            text = "${result.verdict.label}  ·  $priceStr  (Total: $distStr · $minStr)"
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
@@ -514,7 +556,7 @@ class FloatingOverlayPanel(private val context: Context) {
         box.addView(tvBadge)
 
         val tvMetrics = TextView(context).apply {
-            text = "$grossKmStr   •   $grossHrStr   •   Lucro: $netStr"
+            text = "$grossKmStr   •   $grossHrStr$optionalSuffix"
             setTextColor(Color.parseColor("#073B32"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setTypeface(typeface, Typeface.BOLD)
@@ -532,45 +574,8 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun ensureViewsCreated() {
-        if (rootContainer != null) return
-
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            @Suppress("DEPRECATION")
-            WindowManager.LayoutParams.TYPE_PHONE
-        }
-
-        layoutParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            type,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            x = 0
-            y = dp(16)
-        }
-
-        rootContainer = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            alpha = currentOpacityPercent / 100f
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-        }
-
-        contentWrapper = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-        }
-
-        rootContainer?.addView(contentWrapper)
-
-        val dragOrTapListener = object : View.OnTouchListener {
+    private fun createDragOrTapTouchListener(): View.OnTouchListener {
+        return object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
             private var initialTouchX = 0f
@@ -579,7 +584,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
             override fun onTouch(v: View?, event: MotionEvent): Boolean {
                 val lp = layoutParams ?: return false
-                when (event.action) {
+                when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         initialX = lp.x
                         initialY = lp.y
@@ -591,10 +596,10 @@ class FloatingOverlayPanel(private val context: Context) {
                     MotionEvent.ACTION_MOVE -> {
                         val dx = (event.rawX - initialTouchX).toInt()
                         val dy = (event.rawY - initialTouchY).toInt()
-                        if (abs(dx) > 10 || abs(dy) > 10) {
+                        if (abs(dx) > dp(5) || abs(dy) > dp(5)) {
                             wasDragged = true
                             lp.x = initialX + dx
-                            lp.y = initialY + dy
+                            lp.y = (initialY + dy).coerceAtLeast(0)
                             if (isAdded && rootContainer != null) {
                                 try {
                                     windowManager.updateViewLayout(rootContainer, lp)
@@ -604,8 +609,14 @@ class FloatingOverlayPanel(private val context: Context) {
                             return true
                         }
                     }
-                    MotionEvent.ACTION_UP -> {
-                        if (!wasDragged) {
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (wasDragged) {
+                            // Salva a nova posição escolhida pelo motorista para nunca mais atrapalhar o botão de desistir!
+                            posPrefs.edit()
+                                .putInt("saved_x", lp.x)
+                                .putInt("saved_y", lp.y)
+                                .apply()
+                        } else if (event.actionMasked == MotionEvent.ACTION_UP) {
                             advanceToNextOfferOrFinish()
                         }
                         return true
@@ -614,8 +625,52 @@ class FloatingOverlayPanel(private val context: Context) {
                 return false
             }
         }
+    }
 
-        rootContainer?.setOnTouchListener(dragOrTapListener)
+    @SuppressLint("ClickableViewAccessibility")
+    private fun ensureViewsCreated() {
+        if (rootContainer != null) return
+
+        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            @Suppress("DEPRECATION")
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
+
+        // Posição inicial padrão: dp(90) abaixo do topo para não ficar em cima do botão "X / Recusar" do topo da 99/Uber,
+        // ou na última posição exata para onde o motorista arrastou!
+        val savedX = posPrefs.getInt("saved_x", 0)
+        val savedY = posPrefs.getInt("saved_y", dp(90))
+
+        layoutParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            type,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            x = savedX
+            y = savedY
+        }
+
+        rootContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            alpha = currentOpacityPercent / 100f
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            setOnTouchListener(createDragOrTapTouchListener())
+        }
+
+        contentWrapper = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+        }
+
+        rootContainer?.addView(contentWrapper)
     }
 
     private fun verdictPalette(verdict: TrafficLightVerdict): Triple<String, String, String> {
