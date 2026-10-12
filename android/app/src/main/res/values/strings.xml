@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">GoOrNo</string>
+    <string name="accessibility_desc">GoOrNo Copiloto: LÃª automaticamente os cards de chamada da Uber, 99 e inDrive na tela para calcular R$/km, R$/hora, Lucro LÃ­quido e abrir o Street View de seguranÃ§a.</string>
+</resources>

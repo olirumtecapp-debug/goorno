@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --goorno-dark: #073B32;
+  --goorno-darker: #04241E;
+  --goorno-surface: #0A463B;
+  --goorno-lime: #7C9303;
+  --goorno-lime-bright: #97B304;
+  --goorno-cream: #F6F8F5;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #04241E;
+  color: #F6F8F5;
+  overflow-x: hidden;
+}
+
+/* Regra estrita: menus e abas sempre em 1 linha sem quebrar */
+.no-wrap-bar {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  white-space: nowrap !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-wrap-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-wrap-bar > button,
+.no-wrap-bar > a {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  width: auto !important;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(151, 179, 4, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(151, 179, 4, 0);
+  }
+}
+
+.pulse-lime {
+  animation: pulseGlow 2s infinite;
+}
