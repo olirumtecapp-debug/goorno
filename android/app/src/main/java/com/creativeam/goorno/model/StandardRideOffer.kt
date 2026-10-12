@@ -93,6 +93,7 @@ data class StandardRideOffer(
     val rideCategory: String? = null,
     val originAddress: String? = null,
     val destinationAddress: String? = null,
+    val passengerRating: Double? = null,
     val confidenceScore: Double = 1.0,
     val hasFieldConflict: Boolean = false,
     val conflictNotes: List<String> = emptyList(),
@@ -110,20 +111,30 @@ data class StandardRideOffer(
 }
 
 /**
+ * Classificação visual e de segurança da Nota do Passageiro (Verde = Boa, Amarela = Média, Vermelha = Ruim).
+ */
+enum class PassengerRatingVerdict(val label: String, val emoji: String, val hexColor: String) {
+    GOOD("Boa", "🟢", "#16A34A"),
+    MEDIUM("Média", "🟡", "#D97706"),
+    BAD("Ruim", "🔴", "#DC2626"),
+    UNKNOWN("Sem Nota", "⚪", "#64748B")
+}
+
+/**
  * Formato visual da janelinha flutuante quando toca corrida.
  */
 enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
     SEMAFORO_COMPACT(
         title = "Bolinha Semáforo Compacta (Recomendado)",
-        subtitle = "Mostra a bolinha (🟢/🟡/🔴) + Valor, KM/Tempo Total, R$/km e R$/h em espaço reduzido"
+        subtitle = "Mostra a bolinha (🟢/🟡/🔴) + Valor, KM/Tempo Total, R$/km, R$/h e Nota do Passageiro"
     ),
     MINI_BALL(
         title = "Só Bolinha Semáforo + R$/km (Ultra Discreto)",
-        subtitle = "Pílula mínima com a bolinha colorida, valor, KM/Tempo Total, R$/km e R$/h (zero poluição)"
+        subtitle = "Pílula mínima com a bolinha colorida, valor, KM/Tempo Total, R$/km, R$/h e Nota ★"
     ),
     FULL_CARD(
         title = "Card Completo Detalhado",
-        subtitle = "Mostra faixa completa do semáforo, KM/Tempo Total, R$/km e R$/h"
+        subtitle = "Mostra faixa completa do semáforo, Nota do Passageiro colorida, KM/Tempo Total, R$/km e R$/h"
     );
 
     companion object {
@@ -134,7 +145,7 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
 }
 
 /**
- * Configurações financeiras e de painel do motorista.
+ * Configurações financeiras, de segurança e de avaliação do passageiro.
  */
 data class DriverFinancialConfig(
     val driverName: String = "Motorista",
@@ -152,12 +163,20 @@ data class DriverFinancialConfig(
     val requireGrossPerHour: Boolean = true,
     val requireNetPerKm: Boolean = false,
     val requireNetPerHour: Boolean = false,
+    val requirePassengerRating: Boolean = true,
+    val forceRedOnBadPassengerRating: Boolean = true,
+    val targetGoodPassengerRating: Double = 4.85,
+    val minAcceptablePassengerRating: Double = 4.70,
     val minConfidenceThreshold: Double = 0.65,
     val overlayOpacityPercent: Int = 92,
     val overlayAutoMinimizeSec: Int = 7,
     val overlayDisplayStyle: String = OverlayDisplayStyle.SEMAFORO_COMPACT.name,
     val showProfitOnOverlay: Boolean = false,
     val showCostOnOverlay: Boolean = false,
+    val riskAlertEnabled: Boolean = true,
+    val forceRedOnRiskArea: Boolean = true,
+    val useDefaultRiskKeywords: Boolean = true,
+    val customRiskZones: String = "",
     val copilotMonitoringEnabled: Boolean = true,
     val saveHistoryEnabled: Boolean = true,
     val cloudBackupConsent: Boolean = false,
@@ -185,7 +204,7 @@ enum class TrafficLightVerdict(val label: String, val shortAction: String) {
 }
 
 /**
- * Resultado completo do Motor Financeiro + Semáforo de Decisão.
+ * Resultado completo do Motor Financeiro + Semáforo de Decisão + Avaliação do Passageiro + Área de Risco.
  */
 data class FinancialEvaluationResult(
     val offer: StandardRideOffer,
@@ -205,5 +224,10 @@ data class FinancialEvaluationResult(
     val netProfitPerHour: Double?,
     val verdict: TrafficLightVerdict,
     val reasons: List<String>,
-    val warnings: List<String>
+    val warnings: List<String>,
+    val passengerRating: Double? = null,
+    val passengerRatingVerdict: PassengerRatingVerdict = PassengerRatingVerdict.UNKNOWN,
+    val passengerRatingBadge: String? = null,
+    val hasRiskAlert: Boolean = false,
+    val riskAlertBadge: String? = null
 )

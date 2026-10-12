@@ -41,6 +41,14 @@ object CloudSyncManager {
             put("requireGrossPerHour", config.requireGrossPerHour)
             put("requireNetPerKm", config.requireNetPerKm)
             put("requireNetPerHour", config.requireNetPerHour)
+            put("requirePassengerRating", config.requirePassengerRating)
+            put("forceRedOnBadPassengerRating", config.forceRedOnBadPassengerRating)
+            put("targetGoodPassengerRating", config.targetGoodPassengerRating)
+            put("minAcceptablePassengerRating", config.minAcceptablePassengerRating)
+            put("riskAlertEnabled", config.riskAlertEnabled)
+            put("forceRedOnRiskArea", config.forceRedOnRiskArea)
+            put("useDefaultRiskKeywords", config.useDefaultRiskKeywords)
+            put("customRiskZones", config.customRiskZones)
             put("overlayOpacityPercent", config.overlayOpacityPercent)
             put("overlayAutoMinimizeSec", config.overlayAutoMinimizeSec)
             put("saveHistoryEnabled", config.saveHistoryEnabled)
@@ -102,6 +110,14 @@ object CloudSyncManager {
                 requireGrossPerHour = c.optBoolean("requireGrossPerHour", true),
                 requireNetPerKm = c.optBoolean("requireNetPerKm", false),
                 requireNetPerHour = c.optBoolean("requireNetPerHour", false),
+                requirePassengerRating = c.optBoolean("requirePassengerRating", true),
+                forceRedOnBadPassengerRating = c.optBoolean("forceRedOnBadPassengerRating", true),
+                targetGoodPassengerRating = c.optDouble("targetGoodPassengerRating", 4.85),
+                minAcceptablePassengerRating = c.optDouble("minAcceptablePassengerRating", 4.70),
+                riskAlertEnabled = c.optBoolean("riskAlertEnabled", true),
+                forceRedOnRiskArea = c.optBoolean("forceRedOnRiskArea", true),
+                useDefaultRiskKeywords = c.optBoolean("useDefaultRiskKeywords", true),
+                customRiskZones = c.optString("customRiskZones", ""),
                 overlayOpacityPercent = c.optInt("overlayOpacityPercent", 90),
                 overlayAutoMinimizeSec = c.optInt("overlayAutoMinimizeSec", 12),
                 saveHistoryEnabled = c.optBoolean("saveHistoryEnabled", true),

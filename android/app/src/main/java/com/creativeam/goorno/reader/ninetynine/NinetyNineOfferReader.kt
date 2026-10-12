@@ -113,8 +113,9 @@ object NinetyNineOfferReader {
             cleanedLines.any { it.contains(cat, ignoreCase = true) }
         } ?: "99Pop"
 
-        // 6. Endereços de Origem e Destino
+        // 6. Endereços de Origem e Destino + Avaliação do Passageiro
         val (origin, destination) = BrazilianOfferParser.extractOriginAndDestination(cleanedLines)
+        val passengerRating = BrazilianOfferParser.extractPassengerRating(cleanedLines)
 
         // 7. Validação de consistência
         val conflictNotes = mutableListOf<String>()
@@ -178,6 +179,7 @@ object NinetyNineOfferReader {
             rideCategory = detectedCategory,
             originAddress = origin,
             destinationAddress = destination,
+            passengerRating = passengerRating,
             confidenceScore = confidence.coerceIn(0.0, 1.0),
             hasFieldConflict = conflictNotes.isNotEmpty(),
             conflictNotes = conflictNotes,

@@ -338,16 +338,29 @@ class FloatingOverlayPanel(private val context: Context) {
             }
         }
 
+        val riskTitleTag = if (result.hasRiskAlert) " · ⚠️ ÁREA DE RISCO" else ""
         val tvLine1 = TextView(context).apply {
-            text = "$seqTag${result.verdict.label} · $priceStr ($distStr · $minStr)"
+            text = "$seqTag${result.verdict.label}$riskTitleTag · $priceStr ($distStr · $minStr)"
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setTypeface(typeface, Typeface.BOLD)
         }
 
+        val ratingSegment = if (!result.passengerRatingBadge.isNullOrBlank()) {
+            "${result.passengerRatingBadge}  •  "
+        } else ""
+        val riskPrefix = if (result.hasRiskAlert && !result.riskAlertBadge.isNullOrBlank()) {
+            "${result.riskAlertBadge}  •  "
+        } else ""
+        val line2Color = when {
+            result.hasRiskAlert -> "#FDE047"
+            result.passengerRatingVerdict.name == "BAD" -> "#FCA5A5"
+            result.passengerRatingVerdict.name == "MEDIUM" -> "#FDE047"
+            else -> "#A7F3D0"
+        }
         val tvLine2 = TextView(context).apply {
-            text = "$grossKmStr  •  $grossHrStr$optionalSuffix"
-            setTextColor(Color.parseColor("#A7F3D0"))
+            text = "$riskPrefix$ratingSegment$grossKmStr  •  $grossHrStr$optionalSuffix"
+            setTextColor(Color.parseColor(line2Color))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTypeface(typeface, Typeface.BOLD)
         }
@@ -431,10 +444,15 @@ class FloatingOverlayPanel(private val context: Context) {
         } ?: "--/h"
         val optionalSuffix = buildOptionalProfitAndCostSuffix(result)
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
+        val riskMiniTag = if (result.hasRiskAlert) "⚠️ RISCO · " else ""
+        val ratingMiniTag = if (result.passengerRating != null) {
+            val rStr = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", result.passengerRating)
+            "${result.passengerRatingVerdict.emoji}★$rStr · "
+        } else ""
 
         val tvCompact = TextView(context).apply {
-            text = "$seqTag$priceStr ($distStr · $minStr)  •  $grossKmStr · $grossHrStr$optionalSuffix"
-            setTextColor(Color.WHITE)
+            text = "$seqTag$riskMiniTag$ratingMiniTag$priceStr ($distStr · $minStr)  •  $grossKmStr · $grossHrStr$optionalSuffix"
+            setTextColor(if (result.hasRiskAlert) Color.parseColor("#FDE047") else Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTypeface(typeface, Typeface.BOLD)
             setPadding(0, 0, dp(8), 0)
@@ -554,6 +572,40 @@ class FloatingOverlayPanel(private val context: Context) {
             background = roundedBg(badgeHex, 8f)
         }
         box.addView(tvBadge)
+
+        if (!result.passengerRatingBadge.isNullOrBlank()) {
+            val tvRating = TextView(context).apply {
+                text = "Passageiro: ${result.passengerRatingBadge}"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(dp(10), dp(3), dp(10), dp(3))
+                background = roundedBg(result.passengerRatingVerdict.hexColor, 8f)
+                val lp = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                lp.topMargin = dp(4)
+                layoutParams = lp
+            }
+            box.addView(tvRating)
+        }
+
+        if (result.hasRiskAlert && !result.riskAlertBadge.isNullOrBlank()) {
+            val tvRisk = TextView(context).apply {
+                text = "🚨 ${result.riskAlertBadge}"
+                setTextColor(Color.parseColor("#991B1B"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                setTypeface(typeface, Typeface.BOLD)
+                val lp = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                lp.topMargin = dp(4)
+                layoutParams = lp
+            }
+            box.addView(tvRisk)
+        }
 
         val tvMetrics = TextView(context).apply {
             text = "$grossKmStr   •   $grossHrStr$optionalSuffix"

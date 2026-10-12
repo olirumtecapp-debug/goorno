@@ -163,6 +163,16 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val mergedGrossHr = latestEvaluation.grossPerHour
                         ?: if (isSameRideOrQuickUpdate && prevGrossHr > 0) prevGrossHr else null
 
+                    val prevRisk = prefs.getBoolean("has_risk", false)
+                    val prevRiskBadge = prefs.getString("risk_badge", "") ?: ""
+                    val mergedHasRisk = latestEvaluation.hasRiskAlert || (isSameRideOrQuickUpdate && prevRisk)
+                    val mergedRiskBadge = latestEvaluation.riskAlertBadge?.takeIf { it.isNotBlank() }
+                        ?: if (mergedHasRisk) prevRiskBadge else ""
+
+                    val prevRatingBadge = prefs.getString("passenger_rating_badge", "") ?: ""
+                    val mergedRatingBadge = latestEvaluation.passengerRatingBadge?.takeIf { it.isNotBlank() }
+                        ?: if (isSameRideOrQuickUpdate && prevRatingBadge.isNotBlank()) prevRatingBadge else ""
+
                     editor.putBoolean("has_ride", true)
                     editor.putLong("timestamp", now)
                     editor.putString("verdict_name", latestEvaluation.verdict.name)
@@ -177,6 +187,9 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     editor.putFloat("total_cost", (latestEvaluation.estimatedTotalCost ?: 0.0).toFloat())
                     editor.putString("origin_address", mergedOrigin)
                     editor.putString("dest_address", mergedDest)
+                    editor.putBoolean("has_risk", mergedHasRisk)
+                    editor.putString("risk_badge", mergedRiskBadge)
+                    editor.putString("passenger_rating_badge", mergedRatingBadge)
                 }
 
                 editor.apply()
@@ -236,6 +249,9 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val totalCost = prefs.getFloat("total_cost", 0f).toDouble()
                     val origAddress = prefs.getString("origin_address", "") ?: ""
                     val destAddress = prefs.getString("dest_address", "") ?: ""
+                    val hasRisk = prefs.getBoolean("has_risk", false)
+                    val riskBadge = prefs.getString("risk_badge", "") ?: ""
+                    val ratingBadge = prefs.getString("passenger_rating_badge", "") ?: ""
                     val effectiveShowProfit = prefs.getBoolean("show_profit", false)
                     val effectiveShowCost = prefs.getBoolean("show_cost", false)
 
@@ -255,15 +271,27 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val minStr = if (totalMin > 0) "$totalMin min" else "-- min"
 
                     val extraParts = mutableListOf<String>()
+                    if (ratingBadge.isNotBlank()) extraParts.add(ratingBadge)
                     if (effectiveShowProfit) extraParts.add("Lucro: $netStr")
                     if (effectiveShowCost) extraParts.add("Custo: $costStr")
                     val extraSuffix = if (extraParts.isEmpty()) "" else " · " + extraParts.joinToString(" · ")
+                    val riskHeaderTag = if (hasRisk) " · ⚠️ RISCO" else ""
 
-                    val title = "$emoji $verdictLabel · $priceStr ($distStr · $minStr) · $kmStr"
+                    val title = "$emoji $verdictLabel$riskHeaderTag · $priceStr ($distStr · $minStr) · $kmStr"
                     val origLine = origAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
                     val destLine = destAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
-                    val shortText = "$hrStr$extraSuffix | 📍 $origLine ➔ 🏁 $destLine"
+                    val shortText = if (hasRisk && riskBadge.isNotBlank()) {
+                        "$riskBadge${if (ratingBadge.isNotBlank()) " · $ratingBadge" else ""} | 📍 $origLine ➔ 🏁 $destLine"
+                    } else {
+                        "$hrStr$extraSuffix | 📍 $origLine ➔ 🏁 $destLine"
+                    }
                     val expandedText = buildString {
+                        if (hasRisk && riskBadge.isNotBlank()) {
+                            append("🚨 $riskBadge\n")
+                        }
+                        if (ratingBadge.isNotBlank()) {
+                            append("Passageiro: $ratingBadge\n")
+                        }
                         append("$sourceApp · Total: $distStr · $minStr\n")
                         append("$kmStr · $hrStr$extraSuffix\n")
                         append("📍 Origem: $origLine\n")

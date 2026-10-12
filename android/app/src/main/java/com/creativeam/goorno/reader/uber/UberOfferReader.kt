@@ -103,6 +103,7 @@ object UberOfferReader {
         } ?: "Uber"
 
         val (origin, destination) = BrazilianOfferParser.extractOriginAndDestination(cleanedLines)
+        val passengerRating = BrazilianOfferParser.extractPassengerRating(cleanedLines)
 
         val conflictNotes = mutableListOf<String>()
         val totalKmVal = totalKmField.valueOrNull()
@@ -166,6 +167,7 @@ object UberOfferReader {
             rideCategory = detectedCategory,
             originAddress = origin,
             destinationAddress = destination,
+            passengerRating = passengerRating,
             confidenceScore = confidence.coerceIn(0.0, 1.0),
             hasFieldConflict = conflictNotes.isNotEmpty(),
             conflictNotes = conflictNotes,

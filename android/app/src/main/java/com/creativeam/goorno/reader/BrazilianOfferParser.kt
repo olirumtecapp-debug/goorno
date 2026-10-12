@@ -307,6 +307,83 @@ object BrazilianOfferParser {
         return results
     }
 
+    private val EXPLICIT_STAR_RATING_REGEX = Regex(
+        pattern = """(?:[★⭐✪\*]|nota|avalia[çc][ãa]o)\s*[:\-]?\s*([34][.,]\d{1,2}|5[.,]0{1,2})\b|\b([34][.,]\d{1,2}|5[.,]0{1,2})\s*(?:[★⭐✪\*]|\(\d+\s*(?:corridas?|viagens?)?\)|[·•\-]\s*\d+\s*(?:corridas?|viagens?))""",
+        option = RegexOption.IGNORE_CASE
+    )
+
+    private val TWO_DECIMAL_RATING_REGEX = Regex(
+        pattern = """(?<![R\$\d.,/])([34][.,]\d{2}|5[.,]00)\b(?!\s*(?:km|m\b|min|h\b|x\b|/km|/h))""",
+        option = RegexOption.IGNORE_CASE
+    )
+
+    private val ONE_DECIMAL_RATING_CONTEXT_REGEX = Regex(
+        pattern = """(?<![R\$\d.,/])([34][.,]\d|5[.,]0)\b(?!\s*(?:km|m\b|min|h\b|x\b|/km|/h))""",
+        option = RegexOption.IGNORE_CASE
+    )
+
+    /**
+     * Extrai a Avaliação / Nota do Passageiro (ex: "★ 4,92", "4,85 (42 corridas)", "4.94", "⭐ 4,72")
+     * ignorando preços (R$), distâncias (km) e multiplicadores de dinâmico (ex: 1,2x).
+     */
+    fun extractPassengerRating(lines: List<String>): Double? {
+        val normalized = normalizeFragmentedNodes(lines)
+        if (normalized.isEmpty()) return null
+
+        // 1ª Passada: Padrão explícito com estrela (★ / ⭐), palavra "Nota" ou seguido de "(XX corridas)"
+        for (line in normalized) {
+            val clean = stripNonOfferPriceNoise(line)
+                .replace(CURRENCY_REGEX, " ")
+                .replace(DISTANCE_TOKEN_REGEX, " ")
+                .replace(Regex("""\d+[.,]\d+\s*x\b""", RegexOption.IGNORE_CASE), " ")
+
+            val explicitMatch = EXPLICIT_STAR_RATING_REGEX.find(clean)
+            if (explicitMatch != null) {
+                val token = explicitMatch.groupValues[1].ifBlank { explicitMatch.groupValues[2] }
+                val rating = parseBrazilianDecimal(token)
+                if (rating != null && rating in 3.00..5.00) {
+                    return rating
+                }
+            }
+        }
+
+        // 2ª Passada: Número decimal típico de avaliação (ex: 4,92 / 4,85 / 4,68 / 5,00) fora de preço/km/dinâmico
+        for (line in normalized) {
+            val clean = stripNonOfferPriceNoise(line)
+                .replace(CURRENCY_REGEX, " ")
+                .replace(DISTANCE_TOKEN_REGEX, " ")
+                .replace(Regex("""\d+[.,]\d+\s*x\b""", RegexOption.IGNORE_CASE), " ")
+
+            val twoDecMatch = TWO_DECIMAL_RATING_REGEX.find(clean)
+            if (twoDecMatch != null) {
+                val rating = parseBrazilianDecimal(twoDecMatch.groupValues[1])
+                if (rating != null && rating in 3.00..5.00) {
+                    return rating
+                }
+            }
+
+            // Linha curta ou com contexto de passageiro ("corridas", "viagens", "verificado", "novo", "perfil") com 1 casa (ex: "4,9")
+            val lower = clean.lowercase(Locale.getDefault())
+            if (clean.trim().length <= 6 ||
+                lower.contains("corrida") ||
+                lower.contains("viagen") ||
+                lower.contains("verificad") ||
+                lower.contains("passageir") ||
+                lower.contains("usuári")
+            ) {
+                val oneDecMatch = ONE_DECIMAL_RATING_CONTEXT_REGEX.find(clean)
+                if (oneDecMatch != null) {
+                    val rating = parseBrazilianDecimal(oneDecMatch.groupValues[1])
+                    if (rating != null && rating in 3.50..5.00) {
+                        return rating
+                    }
+                }
+            }
+        }
+
+        return null
+    }
+
     /**
      * Extrai endereços de Origem (Embarque) e Destino (Desembarque) das linhas capturadas,
      * suportando inclusive o formato da 99 Solicitações: "(6 min 1,3 km) Rua dos Vianas, 1545, Baeta Neves"

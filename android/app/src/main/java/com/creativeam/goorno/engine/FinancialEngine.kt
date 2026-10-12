@@ -2,6 +2,7 @@ package com.creativeam.goorno.engine
 
 import com.creativeam.goorno.model.DriverFinancialConfig
 import com.creativeam.goorno.model.FinancialEvaluationResult
+import com.creativeam.goorno.model.PassengerRatingVerdict
 import com.creativeam.goorno.model.StandardRideOffer
 import com.creativeam.goorno.model.TrafficLightVerdict
 import java.util.Locale
@@ -12,6 +13,29 @@ import kotlin.math.round
  * Motor Financeiro e Semáforo de Decisão em Kotlin puro (independente de UI e testável via JUnit).
  */
 object FinancialEngine {
+
+    fun classifyPassengerRating(
+        rating: Double?,
+        config: DriverFinancialConfig
+    ): PassengerRatingVerdict {
+        if (rating == null || rating <= 0.0 || rating.isNaN()) return PassengerRatingVerdict.UNKNOWN
+        val goodThreshold = config.targetGoodPassengerRating.coerceIn(3.0, 5.0)
+        val minAcceptable = config.minAcceptablePassengerRating.coerceIn(3.0, goodThreshold)
+        return when {
+            rating >= goodThreshold -> PassengerRatingVerdict.GOOD
+            rating >= minAcceptable -> PassengerRatingVerdict.MEDIUM
+            else -> PassengerRatingVerdict.BAD
+        }
+    }
+
+    fun formatPassengerRatingBadge(
+        rating: Double?,
+        verdict: PassengerRatingVerdict
+    ): String? {
+        if (rating == null || verdict == PassengerRatingVerdict.UNKNOWN) return null
+        val numStr = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", rating)
+        return "${verdict.emoji} ★ $numStr (${verdict.label})"
+    }
 
     fun evaluate(
         offer: StandardRideOffer,
@@ -165,8 +189,8 @@ object FinancialEngine {
 
         val isAnalysisComplete = (totalDistanceKm != null && totalDurationMin != null && !isDistancePartial && !isDurationPartial)
 
-        // 4. Avaliação do Semáforo de Decisão
-        val verdict = determineTrafficLight(
+        // 4. Avaliação do Semáforo Financeiro Base
+        val baseVerdict = determineTrafficLight(
             grossPerKm = grossPerKm,
             grossPerHour = grossPerHour,
             netProfit = netProfit,
@@ -178,6 +202,83 @@ object FinancialEngine {
             reasons = reasons,
             warnings = warnings
         )
+
+        // 5. Avaliação da Nota do Passageiro (Verde = Boa, Amarela = Média, Vermelha = Ruim)
+        val rating = offer.passengerRating
+        val ratingVerdict = classifyPassengerRating(rating, config)
+        val ratingBadge = formatPassengerRatingBadge(rating, ratingVerdict)
+        val ptBr = Locale.forLanguageTag("pt-BR")
+
+        val verdictAfterRating = when (ratingVerdict) {
+            PassengerRatingVerdict.GOOD -> {
+                reasons.add(
+                    String.format(
+                        ptBr,
+                        "🟢 Passageiro Nota ★ %.2f (Boa — mínimo %.2f)",
+                        rating,
+                        config.targetGoodPassengerRating
+                    )
+                )
+                baseVerdict
+            }
+            PassengerRatingVerdict.MEDIUM -> {
+                val msg = String.format(
+                    ptBr,
+                    "🟡 Passageiro Nota ★ %.2f (Média — entre %.2f e %.2f)",
+                    rating,
+                    config.minAcceptablePassengerRating,
+                    config.targetGoodPassengerRating
+                )
+                warnings.add(msg)
+                if (config.requirePassengerRating && baseVerdict == TrafficLightVerdict.GREEN) {
+                    reasons.add(0, "Nota do passageiro MÉDIA (★ ${String.format(ptBr, "%.2f", rating)}) — Semáforo em AVALIAR")
+                    TrafficLightVerdict.YELLOW
+                } else {
+                    baseVerdict
+                }
+            }
+            PassengerRatingVerdict.BAD -> {
+                val msg = String.format(
+                    ptBr,
+                    "🔴 Passageiro Nota ★ %.2f (Ruim — abaixo de %.2f)",
+                    rating,
+                    config.minAcceptablePassengerRating
+                )
+                warnings.add(0, msg)
+                if (config.requirePassengerRating) {
+                    if (config.forceRedOnBadPassengerRating) {
+                        reasons.add(0, "🔴 Nota do passageiro RUIM (★ ${String.format(ptBr, "%.2f", rating)}) — Semáforo em NÃO COMPENSA")
+                        TrafficLightVerdict.RED
+                    } else {
+                        reasons.add(0, "🟡 Nota do passageiro baixa (★ ${String.format(ptBr, "%.2f", rating)}) — Atenção")
+                        if (baseVerdict == TrafficLightVerdict.GREEN) TrafficLightVerdict.YELLOW else baseVerdict
+                    }
+                } else {
+                    baseVerdict
+                }
+            }
+            PassengerRatingVerdict.UNKNOWN -> baseVerdict
+        }
+
+        // 6. Avaliação de Área de Risco (Origem / Destino)
+        val riskAssessment = RiskAreaEvaluator.evaluate(
+            originAddress = offer.originAddress,
+            destinationAddress = offer.destinationAddress,
+            config = config
+        )
+
+        val finalVerdict = if (riskAssessment.hasRisk) {
+            warnings.add(0, riskAssessment.detailedMessage)
+            if (config.forceRedOnRiskArea) {
+                reasons.add(0, "${riskAssessment.shortBadge} — Semáforo bloqueado em VERMELHO por segurança")
+                TrafficLightVerdict.RED
+            } else {
+                reasons.add(0, "${riskAssessment.shortBadge} — Atenção redobrada no endereço")
+                if (verdictAfterRating == TrafficLightVerdict.GREEN) TrafficLightVerdict.YELLOW else verdictAfterRating
+            }
+        } else {
+            verdictAfterRating
+        }
 
         return FinancialEvaluationResult(
             offer = offer,
@@ -195,9 +296,14 @@ object FinancialEngine {
             estimatedNetProfit = netProfit,
             netProfitPerKm = netPerKm,
             netProfitPerHour = netPerHour,
-            verdict = verdict,
+            verdict = finalVerdict,
             reasons = reasons,
-            warnings = warnings
+            warnings = warnings,
+            passengerRating = rating,
+            passengerRatingVerdict = ratingVerdict,
+            passengerRatingBadge = ratingBadge,
+            hasRiskAlert = riskAssessment.hasRisk,
+            riskAlertBadge = if (riskAssessment.hasRisk) riskAssessment.shortBadge else null
         )
     }
 
