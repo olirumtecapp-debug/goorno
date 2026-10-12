@@ -282,9 +282,12 @@ fun GoOrNoComposeApp(
                 // =====================================================
                 GoOrNoScreen.HOME -> {
                     item {
+                        val isCopilotReady = hasOverlayPermission && (hasAccessibilityPermission || ocrActive)
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, PetrolCardBorder),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isCopilotReady) Color(0xFF09483B) else PetrolSurface
+                            ),
+                            border = BorderStroke(2.dp, if (isCopilotReady) LimeBright else TrafficYellow),
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -295,22 +298,25 @@ fun GoOrNoComposeApp(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = if (hasOverlayPermission && (hasAccessibilityPermission || ocrActive))
-                                                "COPILOTO PRONTO PARA UBER E 99"
+                                            text = if (isCopilotReady)
+                                                "🟢 COPILOTO ATIVO E MONITORANDO"
                                             else
-                                                "ATIVE AS PERMISSÕES PARA INICIAR",
+                                                "🟡 ATIVE AS 2 PERMISSÕES ABAIXO",
                                             fontWeight = FontWeight.Black,
                                             fontSize = 15.sp,
-                                            color = Color.White
+                                            color = if (isCopilotReady) LimeBright else Color.White
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "Abre uma janela flutuante transparente sobre a Uber e a 99 calculando R$/km, R$/hora e lucro líquido.",
+                                            text = if (isCopilotReady)
+                                                "A janelinha abrirá DIRETO com os cálculos quando tocar corrida na Uber ou 99 (inclusive múltiplas viagens) e sumirá sozinha em ${config.overlayAutoMinimizeSec}s."
+                                            else
+                                                "Habilite a Janela Flutuante e a Acessibilidade para ler as ofertas da Uber e da 99 automaticamente.",
                                             fontSize = 12.sp,
-                                            color = Color.White.copy(alpha = 0.8f)
+                                            color = Color.White.copy(alpha = 0.85f)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Spacer(modifier = Modifier.width(10.dp))
                                     Button(
                                         onClick = {
                                             if (!hasOverlayPermission) {
@@ -318,9 +324,25 @@ fun GoOrNoComposeApp(
                                             } else if (!hasAccessibilityPermission) {
                                                 onRequestAccessibilityPermission()
                                             } else {
+                                                val sampleNodes = listOf(
+                                                    "Pgto. no app",
+                                                    "R$8,10 ⚡1,1x",
+                                                    "R$2,18/km",
+                                                    "R$1,16 por deslocamento incl.",
+                                                    "5 min (1,2 km)",
+                                                    "Rua Antônio Zanetti, 84, Jardim Las Vegas",
+                                                    "6 min (2,5 km)",
+                                                    "Rua Solimões, 534, Vila Cecilia Maria"
+                                                )
+                                                val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(
+                                                    rawNodes = sampleNodes,
+                                                    captureMethod = CaptureMethod.SIMULATION,
+                                                    isSimulated = true
+                                                )
+                                                val evals = offers.map { FinancialEngine.evaluate(it, config) }
                                                 app.overlayPanel.applyConfig(config)
-                                                app.overlayPanel.showStandbyPanel()
-                                                statusMessage = "Painel flutuante aberto sobre a tela!"
+                                                app.overlayPanel.showEvaluations(evals)
+                                                statusMessage = "Janelinha exibida! Ela sumirá sozinha em ${config.overlayAutoMinimizeSec} segundos."
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(
@@ -329,12 +351,51 @@ fun GoOrNoComposeApp(
                                         ),
                                         shape = RoundedCornerShape(14.dp)
                                     ) {
-                                        Icon(Icons.Default.PowerSettingsNew, contentDescription = null)
-                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(Icons.Default.Visibility, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = if (overlayVisible) "Painel Ativo" else "Ligar Painel",
-                                            fontWeight = FontWeight.Black
+                                            text = if (isCopilotReady) "Testar (${config.overlayAutoMinimizeSec}s)" else "Ativar",
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 12.sp
                                         )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+                                // Seletor Rápido do Tempo da Janelinha na Tela (Aparecer e Sumir)
+                                Text(
+                                    text = "Tempo que a janelinha fica na tela antes de sumir:",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = LimeBright
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    listOf(5, 8, 10, 12, 15).forEach { sec ->
+                                        val selected = config.overlayAutoMinimizeSec == sec
+                                        OutlinedButton(
+                                            onClick = {
+                                                val updated = config.copy(overlayAutoMinimizeSec = sec)
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(updated)
+                                                    app.overlayPanel.applyConfig(updated)
+                                                }
+                                            },
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                containerColor = if (selected) LimePrimary else PetrolDarkBg,
+                                                contentColor = if (selected) PetrolDarkBg else Color.White
+                                            ),
+                                            border = BorderStroke(1.dp, if (selected) Color.White else PetrolCardBorder),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(32.dp)
+                                        ) {
+                                            Text("${sec}s", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                                        }
                                     }
                                 }
 
@@ -794,17 +855,6 @@ fun GoOrNoComposeApp(
                                     ) {
                                         Text("Configurar Sobreposição", fontWeight = FontWeight.Bold)
                                     }
-                                    if (hasOverlayPermission) {
-                                        OutlinedButton(
-                                            onClick = {
-                                                app.overlayPanel.applyConfig(config)
-                                                app.overlayPanel.showStandbyPanel()
-                                            },
-                                            border = BorderStroke(1.dp, LimePrimary)
-                                        ) {
-                                            Text("Abrir Painel", color = LimeBright)
-                                        }
-                                    }
                                 }
 
                                 HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
@@ -1125,7 +1175,7 @@ fun GoOrNoComposeApp(
                                     color = LimeBright
                                 )
                                 Text(
-                                    text = "Dispare ofertas de teste abaixo para validar os leitores da Uber e da 99, o Motor Financeiro, o Semáforo e o Painel Flutuante:",
+                                    text = "Dispare ofertas de teste abaixo (incluindo múltiplas viagens simultâneas da 99) para ver a janelinha abrir direto e sumir após ${config.overlayAutoMinimizeSec}s:",
                                     fontSize = 12.sp,
                                     color = Color.White.copy(alpha = 0.85f)
                                 )
@@ -1155,7 +1205,7 @@ fun GoOrNoComposeApp(
                                             app.overlayPanel.applyConfig(config)
                                             app.overlayPanel.showEvaluation(eval)
                                         }
-                                        statusMessage = "Simulação Referência (R$ 18 / 8 km / 24 min -> R$ 2,25/km e R$ 45/h) executada!"
+                                        statusMessage = "Simulação Referência (R$ 18 / 8 km / 24 min -> R$ 2,25/km e R$ 45/h) exibida por ${config.overlayAutoMinimizeSec}s!"
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = LimePrimary,
@@ -1165,6 +1215,54 @@ fun GoOrNoComposeApp(
                                 ) {
                                     Text(
                                         text = "Testar Referência Seção 5.4 (R$ 18,00 | 8 km | 24 min)",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp
+                                    )
+                                }
+
+                                // Botão 2: Simular Lista da 99 com 2 Ofertas Simultâneas na mesma tela!
+                                Button(
+                                    onClick = {
+                                        val multi99Nodes = listOf(
+                                            "Pgto. no app",
+                                            "R$8,10 ⚡1,1x",
+                                            "R$2,18/km",
+                                            "R$1,16 por deslocamento incl.",
+                                            "5 min (1,2 km)",
+                                            "Rua Antônio Zanetti, 84, Jardim Las Vegas",
+                                            "6 min (2,5 km)",
+                                            "Rua Solimões, 534, Vila Cecilia Maria",
+                                            "Pgto. no app",
+                                            "R$14,20",
+                                            "R$1,42/km",
+                                            "8 min (2,5 km)",
+                                            "Av. Goiás, 1200, São Caetano do Sul",
+                                            "19 min (7,5 km)",
+                                            "Terminal Sacomã, São Paulo"
+                                        )
+                                        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(
+                                            rawNodes = multi99Nodes,
+                                            captureMethod = CaptureMethod.SIMULATION,
+                                            isSimulated = true
+                                        )
+                                        val evals = offers.map { FinancialEngine.evaluate(it, config) }
+                                        if (evals.isNotEmpty()) {
+                                            RuntimeDiagnosticsBus.publishEvaluation(evals.first())
+                                            if (hasOverlayPermission) {
+                                                app.overlayPanel.applyConfig(config)
+                                                app.overlayPanel.showEvaluations(evals)
+                                            }
+                                            statusMessage = "Lidas ${evals.size} viagens simultâneas da 99 na janela flutuante!"
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = TrafficGreen,
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "Testar Lista da 99 com 2 Viagens Simultâneas",
                                         fontWeight = FontWeight.Black,
                                         fontSize = 12.sp
                                     )

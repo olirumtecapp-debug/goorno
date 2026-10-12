@@ -10,19 +10,41 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * Leitor independente de ofertas da 99 Motorista (com.taxis99.driver / com.didiglobal.driver).
+ * Leitor independente de ofertas da 99 Motorista (com suporte a oferta única ou lista com múltiplas ofertas).
  */
 object NinetyNineOfferReader {
 
     private val NINETY_NINE_CATEGORIES = listOf(
         "99Pop", "Pop", "99Plus", "Plus", "99Negocia", "Negocia",
-        "99Entrega", "Entrega", "99Moto", "99Táxi", "Poupa99", "Turbo"
+        "99Entrega", "Entrega", "99Moto", "99Táxi", "Poupa99", "Turbo", "Perfil Essencial"
     )
 
     private val ONGOING_TRIP_KEYWORDS = listOf(
         "cheguei", "iniciar corrida", "finalizar corrida", "deslize para iniciar",
         "a caminho do passageiro", "em viagem"
     )
+
+    /**
+     * Extrai TODAS as ofertas visíveis na tela da 99 (1 ou várias viagens simultâneas na lista de ofertas).
+     */
+    fun parseMultipleOffersFromScreen(
+        rawNodes: List<String>,
+        captureMethod: CaptureMethod = CaptureMethod.ACCESSIBILITY,
+        timestampMillis: Long = System.currentTimeMillis(),
+        isSimulated: Boolean = false
+    ): List<StandardRideOffer> {
+        val clusters = BrazilianOfferParser.splitIntoMultipleOfferClusters(rawNodes)
+        if (clusters.isEmpty()) return emptyList()
+
+        val validOffers = clusters.map { cluster ->
+            parseScreenNodes(cluster, captureMethod, timestampMillis, isSimulated)
+        }.filter {
+            it.screenClassification == ScreenClassification.NEW_OFFER ||
+                it.screenClassification == ScreenClassification.UPDATED_OFFER
+        }
+
+        return validOffers
+    }
 
     fun parseScreenNodes(
         rawNodes: List<String>,
@@ -48,18 +70,19 @@ object NinetyNineOfferReader {
             )
         }
 
-        // 2. Preço oferecido (R$)
+        // 2. Preço oferecido principal (ignorando R$/km e R$ por deslocamento incl.)
         val prices = BrazilianOfferParser.extractAllCurrencies(cleanedLines)
         val hasInvalidCurrency = cleanedLines.any {
             it.contains("R$", ignoreCase = true) && BrazilianOfferParser.parseCurrencyBr(it).isUnrecognized
         }
         val priceField: ExtractedField<Double> = when {
-            prices.isNotEmpty() -> ExtractedField.Present(prices.maxOrNull() ?: prices.first())
+            // Na 99 o primeiro valor grande no topo do card é o valor total da corrida (ex: R$8,10)
+            prices.isNotEmpty() -> ExtractedField.Present(prices.first())
             hasInvalidCurrency -> ExtractedField.Unrecognized("R$ inválido")
             else -> ExtractedField.Missing
         }
 
-        // 3. Distâncias (Na 99, frequentemente exibe distância até embarque + distância da corrida)
+        // 3. Distâncias (Ex: "5 min (1,2 km)" + "6 min (2,5 km)")
         val distances = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
         var pickupKmField: ExtractedField<Double> = ExtractedField.Missing
         var tripKmField: ExtractedField<Double> = ExtractedField.Missing
@@ -72,7 +95,7 @@ object NinetyNineOfferReader {
             totalKmField = ExtractedField.Present(distances[0])
         }
 
-        // 4. Durações
+        // 4. Durações (Ex: "5 min" + "6 min")
         val durations = BrazilianOfferParser.extractAllDurationsMinutes(cleanedLines)
         var pickupMinField: ExtractedField<Int> = ExtractedField.Missing
         var tripMinField: ExtractedField<Int> = ExtractedField.Missing

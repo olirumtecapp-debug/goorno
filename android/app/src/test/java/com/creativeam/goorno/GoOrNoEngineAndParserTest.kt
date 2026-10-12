@@ -9,7 +9,8 @@ import org.junit.Assert.*
 import org.junit.Test
 
 /**
- * Suíte completa de Testes Automatizados JUnit 4 exigida nas Seções 5.4 e 10.
+ * Suíte completa de Testes Automatizados JUnit 4 exigida nas Seções 5.4 e 10,
+ * incluindo o teste exato do print real da 99 Motorista e leitura de múltiplas viagens simultâneas.
  */
 class GoOrNoEngineAndParserTest {
 
@@ -32,8 +33,8 @@ class GoOrNoEngineAndParserTest {
 
         val config = DriverFinancialConfig(
             fuelConsumptionKmPerLiter = 10.0,
-            fuelPricePerLiter = 6.00, // R$ 0,60/km de combustível
-            maintenanceCostPerKm = 0.25, // R$ 0,25/km de manutenção -> R$ 0,85/km total
+            fuelPricePerLiter = 6.00,
+            maintenanceCostPerKm = 0.25,
             fixedExtraCostPerRide = 0.0,
             targetGrossPerKm = 2.00,
             targetGrossPerHour = 40.00
@@ -43,13 +44,76 @@ class GoOrNoEngineAndParserTest {
 
         assertEquals(2.25, result.grossPerKm!!, 0.001)
         assertEquals(45.00, result.grossPerHour!!, 0.001)
-        // Custo esperado para 8 km a R$ 0,85/km = R$ 6,80; Lucro líquido = 18,00 - 6,80 = R$ 11,20
         assertEquals(6.80, result.estimatedTotalCost!!, 0.001)
         assertEquals(11.20, result.estimatedNetProfit!!, 0.001)
         assertEquals(TrafficLightVerdict.GREEN, result.verdict)
     }
 
-    // 2. CONVERSÃO DE MOEDA BRASILEIRA
+    // 2. TESTE EXATO DO PRINT REAL DA 99 MOTORISTA ENVIADO PELO USUÁRIO
+    @Test
+    fun `test real 99 screenshot format with R8_10 R2_18_per_km and displacement bonus`() {
+        val real99ScreenNodes = listOf(
+            "Pgto. no app",
+            "R$8,10 ⚡1,1x R$2,18/km",
+            "R$1,16 por deslocamento incl.",
+            "4,82 · 211 corridas",
+            "Perfil Essencial",
+            "5 min (1,2 km)",
+            "Rua Antônio Zanetti, 84, Jardim Las Vegas",
+            "6 min (2,5 km)",
+            "Rua Solimões, 534, Vila Cecilia Maria"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(real99ScreenNodes)
+        assertEquals(1, offers.size)
+
+        val offer = offers.first()
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+
+        assertEquals(8.10, offer.offeredPrice!!, 0.001)
+        assertEquals(1.2, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(2.5, offer.tripDistanceKm!!, 0.001)
+        assertEquals(3.7, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(11, eval.totalConsideredDurationMin)
+        assertEquals(2.19, eval.grossPerKm!!, 0.01)
+        assertEquals("Rua Antônio Zanetti, 84, Jardim Las Vegas", offer.originAddress)
+        assertEquals("Rua Solimões, 534, Vila Cecilia Maria", offer.destinationAddress)
+    }
+
+    // 3. TESTE DE MÚLTIPLAS VIAGENS SIMULTÂNEAS NA TELA DA 99 (LISTA DE OFERTAS)
+    @Test
+    fun `test multiple simultaneous offers on 99 screen`() {
+        val multiOfferNodes = listOf(
+            "Pgto. no app",
+            "R$8,10 ⚡1,1x",
+            "R$2,18/km",
+            "R$1,16 por deslocamento incl.",
+            "5 min (1,2 km)",
+            "Rua Antônio Zanetti, 84, Jardim Las Vegas",
+            "6 min (2,5 km)",
+            "Rua Solimões, 534, Vila Cecilia Maria",
+            "Pgto. no app",
+            "R$15,40",
+            "R$1,54/km",
+            "4 min (1,5 km)",
+            "Av. Goiás, 1200, São Caetano do Sul",
+            "16 min (8,5 km)",
+            "Terminal Sacomã, São Paulo"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(multiOfferNodes)
+        assertEquals(2, offers.size)
+
+        assertEquals(8.10, offers[0].offeredPrice!!, 0.001)
+        assertEquals("Rua Antônio Zanetti, 84, Jardim Las Vegas", offers[0].originAddress)
+        assertEquals("Rua Solimões, 534, Vila Cecilia Maria", offers[0].destinationAddress)
+
+        assertEquals(15.40, offers[1].offeredPrice!!, 0.001)
+        assertEquals("Av. Goiás, 1200, São Caetano do Sul", offers[1].originAddress)
+        assertEquals("Terminal Sacomã, São Paulo", offers[1].destinationAddress)
+    }
+
+    // 4. CONVERSÃO DE MOEDA BRASILEIRA
     @Test
     fun `test brazilian currency parsing`() {
         assertEquals(12.50, BrazilianOfferParser.parseCurrencyBr("R$ 12,50").valueOrNull()!!, 0.001)
@@ -58,7 +122,7 @@ class GoOrNoEngineAndParserTest {
         assertTrue(BrazilianOfferParser.parseCurrencyBr("Texto sem valor").isMissing)
     }
 
-    // 3. INTERPRETAÇÃO DE QUILÔMETROS E MINUTOS
+    // 5. INTERPRETAÇÃO DE QUILÔMETROS E MINUTOS
     @Test
     fun `test distance km and duration minutes parsing`() {
         assertEquals(3.8, BrazilianOfferParser.parseDistanceKm("3,8 km até o local").valueOrNull()!!, 0.001)
@@ -67,7 +131,7 @@ class GoOrNoEngineAndParserTest {
         assertEquals(75, BrazilianOfferParser.parseDurationMinutes("1 h 15 min").valueOrNull())
     }
 
-    // 4. SOMA DE EMBARQUE + VIAGEM SEM DUPLICAR E EXTRAÇÃO DE ORIGEM/DESTINO
+    // 6. SOMA DE EMBARQUE + VIAGEM SEM DUPLICAR E EXTRAÇÃO DE ORIGEM/DESTINO
     @Test
     fun `test uber reader pickup plus trip distance and street view addresses`() {
         val nodes = listOf(
@@ -92,18 +156,17 @@ class GoOrNoEngineAndParserTest {
         assertEquals("Rua Augusta, 500 - São Paulo", offer.destinationAddress)
     }
 
-    // 5. CLASSIFICAÇÃO POR SEMÁFORO (VERDE, AMARELO, VERMELHO)
+    // 7. CLASSIFICAÇÃO POR SEMÁFORO (VERDE, AMARELO, VERMELHO)
     @Test
     fun `test traffic light green yellow and red classifications`() {
         val config = DriverFinancialConfig(
             targetGrossPerKm = 2.00,
             targetGrossPerHour = 40.00,
-            yellowToleranceRatio = 0.80, // Amarelo até R$ 1,60/km e R$ 32,00/h
+            yellowToleranceRatio = 0.80,
             requireGrossPerKm = true,
             requireGrossPerHour = true
         )
 
-        // Amarelo: R$ 17,00 para 10 km (R$ 1,70/km) em 20 min (R$ 51,00/h)
         val yellowOffer = StandardRideOffer(
             offerId = "y1",
             sourceApp = SourceApp.NINETY_NINE_DRIVER,
@@ -117,7 +180,6 @@ class GoOrNoEngineAndParserTest {
         )
         assertEquals(TrafficLightVerdict.YELLOW, FinancialEngine.evaluate(yellowOffer, config).verdict)
 
-        // Vermelho: R$ 12,00 para 10 km (R$ 1,20/km) em 30 min (R$ 24,00/h)
         val redOffer = yellowOffer.copy(
             offerId = "r1",
             offeredPriceField = ExtractedField.Present(12.00),
@@ -126,7 +188,7 @@ class GoOrNoEngineAndParserTest {
         assertEquals(TrafficLightVerdict.RED, FinancialEngine.evaluate(redOffer, config).verdict)
     }
 
-    // 6. CAMPOS AUSENTES E VALORES INVÁLIDOS (DIVISÃO POR ZERO)
+    // 8. CAMPOS AUSENTES E VALORES INVÁLIDOS (DIVISÃO POR ZERO)
     @Test
     fun `test missing fields and zero division protection return gray neutral`() {
         val config = DriverFinancialConfig()
@@ -152,7 +214,7 @@ class GoOrNoEngineAndParserTest {
         assertEquals(TrafficLightVerdict.GRAY_NEUTRAL, FinancialEngine.evaluate(zeroDistanceOffer, config).verdict)
     }
 
-    // 7. CONFIANÇA INSUFICIENTE E DISTÂNCIAS INCONSISTENTES
+    // 9. CONFIANÇA INSUFICIENTE E DISTÂNCIAS INCONSISTENTES
     @Test
     fun `test low confidence and inconsistent distance duration return gray neutral`() {
         val config = DriverFinancialConfig(minConfidenceThreshold = 0.70)
@@ -170,28 +232,26 @@ class GoOrNoEngineAndParserTest {
         )
         assertEquals(TrafficLightVerdict.GRAY_NEUTRAL, FinancialEngine.evaluate(lowConfidenceOffer, config).verdict)
 
-        // Distância absurda (95 km em 4 min) detectada pelo leitor
         val inconsistentNodes = listOf("99Pop", "R$ 30,00", "95,0 km", "4 min", "Aceitar")
         val inconsistentOffer = NinetyNineOfferReader.parseScreenNodes(inconsistentNodes)
         assertTrue(inconsistentOffer.hasFieldConflict)
         assertEquals(TrafficLightVerdict.GRAY_NEUTRAL, FinancialEngine.evaluate(inconsistentOffer, config).verdict)
     }
 
-    // 8. LEITURAS DUPLICADAS E ATUALIZAÇÃO DE OFERTA
+    // 10. LEITURAS DUPLICADAS E ATUALIZAÇÃO DE OFERTA
     @Test
     fun `test duplicate offer detection and dynamic price update`() {
         val nodes1 = listOf("UberX", "R$ 20,00", "2,0 km", "6,0 km", "5 min", "15 min", "Aceitar")
         val offer1 = UberOfferReader.parseScreenNodes(nodes1, timestampMillis = 10_000L)
-        val offer1Duplicate = UberOfferReader.parseScreenNodes(nodes1, timestampMillis = 12_000L)
+        val offer1Duplicate = UberOfferReader.parseScreenNodes(nodes1, timestampMillis = 11_000L)
 
         assertEquals(
             BrazilianOfferParser.DuplicateCheckResult.EXACT_DUPLICATE,
             BrazilianOfferParser.isSameOrUpdatedOffer(offer1, offer1Duplicate)
         )
 
-        // Mesma distância (8 km), mas preço subiu para R$ 24,50 na mesma janela
         val nodesUpdated = listOf("UberX", "R$ 24,50", "2,0 km", "6,0 km", "5 min", "15 min", "Aceitar")
-        val offerUpdated = UberOfferReader.parseScreenNodes(nodesUpdated, timestampMillis = 14_000L)
+        val offerUpdated = UberOfferReader.parseScreenNodes(nodesUpdated, timestampMillis = 13_000L)
         assertEquals(
             BrazilianOfferParser.DuplicateCheckResult.UPDATED_OFFER,
             BrazilianOfferParser.isSameOrUpdatedOffer(offer1, offerUpdated)

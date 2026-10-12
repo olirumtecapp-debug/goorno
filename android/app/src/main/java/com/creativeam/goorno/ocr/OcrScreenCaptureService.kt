@@ -214,69 +214,79 @@ class OcrScreenCaptureService : Service() {
     private fun handleRecognizedLines(lines: List<String>, targetApp: SourceApp) {
         if (lines.isEmpty()) return
         val now = System.currentTimeMillis()
-        val parsed = when (targetApp) {
-            SourceApp.UBER_DRIVER -> UberOfferReader.parseScreenNodes(
-                rawNodes = lines,
-                captureMethod = CaptureMethod.OCR,
-                timestampMillis = now,
-                isSimulated = false
-            )
-            SourceApp.NINETY_NINE_DRIVER -> NinetyNineOfferReader.parseScreenNodes(
-                rawNodes = lines,
-                captureMethod = CaptureMethod.OCR,
-                timestampMillis = now,
-                isSimulated = false
-            )
-            else -> return
+        val inferredApp = if (targetApp != SourceApp.UNKNOWN) {
+            targetApp
+        } else {
+            BrazilianOfferParser.inferSourceAppFromScreenContent(null, lines)
         }
 
-        if (parsed.screenClassification == ScreenClassification.NON_OFFER ||
-            parsed.screenClassification == ScreenClassification.ONGOING_TRIP
-        ) return
+        val parsedOffers = when (inferredApp) {
+            SourceApp.UBER_DRIVER -> UberOfferReader.parseMultipleOffersFromScreen(
+                rawNodes = lines,
+                captureMethod = CaptureMethod.OCR,
+                timestampMillis = now,
+                isSimulated = false
+            )
+            SourceApp.NINETY_NINE_DRIVER -> NinetyNineOfferReader.parseMultipleOffersFromScreen(
+                rawNodes = lines,
+                captureMethod = CaptureMethod.OCR,
+                timestampMillis = now,
+                isSimulated = false
+            )
+            else -> emptyList()
+        }
 
-        val dup = BrazilianOfferParser.isSameOrUpdatedOffer(lastOcrOffer, parsed)
+        if (parsedOffers.isEmpty()) return
+        val firstOffer = parsedOffers.first()
+
+        val dup = BrazilianOfferParser.isSameOrUpdatedOffer(lastOcrOffer, firstOffer)
         if (dup == BrazilianOfferParser.DuplicateCheckResult.EXACT_DUPLICATE) return
-        lastOcrOffer = parsed
+        lastOcrOffer = firstOffer
 
         val app = applicationContext as? GoOrNoApplication ?: return
         serviceScope.launch {
             val config = app.preferencesRepository.getConfigOnce()
-            val evaluation = FinancialEngine.evaluate(parsed, config)
-            RuntimeDiagnosticsBus.publishEvaluation(evaluation)
+            val evaluations = parsedOffers.map { FinancialEngine.evaluate(it, config) }
+            RuntimeDiagnosticsBus.publishEvaluation(evaluations.first())
             app.overlayPanel.applyConfig(config)
-            app.overlayPanel.showEvaluation(evaluation)
+            app.overlayPanel.showEvaluations(evaluations)
 
-            if (config.saveHistoryEnabled && parsed.offeredPrice != null) {
-                app.database.rideOfferDao().insertOffer(
-                    RideOfferEntity(
-                        id = parsed.offerId,
-                        timestampMillis = parsed.timestampMillis,
-                        sourceApp = parsed.sourceApp.displayName,
-                        captureMethod = parsed.captureMethod.label,
-                        rideCategory = parsed.rideCategory,
-                        offeredPrice = parsed.offeredPrice ?: 0.0,
-                        actualReceivedPrice = null,
-                        pickupDistanceKm = parsed.pickupDistanceKm,
-                        tripDistanceKm = parsed.tripDistanceKm,
-                        totalDistanceKm = evaluation.totalConsideredDistanceKm,
-                        pickupDurationMin = parsed.pickupDurationMin,
-                        tripDurationMin = parsed.tripDurationMin,
-                        totalDurationMin = evaluation.totalConsideredDurationMin,
-                        grossPerKm = evaluation.grossPerKm,
-                        grossPerHour = evaluation.grossPerHour,
-                        estimatedTotalCost = evaluation.estimatedTotalCost,
-                        estimatedNetProfit = evaluation.estimatedNetProfit,
-                        netProfitPerKm = evaluation.netProfitPerKm,
-                        netProfitPerHour = evaluation.netProfitPerHour,
-                        verdict = evaluation.verdict.name,
-                        reasonsSummary = (evaluation.reasons + evaluation.warnings).joinToString(" | "),
-                        originAddress = parsed.originAddress,
-                        destinationAddress = parsed.destinationAddress,
-                        confidenceScore = parsed.confidenceScore,
-                        isPartialReading = !evaluation.isAnalysisComplete,
-                        isSimulated = false
-                    )
-                )
+            if (config.saveHistoryEnabled) {
+                for (evaluation in evaluations) {
+                    val parsed = evaluation.offer
+                    if (parsed.offeredPrice != null) {
+                        app.database.rideOfferDao().insertOffer(
+                            RideOfferEntity(
+                                id = parsed.offerId,
+                                timestampMillis = parsed.timestampMillis,
+                                sourceApp = parsed.sourceApp.displayName,
+                                captureMethod = parsed.captureMethod.label,
+                                rideCategory = parsed.rideCategory,
+                                offeredPrice = parsed.offeredPrice ?: 0.0,
+                                actualReceivedPrice = null,
+                                pickupDistanceKm = parsed.pickupDistanceKm,
+                                tripDistanceKm = parsed.tripDistanceKm,
+                                totalDistanceKm = evaluation.totalConsideredDistanceKm,
+                                pickupDurationMin = parsed.pickupDurationMin,
+                                tripDurationMin = parsed.tripDurationMin,
+                                totalDurationMin = evaluation.totalConsideredDurationMin,
+                                grossPerKm = evaluation.grossPerKm,
+                                grossPerHour = evaluation.grossPerHour,
+                                estimatedTotalCost = evaluation.estimatedTotalCost,
+                                estimatedNetProfit = evaluation.estimatedNetProfit,
+                                netProfitPerKm = evaluation.netProfitPerKm,
+                                netProfitPerHour = evaluation.netProfitPerHour,
+                                verdict = evaluation.verdict.name,
+                                reasonsSummary = (evaluation.reasons + evaluation.warnings).joinToString(" | "),
+                                originAddress = parsed.originAddress,
+                                destinationAddress = parsed.destinationAddress,
+                                confidenceScore = parsed.confidenceScore,
+                                isPartialReading = !evaluation.isAnalysisComplete,
+                                isSimulated = false
+                            )
+                        )
+                    }
+                }
             }
         }
     }

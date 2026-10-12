@@ -6,11 +6,17 @@ package com.creativeam.goorno.model
 enum class SourceApp(val displayName: String, val knownPackages: List<String>) {
     UBER_DRIVER(
         displayName = "Uber Driver",
-        knownPackages = listOf("com.ubercab.driver")
+        knownPackages = listOf("com.ubercab.driver", "com.ubercab")
     ),
     NINETY_NINE_DRIVER(
         displayName = "99 Motorista",
-        knownPackages = listOf("com.taxis99.driver", "com.didiglobal.driver", "com.taxis99")
+        knownPackages = listOf(
+            "com.taxis99.driver",
+            "com.didiglobal.driver",
+            "com.didi.brazil.driver",
+            "com.xiaojukeji.didi.brazil.driver",
+            "com.taxis99"
+        )
     ),
     SIMULATION(
         displayName = "Modo Simulação",
@@ -26,9 +32,9 @@ enum class SourceApp(val displayName: String, val knownPackages: List<String>) {
             if (pkg.isNullOrBlank()) return UNKNOWN
             val normalized = pkg.trim().lowercase()
             return when {
-                UBER_DRIVER.knownPackages.any { it.lowercase() == normalized } || normalized.contains("ubercab.driver") -> UBER_DRIVER
+                UBER_DRIVER.knownPackages.any { it.lowercase() == normalized } || normalized.contains("ubercab") -> UBER_DRIVER
                 NINETY_NINE_DRIVER.knownPackages.any { it.lowercase() == normalized } ||
-                    normalized.contains("taxis99") || normalized.contains("didiglobal.driver") -> NINETY_NINE_DRIVER
+                    normalized.contains("taxis99") || normalized.contains("didi") || normalized.contains("99") -> NINETY_NINE_DRIVER
                 else -> UNKNOWN
             }
         }
