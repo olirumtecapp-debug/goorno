@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">GoOrNo</string>
-    <string name="accessibility_desc">GoOrNo Copiloto: LÃª automaticamente os cards de chamada da Uber, 99 e inDrive na tela para calcular R$/km, R$/hora, Lucro LÃ­quido e abrir o Street View de seguranÃ§a.</string>
+    <string name="accessibility_service_label">GoOrNo — Leitor de Ofertas Uber e 99</string>
+    <string name="accessibility_service_description">O GoOrNo lê os textos das ofertas de corrida visíveis na tela da Uber Driver e 99 Motorista (valor em R$, distância em km, tempo em minutos e endereços de embarque/destino) para calcular automaticamente o ganho por km, ganho por hora e lucro líquido estimado no painel flutuante. O GoOrNo NUNCA clica nem aceita/recusa corridas automaticamente.</string>
 </resources>
