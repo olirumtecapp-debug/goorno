@@ -3,6 +3,7 @@ package com.creativeam.goorno.ui
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -89,6 +90,11 @@ fun GoOrNoComposeApp(
     var currentScreen by remember { mutableStateOf(GoOrNoScreen.HOME) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
+    val notifyUser: (String) -> Unit = { msg ->
+        statusMessage = msg
+        Toast.makeText(context, "✅ $msg", Toast.LENGTH_SHORT).show()
+    }
+
     val installedApps = remember(currentScreen) {
         ForegroundAppDetector.checkInstalledRideApps(context)
     }
@@ -100,7 +106,7 @@ fun GoOrNoComposeApp(
                 shadowElevation = 4.dp
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    // Header Superior Verde-Petróleo Oficial com Logo e Versão v2.2.0
+                    // Header Superior Verde-Petróleo Oficial com Logo e Versão v2.3.0
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -133,7 +139,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v2.2.0",
+                                            text = "v2.3.0",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
@@ -207,31 +213,75 @@ fun GoOrNoComposeApp(
             }
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = PureWhiteSurface,
-                tonalElevation = 8.dp
-            ) {
-                val quickTabs = listOf(
-                    Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
-                    Triple(GoOrNoScreen.SERVICES_ACTIVATION, Icons.Default.Layers, "Serviços"),
-                    Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
-                    Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico"),
-                    Triple(GoOrNoScreen.DIAGNOSTICS_TESTS, Icons.Default.PlayCircle, "Simulador")
-                )
-                quickTabs.forEach { (screen, icon, label) ->
-                    NavigationBarItem(
-                        selected = currentScreen == screen,
-                        onClick = { currentScreen = screen },
-                        icon = { Icon(icon, contentDescription = label) },
-                        label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color.White,
-                            selectedTextColor = PetrolHeader,
-                            indicatorColor = PetrolHeader,
-                            unselectedIconColor = MutedText,
-                            unselectedTextColor = MutedText
-                        )
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Barra de Confirmação Fixa (Sempre visível acima das abas inferiores ao salvar qualquer tela)
+                if (statusMessage != null) {
+                    Surface(
+                        color = TrafficGreen,
+                        shadowElevation = 8.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = statusMessage!!,
+                                    color = Color.White,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            TextButton(onClick = { statusMessage = null }) {
+                                Text("OK", color = LimeBright, fontWeight = FontWeight.Black)
+                            }
+                        }
+                    }
+                }
+
+                NavigationBar(
+                    containerColor = PureWhiteSurface,
+                    tonalElevation = 8.dp
+                ) {
+                    val quickTabs = listOf(
+                        Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
+                        Triple(GoOrNoScreen.SERVICES_ACTIVATION, Icons.Default.Layers, "Serviços"),
+                        Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
+                        Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico"),
+                        Triple(GoOrNoScreen.DIAGNOSTICS_TESTS, Icons.Default.PlayCircle, "Simulador")
                     )
+                    quickTabs.forEach { (screen, icon, label) ->
+                        NavigationBarItem(
+                            selected = currentScreen == screen,
+                            onClick = { currentScreen = screen },
+                            icon = { Icon(icon, contentDescription = label) },
+                            label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color.White,
+                                selectedTextColor = PetrolHeader,
+                                indicatorColor = PetrolHeader,
+                                unselectedIconColor = MutedText,
+                                unselectedTextColor = MutedText
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -252,35 +302,6 @@ fun GoOrNoComposeApp(
                     fontSize = 17.sp,
                     color = PetrolHeader
                 )
-            }
-
-            if (statusMessage != null) {
-                item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = TrafficGreenSoft),
-                        border = BorderStroke(1.dp, TrafficGreen),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = statusMessage!!,
-                                color = PetrolDarkText,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.weight(1f)
-                            )
-                            TextButton(onClick = { statusMessage = null }) {
-                                Text("OK", color = PetrolHeader, fontWeight = FontWeight.Black)
-                            }
-                        }
-                    }
-                }
             }
 
             when (currentScreen) {
@@ -354,7 +375,7 @@ fun GoOrNoComposeApp(
                                                 val evals = offers.map { FinancialEngine.evaluate(it, config) }
                                                 app.overlayPanel.applyConfig(config)
                                                 app.overlayPanel.showEvaluations(evals)
-                                                statusMessage = "Janelinha clean exibida! Ela sumirá sozinha em ${config.overlayAutoMinimizeSec} segundos."
+                                                notifyUser("Janelinha clean exibida! Ela sumirá sozinha em ${config.overlayAutoMinimizeSec} segundos.")
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(
@@ -400,6 +421,7 @@ fun GoOrNoComposeApp(
                                                 scope.launch {
                                                     app.preferencesRepository.saveConfig(updated)
                                                     app.overlayPanel.applyConfig(updated)
+                                                    notifyUser("Tempo da janelinha definido para ${sec} segundos!")
                                                 }
                                             },
                                             colors = ButtonDefaults.filledTonalButtonColors(
@@ -425,7 +447,7 @@ fun GoOrNoComposeApp(
                                 PermissionRowItem(
                                     number = "1",
                                     title = "Janela Flutuante (Sobrepor a outros apps)",
-                                    subtitle = "Exibe o painel clean sobre a tela da Uber e 99",
+                                    subtitle = "Exibe a barrinha ativa no topo e o painel sobre a Uber/99",
                                     granted = hasOverlayPermission,
                                     onAction = onRequestOverlayPermission
                                 )
@@ -473,7 +495,7 @@ fun GoOrNoComposeApp(
                                         onUpdateReceivedPrice = { newVal ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(latestDbOffer.id, newVal)
-                                                statusMessage = "Valor recebido conferido e salvo!"
+                                                notifyUser("Valor recebido conferido e salvo!")
                                             }
                                         }
                                     )
@@ -520,6 +542,7 @@ fun GoOrNoComposeApp(
                         var autoMinSec by remember(config.overlayAutoMinimizeSec) {
                             mutableStateOf(config.overlayAutoMinimizeSec.toString())
                         }
+                        var savedFlag by remember { mutableStateOf(false) }
 
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
@@ -533,7 +556,7 @@ fun GoOrNoComposeApp(
                             ) {
                                 OutlinedTextField(
                                     value = driverName,
-                                    onValueChange = { driverName = it },
+                                    onValueChange = { driverName = it; savedFlag = false },
                                     label = { Text("Nome ou Apelido do Motorista") },
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
@@ -542,7 +565,7 @@ fun GoOrNoComposeApp(
 
                                 OutlinedTextField(
                                     value = vehicleModel,
-                                    onValueChange = { vehicleModel = it },
+                                    onValueChange = { vehicleModel = it; savedFlag = false },
                                     label = { Text("Modelo do Veículo (ex: Onix 1.0, HB20, Kwid)") },
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
@@ -567,6 +590,7 @@ fun GoOrNoComposeApp(
                                     value = opacity,
                                     onValueChange = {
                                         opacity = it
+                                        savedFlag = false
                                         val updated = config.copy(overlayOpacityPercent = it.toInt())
                                         app.overlayPanel.applyConfig(updated)
                                     },
@@ -580,7 +604,7 @@ fun GoOrNoComposeApp(
 
                                 OutlinedTextField(
                                     value = autoMinSec,
-                                    onValueChange = { autoMinSec = it },
+                                    onValueChange = { autoMinSec = it; savedFlag = false },
                                     label = { Text("Tempo que a janelinha fica aberta antes de sumir (segundos)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     shape = RoundedCornerShape(12.dp),
@@ -599,11 +623,12 @@ fun GoOrNoComposeApp(
                                         scope.launch {
                                             app.preferencesRepository.saveConfig(updated)
                                             app.overlayPanel.applyConfig(updated)
-                                            statusMessage = "Configurações de perfil e janelinha salvas!"
+                                            savedFlag = true
+                                            notifyUser("Configurações do motorista e janelinha salvas com sucesso!")
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = PetrolHeader,
+                                        containerColor = if (savedFlag) TrafficGreen else PetrolHeader,
                                         contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(14.dp),
@@ -611,9 +636,12 @@ fun GoOrNoComposeApp(
                                         .fillMaxWidth()
                                         .height(48.dp)
                                 ) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = LimeBright)
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (savedFlag) Color.White else LimeBright)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Salvar Configuração do Motorista", fontWeight = FontWeight.Black)
+                                    Text(
+                                        text = if (savedFlag) "✓ Configuração Salva com Sucesso!" else "Salvar Configuração do Motorista",
+                                        fontWeight = FontWeight.Black
+                                    )
                                 }
                             }
                         }
@@ -637,6 +665,7 @@ fun GoOrNoComposeApp(
                         var extraPerRide by remember(config.fixedExtraCostPerRide) {
                             mutableStateOf(config.fixedExtraCostPerRide.toString())
                         }
+                        var savedCostsFlag by remember { mutableStateOf(false) }
 
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
@@ -669,7 +698,7 @@ fun GoOrNoComposeApp(
 
                                 OutlinedTextField(
                                     value = kmPerLiter,
-                                    onValueChange = { kmPerLiter = it.replace(",", ".") },
+                                    onValueChange = { kmPerLiter = it.replace(",", "."); savedCostsFlag = false },
                                     label = { Text("Consumo médio do veículo (km/l)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     shape = RoundedCornerShape(12.dp),
@@ -679,7 +708,7 @@ fun GoOrNoComposeApp(
 
                                 OutlinedTextField(
                                     value = fuelPrice,
-                                    onValueChange = { fuelPrice = it.replace(",", ".") },
+                                    onValueChange = { fuelPrice = it.replace(",", "."); savedCostsFlag = false },
                                     label = { Text("Preço do combustível por litro (R$/l)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     shape = RoundedCornerShape(12.dp),
@@ -689,7 +718,7 @@ fun GoOrNoComposeApp(
 
                                 OutlinedTextField(
                                     value = maintPerKm,
-                                    onValueChange = { maintPerKm = it.replace(",", ".") },
+                                    onValueChange = { maintPerKm = it.replace(",", "."); savedCostsFlag = false },
                                     label = { Text("Custo de manutenção, pneus e desgaste por km (R$/km)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     shape = RoundedCornerShape(12.dp),
@@ -699,7 +728,7 @@ fun GoOrNoComposeApp(
 
                                 OutlinedTextField(
                                     value = extraPerRide,
-                                    onValueChange = { extraPerRide = it.replace(",", ".") },
+                                    onValueChange = { extraPerRide = it.replace(",", "."); savedCostsFlag = false },
                                     label = { Text("Custo fixo adicional por corrida (R$) — opcional") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     shape = RoundedCornerShape(12.dp),
@@ -723,11 +752,12 @@ fun GoOrNoComposeApp(
                                         )
                                         scope.launch {
                                             app.preferencesRepository.saveConfig(updated)
-                                            statusMessage = "Custos do veículo atualizados com sucesso!"
+                                            savedCostsFlag = true
+                                            notifyUser("Custos operacionais do veículo salvos com sucesso!")
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = PetrolHeader,
+                                        containerColor = if (savedCostsFlag) TrafficGreen else PetrolHeader,
                                         contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(14.dp),
@@ -735,9 +765,12 @@ fun GoOrNoComposeApp(
                                         .fillMaxWidth()
                                         .height(48.dp)
                                 ) {
-                                    Icon(Icons.Default.Save, contentDescription = null, tint = LimeBright)
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (savedCostsFlag) Color.White else LimeBright)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Salvar Custos Operacionais", fontWeight = FontWeight.Black)
+                                    Text(
+                                        text = if (savedCostsFlag) "✓ Custos Salvos com Sucesso!" else "Salvar Custos Operacionais",
+                                        fontWeight = FontWeight.Black
+                                    )
                                 }
                             }
                         }
@@ -773,6 +806,7 @@ fun GoOrNoComposeApp(
                         var reqNetHr by remember(config.requireNetPerHour) {
                             mutableStateOf(config.requireNetPerHour)
                         }
+                        var savedTargetsFlag by remember { mutableStateOf(false) }
 
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
@@ -792,7 +826,7 @@ fun GoOrNoComposeApp(
 
                                 OutlinedTextField(
                                     value = grossKm,
-                                    onValueChange = { grossKm = it.replace(",", ".") },
+                                    onValueChange = { grossKm = it.replace(",", "."); savedTargetsFlag = false },
                                     label = { Text("Meta Mínima de Ganho Bruto por KM (R$/km)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     shape = RoundedCornerShape(12.dp),
@@ -800,13 +834,13 @@ fun GoOrNoComposeApp(
                                     singleLine = true
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = reqGrossKm, onCheckedChange = { reqGrossKm = it })
+                                    Checkbox(checked = reqGrossKm, onCheckedChange = { reqGrossKm = it; savedTargetsFlag = false })
                                     Text("Exigir Ganho Bruto/km na classificação", fontSize = 12.sp, color = PetrolDarkText)
                                 }
 
                                 OutlinedTextField(
                                     value = grossHr,
-                                    onValueChange = { grossHr = it.replace(",", ".") },
+                                    onValueChange = { grossHr = it.replace(",", "."); savedTargetsFlag = false },
                                     label = { Text("Meta Mínima de Ganho Bruto por Hora (R$/h)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     shape = RoundedCornerShape(12.dp),
@@ -814,13 +848,13 @@ fun GoOrNoComposeApp(
                                     singleLine = true
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = reqGrossHr, onCheckedChange = { reqGrossHr = it })
+                                    Checkbox(checked = reqGrossHr, onCheckedChange = { reqGrossHr = it; savedTargetsFlag = false })
                                     Text("Exigir Ganho Bruto/hora na classificação", fontSize = 12.sp, color = PetrolDarkText)
                                 }
 
                                 OutlinedTextField(
                                     value = netKm,
-                                    onValueChange = { netKm = it.replace(",", ".") },
+                                    onValueChange = { netKm = it.replace(",", "."); savedTargetsFlag = false },
                                     label = { Text("Meta de Lucro Líquido por KM (R$/km)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     shape = RoundedCornerShape(12.dp),
@@ -828,13 +862,13 @@ fun GoOrNoComposeApp(
                                     singleLine = true
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = reqNetKm, onCheckedChange = { reqNetKm = it })
+                                    Checkbox(checked = reqNetKm, onCheckedChange = { reqNetKm = it; savedTargetsFlag = false })
                                     Text("Exigir Lucro Líquido/km na classificação", fontSize = 12.sp, color = PetrolDarkText)
                                 }
 
                                 OutlinedTextField(
                                     value = netHr,
-                                    onValueChange = { netHr = it.replace(",", ".") },
+                                    onValueChange = { netHr = it.replace(",", "."); savedTargetsFlag = false },
                                     label = { Text("Meta de Lucro Líquido por Hora (R$/h)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     shape = RoundedCornerShape(12.dp),
@@ -842,7 +876,7 @@ fun GoOrNoComposeApp(
                                     singleLine = true
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = reqNetHr, onCheckedChange = { reqNetHr = it })
+                                    Checkbox(checked = reqNetHr, onCheckedChange = { reqNetHr = it; savedTargetsFlag = false })
                                     Text("Exigir Lucro Líquido/hora na classificação", fontSize = 12.sp, color = PetrolDarkText)
                                 }
 
@@ -860,11 +894,12 @@ fun GoOrNoComposeApp(
                                         )
                                         scope.launch {
                                             app.preferencesRepository.saveConfig(updated)
-                                            statusMessage = "Metas financeiras e critérios do semáforo salvos!"
+                                            savedTargetsFlag = true
+                                            notifyUser("Metas financeiras e critérios do semáforo salvos com sucesso!")
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = PetrolHeader,
+                                        containerColor = if (savedTargetsFlag) TrafficGreen else PetrolHeader,
                                         contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(14.dp),
@@ -872,9 +907,12 @@ fun GoOrNoComposeApp(
                                         .fillMaxWidth()
                                         .height(48.dp)
                                 ) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = LimeBright)
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (savedTargetsFlag) Color.White else LimeBright)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Salvar Metas Financeiras", fontWeight = FontWeight.Black)
+                                    Text(
+                                        text = if (savedTargetsFlag) "✓ Metas Salvas com Sucesso!" else "Salvar Metas Financeiras",
+                                        fontWeight = FontWeight.Black
+                                    )
                                 }
                             }
                         }
@@ -986,7 +1024,7 @@ fun GoOrNoComposeApp(
                                 Button(
                                     onClick = {
                                         onStopAllBackgroundServices()
-                                        statusMessage = "Painel flutuante e captura OCR encerrados com sucesso."
+                                        notifyUser("Painel flutuante e captura OCR encerrados com sucesso.")
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = TrafficRed,
@@ -1113,7 +1151,7 @@ fun GoOrNoComposeApp(
                                     onClick = {
                                         scope.launch {
                                             app.database.rideOfferDao().clearAllRealOffers()
-                                            statusMessage = "Histórico local limpo."
+                                            notifyUser("Histórico local limpo.")
                                         }
                                     }
                                 ) {
@@ -1153,7 +1191,7 @@ fun GoOrNoComposeApp(
                                         onUpdateReceivedPrice = { valPaid ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(item.id, valPaid)
-                                                statusMessage = "Valor recebido conferido com sucesso!"
+                                                notifyUser("Valor recebido conferido com sucesso!")
                                             }
                                         }
                                     )
@@ -1290,7 +1328,7 @@ fun GoOrNoComposeApp(
                                             app.overlayPanel.applyConfig(config)
                                             app.overlayPanel.showEvaluation(eval)
                                         }
-                                        statusMessage = "Simulação Referência (R$ 18 / 8 km / 24 min -> R$ 2,25/km e R$ 45/h) exibida por ${config.overlayAutoMinimizeSec}s!"
+                                        notifyUser("Simulação Referência (R$ 18 / 8 km / 24 min -> R$ 2,25/km e R$ 45/h) exibida por ${config.overlayAutoMinimizeSec}s!")
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = PetrolHeader,
@@ -1340,7 +1378,7 @@ fun GoOrNoComposeApp(
                                                 app.overlayPanel.applyConfig(config)
                                                 app.overlayPanel.showEvaluations(evals)
                                             }
-                                            statusMessage = "Lidas ${evals.size} viagens simultâneas da 99 na janela flutuante!"
+                                            notifyUser("Lidas ${evals.size} viagens simultâneas da 99 na janela flutuante!")
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
@@ -1574,7 +1612,7 @@ fun GoOrNoComposeApp(
                                     Button(
                                         onClick = {
                                             if (!consentChecked) {
-                                                statusMessage = "Marque a caixa de autorização acima antes de enviar para a nuvem."
+                                                notifyUser("Marque a caixa de autorização acima antes de enviar para a nuvem.")
                                                 return@Button
                                             }
                                             scope.launch {
@@ -1588,7 +1626,7 @@ fun GoOrNoComposeApp(
                                                     config = savedCfg,
                                                     offers = realHistory
                                                 )
-                                                statusMessage = res.getOrElse { "Erro: ${it.message}" }
+                                                notifyUser(res.getOrElse { "Erro: ${it.message}" })
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(
@@ -1608,10 +1646,9 @@ fun GoOrNoComposeApp(
                                                 res.onSuccess { (restoredCfg, restoredOffers) ->
                                                     app.preferencesRepository.saveConfig(restoredCfg)
                                                     app.database.rideOfferDao().insertAll(restoredOffers)
-                                                    statusMessage =
-                                                        "Sucesso! Configurações e ${restoredOffers.size} corridas restauradas para este aparelho!"
+                                                    notifyUser("Sucesso! Configurações e ${restoredOffers.size} corridas restauradas para este aparelho!")
                                                 }.onFailure {
-                                                    statusMessage = "Erro ao restaurar: ${it.message}"
+                                                    notifyUser("Erro ao restaurar: ${it.message}")
                                                 }
                                             }
                                         },
@@ -1639,7 +1676,7 @@ fun GoOrNoComposeApp(
                                     FilledTonalButton(
                                         onClick = {
                                             jsonBackupBox = CloudSyncManager.exportToJsonString(config, realHistory)
-                                            statusMessage = "JSON gerado abaixo! Você pode copiar ou compartilhar."
+                                            notifyUser("JSON gerado abaixo! Você pode copiar ou compartilhar.")
                                         },
                                         colors = ButtonDefaults.filledTonalButtonColors(
                                             containerColor = SoftSurfaceVariant,
@@ -1657,10 +1694,10 @@ fun GoOrNoComposeApp(
                                                     scope.launch {
                                                         app.preferencesRepository.saveConfig(parsed.first)
                                                         app.database.rideOfferDao().insertAll(parsed.second)
-                                                        statusMessage = "Backup JSON importado com sucesso!"
+                                                        notifyUser("Backup JSON importado com sucesso!")
                                                     }
                                                 } else {
-                                                    statusMessage = "JSON inválido."
+                                                    notifyUser("JSON inválido.")
                                                 }
                                             },
                                             colors = ButtonDefaults.buttonColors(

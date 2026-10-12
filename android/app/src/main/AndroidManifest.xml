@@ -11,8 +11,11 @@
     <!-- Android 11+ Package Visibility for Uber Driver, 99 Motorista, and Google Maps -->
     <queries>
         <package android:name="com.ubercab.driver" />
+        <package android:name="com.ubercab" />
         <package android:name="com.taxis99.driver" />
         <package android:name="com.didiglobal.driver" />
+        <package android:name="com.didi.brazil.driver" />
+        <package android:name="com.xiaojukeji.didi.brazil.driver" />
         <package android:name="com.taxis99" />
         <package android:name="com.google.android.apps.maps" />
     </queries>

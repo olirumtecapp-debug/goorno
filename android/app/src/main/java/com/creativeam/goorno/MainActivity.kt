@@ -1,8 +1,10 @@
 package com.creativeam.goorno
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
@@ -27,6 +29,12 @@ class MainActivity : ComponentActivity() {
     private var hasOverlayPerm by mutableStateOf(false)
     private var hasAccessibilityPerm by mutableStateOf(false)
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        refreshPermissionsState()
+    }
+
     private val mediaProjectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -42,6 +50,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestNotificationPermissionIfNeeded()
         refreshPermissionsState()
 
         setContent {
@@ -63,6 +72,18 @@ class MainActivity : ComponentActivity() {
         refreshPermissionsState()
     }
 
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
     private fun refreshPermissionsState() {
         hasOverlayPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Settings.canDrawOverlays(this)
@@ -70,6 +91,12 @@ class MainActivity : ComponentActivity() {
 
         hasAccessibilityPerm = isAccessibilityServiceEnabled()
         RuntimeDiagnosticsBus.setAccessibilityConnected(hasAccessibilityPerm)
+
+        // Sempre que a permissão de sobreposição estiver concedida, exibe a barrinha de status no topo da tela!
+        if (hasOverlayPerm) {
+            val app = applicationContext as? GoOrNoApplication
+            app?.overlayPanel?.showOrUpdateTopStatusBar(accessibilityEnabled = hasAccessibilityPerm)
+        }
 
         if (!hasOverlayPerm || !hasAccessibilityPerm) {
             if (!RuntimeDiagnosticsBus.ocrActive.value) {

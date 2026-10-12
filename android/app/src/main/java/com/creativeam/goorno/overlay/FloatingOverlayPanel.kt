@@ -20,6 +20,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import com.creativeam.goorno.diagnostics.CopilotRuntimeState
 import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.model.DriverFinancialConfig
@@ -28,11 +29,13 @@ import com.creativeam.goorno.model.TrafficLightVerdict
 import java.util.Locale
 
 /**
- * Painel Flutuante Nativo Direto v2.2.0 — Visual Clean, Claro e Moderno.
- * - Sem botões de expandir/minimizar: abre DIRETO com todas as informações assim que a corrida toca!
- * - Some automaticamente após o tempo configurado pelo motorista (ex: 5s, 8s, 10s, 12s, 15s).
- * - Suporta leitura e exibição de 1 ou MÚLTIPLAS viagens simultâneas na tela (Lista de Ofertas da 99 / Radar Uber).
- * - Permite arrastar livremente pela tela e abrir Origem/Destino no Google Street View em 1 toque com botões modernos.
+ * Painel Flutuante Nativo v2.3.0 — Com Barrinha de Status no Topo + Janelinha Direta Temporizada.
+ * - Exibe no topo da tela (próximo ao relógio e ao ícone da 99) a barrinha discreta:
+ *   "🟢 GoOrNo ATIVO · Monitorando" (ou alerta amarelo caso a Acessibilidade precise ser ligada).
+ * - Marcado com IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS para nunca interferir na leitura
+ *   da janela da 99 Motorista ou da Uber Driver que está embaixo.
+ * - Quando toca corrida (1 ou várias viagens simultâneas), abre o Card Clean DIRETO abaixo da barrinha
+ *   e esconde o Card automaticamente após os segundos escolhidos pelo motorista (mantendo a barrinha ativa no topo).
  */
 class FloatingOverlayPanel(private val context: Context) {
 
@@ -40,6 +43,8 @@ class FloatingOverlayPanel(private val context: Context) {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private var rootContainer: LinearLayout? = null
+    private var topStatusBarPill: LinearLayout? = null
+    private var tvTopStatusBarText: TextView? = null
     private var cardContainer: LinearLayout? = null
     private var offersListLayout: LinearLayout? = null
     private var tvHeaderTitle: TextView? = null
@@ -47,13 +52,15 @@ class FloatingOverlayPanel(private val context: Context) {
 
     private var layoutParams: WindowManager.LayoutParams? = null
     private var isAdded = false
+    private var isAccessibilityActive = false
+    private var lastResultsShown: List<FinancialEvaluationResult> = emptyList()
 
     private var currentOpacityPercent: Int = 92
     private var displayDurationSec: Int = 10
 
-    // Quando o tempo definido pelo motorista termina, a janelinha some sozinha!
-    private val autoHideRunnable = Runnable {
-        hidePanel()
+    // Quando o tempo definido pelo motorista termina, o card de oferta fecha sozinho e fica apenas a barrinha no topo!
+    private val autoHideCardRunnable = Runnable {
+        hideOfferCardOnly()
     }
 
     fun hasOverlayPermission(): Boolean {
@@ -70,12 +77,35 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
+    /**
+     * Garante que a barrinha de status no topo da tela esteja visível e atualizada.
+     */
+    fun showOrUpdateTopStatusBar(accessibilityEnabled: Boolean, statusSubtext: String? = null) {
+        mainHandler.post {
+            isAccessibilityActive = accessibilityEnabled
+            if (!hasOverlayPermission()) return@post
+            ensureViewsCreated()
+            attachWindowIfNeeded()
+
+            if (accessibilityEnabled) {
+                topStatusBarPill?.background = roundedCardBg("#073B32", "#10B981", 20f, 1)
+                val extra = if (!statusSubtext.isNullOrBlank()) " · $statusSubtext" else " · Monitorando Uber/99"
+                tvTopStatusBarText?.text = "🟢 GoOrNo ATIVO$extra"
+                tvTopStatusBarText?.setTextColor(Color.WHITE)
+            } else {
+                topStatusBarPill?.background = roundedCardBg("#FEF3C7", "#D97706", 20f, 2)
+                tvTopStatusBarText?.text = "⚠️ GoOrNo: Toque aqui p/ Ativar Leitor"
+                tvTopStatusBarText?.setTextColor(Color.parseColor("#92400E"))
+            }
+        }
+    }
+
     fun showEvaluation(result: FinancialEvaluationResult) {
         showEvaluations(listOf(result))
     }
 
     /**
-     * Exibe 1 ou mais viagens simultâneas diretamente na janela flutuante clean e agenda o desaparecimento automático.
+     * Exibe 1 ou mais viagens simultâneas diretamente na janela flutuante clean e agenda o desaparecimento automático do card.
      */
     fun showEvaluations(results: List<FinancialEvaluationResult>) {
         if (results.isEmpty()) return
@@ -84,31 +114,24 @@ class FloatingOverlayPanel(private val context: Context) {
                 RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.PERMISSION_MISSING)
                 return@post
             }
+            lastResultsShown = results
             ensureViewsCreated()
-            if (!isAdded) {
-                try {
-                    windowManager.addView(rootContainer, layoutParams)
-                    isAdded = true
-                    RuntimeDiagnosticsBus.setOverlayVisible(true)
-                } catch (_: Exception) {
-                    return@post
-                }
-            }
+            attachWindowIfNeeded()
 
             rootContainer?.alpha = currentOpacityPercent / 100f
+            cardContainer?.visibility = View.VISIBLE
             offersListLayout?.removeAllViews()
 
             val primary = results.first()
             val (primaryBadge, _, _) = verdictPalette(primary.verdict)
-            // Card externo branco clean com borda da cor do semáforo
             cardContainer?.background = roundedCardBg("#FFFFFF", primaryBadge, 20f, 2)
 
             val appName = primary.offer.sourceApp.displayName
             val simTag = if (primary.offer.isSimulated) " · TESTE" else ""
             tvHeaderTitle?.text = if (results.size > 1) {
-                "GoOrNo · $appName (${results.size} Viagens)$simTag"
+                "$appName (${results.size} Viagens na Tela)$simTag"
             } else {
-                "GoOrNo · $appName (${primary.offer.rideCategory ?: "Oferta"})$simTag"
+                "$appName (${primary.offer.rideCategory ?: "Oferta"})$simTag"
             }
             tvTimerHint?.text = "⏱ ${displayDurationSec}s"
 
@@ -121,15 +144,28 @@ class FloatingOverlayPanel(private val context: Context) {
                 offersListLayout?.addView(itemView)
             }
 
-            // Reinicia o cronômetro para sumir sozinho após o tempo configurado pelo motorista
-            mainHandler.removeCallbacks(autoHideRunnable)
-            mainHandler.postDelayed(autoHideRunnable, displayDurationSec * 1000L)
+            // Reinicia o cronômetro para esconder o card após o tempo configurado pelo motorista
+            mainHandler.removeCallbacks(autoHideCardRunnable)
+            mainHandler.postDelayed(autoHideCardRunnable, displayDurationSec * 1000L)
         }
     }
 
+    /**
+     * Esconde apenas o Card de Oferta após os segundos configurados, mantendo a barrinha de status ativa no topo!
+     */
+    fun hideOfferCardOnly() {
+        mainHandler.post {
+            mainHandler.removeCallbacks(autoHideCardRunnable)
+            cardContainer?.visibility = View.GONE
+        }
+    }
+
+    /**
+     * Remove completamente a janela flutuante e a barrinha (usado quando o motorista clica em Desativar Monitoramento).
+     */
     fun hidePanel() {
         mainHandler.post {
-            mainHandler.removeCallbacks(autoHideRunnable)
+            mainHandler.removeCallbacks(autoHideCardRunnable)
             if (isAdded && rootContainer != null) {
                 try {
                     windowManager.removeView(rootContainer)
@@ -137,6 +173,17 @@ class FloatingOverlayPanel(private val context: Context) {
                 }
                 isAdded = false
                 RuntimeDiagnosticsBus.setOverlayVisible(false)
+            }
+        }
+    }
+
+    private fun attachWindowIfNeeded() {
+        if (!isAdded && rootContainer != null && layoutParams != null) {
+            try {
+                windowManager.addView(rootContainer, layoutParams)
+                isAdded = true
+                RuntimeDiagnosticsBus.setOverlayVisible(true)
+            } catch (_: Exception) {
             }
         }
     }
@@ -287,30 +334,87 @@ class FloatingOverlayPanel(private val context: Context) {
             WindowManager.LayoutParams.WRAP_CONTENT,
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             x = 0
-            y = dp(46)
+            y = dp(6)
         }
 
         rootContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
             alpha = currentOpacityPercent / 100f
+            // Essencial: impede que a janela do GoOrNo apareça na árvore de Acessibilidade,
+            // garantindo que o leitor sempre enxergue a 99 Motorista e a Uber Driver embaixo!
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         }
 
+        // 1. BARRINHA FIXA NO TOPO (Mostra claramente que o GoOrNo está ativo perto do relógio/ícone da 99)
+        topStatusBarPill = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(5), dp(12), dp(5))
+            background = roundedCardBg("#073B32", "#10B981", 20f, 1)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                elevation = dp(6).toFloat()
+            }
+        }
+
+        tvTopStatusBarText = TextView(context).apply {
+            text = "🟢 GoOrNo ATIVO · Monitorando Uber/99"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.BOLD)
+            setOnClickListener {
+                if (!isAccessibilityActive) {
+                    try {
+                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                        Toast.makeText(
+                            context,
+                            "Ative o 'GoOrNo Copiloto' em Serviços Instalados para ler a tela da 99/Uber!",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } catch (_: Exception) {
+                    }
+                } else if (lastResultsShown.isNotEmpty() && cardContainer?.visibility != View.VISIBLE) {
+                    showEvaluations(lastResultsShown)
+                } else {
+                    Toast.makeText(
+                        context,
+                        "🟢 GoOrNo está ATIVO e monitorando chamadas da Uber e 99!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+
+        topStatusBarPill?.addView(tvTopStatusBarText)
+        rootContainer?.addView(topStatusBarPill)
+
+        // 2. CARD DE ANÁLISE DE OFERTA (Abre DIRETO quando toca corrida e fecha sozinho após N segundos)
         cardContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
             setPadding(dp(14), dp(10), dp(14), dp(12))
             background = roundedCardBg("#FFFFFF", "#059669", 20f, 2)
             minimumWidth = dp(328)
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            lp.topMargin = dp(6)
+            layoutParams = lp
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(10).toFloat()
             }
         }
 
-        // Topo Clean: Título + Pílula do Timer + Botão Fechar Moderno
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -347,7 +451,7 @@ class FloatingOverlayPanel(private val context: Context) {
             gravity = Gravity.CENTER
             setPadding(dp(8), dp(3), dp(8), dp(3))
             background = roundedBg("#FEE2E2", 12f)
-            setOnClickListener { hidePanel() }
+            setOnClickListener { hideOfferCardOnly() }
         }
 
         topRow.addView(tvHeaderTitle)
@@ -368,7 +472,7 @@ class FloatingOverlayPanel(private val context: Context) {
         cardContainer?.addView(offersListLayout)
         rootContainer?.addView(cardContainer)
 
-        // Permite arrastar a janelinha livremente para qualquer posição da tela
+        // Permite arrastar o painel para qualquer posição da tela
         val dragListener = object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
@@ -383,24 +487,29 @@ class FloatingOverlayPanel(private val context: Context) {
                         initialY = lp.y
                         initialTouchX = event.rawX
                         initialTouchY = event.rawY
-                        return true
+                        return false
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        lp.x = initialX + (event.rawX - initialTouchX).toInt()
-                        lp.y = initialY + (event.rawY - initialTouchY).toInt()
-                        if (isAdded && rootContainer != null) {
-                            try {
-                                windowManager.updateViewLayout(rootContainer, lp)
-                            } catch (_: Exception) {
+                        val dx = (event.rawX - initialTouchX).toInt()
+                        val dy = (event.rawY - initialTouchY).toInt()
+                        if (kotlin.math.abs(dx) > 8 || kotlin.math.abs(dy) > 8) {
+                            lp.x = initialX + dx
+                            lp.y = initialY + dy
+                            if (isAdded && rootContainer != null) {
+                                try {
+                                    windowManager.updateViewLayout(rootContainer, lp)
+                                } catch (_: Exception) {
+                                }
                             }
+                            return true
                         }
-                        return true
                     }
                 }
                 return false
             }
         }
 
+        topStatusBarPill?.setOnTouchListener(dragListener)
         cardContainer?.setOnTouchListener(dragListener)
     }
 

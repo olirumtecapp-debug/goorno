@@ -257,4 +257,39 @@ class GoOrNoEngineAndParserTest {
             BrazilianOfferParser.isSameOrUpdatedOffer(offer1, offerUpdated)
         )
     }
+
+    // 11. TESTE DE NÓS FRAGMENTADOS DA ÁRVORE DE ACESSIBILIDADE DA 99 ("R$" separado de "8,10")
+    @Test
+    fun `test fragmented 99 accessibility nodes with standalone R_dollar and split km min`() {
+        val fragmentedNodes = listOf(
+            "Pgto. no app",
+            "R$",
+            "8,10",
+            "⚡1,1x",
+            "R$2,18/km",
+            "R$1,16 por deslocamento incl.",
+            "5",
+            "min",
+            "(1,2",
+            "km)",
+            "Rua Antônio Zanetti, 84, Jardim Las Vegas",
+            "6",
+            "min",
+            "(2,5",
+            "km)",
+            "Rua Solimões, 534, Vila Cecilia Maria"
+        )
+        val normalized = BrazilianOfferParser.normalizeFragmentedNodes(fragmentedNodes)
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(normalized)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+        assertEquals(8.10, offer.offeredPrice!!, 0.001)
+        assertEquals(1.2, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(2.5, offer.tripDistanceKm!!, 0.001)
+        assertEquals(5, offer.pickupDurationMin)
+        assertEquals(6, offer.tripDurationMin)
+        assertEquals("Rua Antônio Zanetti, 84, Jardim Las Vegas", offer.originAddress)
+        assertEquals("Rua Solimões, 534, Vila Cecilia Maria", offer.destinationAddress)
+    }
 }
+
