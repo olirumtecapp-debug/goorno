@@ -63,6 +63,17 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
 
+        <!-- Receptor do Botão "Desativar GoOrNo" direto na Notificação da Barra de Status -->
+        <receiver
+            android:name=".service.CopilotNotificationReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.creativeam.goorno.ACTION_DISABLE_COPILOT" />
+                <action android:name="com.creativeam.goorno.ACTION_DISMISS_OVERLAY_CARD" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

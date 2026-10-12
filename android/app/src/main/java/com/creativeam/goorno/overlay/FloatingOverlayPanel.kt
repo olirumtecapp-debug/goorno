@@ -20,22 +20,26 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import com.creativeam.goorno.diagnostics.CopilotRuntimeState
 import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.model.DriverFinancialConfig
 import com.creativeam.goorno.model.FinancialEvaluationResult
 import com.creativeam.goorno.model.TrafficLightVerdict
 import java.util.Locale
+import kotlin.math.abs
 
 /**
- * Painel Flutuante Nativo v2.3.0 — Com Barrinha de Status no Topo + Janelinha Direta Temporizada.
- * - Exibe no topo da tela (próximo ao relógio e ao ícone da 99) a barrinha discreta:
- *   "🟢 GoOrNo ATIVO · Monitorando" (ou alerta amarelo caso a Acessibilidade precise ser ligada).
- * - Marcado com IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS para nunca interferir na leitura
- *   da janela da 99 Motorista ou da Uber Driver que está embaixo.
- * - Quando toca corrida (1 ou várias viagens simultâneas), abre o Card Clean DIRETO abaixo da barrinha
- *   e esconde o Card automaticamente após os segundos escolhidos pelo motorista (mantendo a barrinha ativa no topo).
+ * Painel Flutuante Nativo v2.6.0 — Zero Flutuação em Espera + Fechamento 1-Toque Instantâneo.
+ *
+ * - Enquanto o motorista está trabalhando e aguardando corrida, NADA fica flutuando na tela!
+ *   O status de ativo fica exclusivamente no ícone da barra superior do Android (ao lado do relógio e do ícone da 99),
+ *   onde há o botão "Desativar GoOrNo".
+ * - Quando toca corrida (ou o motorista abre a lista de Solicitações / clica no mapinha da 99),
+ *   a janela de cálculo abre automaticamente, mostra o Semáforo + R$/km + R$/h + Lucro Líquido,
+ *   conta os segundos regressivamente e:
+ *   1. Fecha sozinha ao fim da contagem (removendo totalmente a janela da tela).
+ *   2. Fecha IMEDIATAMENTE com 1 simples toque em QUALQUER lugar do card (ou no botão grande "✕ Fechar").
+ *   3. Nunca reabre sozinha para a mesma corrida já exibida/fechada!
  */
 class FloatingOverlayPanel(private val context: Context) {
 
@@ -43,8 +47,6 @@ class FloatingOverlayPanel(private val context: Context) {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private var rootContainer: LinearLayout? = null
-    private var topStatusBarPill: LinearLayout? = null
-    private var tvTopStatusBarText: TextView? = null
     private var cardContainer: LinearLayout? = null
     private var offersListLayout: LinearLayout? = null
     private var tvHeaderTitle: TextView? = null
@@ -55,14 +57,25 @@ class FloatingOverlayPanel(private val context: Context) {
     private var isAccessibilityActive = false
     private var lastResultsShown: List<FinancialEvaluationResult> = emptyList()
 
-    private var currentOpacityPercent: Int = 92
-    private var displayDurationSec: Int = 10
+    private var currentOpacityPercent: Int = 94
+    private var displayDurationSec: Int = 8
+    private var remainingSeconds: Int = 8
     private var isMonitoringEnabled: Boolean = true
     var onUserRequestedDisableCopilot: (() -> Unit)? = null
+    var onOfferCardClosed: (() -> Unit)? = null
 
-    // Quando o tempo definido pelo motorista termina, o card de oferta fecha sozinho e fica apenas a barrinha no topo!
-    private val autoHideCardRunnable = Runnable {
-        hideOfferCardOnly()
+    // Contagem regressiva de 1 em 1 segundo que remove completamente a janela ao terminar
+    private val countdownRunnable = object : Runnable {
+        override fun run() {
+            remainingSeconds--
+            if (remainingSeconds <= 0) {
+                hidePanel()
+                onOfferCardClosed?.invoke()
+            } else {
+                tvTimerHint?.text = "⏱ ${remainingSeconds}s"
+                mainHandler.postDelayed(this, 1000L)
+            }
+        }
     }
 
     fun hasOverlayPermission(): Boolean {
@@ -73,19 +86,20 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun setMonitoringEnabled(enabled: Boolean, accessibilityEnabled: Boolean = isAccessibilityActive) {
         isMonitoringEnabled = enabled
+        isAccessibilityActive = accessibilityEnabled
         if (!enabled) {
             hidePanel()
-        } else {
-            showOrUpdateTopStatusBar(accessibilityEnabled)
         }
     }
 
     fun isCopilotMonitoringEnabled(): Boolean = isMonitoringEnabled
 
+    fun isCardCurrentlyVisible(): Boolean = isAdded && cardContainer?.visibility == View.VISIBLE
+
     fun applyConfig(config: DriverFinancialConfig) {
         mainHandler.post {
             currentOpacityPercent = config.overlayOpacityPercent.coerceIn(25, 100)
-            displayDurationSec = config.overlayAutoMinimizeSec.coerceIn(3, 60)
+            displayDurationSec = config.overlayAutoMinimizeSec.coerceIn(3, 45)
             isMonitoringEnabled = config.copilotMonitoringEnabled
             rootContainer?.alpha = currentOpacityPercent / 100f
             if (!isMonitoringEnabled) {
@@ -95,28 +109,13 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     /**
-     * Garante que a barrinha de status no topo da tela esteja visível e atualizada (apenas se o motorista não tiver desativado o app).
+     * Atualiza apenas o estado interno de acessibilidade — NUNCA desenha barrinha flutuante em espera,
+     * deixando a tela do motorista 100% limpa enquanto trabalha!
      */
     fun showOrUpdateTopStatusBar(accessibilityEnabled: Boolean, statusSubtext: String? = null) {
-        mainHandler.post {
-            isAccessibilityActive = accessibilityEnabled
-            if (!isMonitoringEnabled || !hasOverlayPermission()) {
-                if (!isMonitoringEnabled) hidePanel()
-                return@post
-            }
-            ensureViewsCreated()
-            attachWindowIfNeeded()
-
-            if (accessibilityEnabled) {
-                topStatusBarPill?.background = roundedCardBg("#073B32", "#10B981", 20f, 1)
-                val extra = if (!statusSubtext.isNullOrBlank()) " · $statusSubtext" else " · Monitorando Uber/99"
-                tvTopStatusBarText?.text = "🟢 GoOrNo ATIVO$extra"
-                tvTopStatusBarText?.setTextColor(Color.WHITE)
-            } else {
-                topStatusBarPill?.background = roundedCardBg("#FEF3C7", "#D97706", 20f, 2)
-                tvTopStatusBarText?.text = "⚠️ GoOrNo: Toque aqui p/ Ativar Leitor"
-                tvTopStatusBarText?.setTextColor(Color.parseColor("#92400E"))
-            }
+        isAccessibilityActive = accessibilityEnabled
+        if (!isMonitoringEnabled) {
+            hidePanel()
         }
     }
 
@@ -125,7 +124,7 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     /**
-     * Exibe 1 ou mais viagens simultâneas diretamente na janela flutuante clean e agenda o desaparecimento automático do card.
+     * Exibe 1 ou mais viagens simultâneas diretamente na janela flutuante e agenda o fechamento total automático.
      */
     fun showEvaluations(results: List<FinancialEvaluationResult>) {
         if (results.isEmpty()) return
@@ -134,6 +133,10 @@ class FloatingOverlayPanel(private val context: Context) {
                 RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.PERMISSION_MISSING)
                 return@post
             }
+            if (!isMonitoringEnabled && results.none { it.offer.isSimulated }) {
+                return@post
+            }
+
             lastResultsShown = results
             ensureViewsCreated()
             attachWindowIfNeeded()
@@ -149,11 +152,13 @@ class FloatingOverlayPanel(private val context: Context) {
             val appName = primary.offer.sourceApp.displayName
             val simTag = if (primary.offer.isSimulated) " · TESTE" else ""
             tvHeaderTitle?.text = if (results.size > 1) {
-                "$appName (${results.size} Viagens na Tela)$simTag"
+                "$appName (${results.size} Ofertas)$simTag"
             } else {
                 "$appName (${primary.offer.rideCategory ?: "Oferta"})$simTag"
             }
-            tvTimerHint?.text = "⏱ ${displayDurationSec}s"
+
+            remainingSeconds = displayDurationSec
+            tvTimerHint?.text = "⏱ ${remainingSeconds}s"
 
             results.take(3).forEachIndexed { index, eval ->
                 val itemView = buildOfferItemView(
@@ -164,28 +169,32 @@ class FloatingOverlayPanel(private val context: Context) {
                 offersListLayout?.addView(itemView)
             }
 
-            // Reinicia o cronômetro para esconder o card após o tempo configurado pelo motorista
-            mainHandler.removeCallbacks(autoHideCardRunnable)
-            mainHandler.postDelayed(autoHideCardRunnable, displayDurationSec * 1000L)
+            // Inicia contagem regressiva de 1 em 1 segundo para fechar e remover totalmente a janela da tela
+            mainHandler.removeCallbacks(countdownRunnable)
+            mainHandler.postDelayed(countdownRunnable, 1000L)
         }
     }
 
     /**
-     * Esconde apenas o Card de Oferta após os segundos configurados, mantendo a barrinha de status ativa no topo!
+     * Acionado quando o motorista toca no card ou no botão "✕ Fechar" para fechar a janela imediatamente.
      */
+    fun dismissCurrentOfferCardByUser() {
+        hidePanel()
+        onOfferCardClosed?.invoke()
+    }
+
     fun hideOfferCardOnly() {
-        mainHandler.post {
-            mainHandler.removeCallbacks(autoHideCardRunnable)
-            cardContainer?.visibility = View.GONE
-        }
+        hidePanel()
+        onOfferCardClosed?.invoke()
     }
 
     /**
-     * Remove completamente a janela flutuante e a barrinha (usado quando o motorista clica em Desativar Monitoramento).
+     * Remove completamente a janela flutuante da tela (deixando a tela 100% livre).
      */
     fun hidePanel() {
         mainHandler.post {
-            mainHandler.removeCallbacks(autoHideCardRunnable)
+            mainHandler.removeCallbacks(countdownRunnable)
+            cardContainer?.visibility = View.GONE
             if (isAdded && rootContainer != null) {
                 try {
                     windowManager.removeView(rootContainer)
@@ -226,6 +235,8 @@ class FloatingOverlayPanel(private val context: Context) {
             )
             if (index > 1) lp.topMargin = dp(8)
             layoutParams = lp
+            // Tocar em qualquer área do card fecha a janela imediatamente sem esforço!
+            setOnClickListener { dismissCurrentOfferCardByUser() }
         }
 
         val priceStr = offer.offeredPrice?.let { formatCurrency(it) } ?: "R$ --"
@@ -246,6 +257,7 @@ class FloatingOverlayPanel(private val context: Context) {
             setTypeface(typeface, Typeface.BOLD)
             setPadding(dp(10), dp(5), dp(10), dp(5))
             background = roundedBg(badgeHex, 10f)
+            setOnClickListener { dismissCurrentOfferCardByUser() }
         }
         box.addView(tvBadge)
 
@@ -261,6 +273,7 @@ class FloatingOverlayPanel(private val context: Context) {
             )
             lp.topMargin = dp(6)
             layoutParams = lp
+            setOnClickListener { dismissCurrentOfferCardByUser() }
         }
         box.addView(tvMetrics)
 
@@ -280,11 +293,12 @@ class FloatingOverlayPanel(private val context: Context) {
                 )
                 lp.topMargin = dp(2)
                 layoutParams = lp
+                setOnClickListener { dismissCurrentOfferCardByUser() }
             }
             box.addView(tvSub)
         }
 
-        // Botões Pílula Modernos 1-Toque para abrir Origem e Destino no Google Street View
+        // Botões Pílula Modernos 1-Toque para abrir Origem e Destino no Google Street View / Maps
         if (!offer.originAddress.isNullOrBlank() || !offer.destinationAddress.isNullOrBlank()) {
             val btnRow = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -360,93 +374,28 @@ class FloatingOverlayPanel(private val context: Context) {
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             x = 0
-            y = dp(6)
+            y = dp(18)
         }
 
         rootContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             alpha = currentOpacityPercent / 100f
-            // Essencial: impede que a janela do GoOrNo apareça na árvore de Acessibilidade,
-            // garantindo que o leitor sempre enxergue a 99 Motorista e a Uber Driver embaixo!
+            // Essencial: impede que a janela do GoOrNo apareça na árvore de Acessibilidade
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         }
 
-        // 1. BARRINHA FIXA NO TOPO (Mostra claramente que o GoOrNo está ativo + botão ✕ para desligar quando não estiver rodando)
-        topStatusBarPill = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(5), dp(8), dp(5))
-            background = roundedCardBg("#073B32", "#10B981", 20f, 1)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                elevation = dp(6).toFloat()
-            }
-        }
-
-        tvTopStatusBarText = TextView(context).apply {
-            text = "🟢 GoOrNo ATIVO · Monitorando Uber/99"
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-            setTypeface(typeface, Typeface.BOLD)
-            setOnClickListener {
-                if (!isAccessibilityActive) {
-                    try {
-                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(intent)
-                        Toast.makeText(
-                            context,
-                            "Ative o 'GoOrNo Copiloto' em Serviços Instalados para ler a tela da 99/Uber!",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } catch (_: Exception) {
-                    }
-                } else if (lastResultsShown.isNotEmpty() && cardContainer?.visibility != View.VISIBLE) {
-                    showEvaluations(lastResultsShown)
-                } else {
-                    Toast.makeText(
-                        context,
-                        "🟢 GoOrNo ATIVO! Toque no '✕' ao lado da barrinha quando quiser desligar o monitoramento.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
-
-        val btnDisableTopBar = TextView(context).apply {
-            text = "✕"
-            setTextColor(Color.parseColor("#FCA5A5"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
-            setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(8), dp(1), dp(4), dp(1))
-            setOnClickListener {
-                hidePanel()
-                onUserRequestedDisableCopilot?.invoke()
-                Toast.makeText(
-                    context,
-                    "🔴 GoOrNo desativado! Abra o app GoOrNo quando quiser ligar novamente.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-
-        topStatusBarPill?.addView(tvTopStatusBarText)
-        topStatusBarPill?.addView(btnDisableTopBar)
-        rootContainer?.addView(topStatusBarPill)
-
-        // 2. CARD DE ANÁLISE DE OFERTA (Abre DIRETO quando toca corrida e fecha sozinho após N segundos)
+        // CARD DE ANÁLISE DE OFERTA (Só existe na tela enquanto está mostrando o cálculo!)
         cardContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             visibility = View.GONE
-            setPadding(dp(14), dp(10), dp(14), dp(12))
+            setPadding(dp(14), dp(10), dp(14), dp(10))
             background = roundedCardBg("#FFFFFF", "#059669", 20f, 2)
-            minimumWidth = dp(328)
+            minimumWidth = dp(330)
             val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            lp.topMargin = dp(6)
             layoutParams = lp
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(10).toFloat()
@@ -456,6 +405,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            setOnClickListener { dismissCurrentOfferCardByUser() }
         }
 
         tvHeaderTitle = TextView(context).apply {
@@ -464,14 +414,15 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            setOnClickListener { dismissCurrentOfferCardByUser() }
         }
 
         tvTimerHint = TextView(context).apply {
-            text = "⏱ 10s"
+            text = "⏱ 8s"
             setTextColor(Color.parseColor("#073B32"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(8), dp(3), dp(8), dp(3))
+            setPadding(dp(8), dp(4), dp(8), dp(4))
             background = roundedBg("#E2E8F0", 12f)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -479,17 +430,19 @@ class FloatingOverlayPanel(private val context: Context) {
             ).apply {
                 marginEnd = dp(6)
             }
+            setOnClickListener { dismissCurrentOfferCardByUser() }
         }
 
+        // Botão grande e fácil de tocar "✕ Fechar"
         val btnClose = TextView(context).apply {
-            text = "✕"
-            setTextColor(Color.parseColor("#DC2626"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            text = "✕ Fechar"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTypeface(typeface, Typeface.BOLD)
             gravity = Gravity.CENTER
-            setPadding(dp(8), dp(3), dp(8), dp(3))
-            background = roundedBg("#FEE2E2", 12f)
-            setOnClickListener { hideOfferCardOnly() }
+            setPadding(dp(12), dp(5), dp(12), dp(5))
+            background = roundedBg("#DC2626", 14f)
+            setOnClickListener { dismissCurrentOfferCardByUser() }
         }
 
         topRow.addView(tvHeaderTitle)
@@ -506,16 +459,32 @@ class FloatingOverlayPanel(private val context: Context) {
             layoutParams = lp
         }
 
+        val tvTapAnywhereHint = TextView(context).apply {
+            text = "👆 Toque em qualquer parte da janela para fechar"
+            setTextColor(Color.parseColor("#64748B"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+            gravity = Gravity.CENTER
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            lp.topMargin = dp(6)
+            layoutParams = lp
+            setOnClickListener { dismissCurrentOfferCardByUser() }
+        }
+
         cardContainer?.addView(topRow)
         cardContainer?.addView(offersListLayout)
+        cardContainer?.addView(tvTapAnywhereHint)
         rootContainer?.addView(cardContainer)
 
-        // Permite arrastar o painel para qualquer posição da tela
-        val dragListener = object : View.OnTouchListener {
+        // Permite arrastar o card caso queira mover, e se for um toque rápido (click) fecha na hora!
+        val dragOrTapListener = object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
             private var initialTouchX = 0f
             private var initialTouchY = 0f
+            private var wasDragged = false
 
             override fun onTouch(v: View?, event: MotionEvent): Boolean {
                 val lp = layoutParams ?: return false
@@ -525,12 +494,14 @@ class FloatingOverlayPanel(private val context: Context) {
                         initialY = lp.y
                         initialTouchX = event.rawX
                         initialTouchY = event.rawY
-                        return false
+                        wasDragged = false
+                        return true
                     }
                     MotionEvent.ACTION_MOVE -> {
                         val dx = (event.rawX - initialTouchX).toInt()
                         val dy = (event.rawY - initialTouchY).toInt()
-                        if (kotlin.math.abs(dx) > 8 || kotlin.math.abs(dy) > 8) {
+                        if (abs(dx) > 10 || abs(dy) > 10) {
+                            wasDragged = true
                             lp.x = initialX + dx
                             lp.y = initialY + dy
                             if (isAdded && rootContainer != null) {
@@ -542,13 +513,18 @@ class FloatingOverlayPanel(private val context: Context) {
                             return true
                         }
                     }
+                    MotionEvent.ACTION_UP -> {
+                        if (!wasDragged) {
+                            dismissCurrentOfferCardByUser()
+                        }
+                        return true
+                    }
                 }
                 return false
             }
         }
 
-        topStatusBarPill?.setOnTouchListener(dragListener)
-        cardContainer?.setOnTouchListener(dragListener)
+        cardContainer?.setOnTouchListener(dragOrTapListener)
     }
 
     private fun verdictPalette(verdict: TrafficLightVerdict): Triple<String, String, String> {

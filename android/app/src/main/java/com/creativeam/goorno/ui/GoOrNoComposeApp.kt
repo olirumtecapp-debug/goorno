@@ -41,6 +41,7 @@ import com.creativeam.goorno.engine.FinancialEngine
 import com.creativeam.goorno.model.*
 import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
 import com.creativeam.goorno.reader.uber.UberOfferReader
+import com.creativeam.goorno.service.CopilotNotificationReceiver
 import com.creativeam.goorno.ui.theme.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -139,7 +140,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v2.5.0",
+                                            text = "v2.6.0",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
@@ -385,11 +386,13 @@ fun GoOrNoComposeApp(
                                                     app.preferencesRepository.saveConfig(updated)
                                                     app.overlayPanel.setMonitoringEnabled(newEnabled, hasAccessibilityPermission)
                                                     if (!newEnabled) {
+                                                        CopilotNotificationReceiver.cancelActiveNotification(context)
                                                         onStopAllBackgroundServices()
-                                                        notifyUser("GoOrNo desativado! A barrinha do topo e a leitura foram desligadas.")
+                                                        notifyUser("GoOrNo desativado! Notificação e leitura em segundo plano foram desligadas.")
                                                     } else {
+                                                        CopilotNotificationReceiver.showActiveNotification(context)
                                                         RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READING_IN_PROGRESS)
-                                                        notifyUser("GoOrNo ligado! Monitorando chamadas da Uber e 99.")
+                                                        notifyUser("GoOrNo ligado! Monitorando chamadas da Uber e 99 (sem nada flutuando em espera).")
                                                     }
                                                 }
                                             }

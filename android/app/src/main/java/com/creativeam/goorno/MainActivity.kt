@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import com.creativeam.goorno.diagnostics.CopilotRuntimeState
 import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.ocr.OcrScreenCaptureService
+import com.creativeam.goorno.service.CopilotNotificationReceiver
 import com.creativeam.goorno.service.GoOrNoAccessibilityService
 import com.creativeam.goorno.ui.GoOrNoComposeApp
 import com.creativeam.goorno.ui.theme.GoOrNoTheme
@@ -92,12 +93,15 @@ class MainActivity : ComponentActivity() {
         hasAccessibilityPerm = isAccessibilityServiceEnabled()
         RuntimeDiagnosticsBus.setAccessibilityConnected(hasAccessibilityPerm)
 
-        // Respeita a chave Liga/Desliga do motorista para mostrar ou esconder a barrinha do topo
         val app = applicationContext as? GoOrNoApplication
         if (hasOverlayPerm && app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
             app.overlayPanel.showOrUpdateTopStatusBar(accessibilityEnabled = hasAccessibilityPerm)
+            if (hasAccessibilityPerm) {
+                CopilotNotificationReceiver.showActiveNotification(this)
+            }
         } else if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
             app.overlayPanel.hidePanel()
+            CopilotNotificationReceiver.cancelActiveNotification(this)
         }
 
         if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
