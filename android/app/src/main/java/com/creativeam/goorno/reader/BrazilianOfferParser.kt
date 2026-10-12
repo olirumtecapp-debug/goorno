@@ -25,7 +25,7 @@ object BrazilianOfferParser {
 
     // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "R$1,44/km aprox.", "R$ 1,16 por deslocamento", "R$ 45/h")
     private val NON_OFFER_PRICE_NOISE_REGEX = Regex(
-        pattern = """R\$\s*\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus)""",
+        pattern = """R\$\s*\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km(?:\s*aprox\.?)?|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus)""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -78,7 +78,7 @@ object BrazilianOfferParser {
     )
 
     private val STREET_PREFIX_REGEX = Regex(
-        pattern = """^(Rua|R\.|Av\.|Avenida|Alameda|Al\.|Travessa|Tv\.|Praça|Pç\.|Estrada|Estr\.|Rodovia|Rod\.|Via|Largo|Terminal|Aeroporto|Shopping|Condomínio|Hospital|Estação)\b.*""",
+        pattern = """^(Rua|R\.|Av\.|Avenida|Alameda|Al\.|Travessa|Tv\.|Praça|Pç\.|Estrada|Estr\.|Rodovia|Rod\.|Via|Largo|Terminal|Aeroporto|Shopping|Condomínio|Hospital|Estação)(?:\b|\s).*""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -220,13 +220,7 @@ object BrazilianOfferParser {
         val results = mutableListOf<Double>()
         for (line in normalized) {
             val lower = line.lowercase(Locale.getDefault())
-            if (lower.contains("por deslocamento") ||
-                lower.contains("deslocamento incl") ||
-                lower.contains("incluído") ||
-                lower.contains("incluido") ||
-                lower.contains("/km") ||
-                lower.contains("aprox")
-            ) {
+            if (lower.contains("por deslocamento") || lower.contains("deslocamento incl")) {
                 continue
             }
             val sanitized = stripNonOfferPriceNoise(line)
@@ -586,10 +580,6 @@ object BrazilianOfferParser {
             val lower = line.lowercase(Locale.getDefault())
             if (lower.contains("por deslocamento") ||
                 lower.contains("deslocamento incl") ||
-                lower.contains("incluído") ||
-                lower.contains("incluido") ||
-                lower.contains("/km") ||
-                lower.contains("aprox") ||
                 lower.contains("meta") ||
                 lower.contains("saldo") ||
                 lower.contains("ganhos")
