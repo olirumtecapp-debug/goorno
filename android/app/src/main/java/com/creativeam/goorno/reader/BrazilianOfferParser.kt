@@ -16,7 +16,7 @@ import kotlin.math.abs
  */
 object BrazilianOfferParser {
 
-    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "R$ 1,16 por deslocamento", "R$ 45/h")
+    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "R$ 2,18 / km", "R$ 1,16 por deslocamento", "R$ 45/h")
     private val NON_OFFER_PRICE_NOISE_REGEX = Regex(
         pattern = """R\$\s*\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do)""",
         option = RegexOption.IGNORE_CASE
@@ -34,9 +34,9 @@ object BrazilianOfferParser {
         option = RegexOption.IGNORE_CASE
     )
 
-    // Ex: "3,8 km", "12 km", "1,25 km" (mas não "/km" ou "R$2,18/km")
+    // Ex: "3,8 km", "12 km", "(1,2 km)", "1,25 km" (mas não "/km" ou "R$2,18/km")
     private val KM_REGEX = Regex(
-        pattern = """(?<!/)\b(\d{1,3}(?:[.,]\d{1,2})?)\s*km\b""",
+        pattern = """(?<![/\d.,])(\d{1,3}(?:[.,]\d{1,2})?)\s*km\b""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -312,16 +312,17 @@ object BrazilianOfferParser {
 
             if (lower.contains("corridas") || lower.contains("deslocamento") ||
                 lower.contains("pgto.") || lower.contains("perfil ") ||
-                MIN_AND_KM_PAIR_REGEX.containsMatchIn(clean)
+                MIN_AND_KM_PAIR_REGEX.containsMatchIn(clean) ||
+                KM_REGEX.containsMatchIn(clean) ||
+                MINUTES_REGEX.containsMatchIn(clean)
             ) {
                 continue
             }
 
             if (STREET_PREFIX_REGEX.matches(clean) ||
-                (clean.contains(",") && clean.any { it.isDigit() } &&
-                    !clean.contains("R$", ignoreCase = true) &&
-                    !KM_REGEX.containsMatchIn(clean) &&
-                    !MINUTES_REGEX.containsMatchIn(clean))
+                (clean.length >= 10 && clean.contains(",") && clean.any { it.isDigit() } &&
+                    clean.any { it.isLetter() } &&
+                    !clean.contains("R$", ignoreCase = true))
             ) {
                 if (!streetCandidates.contains(clean)) {
                     streetCandidates.add(clean)
