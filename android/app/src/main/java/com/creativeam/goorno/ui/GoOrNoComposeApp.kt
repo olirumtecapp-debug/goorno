@@ -139,7 +139,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v2.3.0",
+                                            text = "v2.4.0",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
@@ -262,10 +262,10 @@ fun GoOrNoComposeApp(
                 ) {
                     val quickTabs = listOf(
                         Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
-                        Triple(GoOrNoScreen.SERVICES_ACTIVATION, Icons.Default.Layers, "Serviços"),
+                        Triple(GoOrNoScreen.VEHICLE_COSTS, Icons.Default.LocalGasStation, "Custos"),
                         Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
                         Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico"),
-                        Triple(GoOrNoScreen.DIAGNOSTICS_TESTS, Icons.Default.PlayCircle, "Simulador")
+                        Triple(GoOrNoScreen.FINANCIAL_SUMMARY, Icons.Default.BarChart, "Resumo")
                     )
                     quickTabs.forEach { (screen, icon, label) ->
                         NavigationBarItem(
@@ -505,24 +505,6 @@ fun GoOrNoComposeApp(
                                         fontSize = 12.sp,
                                         color = MutedText
                                     )
-                                    Spacer(modifier = Modifier.height(10.dp))
-                                    FilledTonalButton(
-                                        onClick = { currentScreen = GoOrNoScreen.DIAGNOSTICS_TESTS },
-                                        colors = ButtonDefaults.filledTonalButtonColors(
-                                            containerColor = SoftSurfaceVariant,
-                                            contentColor = PetrolHeader
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(17.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "Abrir Simulador de Viagens da Uber e 99",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -924,6 +906,8 @@ fun GoOrNoComposeApp(
                 // =====================================================
                 GoOrNoScreen.SERVICES_ACTIVATION -> {
                     item {
+                        var showAdvancedOcr by remember { mutableStateOf(false) }
+
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -934,6 +918,12 @@ fun GoOrNoComposeApp(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
+                                Text(
+                                    text = "Permissões Obrigatórias do Copiloto (Apenas 2 Passos):",
+                                    fontSize = 12.sp,
+                                    color = MutedText
+                                )
+
                                 Text(
                                     text = "1. Permissão de Sobreposição (Janela Flutuante)",
                                     fontWeight = FontWeight.Black,
@@ -951,7 +941,8 @@ fun GoOrNoComposeApp(
                                         containerColor = PetrolHeader,
                                         contentColor = Color.White
                                     ),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Icon(Icons.Default.Layers, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
@@ -961,7 +952,7 @@ fun GoOrNoComposeApp(
                                 HorizontalDivider(color = CleanCardBorder)
 
                                 Text(
-                                    text = "2. Método Principal: Serviço de Acessibilidade",
+                                    text = "2. Leitor Automático (Acessibilidade GoOrNo)",
                                     fontWeight = FontWeight.Black,
                                     color = PetrolHeader
                                 )
@@ -980,7 +971,8 @@ fun GoOrNoComposeApp(
                                         containerColor = PetrolHeader,
                                         contentColor = Color.White
                                     ),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Icon(Icons.Default.AccessibilityNew, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
@@ -989,33 +981,87 @@ fun GoOrNoComposeApp(
 
                                 HorizontalDivider(color = CleanCardBorder)
 
-                                Text(
-                                    text = "3. Método Alternativo: Leitura OCR por Captura de Tela (ML Kit Local)",
-                                    fontWeight = FontWeight.Black,
-                                    color = PetrolHeader
-                                )
-                                Text(
-                                    text = if (ocrActive)
-                                        "Status OCR: ATIVO EM SEGUNDO PLANO ✓"
-                                    else
-                                        "Status OCR: DESLIGADO (Ative caso alguma oferta da Uber/99 não exponha texto na Acessibilidade)",
-                                    fontSize = 12.sp,
-                                    color = MutedText
-                                )
-                                FilledTonalButton(
-                                    onClick = onRequestOcrCapturePermission,
-                                    colors = ButtonDefaults.filledTonalButtonColors(
-                                        containerColor = SoftSurfaceVariant,
-                                        contentColor = PetrolHeader
-                                    ),
-                                    shape = RoundedCornerShape(12.dp)
+                                // Atalho discreto para Modo Avançado (OCR) e Diagnóstico/Simulador
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = if (ocrActive) "Reiniciar Permissão OCR" else "Autorizar Captura OCR (MediaProjection)",
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    FilledTonalButton(
+                                        onClick = { showAdvancedOcr = !showAdvancedOcr },
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = SoftSurfaceVariant,
+                                            contentColor = PetrolDarkText
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (showAdvancedOcr) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Modo Avançado (OCR)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    FilledTonalButton(
+                                        onClick = { currentScreen = GoOrNoScreen.DIAGNOSTICS_TESTS },
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = SoftSurfaceVariant,
+                                            contentColor = PetrolHeader
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Diagnóstico & Simulador", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+
+                                if (showAdvancedOcr) {
+                                    Surface(
+                                        color = SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "Leitor Reserva por Imagem (OCR — Opcional)",
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 12.5.sp,
+                                                color = PetrolHeader
+                                            )
+                                            Text(
+                                                text = if (ocrActive)
+                                                    "Status OCR: ATIVO EM SEGUNDO PLANO ✓"
+                                                else
+                                                    "Não é necessário ativar no dia a dia. Use apenas se a Uber ou 99 bloquearem a leitura padrão por Acessibilidade.",
+                                                fontSize = 11.5.sp,
+                                                color = MutedText
+                                            )
+                                            FilledTonalButton(
+                                                onClick = onRequestOcrCapturePermission,
+                                                colors = ButtonDefaults.filledTonalButtonColors(
+                                                    containerColor = PureWhiteSurface,
+                                                    contentColor = PetrolHeader
+                                                ),
+                                                shape = RoundedCornerShape(10.dp),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = if (ocrActive) "Reiniciar Captura OCR" else "Autorizar Captura OCR (Opcional)",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
 
                                 HorizontalDivider(color = CleanCardBorder)
@@ -1035,7 +1081,7 @@ fun GoOrNoComposeApp(
                                 ) {
                                     Icon(Icons.Default.StopCircle, contentDescription = null)
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Fechar Janelinha e Pausar OCR", fontWeight = FontWeight.Black)
+                                    Text("Fechar Janelinha Flutuante", fontWeight = FontWeight.Black)
                                 }
                             }
                         }
