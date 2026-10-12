@@ -28,11 +28,11 @@ import com.creativeam.goorno.model.TrafficLightVerdict
 import java.util.Locale
 
 /**
- * Painel Flutuante Nativo Direto (WindowManager TYPE_APPLICATION_OVERLAY).
+ * Painel Flutuante Nativo Direto v2.2.0 — Visual Clean, Claro e Moderno.
  * - Sem botões de expandir/minimizar: abre DIRETO com todas as informações assim que a corrida toca!
- * - Some automaticamente após o tempo configurado pelo motorista (ex: 6s, 8s, 10s, 15s).
+ * - Some automaticamente após o tempo configurado pelo motorista (ex: 5s, 8s, 10s, 12s, 15s).
  * - Suporta leitura e exibição de 1 ou MÚLTIPLAS viagens simultâneas na tela (Lista de Ofertas da 99 / Radar Uber).
- * - Permite arrastar livremente pela tela e abrir Origem/Destino no Google Street View em 1 toque.
+ * - Permite arrastar livremente pela tela e abrir Origem/Destino no Google Street View em 1 toque com botões modernos.
  */
 class FloatingOverlayPanel(private val context: Context) {
 
@@ -48,7 +48,7 @@ class FloatingOverlayPanel(private val context: Context) {
     private var layoutParams: WindowManager.LayoutParams? = null
     private var isAdded = false
 
-    private var currentOpacityPercent: Int = 90
+    private var currentOpacityPercent: Int = 92
     private var displayDurationSec: Int = 10
 
     // Quando o tempo definido pelo motorista termina, a janelinha some sozinha!
@@ -75,7 +75,7 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     /**
-     * Exibe 1 ou mais viagens simultâneas diretamente na janela flutuante e agenda o desaparecimento automático.
+     * Exibe 1 ou mais viagens simultâneas diretamente na janela flutuante clean e agenda o desaparecimento automático.
      */
     fun showEvaluations(results: List<FinancialEvaluationResult>) {
         if (results.isEmpty()) return
@@ -99,17 +99,18 @@ class FloatingOverlayPanel(private val context: Context) {
             offersListLayout?.removeAllViews()
 
             val primary = results.first()
-            val (_, primaryBorder) = verdictColors(primary.verdict)
-            cardContainer?.background = roundedCardBg("#04241E", primaryBorder, 16f, 2)
+            val (primaryBadge, _, _) = verdictPalette(primary.verdict)
+            // Card externo branco clean com borda da cor do semáforo
+            cardContainer?.background = roundedCardBg("#FFFFFF", primaryBadge, 20f, 2)
 
             val appName = primary.offer.sourceApp.displayName
-            val simTag = if (primary.offer.isSimulated) " [TESTE]" else ""
+            val simTag = if (primary.offer.isSimulated) " · TESTE" else ""
             tvHeaderTitle?.text = if (results.size > 1) {
-                "$appName · ${results.size} OFERTAS NA TELA$simTag"
+                "GoOrNo · $appName (${results.size} Viagens)$simTag"
             } else {
-                "$appName · ${primary.offer.rideCategory ?: "Oferta"}$simTag"
+                "GoOrNo · $appName (${primary.offer.rideCategory ?: "Oferta"})$simTag"
             }
-            tvTimerHint?.text = "${displayDurationSec}s"
+            tvTimerHint?.text = "⏱ ${displayDurationSec}s"
 
             results.take(3).forEachIndexed { index, eval ->
                 val itemView = buildOfferItemView(
@@ -146,17 +147,17 @@ class FloatingOverlayPanel(private val context: Context) {
         result: FinancialEvaluationResult
     ): View {
         val offer = result.offer
-        val (badgeHex, borderHex) = verdictColors(result.verdict)
+        val (badgeHex, softBgHex, borderHex) = verdictPalette(result.verdict)
 
         val box = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            background = roundedCardBg("#073B32", borderHex, 12f, 1)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = roundedCardBg(softBgHex, borderHex, 14f, 1)
             val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            if (index > 1) lp.topMargin = dp(6)
+            if (index > 1) lp.topMargin = dp(8)
             layoutParams = lp
         }
 
@@ -169,48 +170,54 @@ class FloatingOverlayPanel(private val context: Context) {
         val grossHrStr = result.grossPerHour?.let { formatCurrency(it) + "/h" } ?: "--/h"
         val netStr = result.estimatedNetProfit?.let { formatCurrency(it) } ?: "--"
 
-        // Faixa do Semáforo + Valor da Oferta
+        // Faixa Pílula Moderna do Semáforo + Valor da Oferta
         val tvBadge = TextView(context).apply {
             val prefix = if (totalCount > 1) "#$index " else ""
-            text = "$prefix${result.verdict.label}  ·  $priceStr ($distStr / $minStr)"
+            text = "$prefix${result.verdict.label}  ·  $priceStr  ($distStr · $minStr)"
             setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(8), dp(4), dp(8), dp(4))
-            background = roundedBg(badgeHex, 6f)
+            setPadding(dp(10), dp(5), dp(10), dp(5))
+            background = roundedBg(badgeHex, 10f)
         }
         box.addView(tvBadge)
 
-        // Linha Principal em Destaque: R$/km | R$/hora | Lucro Líquido
+        // Linha Principal Clean de Alto Contraste: R$/km | R$/hora | Lucro Líquido
         val tvMetrics = TextView(context).apply {
-            text = "Ganho: $grossKmStr  |  $grossHrStr  |  Lucro: $netStr"
-            setTextColor(Color.parseColor("#B8D906"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            text = "$grossKmStr   •   $grossHrStr   •   Lucro: $netStr"
+            setTextColor(Color.parseColor("#073B32"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
             setTypeface(typeface, Typeface.BOLD)
             val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            lp.topMargin = dp(4)
+            lp.topMargin = dp(6)
             layoutParams = lp
         }
         box.addView(tvMetrics)
 
-        // Detalhe de Embarque + Viagem quando for 1 oferta ou compacto
+        // Detalhe de Embarque + Viagem quando for 1 oferta
         if (totalCount == 1) {
             val costStr = result.estimatedTotalCost?.let { formatCurrency(it) } ?: "--"
             val tvSub = TextView(context).apply {
-                val pKm = offer.pickupDistanceKm?.let { String.format(Locale.forLanguageTag("pt-BR"), "%.1fkm", it) }
-                val tKm = offer.tripDistanceKm?.let { String.format(Locale.forLanguageTag("pt-BR"), "%.1fkm", it) }
-                val routeInfo = if (pKm != null && tKm != null) "Embarque: $pKm + Viagem: $tKm  |  " else ""
-                text = "${routeInfo}Custo Est.: $costStr"
-                setTextColor(Color.parseColor("#D1FAE5"))
+                val pKm = offer.pickupDistanceKm?.let { String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it) }
+                val tKm = offer.tripDistanceKm?.let { String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it) }
+                val routeInfo = if (pKm != null && tKm != null) "Embarque: $pKm + Viagem: $tKm  ·  " else ""
+                text = "${routeInfo}Custo: $costStr"
+                setTextColor(Color.parseColor("#334155"))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                val lp = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                lp.topMargin = dp(2)
+                layoutParams = lp
             }
             box.addView(tvSub)
         }
 
-        // Botões 1-Toque para abrir Origem e Destino no Google Street View
+        // Botões Pílula Modernos 1-Toque para abrir Origem e Destino no Google Street View
         if (!offer.originAddress.isNullOrBlank() || !offer.destinationAddress.isNullOrBlank()) {
             val btnRow = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -218,22 +225,23 @@ class FloatingOverlayPanel(private val context: Context) {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
-                lp.topMargin = dp(5)
+                lp.topMargin = dp(7)
                 layoutParams = lp
             }
 
             if (!offer.originAddress.isNullOrBlank()) {
                 val btnOrig = TextView(context).apply {
                     text = "📍 Origem: ${offer.originAddress.take(18)}"
-                    setTextColor(Color.parseColor("#04241E"))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+                    setTextColor(Color.WHITE)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                     setTypeface(typeface, Typeface.BOLD)
+                    gravity = Gravity.CENTER
                     ellipsize = TextUtils.TruncateAt.END
                     maxLines = 1
-                    setPadding(dp(8), dp(5), dp(8), dp(5))
-                    background = roundedBg("#97B304", 6f)
+                    setPadding(dp(10), dp(6), dp(10), dp(6))
+                    background = roundedBg("#073B32", 20f)
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                        marginEnd = dp(4)
+                        marginEnd = dp(5)
                     }
                     setOnClickListener { launchStreetViewOrMap(offer.originAddress) }
                 }
@@ -244,12 +252,13 @@ class FloatingOverlayPanel(private val context: Context) {
                 val btnDest = TextView(context).apply {
                     text = "🏁 Destino: ${offer.destinationAddress.take(18)}"
                     setTextColor(Color.WHITE)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                     setTypeface(typeface, Typeface.BOLD)
+                    gravity = Gravity.CENTER
                     ellipsize = TextUtils.TruncateAt.END
                     maxLines = 1
-                    setPadding(dp(8), dp(5), dp(8), dp(5))
-                    background = roundedBg("#0D4A3E", 6f)
+                    setPadding(dp(10), dp(6), dp(10), dp(6))
+                    background = roundedBg("#059669", 20f)
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     setOnClickListener { launchStreetViewOrMap(offer.destinationAddress) }
                 }
@@ -283,7 +292,7 @@ class FloatingOverlayPanel(private val context: Context) {
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             x = 0
-            y = dp(48)
+            y = dp(46)
         }
 
         rootContainer = LinearLayout(context).apply {
@@ -293,12 +302,15 @@ class FloatingOverlayPanel(private val context: Context) {
 
         cardContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            background = roundedCardBg("#04241E", "#97B304", 16f, 2)
-            minimumWidth = dp(320)
+            setPadding(dp(14), dp(10), dp(14), dp(12))
+            background = roundedCardBg("#FFFFFF", "#059669", 20f, 2)
+            minimumWidth = dp(328)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                elevation = dp(10).toFloat()
+            }
         }
 
-        // Topo: Nome do App + Tempo restante + Botão X para fechar na hora
+        // Topo Clean: Título + Pílula do Timer + Botão Fechar Moderno
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -306,25 +318,35 @@ class FloatingOverlayPanel(private val context: Context) {
 
         tvHeaderTitle = TextView(context).apply {
             text = "GoOrNo Copiloto"
-            setTextColor(Color.parseColor("#B8D906"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTextColor(Color.parseColor("#073B32"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
         tvTimerHint = TextView(context).apply {
-            text = "10s"
-            setTextColor(Color.parseColor("#A7F3D0"))
+            text = "⏱ 10s"
+            setTextColor(Color.parseColor("#073B32"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
-            setPadding(dp(6), dp(2), dp(6), dp(2))
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(8), dp(3), dp(8), dp(3))
+            background = roundedBg("#E2E8F0", 12f)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = dp(6)
+            }
         }
 
         val btnClose = TextView(context).apply {
-            text = " ✕ "
-            setTextColor(Color.parseColor("#FCA5A5"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            text = "✕"
+            setTextColor(Color.parseColor("#DC2626"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(6), dp(2), dp(4), dp(2))
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(3), dp(8), dp(3))
+            background = roundedBg("#FEE2E2", 12f)
             setOnClickListener { hidePanel() }
         }
 
@@ -338,7 +360,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            lp.topMargin = dp(4)
+            lp.topMargin = dp(8)
             layoutParams = lp
         }
 
@@ -346,7 +368,7 @@ class FloatingOverlayPanel(private val context: Context) {
         cardContainer?.addView(offersListLayout)
         rootContainer?.addView(cardContainer)
 
-        // Permite arrastar a janelinha para qualquer posição da tela
+        // Permite arrastar a janelinha livremente para qualquer posição da tela
         val dragListener = object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
@@ -382,12 +404,12 @@ class FloatingOverlayPanel(private val context: Context) {
         cardContainer?.setOnTouchListener(dragListener)
     }
 
-    private fun verdictColors(verdict: TrafficLightVerdict): Pair<String, String> {
+    private fun verdictPalette(verdict: TrafficLightVerdict): Triple<String, String, String> {
         return when (verdict) {
-            TrafficLightVerdict.GREEN -> Pair("#0E9F6E", "#31C48D")
-            TrafficLightVerdict.YELLOW -> Pair("#D97706", "#FBBF24")
-            TrafficLightVerdict.RED -> Pair("#DC2626", "#F87171")
-            TrafficLightVerdict.GRAY_NEUTRAL -> Pair("#4B5563", "#9CA3AF")
+            TrafficLightVerdict.GREEN -> Triple("#059669", "#F0FDF4", "#86EFAC")
+            TrafficLightVerdict.YELLOW -> Triple("#D97706", "#FFFBEB", "#FCD34D")
+            TrafficLightVerdict.RED -> Triple("#DC2626", "#FEF2F2", "#FCA5A5")
+            TrafficLightVerdict.GRAY_NEUTRAL -> Triple("#475569", "#F8FAFC", "#CBD5E1")
         }
     }
 

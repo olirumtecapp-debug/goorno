@@ -47,19 +47,19 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * As 10 Telas Oficiais do GoOrNo exigidas na Seção 8.
+ * As 10 Telas Oficiais do GoOrNo v2.2.0 — Interface Clean, Clara e Moderna.
  */
 enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: String) {
-    HOME(1, "Tela Inicial — Copiloto", "Início"),
-    DRIVER_SETUP(2, "Configuração do Motorista & Painel", "Motorista"),
+    HOME(1, "Painel Principal — Copiloto", "Início"),
+    DRIVER_SETUP(2, "Motorista & Janela Flutuante", "Motorista"),
     VEHICLE_COSTS(3, "Veículo e Custos Operacionais", "Custos"),
     FINANCIAL_TARGETS(4, "Metas Financeiras e Semáforo", "Metas"),
-    SERVICES_ACTIVATION(5, "Ativação dos Serviços de Leitura", "Serviços"),
-    CONNECTION_STATUS(6, "Status de Conexão Uber e 99", "Uber / 99"),
+    SERVICES_ACTIVATION(5, "Permissões e Serviços de Leitura", "Serviços"),
+    CONNECTION_STATUS(6, "Conexão com Uber e 99", "Uber / 99"),
     HISTORY(7, "Histórico e Auditoria de Chamadas", "Histórico"),
     FINANCIAL_SUMMARY(8, "Resumo Financeiro", "Resumo"),
-    DIAGNOSTICS_TESTS(9, "Diagnóstico, OCR e Simulação", "Diagnóstico"),
-    PRIVACY_BACKUP(10, "Privacidade, Permissões e Troca de Aparelho", "Privacidade")
+    DIAGNOSTICS_TESTS(9, "Diagnóstico, OCR e Simulador", "Testes"),
+    PRIVACY_BACKUP(10, "Privacidade e Troca de Aparelho", "Backup")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,7 +82,6 @@ fun GoOrNoComposeApp(
     val runtimeState by RuntimeDiagnosticsBus.runtimeState.collectAsState()
     val accessibilityConnected by RuntimeDiagnosticsBus.accessibilityConnected.collectAsState()
     val ocrActive by RuntimeDiagnosticsBus.ocrActive.collectAsState()
-    val overlayVisible by RuntimeDiagnosticsBus.overlayVisible.collectAsState()
     val lastSnapshot by RuntimeDiagnosticsBus.lastSnapshot.collectAsState()
     val lastRealEvaluation by RuntimeDiagnosticsBus.lastRealEvaluation.collectAsState()
     val lastSimulatedEvaluation by RuntimeDiagnosticsBus.lastSimulatedEvaluation.collectAsState()
@@ -96,105 +95,112 @@ fun GoOrNoComposeApp(
 
     Scaffold(
         topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(PetrolSurface)
+            Surface(
+                color = PureWhiteSurface,
+                shadowElevation = 4.dp
             ) {
-                // Header Principal com Logo Oficial e Status
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(id = R.drawable.logo_goorno),
-                            contentDescription = "Logo GoOrNo",
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(PetrolDarkBg)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "GoOrNo",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 18.sp,
-                                    color = Color.White
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Surface(
-                                    color = LimePrimary,
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Header Superior Verde-Petróleo Oficial com Logo e Versão v2.2.0
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(PetrolHeader)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(id = R.drawable.logo_goorno),
+                                contentDescription = "Logo GoOrNo",
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFF04241E))
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "COPILOTO",
-                                        color = PetrolDarkBg,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 10.sp,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        text = "GoOrNo",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 19.sp,
+                                        color = Color.White
                                     )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Surface(
+                                        color = LimeBright,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "v2.2.0",
+                                            color = PetrolDarkText,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = 10.sp,
+                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                        )
+                                    }
                                 }
+                                Text(
+                                    text = runtimeState.label,
+                                    fontSize = 11.sp,
+                                    color = if (accessibilityConnected || ocrActive) Color(0xFFA7F3D0) else Color(0xFFFDE68A)
+                                )
                             }
+                        }
+
+                        // Botão Pílula Moderno de Ajuste Rápido da Janela
+                        FilledTonalButton(
+                            onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP },
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = Color.White.copy(alpha = 0.14f),
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Timer,
+                                contentDescription = null,
+                                tint = LimeBright,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = runtimeState.label,
-                                fontSize = 11.sp,
-                                color = if (accessibilityConnected || ocrActive) LimeBright else Color(0xFFA7F3D0)
+                                text = "${config.overlayAutoMinimizeSec}s · ${config.overlayOpacityPercent}%",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
                             )
                         }
                     }
 
-                    // Botão Rápido Painel Flutuante + Transparência
-                    OutlinedButton(
-                        onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP },
-                        border = BorderStroke(1.dp, LimePrimary),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        modifier = Modifier.height(34.dp)
+                    // Seletor Clean Horizontal das 10 Telas (Pílulas Modernas em Fundo Claro)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(PureWhiteSurface)
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Visibility,
-                            contentDescription = null,
-                            tint = LimeBright,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${config.overlayOpacityPercent}%",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
-
-                // Seletor Horizontal das 10 Telas (Acesso rápido em 1 toque a qualquer módulo)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    GoOrNoScreen.entries.forEach { screen ->
-                        val selected = currentScreen == screen
-                        Surface(
-                            color = if (selected) LimePrimary else PetrolDarkBg,
-                            shape = RoundedCornerShape(20.dp),
-                            border = BorderStroke(1.dp, if (selected) Color.White else PetrolCardBorder),
-                            modifier = Modifier.clickable { currentScreen = screen }
-                        ) {
-                            Text(
-                                text = "${screen.stepNumber}. ${screen.shortTab}",
-                                color = if (selected) PetrolDarkBg else Color.White,
-                                fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
+                        GoOrNoScreen.entries.forEach { screen ->
+                            val selected = currentScreen == screen
+                            Surface(
+                                color = if (selected) PetrolHeader else SoftSurfaceVariant,
+                                shape = RoundedCornerShape(22.dp),
+                                border = BorderStroke(1.dp, if (selected) PetrolHeader else CleanCardBorder),
+                                modifier = Modifier.clickable { currentScreen = screen }
+                            ) {
+                                Text(
+                                    text = "${screen.stepNumber}. ${screen.shortTab}",
+                                    color = if (selected) Color.White else PetrolDarkText,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -202,15 +208,15 @@ fun GoOrNoComposeApp(
         },
         bottomBar = {
             NavigationBar(
-                containerColor = PetrolSurface,
+                containerColor = PureWhiteSurface,
                 tonalElevation = 8.dp
             ) {
                 val quickTabs = listOf(
-                    Triple(GoOrNoScreen.HOME, Icons.Default.PowerSettingsNew, "Início"),
-                    Triple(GoOrNoScreen.SERVICES_ACTIVATION, Icons.Default.Layers, "Flutuante"),
+                    Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
+                    Triple(GoOrNoScreen.SERVICES_ACTIVATION, Icons.Default.Layers, "Serviços"),
                     Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
                     Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico"),
-                    Triple(GoOrNoScreen.DIAGNOSTICS_TESTS, Icons.Default.Science, "Testes")
+                    Triple(GoOrNoScreen.DIAGNOSTICS_TESTS, Icons.Default.PlayCircle, "Simulador")
                 )
                 quickTabs.forEach { (screen, icon, label) ->
                     NavigationBarItem(
@@ -219,11 +225,11 @@ fun GoOrNoComposeApp(
                         icon = { Icon(icon, contentDescription = label) },
                         label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PetrolDarkBg,
-                            selectedTextColor = LimeBright,
-                            indicatorColor = LimePrimary,
-                            unselectedIconColor = Color.White.copy(alpha = 0.7f),
-                            unselectedTextColor = Color.White.copy(alpha = 0.7f)
+                            selectedIconColor = Color.White,
+                            selectedTextColor = PetrolHeader,
+                            indicatorColor = PetrolHeader,
+                            unselectedIconColor = MutedText,
+                            unselectedTextColor = MutedText
                         )
                     )
                 }
@@ -233,7 +239,7 @@ fun GoOrNoComposeApp(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(PetrolDarkBg)
+                .background(CleanLightBg)
                 .padding(innerPadding)
                 .padding(horizontal = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -244,32 +250,33 @@ fun GoOrNoComposeApp(
                     text = "${currentScreen.stepNumber}. ${currentScreen.title}",
                     fontWeight = FontWeight.Black,
                     fontSize = 17.sp,
-                    color = LimeBright
+                    color = PetrolHeader
                 )
             }
 
             if (statusMessage != null) {
                 item {
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0E4F41)),
-                        border = BorderStroke(1.dp, LimeBright)
+                        colors = CardDefaults.cardColors(containerColor = TrafficGreenSoft),
+                        border = BorderStroke(1.dp, TrafficGreen),
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = statusMessage!!,
-                                color = Color.White,
+                                color = PetrolDarkText,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f)
                             )
                             TextButton(onClick = { statusMessage = null }) {
-                                Text("OK", color = LimeBright, fontWeight = FontWeight.Black)
+                                Text("OK", color = PetrolHeader, fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -284,11 +291,10 @@ fun GoOrNoComposeApp(
                     item {
                         val isCopilotReady = hasOverlayPermission && (hasAccessibilityPermission || ocrActive)
                         Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isCopilotReady) Color(0xFF09483B) else PetrolSurface
-                            ),
-                            border = BorderStroke(2.dp, if (isCopilotReady) LimeBright else TrafficYellow),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.5.dp, if (isCopilotReady) TrafficGreen else TrafficYellow),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
@@ -297,23 +303,29 @@ fun GoOrNoComposeApp(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
+                                        Surface(
+                                            color = if (isCopilotReady) TrafficGreenSoft else TrafficYellowSoft,
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isCopilotReady)
+                                                    "🟢 COPILOTO ATIVO E PRONTO"
+                                                else
+                                                    "🟡 FALTA ATIVAR PERMISSÃO ABAIXO",
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 11.5.sp,
+                                                color = if (isCopilotReady) TrafficGreen else TrafficYellow,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             text = if (isCopilotReady)
-                                                "🟢 COPILOTO ATIVO E MONITORANDO"
+                                                "A janelinha abre DIRETO com os cálculos ao tocar chamada na Uber ou 99 (inclusive múltiplas viagens) e some sozinha após ${config.overlayAutoMinimizeSec}s."
                                             else
-                                                "🟡 ATIVE AS 2 PERMISSÕES ABAIXO",
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 15.sp,
-                                            color = if (isCopilotReady) LimeBright else Color.White
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = if (isCopilotReady)
-                                                "A janelinha abrirá DIRETO com os cálculos quando tocar corrida na Uber ou 99 (inclusive múltiplas viagens) e sumirá sozinha em ${config.overlayAutoMinimizeSec}s."
-                                            else
-                                                "Habilite a Janela Flutuante e a Acessibilidade para ler as ofertas da Uber e da 99 automaticamente.",
+                                                "Ative os 2 botões abaixo para o GoOrNo ler as ofertas da Uber e da 99 automaticamente.",
                                             fontSize = 12.sp,
-                                            color = Color.White.copy(alpha = 0.85f)
+                                            color = MutedText
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(10.dp))
@@ -342,41 +354,47 @@ fun GoOrNoComposeApp(
                                                 val evals = offers.map { FinancialEngine.evaluate(it, config) }
                                                 app.overlayPanel.applyConfig(config)
                                                 app.overlayPanel.showEvaluations(evals)
-                                                statusMessage = "Janelinha exibida! Ela sumirá sozinha em ${config.overlayAutoMinimizeSec} segundos."
+                                                statusMessage = "Janelinha clean exibida! Ela sumirá sozinha em ${config.overlayAutoMinimizeSec} segundos."
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = LimePrimary,
-                                            contentColor = PetrolDarkBg
+                                            containerColor = PetrolHeader,
+                                            contentColor = Color.White
                                         ),
-                                        shape = RoundedCornerShape(14.dp)
+                                        shape = RoundedCornerShape(14.dp),
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
-                                        Icon(Icons.Default.Visibility, contentDescription = null)
-                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Visibility,
+                                            contentDescription = null,
+                                            tint = LimeBright,
+                                            modifier = Modifier.size(17.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = if (isCopilotReady) "Testar (${config.overlayAutoMinimizeSec}s)" else "Ativar",
-                                            fontWeight = FontWeight.Black,
+                                            fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp
                                         )
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(10.dp))
-                                // Seletor Rápido do Tempo da Janelinha na Tela (Aparecer e Sumir)
+                                Spacer(modifier = Modifier.height(14.dp))
+                                // Seletor Moderno de Pílulas do Tempo da Janelinha na Tela
                                 Text(
-                                    text = "Tempo que a janelinha fica na tela antes de sumir:",
-                                    fontSize = 11.sp,
+                                    text = "Tempo que a janelinha fica aberta antes de sumir:",
+                                    fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = LimeBright
+                                    color = PetrolDarkText
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(5, 8, 10, 12, 15).forEach { sec ->
                                         val selected = config.overlayAutoMinimizeSec == sec
-                                        OutlinedButton(
+                                        FilledTonalButton(
                                             onClick = {
                                                 val updated = config.copy(overlayAutoMinimizeSec = sec)
                                                 scope.launch {
@@ -384,37 +402,37 @@ fun GoOrNoComposeApp(
                                                     app.overlayPanel.applyConfig(updated)
                                                 }
                                             },
-                                            colors = ButtonDefaults.outlinedButtonColors(
-                                                containerColor = if (selected) LimePrimary else PetrolDarkBg,
-                                                contentColor = if (selected) PetrolDarkBg else Color.White
+                                            colors = ButtonDefaults.filledTonalButtonColors(
+                                                containerColor = if (selected) PetrolHeader else SoftSurfaceVariant,
+                                                contentColor = if (selected) Color.White else PetrolDarkText
                                             ),
-                                            border = BorderStroke(1.dp, if (selected) Color.White else PetrolCardBorder),
-                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .height(32.dp)
+                                                .height(36.dp)
                                         ) {
                                             Text("${sec}s", fontSize = 12.sp, fontWeight = FontWeight.Black)
                                         }
                                     }
                                 }
 
+                                Spacer(modifier = Modifier.height(14.dp))
+                                HorizontalDivider(color = CleanCardBorder)
                                 Spacer(modifier = Modifier.height(12.dp))
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
-                                Spacer(modifier = Modifier.height(10.dp))
 
                                 // Checklist Rápido das 2 Permissões Essenciais
                                 PermissionRowItem(
                                     number = "1",
                                     title = "Janela Flutuante (Sobrepor a outros apps)",
-                                    subtitle = "Exibe o semáforo transparente sobre a Uber/99",
+                                    subtitle = "Exibe o painel clean sobre a tela da Uber e 99",
                                     granted = hasOverlayPermission,
                                     onAction = onRequestOverlayPermission
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 PermissionRowItem(
                                     number = "2",
-                                    title = "Leitor de Ofertas (Acessibilidade GoOrNo)",
+                                    title = "Leitor Automático (Acessibilidade GoOrNo)",
                                     subtitle = "Lê R$, km, minutos e endereços automaticamente",
                                     granted = hasAccessibilityPermission,
                                     onAction = onRequestAccessibilityPermission
@@ -429,18 +447,19 @@ fun GoOrNoComposeApp(
                         val latestDbOffer = realHistory.firstOrNull()
 
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, LimePrimary.copy(alpha = 0.5f)),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
                                     text = "ÚLTIMA OFERTA REAL DETECTADA",
-                                    fontSize = 11.sp,
+                                    fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Black,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
 
                                 if (latestEval != null) {
                                     EvaluationDetailCardContent(
@@ -460,18 +479,24 @@ fun GoOrNoComposeApp(
                                     )
                                 } else {
                                     Text(
-                                        text = "Nenhuma oferta real da Uber ou 99 foi capturada ainda nesta sessão. Assim que uma chamada tocar na Uber Driver ou 99 Motorista, ela aparecerá aqui e no painel flutuante.",
+                                        text = "Nenhuma chamada real da Uber ou 99 foi capturada ainda nesta sessão. Quando tocar uma corrida na Uber Driver ou 99 Motorista, ela aparecerá automaticamente na janela flutuante e ficará gravada aqui.",
                                         fontSize = 12.sp,
-                                        color = Color.White.copy(alpha = 0.75f)
+                                        color = MutedText
                                     )
                                     Spacer(modifier = Modifier.height(10.dp))
-                                    OutlinedButton(
+                                    FilledTonalButton(
                                         onClick = { currentScreen = GoOrNoScreen.DIAGNOSTICS_TESTS },
-                                        border = BorderStroke(1.dp, LimePrimary)
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = SoftSurfaceVariant,
+                                            contentColor = PetrolHeader
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
+                                        Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(17.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "Ir para Tela de Diagnóstico e Simulação Isolada",
-                                            color = LimeBright,
+                                            text = "Abrir Simulador de Viagens da Uber e 99",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp
                                         )
@@ -497,9 +522,10 @@ fun GoOrNoComposeApp(
                         }
 
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, PetrolCardBorder),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -509,6 +535,7 @@ fun GoOrNoComposeApp(
                                     value = driverName,
                                     onValueChange = { driverName = it },
                                     label = { Text("Nome ou Apelido do Motorista") },
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
@@ -517,22 +544,23 @@ fun GoOrNoComposeApp(
                                     value = vehicleModel,
                                     onValueChange = { vehicleModel = it },
                                     label = { Text("Modelo do Veículo (ex: Onix 1.0, HB20, Kwid)") },
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
 
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                HorizontalDivider(color = CleanCardBorder)
 
                                 Text(
-                                    text = "Transparência do Painel Flutuante: ${opacity.toInt()}%",
+                                    text = "Transparência da Janelinha Flutuante: ${opacity.toInt()}%",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 14.sp,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
                                     text = "Ajuste a opacidade para enxergar o mapa da Uber e da 99 por baixo do card sem bloquear a visão.",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.75f)
+                                    color = MutedText
                                 )
 
                                 Slider(
@@ -545,16 +573,17 @@ fun GoOrNoComposeApp(
                                     valueRange = 25f..100f,
                                     steps = 14,
                                     colors = SliderDefaults.colors(
-                                        thumbColor = LimeBright,
-                                        activeTrackColor = LimePrimary
+                                        thumbColor = PetrolHeader,
+                                        activeTrackColor = TrafficGreen
                                     )
                                 )
 
                                 OutlinedTextField(
                                     value = autoMinSec,
                                     onValueChange = { autoMinSec = it },
-                                    label = { Text("Tempo aberto antes de minimizar sozinho (segundos)") },
+                                    label = { Text("Tempo que a janelinha fica aberta antes de sumir (segundos)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
@@ -565,20 +594,25 @@ fun GoOrNoComposeApp(
                                             driverName = driverName.ifBlank { "Motorista" },
                                             vehicleModel = vehicleModel.ifBlank { "Veículo" },
                                             overlayOpacityPercent = opacity.toInt().coerceIn(25, 100),
-                                            overlayAutoMinimizeSec = (autoMinSec.toIntOrNull() ?: 12).coerceIn(5, 60)
+                                            overlayAutoMinimizeSec = (autoMinSec.toIntOrNull() ?: 10).coerceIn(3, 60)
                                         )
                                         scope.launch {
                                             app.preferencesRepository.saveConfig(updated)
                                             app.overlayPanel.applyConfig(updated)
-                                            statusMessage = "Configurações de perfil e transparência salvas!"
+                                            statusMessage = "Configurações de perfil e janelinha salvas!"
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = LimePrimary,
-                                        contentColor = PetrolDarkBg
+                                        containerColor = PetrolHeader,
+                                        contentColor = Color.White
                                     ),
-                                    modifier = Modifier.fillMaxWidth()
+                                    shape = RoundedCornerShape(14.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
                                 ) {
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = LimeBright)
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text("Salvar Configuração do Motorista", fontWeight = FontWeight.Black)
                                 }
                             }
@@ -605,32 +639,40 @@ fun GoOrNoComposeApp(
                         }
 
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, PetrolCardBorder),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Text(
-                                    text = String.format(
-                                        Locale.forLanguageTag("pt-BR"),
-                                        "Custo Operacional Atual: R$ %.2f / km (Combustível: R$ %.2f/km + Manutenção: R$ %.2f/km)",
-                                        config.totalVariableCostPerKm,
-                                        config.fuelCostPerKm,
-                                        config.maintenanceCostPerKm
-                                    ),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                    color = LimeBright
-                                )
+                                Surface(
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = String.format(
+                                            Locale.forLanguageTag("pt-BR"),
+                                            "Custo Operacional Atual: R$ %.2f / km\n(Combustível: R$ %.2f/km + Manutenção: R$ %.2f/km)",
+                                            config.totalVariableCostPerKm,
+                                            config.fuelCostPerKm,
+                                            config.maintenanceCostPerKm
+                                        ),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.5.sp,
+                                        color = PetrolHeader,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
 
                                 OutlinedTextField(
                                     value = kmPerLiter,
                                     onValueChange = { kmPerLiter = it.replace(",", ".") },
                                     label = { Text("Consumo médio do veículo (km/l)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
@@ -640,6 +682,7 @@ fun GoOrNoComposeApp(
                                     onValueChange = { fuelPrice = it.replace(",", ".") },
                                     label = { Text("Preço do combustível por litro (R$/l)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
@@ -649,6 +692,7 @@ fun GoOrNoComposeApp(
                                     onValueChange = { maintPerKm = it.replace(",", ".") },
                                     label = { Text("Custo de manutenção, pneus e desgaste por km (R$/km)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
@@ -658,6 +702,7 @@ fun GoOrNoComposeApp(
                                     onValueChange = { extraPerRide = it.replace(",", ".") },
                                     label = { Text("Custo fixo adicional por corrida (R$) — opcional") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
@@ -665,7 +710,7 @@ fun GoOrNoComposeApp(
                                 Text(
                                     text = "Nota: Os custos são estimativas operacionais para separar claramente Receita Bruta de Lucro Líquido Estimado, sem contabilizar duas vezes o mesmo item.",
                                     fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.7f)
+                                    color = MutedText
                                 )
 
                                 Button(
@@ -682,11 +727,16 @@ fun GoOrNoComposeApp(
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = LimePrimary,
-                                        contentColor = PetrolDarkBg
+                                        containerColor = PetrolHeader,
+                                        contentColor = Color.White
                                     ),
-                                    modifier = Modifier.fillMaxWidth()
+                                    shape = RoundedCornerShape(14.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
                                 ) {
+                                    Icon(Icons.Default.Save, contentDescription = null, tint = LimeBright)
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text("Salvar Custos Operacionais", fontWeight = FontWeight.Black)
                                 }
                             }
@@ -725,9 +775,10 @@ fun GoOrNoComposeApp(
                         }
 
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, PetrolCardBorder),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -736,7 +787,7 @@ fun GoOrNoComposeApp(
                                 Text(
                                     text = "Defina os valores mínimos para o Semáforo classificar uma corrida como VERDE e escolha quais metas são obrigatórias:",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.85f)
+                                    color = MutedText
                                 )
 
                                 OutlinedTextField(
@@ -744,12 +795,13 @@ fun GoOrNoComposeApp(
                                     onValueChange = { grossKm = it.replace(",", ".") },
                                     label = { Text("Meta Mínima de Ganho Bruto por KM (R$/km)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(checked = reqGrossKm, onCheckedChange = { reqGrossKm = it })
-                                    Text("Exigir Ganho Bruto/km na classificação", fontSize = 12.sp)
+                                    Text("Exigir Ganho Bruto/km na classificação", fontSize = 12.sp, color = PetrolDarkText)
                                 }
 
                                 OutlinedTextField(
@@ -757,12 +809,13 @@ fun GoOrNoComposeApp(
                                     onValueChange = { grossHr = it.replace(",", ".") },
                                     label = { Text("Meta Mínima de Ganho Bruto por Hora (R$/h)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(checked = reqGrossHr, onCheckedChange = { reqGrossHr = it })
-                                    Text("Exigir Ganho Bruto/hora na classificação", fontSize = 12.sp)
+                                    Text("Exigir Ganho Bruto/hora na classificação", fontSize = 12.sp, color = PetrolDarkText)
                                 }
 
                                 OutlinedTextField(
@@ -770,12 +823,13 @@ fun GoOrNoComposeApp(
                                     onValueChange = { netKm = it.replace(",", ".") },
                                     label = { Text("Meta de Lucro Líquido por KM (R$/km)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(checked = reqNetKm, onCheckedChange = { reqNetKm = it })
-                                    Text("Exigir Lucro Líquido/km na classificação", fontSize = 12.sp)
+                                    Text("Exigir Lucro Líquido/km na classificação", fontSize = 12.sp, color = PetrolDarkText)
                                 }
 
                                 OutlinedTextField(
@@ -783,12 +837,13 @@ fun GoOrNoComposeApp(
                                     onValueChange = { netHr = it.replace(",", ".") },
                                     label = { Text("Meta de Lucro Líquido por Hora (R$/h)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(checked = reqNetHr, onCheckedChange = { reqNetHr = it })
-                                    Text("Exigir Lucro Líquido/hora na classificação", fontSize = 12.sp)
+                                    Text("Exigir Lucro Líquido/hora na classificação", fontSize = 12.sp, color = PetrolDarkText)
                                 }
 
                                 Button(
@@ -809,11 +864,16 @@ fun GoOrNoComposeApp(
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = LimePrimary,
-                                        contentColor = PetrolDarkBg
+                                        containerColor = PetrolHeader,
+                                        contentColor = Color.White
                                     ),
-                                    modifier = Modifier.fillMaxWidth()
+                                    shape = RoundedCornerShape(14.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
                                 ) {
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = LimeBright)
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text("Salvar Metas Financeiras", fontWeight = FontWeight.Black)
                                 }
                             }
@@ -827,42 +887,45 @@ fun GoOrNoComposeApp(
                 GoOrNoScreen.SERVICES_ACTIVATION -> {
                     item {
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, PetrolCardBorder),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = "1. Permissão de Sobreposição (Painel Flutuante)",
+                                    text = "1. Permissão de Sobreposição (Janela Flutuante)",
                                     fontWeight = FontWeight.Black,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
                                     text = if (hasOverlayPermission) "Status: CONCEDIDA ✓" else "Status: PENDENTE ⚠️",
                                     fontSize = 12.sp,
-                                    color = Color.White
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (hasOverlayPermission) TrafficGreen else TrafficYellow
                                 )
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(
-                                        onClick = onRequestOverlayPermission,
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = LimePrimary,
-                                            contentColor = PetrolDarkBg
-                                        )
-                                    ) {
-                                        Text("Configurar Sobreposição", fontWeight = FontWeight.Bold)
-                                    }
+                                Button(
+                                    onClick = onRequestOverlayPermission,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = PetrolHeader,
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Layers, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Configurar Sobreposição", fontWeight = FontWeight.Bold)
                                 }
 
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                HorizontalDivider(color = CleanCardBorder)
 
                                 Text(
                                     text = "2. Método Principal: Serviço de Acessibilidade",
                                     fontWeight = FontWeight.Black,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
                                     text = if (hasAccessibilityPermission)
@@ -870,24 +933,28 @@ fun GoOrNoComposeApp(
                                     else
                                         "Status: DESATIVADO (Toque abaixo para habilitar nas Configurações do Android)",
                                     fontSize = 12.sp,
-                                    color = Color.White
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (hasAccessibilityPermission) TrafficGreen else TrafficYellow
                                 )
                                 Button(
                                     onClick = onRequestAccessibilityPermission,
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = LimePrimary,
-                                        contentColor = PetrolDarkBg
-                                    )
+                                        containerColor = PetrolHeader,
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
+                                    Icon(Icons.Default.AccessibilityNew, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text("Abrir Configurações de Acessibilidade", fontWeight = FontWeight.Bold)
                                 }
 
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                HorizontalDivider(color = CleanCardBorder)
 
                                 Text(
                                     text = "3. Método Alternativo: Leitura OCR por Captura de Tela (ML Kit Local)",
                                     fontWeight = FontWeight.Black,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
                                     text = if (ocrActive)
@@ -895,19 +962,25 @@ fun GoOrNoComposeApp(
                                     else
                                         "Status OCR: DESLIGADO (Ative caso alguma oferta da Uber/99 não exponha texto na Acessibilidade)",
                                     fontSize = 12.sp,
-                                    color = Color.White
+                                    color = MutedText
                                 )
-                                Button(
+                                FilledTonalButton(
                                     onClick = onRequestOcrCapturePermission,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF0D4A3E),
-                                        contentColor = Color.White
-                                    )
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = SoftSurfaceVariant,
+                                        contentColor = PetrolHeader
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text(if (ocrActive) "Reiniciar Permissão OCR" else "Autorizar Captura OCR (MediaProjection)")
+                                    Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (ocrActive) "Reiniciar Permissão OCR" else "Autorizar Captura OCR (MediaProjection)",
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
 
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                HorizontalDivider(color = CleanCardBorder)
 
                                 // Botão claro para encerrar todos os monitoramentos em segundo plano (Seção 9)
                                 Button(
@@ -919,11 +992,12 @@ fun GoOrNoComposeApp(
                                         containerColor = TrafficRed,
                                         contentColor = Color.White
                                     ),
+                                    shape = RoundedCornerShape(14.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Icon(Icons.Default.StopCircle, contentDescription = null)
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Desativar Monitoramento e Fechar Painel Flutuante", fontWeight = FontWeight.Black)
+                                    Text("Fechar Janelinha e Pausar OCR", fontWeight = FontWeight.Black)
                                 }
                             }
                         }
@@ -936,9 +1010,10 @@ fun GoOrNoComposeApp(
                 GoOrNoScreen.CONNECTION_STATUS -> {
                     item {
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, PetrolCardBorder),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -948,20 +1023,20 @@ fun GoOrNoComposeApp(
                                     text = "Verificação Real dos Pacotes no Aparelho",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 14.sp,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
 
                                 // Uber Driver Status
                                 Surface(
-                                    color = PetrolDarkBg,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, PetrolCardBorder)
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(14.dp),
+                                    border = BorderStroke(1.dp, CleanCardBorder)
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
                                         Text(
                                             text = "Uber Driver (Motorista)",
                                             fontWeight = FontWeight.Black,
-                                            color = Color.White
+                                            color = PetrolDarkText
                                         )
                                         Text(
                                             text = if (installedApps.uberInstalled)
@@ -969,22 +1044,23 @@ fun GoOrNoComposeApp(
                                             else
                                                 "Não detectado neste aparelho (Pacote esperado: com.ubercab.driver)",
                                             fontSize = 12.sp,
-                                            color = if (installedApps.uberInstalled) Color(0xFF6EE7B7) else Color(0xFFFCD34D)
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (installedApps.uberInstalled) TrafficGreen else TrafficYellow
                                         )
                                     }
                                 }
 
                                 // 99 Motorista Status
                                 Surface(
-                                    color = PetrolDarkBg,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, PetrolCardBorder)
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(14.dp),
+                                    border = BorderStroke(1.dp, CleanCardBorder)
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
                                         Text(
                                             text = "99 Motorista",
                                             fontWeight = FontWeight.Black,
-                                            color = Color.White
+                                            color = PetrolDarkText
                                         )
                                         Text(
                                             text = if (installedApps.ninetyNineInstalled)
@@ -992,23 +1068,24 @@ fun GoOrNoComposeApp(
                                             else
                                                 "Não detectado neste aparelho (Pacotes: com.taxis99.driver / com.didiglobal.driver)",
                                             fontSize = 12.sp,
-                                            color = if (installedApps.ninetyNineInstalled) Color(0xFF6EE7B7) else Color(0xFFFCD34D)
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (installedApps.ninetyNineInstalled) TrafficGreen else TrafficYellow
                                         )
                                     }
                                 }
 
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                HorizontalDivider(color = CleanCardBorder)
 
                                 Text(
                                     text = "Última Janela Detectada em Primeiro Plano:",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.sp,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
                                     text = "Pacote: ${lastSnapshot.packageName}\nApp Identificado: ${lastSnapshot.detectedApp.displayName}\nElementos de texto lidos: ${lastSnapshot.nodeCount}",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.85f)
+                                    color = MutedText
                                 )
                             }
                         }
@@ -1027,8 +1104,9 @@ fun GoOrNoComposeApp(
                         ) {
                             Text(
                                 text = "Total de ofertas reais gravadas: ${realHistory.size}",
-                                fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.8f)
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PetrolDarkText
                             )
                             if (realHistory.isNotEmpty()) {
                                 TextButton(
@@ -1039,7 +1117,7 @@ fun GoOrNoComposeApp(
                                         }
                                     }
                                 ) {
-                                    Text("Limpar Histórico", color = Color(0xFFFCA5A5), fontSize = 12.sp)
+                                    Text("Limpar Histórico", color = TrafficRed, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -1048,13 +1126,14 @@ fun GoOrNoComposeApp(
                     if (realHistory.isEmpty()) {
                         item {
                             Card(
-                                colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                                border = BorderStroke(1.dp, PetrolCardBorder)
+                                colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                                border = BorderStroke(1.dp, CleanCardBorder),
+                                shape = RoundedCornerShape(16.dp)
                             ) {
                                 Text(
-                                    text = "Nenhuma oferta real gravada ainda. Nota importante: Testes feitos no Modo de Simulação nunca são misturados neste histórico real.",
+                                    text = "Nenhuma oferta real gravada ainda. Nota importante: Testes feitos no Simulador nunca são misturados neste histórico real.",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.8f),
+                                    color = MutedText,
                                     modifier = Modifier.padding(16.dp)
                                 )
                             }
@@ -1062,9 +1141,10 @@ fun GoOrNoComposeApp(
                     } else {
                         items(realHistory, key = { it.id }) { item ->
                             Card(
-                                colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                                border = BorderStroke(1.dp, PetrolCardBorder),
-                                shape = RoundedCornerShape(14.dp)
+                                colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                border = BorderStroke(1.dp, CleanCardBorder),
+                                shape = RoundedCornerShape(16.dp)
                             ) {
                                 Column(modifier = Modifier.padding(14.dp)) {
                                     HistoricalOfferCardContent(
@@ -1100,9 +1180,10 @@ fun GoOrNoComposeApp(
                         val avgGrossHr = realHistory.mapNotNull { it.grossPerHour }.takeIf { it.isNotEmpty() }?.average() ?: 0.0
 
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, PetrolCardBorder),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -1111,28 +1192,31 @@ fun GoOrNoComposeApp(
                                 Text(
                                     text = "Consolidado das Ofertas Reais Analisadas",
                                     fontWeight = FontWeight.Black,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
                                     text = "Ofertas Analisadas: $totalOffers  (🟢 $greenCount  |  🟡 $yellowCount  |  🔴 $redCount)",
                                     fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    color = PetrolDarkText
                                 )
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                HorizontalDivider(color = CleanCardBorder)
                                 Text(
                                     text = String.format(Locale.forLanguageTag("pt-BR"), "Receita Bruta Ofertada Total: R$ %.2f", sumGross),
-                                    fontSize = 13.sp
+                                    fontSize = 13.sp,
+                                    color = PetrolDarkText
                                 )
                                 Text(
                                     text = String.format(Locale.forLanguageTag("pt-BR"), "Custo Operacional Estimado Total: R$ %.2f", sumCost),
                                     fontSize = 13.sp,
-                                    color = Color(0xFFFCD34D)
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TrafficYellow
                                 )
                                 Text(
                                     text = String.format(Locale.forLanguageTag("pt-BR"), "Lucro Líquido Estimado Total: R$ %.2f", sumNet),
-                                    fontSize = 14.sp,
+                                    fontSize = 15.sp,
                                     fontWeight = FontWeight.Black,
-                                    color = LimeBright
+                                    color = TrafficGreen
                                 )
                                 Text(
                                     text = String.format(
@@ -1142,12 +1226,12 @@ fun GoOrNoComposeApp(
                                         avgGrossHr
                                     ),
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.85f)
+                                    color = MutedText
                                 )
                                 Text(
                                     text = "Aviso: Valores de custo e lucro são estimativas baseadas nos parâmetros configurados para o seu veículo, não representando lucro líquido garantido.",
                                     fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.65f)
+                                    color = MutedText
                                 )
                             }
                         }
@@ -1160,24 +1244,25 @@ fun GoOrNoComposeApp(
                 GoOrNoScreen.DIAGNOSTICS_TESTS -> {
                     item {
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, LimePrimary),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Text(
-                                    text = "MODO DE SIMULAÇÃO ISOLADO (NÃO GRAVA NO HISTÓRICO REAL)",
+                                    text = "SIMULADOR ISOLADO (NÃO MISTURA NO HISTÓRICO REAL)",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 12.sp,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
-                                    text = "Dispare ofertas de teste abaixo (incluindo múltiplas viagens simultâneas da 99) para ver a janelinha abrir direto e sumir após ${config.overlayAutoMinimizeSec}s:",
+                                    text = "Toque em qualquer botão moderno abaixo para testar a janelinha clean abrindo direto e sumindo após ${config.overlayAutoMinimizeSec}s:",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.85f)
+                                    color = MutedText
                                 )
 
                                 // Botão 1: Exemplo de Referência Obrigatório da Seção 5.4 (R$ 18,00 / 8 km / 24 min)
@@ -1208,13 +1293,16 @@ fun GoOrNoComposeApp(
                                         statusMessage = "Simulação Referência (R$ 18 / 8 km / 24 min -> R$ 2,25/km e R$ 45/h) exibida por ${config.overlayAutoMinimizeSec}s!"
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = LimePrimary,
-                                        contentColor = PetrolDarkBg
+                                        containerColor = PetrolHeader,
+                                        contentColor = Color.White
                                     ),
+                                    shape = RoundedCornerShape(14.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
+                                    Icon(Icons.Default.PlayArrow, contentDescription = null, tint = LimeBright)
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "Testar Referência Seção 5.4 (R$ 18,00 | 8 km | 24 min)",
+                                        text = "Testar Corrida UberX (R$ 18,00 · 8 km · 24 min)",
                                         fontWeight = FontWeight.Black,
                                         fontSize = 12.sp
                                     )
@@ -1259,10 +1347,13 @@ fun GoOrNoComposeApp(
                                         containerColor = TrafficGreen,
                                         contentColor = Color.White
                                     ),
+                                    shape = RoundedCornerShape(14.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
+                                    Icon(Icons.Default.ViewAgenda, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "Testar Lista da 99 com 2 Viagens Simultâneas",
+                                        text = "Testar 99 com 2 Viagens Simultâneas na Tela",
                                         fontWeight = FontWeight.Black,
                                         fontSize = 12.sp
                                     )
@@ -1297,10 +1388,14 @@ fun GoOrNoComposeApp(
                                                 app.overlayPanel.showEvaluation(eval)
                                             }
                                         },
-                                        colors = ButtonDefaults.buttonColors(containerColor = TrafficYellow),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = TrafficYellow,
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Simular 99Pop (Média)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text("Simular 99 (Média)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
                                     }
 
                                     Button(
@@ -1328,21 +1423,25 @@ fun GoOrNoComposeApp(
                                                 app.overlayPanel.showEvaluation(eval)
                                             }
                                         },
-                                        colors = ButtonDefaults.buttonColors(containerColor = TrafficRed),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = TrafficRed,
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Simular Uber (Ruim)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text("Simular Uber (Ruim)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
                                 // Exibe resultado da simulação isolada
                                 if (lastSimulatedEvaluation != null) {
-                                    HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
+                                    HorizontalDivider(color = CleanCardBorder)
                                     Text(
                                         text = "RESULTADO DA SIMULAÇÃO DE TESTE:",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Black,
-                                        color = LimeBright
+                                        color = PetrolHeader
                                     )
                                     EvaluationDetailCardContent(
                                         result = lastSimulatedEvaluation!!,
@@ -1356,9 +1455,10 @@ fun GoOrNoComposeApp(
                     // Inspetor de Elementos da Árvore de Acessibilidade
                     item {
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, PetrolCardBorder),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -1368,23 +1468,24 @@ fun GoOrNoComposeApp(
                                     text = "INSPETOR DE LEITURA DA ÁRVORE DE ACESSIBILIDADE",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 13.sp,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
                                     text = "Pacote lido: ${lastSnapshot.packageName} (${lastSnapshot.nodeCount} nós visíveis)",
                                     fontSize = 12.sp,
-                                    color = Color.White
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = PetrolDarkText
                                 )
                                 if (lastSnapshot.extractedTexts.isEmpty()) {
                                     Text(
                                         text = "Nenhum texto capturado ainda. Ative a Acessibilidade e abra a Uber Driver ou 99 Motorista para inspecionar quais textos elas disponibilizam.",
-                                        fontSize = 11.sp,
-                                        color = Color.White.copy(alpha = 0.7f)
+                                        fontSize = 11.5.sp,
+                                        color = MutedText
                                     )
                                 } else {
                                     Surface(
-                                        color = PetrolDarkBg,
-                                        shape = RoundedCornerShape(10.dp),
+                                        color = SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.padding(10.dp)) {
@@ -1392,7 +1493,7 @@ fun GoOrNoComposeApp(
                                                 Text(
                                                     text = "[${idx + 1}] $line",
                                                     fontSize = 11.sp,
-                                                    color = Color(0xFFD1FAE5)
+                                                    color = PetrolDarkText
                                                 )
                                             }
                                         }
@@ -1417,9 +1518,10 @@ fun GoOrNoComposeApp(
                         var jsonBackupBox by remember { mutableStateOf("") }
 
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = PetrolSurface),
-                            border = BorderStroke(1.dp, PetrolCardBorder),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -1429,12 +1531,12 @@ fun GoOrNoComposeApp(
                                     text = "Troca de Aparelho — Backup & Recuperação na Nuvem",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 15.sp,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
                                     text = "Se você trocar de celular, basta informar seu Código de Motorista abaixo para salvar ou restaurar todas as suas metas, custos do veículo e histórico de corridas.",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.85f)
+                                    color = MutedText
                                 )
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1451,7 +1553,8 @@ fun GoOrNoComposeApp(
                                     )
                                     Text(
                                         text = "Autorizo sincronizar minhas configurações e histórico na nuvem com meu código",
-                                        fontSize = 12.sp
+                                        fontSize = 12.sp,
+                                        color = PetrolDarkText
                                     )
                                 }
 
@@ -1459,6 +1562,7 @@ fun GoOrNoComposeApp(
                                     value = recoveryCode,
                                     onValueChange = { recoveryCode = it },
                                     label = { Text("Seu Código de Motorista (ex: murilo2026 ou telefone)") },
+                                    shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
@@ -1488,15 +1592,16 @@ fun GoOrNoComposeApp(
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = LimePrimary,
-                                            contentColor = PetrolDarkBg
+                                            containerColor = PetrolHeader,
+                                            contentColor = Color.White
                                         ),
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Text("Salvar na Nuvem", fontWeight = FontWeight.Black, fontSize = 12.sp)
                                     }
 
-                                    OutlinedButton(
+                                    FilledTonalButton(
                                         onClick = {
                                             scope.launch {
                                                 val res = CloudSyncManager.restoreBackupByDriverCode(recoveryCode)
@@ -1510,31 +1615,39 @@ fun GoOrNoComposeApp(
                                                 }
                                             }
                                         },
-                                        border = BorderStroke(1.dp, LimeBright),
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = SoftSurfaceVariant,
+                                            contentColor = PetrolHeader
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Restaurar Dados", color = LimeBright, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                                        Text("Restaurar Dados", fontWeight = FontWeight.Black, fontSize = 12.sp)
                                     }
                                 }
 
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                HorizontalDivider(color = CleanCardBorder)
 
                                 Text(
-                                    text = "Backup Local (Exportar / Importar JSON via WhatsApp)",
+                                    text = "Backup Local (Exportar / Importar JSON)",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
 
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(
+                                    FilledTonalButton(
                                         onClick = {
                                             jsonBackupBox = CloudSyncManager.exportToJsonString(config, realHistory)
                                             statusMessage = "JSON gerado abaixo! Você pode copiar ou compartilhar."
                                         },
-                                        border = BorderStroke(1.dp, LimePrimary)
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = SoftSurfaceVariant,
+                                            contentColor = PetrolHeader
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Gerar Backup JSON", color = Color.White, fontSize = 12.sp)
+                                        Text("Gerar Backup JSON", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                     }
                                     if (jsonBackupBox.isNotBlank()) {
                                         Button(
@@ -1551,9 +1664,10 @@ fun GoOrNoComposeApp(
                                                 }
                                             },
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = LimePrimary,
-                                                contentColor = PetrolDarkBg
-                                            )
+                                                containerColor = PetrolHeader,
+                                                contentColor = Color.White
+                                            ),
+                                            shape = RoundedCornerShape(12.dp)
                                         ) {
                                             Text("Importar JSON", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                         }
@@ -1565,19 +1679,20 @@ fun GoOrNoComposeApp(
                                         value = jsonBackupBox,
                                         onValueChange = { jsonBackupBox = it },
                                         label = { Text("Código JSON de Backup") },
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(110.dp)
                                     )
                                 }
 
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                                HorizontalDivider(color = CleanCardBorder)
 
                                 Text(
                                     text = "Política de Privacidade e Transparência (Seção 9)",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 14.sp,
-                                    color = LimeBright
+                                    color = PetrolHeader
                                 )
                                 Text(
                                     text = "• Finalidade da Acessibilidade e OCR: Usados exclusivamente para ler valor (R$), distância (km), tempo (min) e endereços das ofertas na tela da Uber Driver e 99 Motorista.\n" +
@@ -1585,7 +1700,7 @@ fun GoOrNoComposeApp(
                                         "• Privacidade de Capturas de Tela: O OCR processa a imagem em memória via ML Kit local e descarta o bitmap imediatamente, sem armazenar prints.\n" +
                                         "• Zero Credenciais: O GoOrNo nunca solicita senha ou login da sua conta Uber ou 99.",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.8f)
+                                    color = MutedText
                                 )
                             }
                         }
@@ -1605,14 +1720,14 @@ private fun PermissionRowItem(
     onAction: () -> Unit
 ) {
     Surface(
-        color = PetrolDarkBg,
-        shape = RoundedCornerShape(12.dp),
+        color = if (granted) TrafficGreenSoft.copy(alpha = 0.55f) else SoftSurfaceVariant,
+        shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, if (granted) TrafficGreen else TrafficYellow)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -1622,7 +1737,7 @@ private fun PermissionRowItem(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(26.dp)
+                        .size(28.dp)
                         .clip(CircleShape)
                         .background(if (granted) TrafficGreen else TrafficYellow),
                     contentAlignment = Alignment.Center
@@ -1636,22 +1751,24 @@ private fun PermissionRowItem(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
-                    Text(text = title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White)
-                    Text(text = subtitle, fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
+                    Text(text = title, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = PetrolDarkText)
+                    Text(text = subtitle, fontSize = 11.sp, color = MutedText)
                 }
             }
+            Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = onAction,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (granted) Color(0xFF0D4A3E) else LimePrimary,
-                    contentColor = if (granted) LimeBright else PetrolDarkBg
+                    containerColor = if (granted) TrafficGreen else PetrolHeader,
+                    contentColor = Color.White
                 ),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                modifier = Modifier.height(32.dp)
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                modifier = Modifier.height(34.dp)
             ) {
                 Text(
-                    text = if (granted) "Ativo" else "Ativar",
-                    fontSize = 11.sp,
+                    text = if (granted) "Ativo ✓" else "Ativar",
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.Black
                 )
             }
@@ -1674,30 +1791,33 @@ private fun EvaluationDetailCardContent(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Surface(
             color = verdictColor,
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(10.dp)
         ) {
             Text(
                 text = "${result.verdict.label} — ${result.offer.sourceApp.displayName} (${result.offer.rideCategory ?: "Corrida"})",
                 fontWeight = FontWeight.Black,
-                fontSize = 12.sp,
+                fontSize = 12.5.sp,
                 color = Color.White,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             MetricBox(
+                modifier = Modifier.weight(1f),
                 label = "OFERTA",
                 value = result.offer.offeredPrice?.let { String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", it) } ?: "--"
             )
             MetricBox(
+                modifier = Modifier.weight(1f),
                 label = "BRUTO / KM",
                 value = result.grossPerKm?.let { String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", it) } ?: "--"
             )
             MetricBox(
+                modifier = Modifier.weight(1f),
                 label = "BRUTO / HORA",
                 value = result.grossPerHour?.let { String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", it) } ?: "--"
             )
@@ -1705,42 +1825,46 @@ private fun EvaluationDetailCardContent(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             MetricBox(
+                modifier = Modifier.weight(1f),
                 label = "CUSTO EST.",
                 value = result.estimatedTotalCost?.let { String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", it) } ?: "--"
             )
             MetricBox(
+                modifier = Modifier.weight(1f),
                 label = "LUCRO LÍQ.",
                 value = result.estimatedNetProfit?.let { String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", it) } ?: "--"
             )
             MetricBox(
+                modifier = Modifier.weight(1f),
                 label = "LUCRO / KM",
                 value = result.netProfitPerKm?.let { String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", it) } ?: "--"
             )
         }
 
         result.reasons.forEach { r ->
-            Text(text = "• $r", fontSize = 11.sp, color = Color(0xFFD1FAE5))
+            Text(text = "• $r", fontSize = 11.5.sp, color = PetrolDarkText, fontWeight = FontWeight.Medium)
         }
         result.warnings.forEach { w ->
-            Text(text = "⚠️ $w", fontSize = 11.sp, color = Color(0xFFFCD34D))
+            Text(text = "⚠️ $w", fontSize = 11.5.sp, color = TrafficYellow, fontWeight = FontWeight.SemiBold)
         }
 
-        // Botões 1-Toque Street View (Origem e Destino)
+        // Botões Pílula Modernos 1-Toque Street View (Origem e Destino)
         if (!result.offer.originAddress.isNullOrBlank()) {
             Button(
                 onClick = { onOpenStreetView(result.offer.originAddress!!) },
-                colors = ButtonDefaults.buttonColors(containerColor = LimePrimary, contentColor = PetrolDarkBg),
+                colors = ButtonDefaults.buttonColors(containerColor = PetrolHeader, contentColor = Color.White),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Place, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Abrir Origem no Street View: ${result.offer.originAddress}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
+                    text = "Street View Origem: ${result.offer.originAddress}",
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1748,18 +1872,21 @@ private fun EvaluationDetailCardContent(
         }
 
         if (!result.offer.destinationAddress.isNullOrBlank()) {
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = { onOpenStreetView(result.offer.destinationAddress!!) },
-                border = BorderStroke(1.dp, LimeBright),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = TrafficGreenSoft,
+                    contentColor = PetrolHeader
+                ),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Default.Navigation, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Navigation, contentDescription = null, tint = TrafficGreen, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Abrir Destino no Street View: ${result.offer.destinationAddress}",
-                    fontSize = 11.sp,
+                    text = "Street View Destino: ${result.offer.destinationAddress}",
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1793,16 +1920,16 @@ private fun HistoricalOfferCardContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(color = badgeColor, shape = RoundedCornerShape(6.dp)) {
+            Surface(color = badgeColor, shape = RoundedCornerShape(8.dp)) {
                 Text(
                     text = "${entity.sourceApp} · R$ ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", entity.offeredPrice)}",
                     fontWeight = FontWeight.Black,
                     fontSize = 12.sp,
                     color = Color.White,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                 )
             }
-            Text(text = dateStr, fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
+            Text(text = dateStr, fontSize = 11.sp, color = MutedText, fontWeight = FontWeight.Medium)
         }
 
         Text(
@@ -1813,9 +1940,9 @@ private fun HistoricalOfferCardContent(
                 entity.grossPerHour ?: 0.0,
                 entity.estimatedNetProfit ?: 0.0
             ),
-            fontSize = 12.sp,
+            fontSize = 12.5.sp,
             fontWeight = FontWeight.Bold,
-            color = LimeBright
+            color = PetrolHeader
         )
 
         // Auditoria de Valor Pago pela Uber / 99
@@ -1835,17 +1962,17 @@ private fun HistoricalOfferCardContent(
                     ),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (diff < -0.05) Color(0xFFFCA5A5) else Color(0xFF6EE7B7)
+                    color = if (diff < -0.05) TrafficRed else TrafficGreen
                 )
             } else {
                 Text(
                     text = "Valor pago no final ainda não conferido",
                     fontSize = 11.sp,
-                    color = Color.White.copy(alpha = 0.65f)
+                    color = MutedText
                 )
             }
             TextButton(onClick = { showAuditInput = !showAuditInput }) {
-                Text("Conferir Valor Pago", color = LimeBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("Conferir Valor Pago", color = PetrolHeader, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -1859,6 +1986,7 @@ private fun HistoricalOfferCardContent(
                     onValueChange = { paidText = it.replace(",", ".") },
                     label = { Text("Valor Pago (R$)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
@@ -1870,41 +1998,50 @@ private fun HistoricalOfferCardContent(
                             showAuditInput = false
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = LimePrimary, contentColor = PetrolDarkBg)
+                    colors = ButtonDefaults.buttonColors(containerColor = PetrolHeader, contentColor = Color.White),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Salvar", fontWeight = FontWeight.Black)
                 }
             }
         }
 
-        // Botões de Origem e Destino no Street View
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Botões Modernos de Origem e Destino no Street View
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (!entity.originAddress.isNullOrBlank()) {
-                OutlinedButton(
+                FilledTonalButton(
                     onClick = { onOpenStreetView(entity.originAddress) },
-                    border = BorderStroke(1.dp, LimePrimary),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = SoftSurfaceVariant,
+                        contentColor = PetrolHeader
+                    ),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = "📍 Origem (360°)",
                         fontSize = 11.sp,
-                        color = LimeBright,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
                 }
             }
             if (!entity.destinationAddress.isNullOrBlank()) {
-                OutlinedButton(
+                FilledTonalButton(
                     onClick = { onOpenStreetView(entity.destinationAddress) },
-                    border = BorderStroke(1.dp, Color(0xFF6EE7B7)),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = TrafficGreenSoft,
+                        contentColor = PetrolHeader
+                    ),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = "🏁 Destino (360°)",
                         fontSize = 11.sp,
-                        color = Color(0xFF6EE7B7),
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
                 }
@@ -1914,18 +2051,19 @@ private fun HistoricalOfferCardContent(
 }
 
 @Composable
-private fun MetricBox(label: String, value: String) {
+private fun MetricBox(modifier: Modifier = Modifier, label: String, value: String) {
     Surface(
-        color = PetrolDarkBg,
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, PetrolCardBorder)
+        modifier = modifier,
+        color = SoftSurfaceVariant,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, CleanCardBorder)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = label, fontSize = 10.sp, color = Color.White.copy(alpha = 0.65f), fontWeight = FontWeight.Bold)
-            Text(text = value, fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Black)
+            Text(text = label, fontSize = 10.sp, color = MutedText, fontWeight = FontWeight.Bold)
+            Text(text = value, fontSize = 13.5.sp, color = PetrolDarkText, fontWeight = FontWeight.Black)
         }
     }
 }
