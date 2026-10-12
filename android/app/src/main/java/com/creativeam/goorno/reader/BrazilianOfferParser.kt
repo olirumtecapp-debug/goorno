@@ -28,15 +28,27 @@ object BrazilianOfferParser {
         option = RegexOption.IGNORE_CASE
     )
 
-    // Padrão clássico 99/Uber: "5 min (1,2 km)" ou "1,2 km (5 min)"
+    // Padrão clássico 99/Uber: "5 min (1,2 km)", "(6 min 1,3 km)", "3 min (459 m)" ou "1,2 km (5 min)"
     private val MIN_AND_KM_PAIR_REGEX = Regex(
-        pattern = """(\d{1,3})\s*min(?:utos?|s)?\s*\(?\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*km\s*\)?""",
+        pattern = """\(?\s*\d{1,3}\s*min(?:utos?|s)?\s*\(?\s*\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m)\s*\)?""",
         option = RegexOption.IGNORE_CASE
     )
 
     // Ex: "3,8 km", "12 km", "(1,2 km)", "1,25 km" (mas não "/km" ou "R$2,18/km")
     private val KM_REGEX = Regex(
         pattern = """(?<![/\d.,])(\d{1,3}(?:[.,]\d{1,2})?)\s*km\b""",
+        option = RegexOption.IGNORE_CASE
+    )
+
+    // Ex: "459 m", "(459 m)", "800m" (converte metros para quilômetros: 459 m -> 0.459 km)
+    private val METERS_REGEX = Regex(
+        pattern = """(?<![/\d.,])(\d{2,4})\s*m\b(?!in)""",
+        option = RegexOption.IGNORE_CASE
+    )
+
+    // Token ordenado de distância (km ou m) na ordem exata em que aparece na tela
+    private val DISTANCE_TOKEN_REGEX = Regex(
+        pattern = """(?<![/\d.,])(\d{1,4}(?:[.,]\d{1,2})?)\s*(km|m\b(?!in))""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -59,7 +71,12 @@ object BrazilianOfferParser {
     )
 
     private val STREET_PREFIX_REGEX = Regex(
-        pattern = """^(Rua|R\.|Av\.|Avenida|Alameda|Al\.|Travessa|Tv\.|Praça|Pç\.|Estrada|Estr\.|Rodovia|Rod\.|Via|Largo|Terminal|Aeroporto|Shopping|Condomínio)\b.*""",
+        pattern = """^(Rua|R\.|Av\.|Avenida|Alameda|Al\.|Travessa|Tv\.|Praça|Pç\.|Estrada|Estr\.|Rodovia|Rod\.|Via|Largo|Terminal|Aeroporto|Shopping|Condomínio|Hospital|Estação)\b.*""",
+        option = RegexOption.IGNORE_CASE
+    )
+
+    private val LEADING_DURATION_DISTANCE_PREFIX_REGEX = Regex(
+        pattern = """^[\s•·🟢🟠⬆️⬇️\(\)]*(?:\d{1,3}\s*min(?:utos?|s)?[\s\(\)·•-]*)*(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)·•-]*)+""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -99,13 +116,13 @@ object BrazilianOfferParser {
                 }
             }
 
-            // Caso 2: Nó atual é um número isolado (ex: "5" ou "(1,2") e o próximo é "min", "km", "km)" ou "/km"
+            // Caso 2: Nó atual é um número isolado (ex: "5" ou "(1,2" ou "(459") e o próximo é "min", "km", "m", "km)", "m)" ou "/km"
             if (i + 1 < flatTokens.size) {
                 val next = flatTokens[i + 1].trim()
                 val nextLower = next.lowercase(Locale.getDefault())
                 if (PURE_NUMBER_START_REGEX.matches(current) &&
-                    (nextLower == "km" || nextLower == "km)" || nextLower == "min" ||
-                        nextLower == "min)" || nextLower == "minutos" || nextLower.startsWith("/km"))
+                    (nextLower == "km" || nextLower == "km)" || nextLower == "m" || nextLower == "m)" ||
+                        nextLower == "min" || nextLower == "min)" || nextLower == "minutos" || nextLower.startsWith("/km"))
                 ) {
                     current = "$current $next"
                     i++
@@ -170,29 +187,38 @@ object BrazilianOfferParser {
     }
 
     /**
-     * Converte uma string de distância brasileira (ex: "3,8 km", "8 km") em quilômetros.
+     * Converte uma string de distância brasileira (ex: "3,8 km", "8 km", "459 m") em quilômetros.
      */
     fun parseDistanceKm(text: String?): ExtractedField<Double> {
         if (text.isNullOrBlank()) return ExtractedField.Missing
         val sanitized = stripNonOfferPriceNoise(text.replace('\u00A0', ' '))
-        val match = KM_REGEX.find(sanitized)
-        if (match == null) {
-            return if (sanitized.contains("km", ignoreCase = true)) {
-                ExtractedField.Unrecognized(text.trim())
-            } else {
-                ExtractedField.Missing
+        val kmMatch = KM_REGEX.find(sanitized)
+        if (kmMatch != null) {
+            val value = parseBrazilianDecimal(kmMatch.groupValues[1])
+                ?: return ExtractedField.Unrecognized(kmMatch.value)
+            if (value < 0.0 || value > 2000.0) {
+                return ExtractedField.Unrecognized(kmMatch.value)
+            }
+            return ExtractedField.Present(value)
+        }
+
+        val mMatch = METERS_REGEX.find(sanitized)
+        if (mMatch != null) {
+            val meters = parseBrazilianDecimal(mMatch.groupValues[1])
+            if (meters != null && meters in 10.0..9999.0) {
+                return ExtractedField.Present(meters / 1000.0)
             }
         }
-        val value = parseBrazilianDecimal(match.groupValues[1])
-            ?: return ExtractedField.Unrecognized(match.value)
-        if (value < 0.0 || value > 2000.0) {
-            return ExtractedField.Unrecognized(match.value)
+
+        return if (sanitized.contains("km", ignoreCase = true)) {
+            ExtractedField.Unrecognized(text.trim())
+        } else {
+            ExtractedField.Missing
         }
-        return ExtractedField.Present(value)
     }
 
     /**
-     * Extrai todas as distâncias em km de uma lista de textos (ignorando "R$2,18/km").
+     * Extrai todas as distâncias em km de uma lista de textos (incluindo conversão automática de metros como "459 m" -> 0.459 km).
      */
     fun extractAllDistancesKm(lines: List<String>): List<Double> {
         val normalized = normalizeFragmentedNodes(lines)
@@ -200,10 +226,15 @@ object BrazilianOfferParser {
         for (line in normalized) {
             val sanitized = stripNonOfferPriceNoise(line)
             val withoutPerKm = sanitized.replace(Regex("""\d+(?:[.,]\d+)?\s*/\s*km""", RegexOption.IGNORE_CASE), " ")
-            KM_REGEX.findAll(withoutPerKm).forEach { m ->
-                val v = parseBrazilianDecimal(m.groupValues[1])
-                if (v != null && v > 0.0 && v <= 2000.0) {
-                    list.add(v)
+            DISTANCE_TOKEN_REGEX.findAll(withoutPerKm).forEach { m ->
+                val rawNum = parseBrazilianDecimal(m.groupValues[1])
+                val unit = m.groupValues[2].lowercase(Locale.ROOT)
+                if (rawNum != null && rawNum > 0.0) {
+                    if (unit == "km" && rawNum <= 2000.0) {
+                        list.add(rawNum)
+                    } else if (unit.startsWith("m") && rawNum in 20.0..9999.0) {
+                        list.add(rawNum / 1000.0)
+                    }
                 }
             }
         }
@@ -277,7 +308,9 @@ object BrazilianOfferParser {
     }
 
     /**
-     * Extrai endereços de Origem (Embarque) e Destino (Desembarque) das linhas capturadas.
+     * Extrai endereços de Origem (Embarque) e Destino (Desembarque) das linhas capturadas,
+     * suportando inclusive o formato da 99 Solicitações: "(6 min 1,3 km) Rua dos Vianas, 1545, Baeta Neves"
+     * e endereços quebrados em 2 linhas.
      */
     fun extractOriginAndDestination(lines: List<String>): Pair<String?, String?> {
         val normalized = normalizeFragmentedNodes(lines)
@@ -285,49 +318,92 @@ object BrazilianOfferParser {
         var explicitDestination: String? = null
         val streetCandidates = mutableListOf<String>()
 
-        for (i in normalized.indices) {
-            val clean = normalized[i].trim()
-            if (clean.length < 5) continue
-            val lower = clean.lowercase(Locale.getDefault())
+        var i = 0
+        while (i < normalized.size) {
+            val rawLine = normalized[i].trim()
+            if (rawLine.length < 4) {
+                i++
+                continue
+            }
+            val lower = rawLine.lowercase(Locale.getDefault())
 
             if (lower.startsWith("origem:") || lower.startsWith("embarque:") || lower.startsWith("buscar em:")) {
-                val afterColon = clean.substringAfter(":").trim()
+                val afterColon = rawLine.substringAfter(":").trim()
                 if (afterColon.length >= 4) {
                     explicitOrigin = afterColon
                 } else if (i + 1 < normalized.size) {
                     explicitOrigin = normalized[i + 1].trim()
                 }
+                i++
                 continue
             }
 
             if (lower.startsWith("destino:") || lower.startsWith("desembarque:") || lower.startsWith("levar até:")) {
-                val afterColon = clean.substringAfter(":").trim()
+                val afterColon = rawLine.substringAfter(":").trim()
                 if (afterColon.length >= 4) {
                     explicitDestination = afterColon
                 } else if (i + 1 < normalized.size) {
                     explicitDestination = normalized[i + 1].trim()
                 }
+                i++
                 continue
             }
 
             if (lower.contains("corridas") || lower.contains("deslocamento") ||
                 lower.contains("pgto.") || lower.contains("perfil ") ||
-                MIN_AND_KM_PAIR_REGEX.containsMatchIn(clean) ||
-                KM_REGEX.containsMatchIn(clean) ||
-                MINUTES_REGEX.containsMatchIn(clean)
+                lower.contains("alta demanda") || lower.contains("escolha uma") ||
+                lower.contains("km até o embarque") || lower.contains("isso é tudo")
             ) {
+                i++
                 continue
             }
 
-            if (STREET_PREFIX_REGEX.matches(clean) ||
-                (clean.length >= 10 && clean.contains(",") && clean.any { it.isDigit() } &&
-                    clean.any { it.isLetter() } &&
-                    !clean.contains("R$", ignoreCase = true))
+            // Se a linha começa com "(6 min 1,3 km) Rua dos Vianas, 1545", removemos o prefixo "(6 min 1,3 km)" para preservar o endereço!
+            val strippedPrefix = LEADING_DURATION_DISTANCE_PREFIX_REGEX.replace(rawLine, "").trim()
+            val candidate = if (strippedPrefix.length >= 5 && STREET_PREFIX_REGEX.matches(strippedPrefix)) {
+                strippedPrefix
+            } else {
+                rawLine
+            }
+
+            // Se ainda sobrou apenas tempo/distância pura sem nome de rua, pula
+            if (KM_REGEX.containsMatchIn(candidate) || METERS_REGEX.containsMatchIn(candidate) || MINUTES_REGEX.containsMatchIn(candidate)) {
+                i++
+                continue
+            }
+
+            if (STREET_PREFIX_REGEX.matches(candidate) ||
+                (candidate.length >= 10 && candidate.contains(",") && candidate.any { it.isDigit() } &&
+                    candidate.any { it.isLetter() } &&
+                    !candidate.contains("R$", ignoreCase = true))
             ) {
-                if (!streetCandidates.contains(clean)) {
-                    streetCandidates.add(clean)
+                var fullAddress = candidate
+                // Verifica se a linha seguinte é a continuação do bairro/número (ex: "de Souza, 72, Vila Industrial" ou "Baeta Neves")
+                if (i + 1 < normalized.size) {
+                    val nextLine = normalized[i + 1].trim()
+                    val nextLower = nextLine.lowercase(Locale.getDefault())
+                    val isNextContinuation = nextLine.length in 3..45 &&
+                        !STREET_PREFIX_REGEX.matches(nextLine) &&
+                        !LEADING_DURATION_DISTANCE_PREFIX_REGEX.containsMatchIn(nextLine) &&
+                        !nextLine.contains("R$", ignoreCase = true) &&
+                        !KM_REGEX.containsMatchIn(nextLine) &&
+                        !METERS_REGEX.containsMatchIn(nextLine) &&
+                        !MINUTES_REGEX.containsMatchIn(nextLine) &&
+                        !nextLower.equals("escolher", ignoreCase = true) &&
+                        !nextLower.equals("aceitar", ignoreCase = true) &&
+                        !nextLower.contains("isso é tudo") &&
+                        !nextLower.contains("corridas")
+                    if (isNextContinuation && (fullAddress.endsWith(",") || nextLine.contains(",") || !fullAddress.any { it.isDigit() })) {
+                        fullAddress = "$fullAddress $nextLine".replace(Regex("""\s+"""), " ")
+                        i++
+                    }
+                }
+
+                if (!streetCandidates.contains(fullAddress)) {
+                    streetCandidates.add(fullAddress)
                 }
             }
+            i++
         }
 
         val origin = explicitOrigin ?: streetCandidates.getOrNull(0)

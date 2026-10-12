@@ -291,5 +291,66 @@ class GoOrNoEngineAndParserTest {
         assertEquals("Rua Antônio Zanetti, 84, Jardim Las Vegas", offer.originAddress)
         assertEquals("Rua Solimões, 534, Vila Cecilia Maria", offer.destinationAddress)
     }
+
+    // 12. TESTE EXATO DO PRINT 1 ENVIADO PELO MOTORISTA: TELA "SOLICITAÇÕES" DA 99 ("Pop Nova", "(6 min 1,3 km) Rua dos Vianas...")
+    @Test
+    fun `test 99 solicitacoes list card with inline parentheses duration km and wrapped street`() {
+        val solicitacoesLines = listOf(
+            "Solicitações",
+            "Escolha uma",
+            "Km até o embarque",
+            "Pop Nova",
+            "R$11,50 x1,5 R$3,18/km",
+            "4,88 · 33 corridas · Perfil Essencial",
+            "(6 min 1,3 km) Rua dos Vianas, 1545,",
+            "Baeta Neves",
+            "(7 min 2,3 km) Rua Américo Vieira",
+            "de Souza, 72, Vila Industrial",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(solicitacoesLines)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+
+        assertEquals(11.50, offer.offeredPrice!!, 0.001)
+        assertEquals(1.3, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(2.3, offer.tripDistanceKm!!, 0.001)
+        assertEquals(3.6, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(13, eval.totalConsideredDurationMin)
+        assertEquals("Rua dos Vianas, 1545, Baeta Neves", offer.originAddress)
+        assertEquals("Rua Américo Vieira de Souza, 72, Vila Industrial", offer.destinationAddress)
+    }
+
+    // 13. TESTE EXATO DO PRINT 2 ENVIADO PELO MOTORISTA: TELA DE MAPA/CHAMADA COM METROS ("3 min (459 m)" + "9 min (3 km)")
+    @Test
+    fun `test 99 map detail and ringing screen with meters 459m plus 3km`() {
+        val mapDetailLines = listOf(
+            "R$11,50 ⚡1,5x",
+            "R$3,37/km",
+            "Alta demanda no destino",
+            "R$1,16 por deslocamento incl.",
+            "4,89 · 925 corridas",
+            "Perfil Premium",
+            "3 min (459 m)",
+            "Rua Itapiruna, 193, Jardim Petroni",
+            "9 min (3 km)",
+            "Rua Estr. dos Vianas, 321 , Sítio dos",
+            "Vianas"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(mapDetailLines)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+
+        assertEquals(11.50, offer.offeredPrice!!, 0.001)
+        assertEquals(0.459, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(3.0, offer.tripDistanceKm!!, 0.001)
+        assertEquals(3.459, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(12, eval.totalConsideredDurationMin)
+        assertEquals("Rua Itapiruna, 193, Jardim Petroni", offer.originAddress)
+        assertEquals("Rua Estr. dos Vianas, 321 , Sítio dos Vianas", offer.destinationAddress)
+    }
 }
+
 

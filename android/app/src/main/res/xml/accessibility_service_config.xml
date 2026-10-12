@@ -4,5 +4,7 @@
     android:accessibilityEventTypes="typeAllMask"
     android:accessibilityFlags="flagDefault|flagReportViewIds|flagRetrieveInteractiveWindows|flagIncludeNotImportantViews"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:notificationTimeout="80"
-    android:canRetrieveWindowContent="true" />
+    android:notificationTimeout="60"
+    android:canRetrieveWindowContent="true"
+    android:canTakeScreenshot="true" />
+
