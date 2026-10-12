@@ -339,7 +339,7 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val tvLine1 = TextView(context).apply {
-            text = "$seqTag$priceStr  •  Total: $distStr · $minStr"
+            text = "$seqTag${result.verdict.label} · $priceStr ($distStr · $minStr)"
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setTypeface(typeface, Typeface.BOLD)

@@ -33,24 +33,21 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
- * Serviço principal de leitura automática de ofertas (Android AccessibilityService) v2.6.0.
+ * Serviço principal de leitura automática de ofertas (Android AccessibilityService) v2.9.0.
  *
- * Melhorias v2.6.0:
- * 1. ZERO janela flutuante em espera: nada fica flutuando na tela enquanto o motorista trabalha.
- *    O status ativo fica apenas no ícone da barra superior do Android (ao lado do relógio e do ícone da 99),
- *    com o botão "Desativar GoOrNo" direto na notificação.
- * 2. Abertura 100% automática quando toca corrida na 99/Uber ou quando o motorista abre a lista de "Solicitações"
- *    ou clica no ícone do "mapinha" para ver a viagem em detalhes (via Acessibilidade + OCR silencioso automático).
- * 3. NUNCA fica reabrindo de forma persistente a mesma corrida depois que o motorista fecha o card ou o tempo acaba!
- *    Cada oferta é mostrada 1 única vez por contexto (Lista vs Mapa Detalhado), e fecha com 1 toque em qualquer parte do card.
+ * Melhorias v2.9.0:
+ * 1. Persistência total ao alternar entre WhatsApp / Waze / apps de terceiros e voltar para 99 ou Uber:
+ *    - Nunca fica preso no pacote do WhatsApp ("lastKnownForegroundPkg") quando a 99 esconde seus nós de acessibilidade.
+ *    - Watchdog automático de 2.4s em `isTakingAutoScreenshot` para nunca travar caso o Android descarte um callback durante transição de janela.
+ *    - Limpa automaticamente o cache de ofertas já exibidas (`shownOfferTimestamps`) quando o motorista abre outro app (ex: WhatsApp),
+ *      garantindo que ao voltar para a 99 ou Uber o card flutuante abra imediatamente!
+ * 2. Atualização da Notificação Superior com a oferta mais completa da tela (preservando Origem, Destino, Tempo e R$/h).
  */
 class GoOrNoAccessibilityService : AccessibilityService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var pollingJob: Job? = null
 
-    // Memória de ofertas já exibidas/fechadas no contexto atual ("LIST_VIEW|preco|km" ou "DETAIL_VIEW|preco|km")
-    // Impede que a mesma oferta fique reabrindo sozinha e incomodando o motorista!
     private val shownOfferTimestamps = LinkedHashMap<String, Long>()
     private var lastScreenContextMode: String = ""
     private var lastKnownForegroundPkg: String = ""
@@ -58,6 +55,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var lastAutoScreenshotTimeMillis: Long = 0L
     private var lastCardClosedTimeMillis: Long = 0L
     private var isTakingAutoScreenshot: Boolean = false
+    private var consecutiveScansWithoutOffers: Int = 0
 
     private val mlKitRecognizer by lazy {
         TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -81,10 +79,17 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         serviceScope.launch {
             val cfg = app?.preferencesRepository?.getConfigOnce()
             val enabled = cfg?.copilotMonitoringEnabled ?: true
+            if (cfg != null) {
+                app.overlayPanel.applyConfig(cfg)
+            }
             app?.overlayPanel?.setMonitoringEnabled(enabled, accessibilityEnabled = true)
             if (enabled) {
                 RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READING_IN_PROGRESS)
-                CopilotNotificationReceiver.showActiveNotification(this@GoOrNoAccessibilityService)
+                CopilotNotificationReceiver.showActiveNotification(
+                    context = this@GoOrNoAccessibilityService,
+                    showProfit = cfg?.showProfitOnOverlay,
+                    showCost = cfg?.showCostOnOverlay
+                )
             } else {
                 RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.SERVICE_OFF)
                 CopilotNotificationReceiver.cancelActiveNotification(this@GoOrNoAccessibilityService)
@@ -107,7 +112,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     }
                 } catch (_: Exception) {
                 }
-                delay(950L)
+                delay(900L)
             }
         }
     }
@@ -125,10 +130,17 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             !evtPkg.contains("inputmethod", ignoreCase = true) &&
             !evtPkg.contains("keyboard", ignoreCase = true)
         ) {
+            // Se o motorista abriu um app terceiro (ex: WhatsApp) que não é Uber nem 99,
+            // limpamos o histórico de exibição para que ao voltar para a 99/Uber o card flutuante reabra na hora!
+            if (SourceApp.fromPackageName(evtPkg) == SourceApp.UNKNOWN &&
+                SourceApp.fromPackageName(lastKnownForegroundPkg) != SourceApp.UNKNOWN
+            ) {
+                shownOfferTimestamps.clear()
+                lastScreenContextMode = ""
+            }
             lastKnownForegroundPkg = evtPkg
         }
 
-        // Se a janelinha de cálculo já está aberta na tela, não re-escaneia até ela fechar
         if (app?.overlayPanel?.isCardCurrentlyVisible() == true) {
             return
         }
@@ -139,20 +151,24 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private fun scanCurrentScreen(eventPkg: String?, forceThrottleBypass: Boolean) {
         val now = System.currentTimeMillis()
         if (!forceThrottleBypass && now - lastScanTimeMillis < 260L) return
-        // Pequena pausa de 1.2s logo após o motorista fechar manualmente o card para nunca reabrir durante a animação de saída
-        if (now - lastCardClosedTimeMillis < 1200L) return
+        if (now - lastCardClosedTimeMillis < 1100L) return
         lastScanTimeMillis = now
 
         val candidateWindows = mutableListOf<Pair<String, AccessibilityNodeInfo>>()
+        var isOurOwnAppVisible = false
 
-        // 1. Coleta todas as janelas visíveis na tela (ignorando o próprio GoOrNo e SystemUI)
+        // 1. Coleta todas as janelas visíveis na tela
         try {
             val allWindows = windows
             if (!allWindows.isNullOrEmpty()) {
                 for (win in allWindows) {
                     val root = win.root ?: continue
                     val pkg = root.packageName?.toString() ?: ""
-                    if (pkg.isBlank() || pkg == packageName || pkg == "com.android.systemui") continue
+                    if (pkg == packageName) {
+                        isOurOwnAppVisible = true
+                        continue
+                    }
+                    if (pkg.isBlank() || pkg == "com.android.systemui") continue
                     candidateWindows.add(Pair(pkg, root))
                 }
             }
@@ -164,7 +180,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             val activeRoot = rootInActiveWindow
             if (activeRoot != null) {
                 val activePkg = activeRoot.packageName?.toString() ?: eventPkg ?: lastKnownForegroundPkg
-                if (activePkg.isNotBlank() && activePkg != packageName && activePkg != "com.android.systemui") {
+                if (activePkg == packageName) {
+                    isOurOwnAppVisible = true
+                } else if (activePkg.isNotBlank() && activePkg != "com.android.systemui") {
                     if (candidateWindows.none { it.second == activeRoot }) {
                         candidateWindows.add(0, Pair(activePkg, activeRoot))
                     }
@@ -173,15 +191,19 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         } catch (_: Exception) {
         }
 
+        // Se o motorista está com a tela do próprio GoOrNo aberta (ajustando configurações), não escaneia
+        if (isOurOwnAppVisible && candidateWindows.none { SourceApp.fromPackageName(it.first) != SourceApp.UNKNOWN }) {
+            return
+        }
+
         val rideWindow = candidateWindows.firstOrNull { (pkg, _) ->
             SourceApp.fromPackageName(pkg) != SourceApp.UNKNOWN
         }
         val targetPkg = rideWindow?.first
             ?: candidateWindows.firstOrNull()?.first
             ?: eventPkg?.takeIf { it.isNotBlank() && it != packageName && it != "com.android.systemui" }
-            ?: lastKnownForegroundPkg
-
-        if (targetPkg.isBlank() || targetPkg == packageName) return
+            ?: lastKnownForegroundPkg.takeIf { it.isNotBlank() && it != packageName }
+            ?: "com.taxis99.driver"
 
         val positionedNodes = mutableListOf<PositionedText>()
         for ((pkg, rootNode) in candidateWindows) {
@@ -194,7 +216,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val normalizedTexts = BrazilianOfferParser.normalizeFragmentedNodes(mergedLines)
         val detectedApp = BrazilianOfferParser.inferSourceAppFromScreenContent(targetPkg, normalizedTexts)
 
-        // Atualiza o Inspetor na Tela 9 para diagnóstico em tempo real
         if (normalizedTexts.isNotEmpty()) {
             RuntimeDiagnosticsBus.recordAccessibilitySnapshot(
                 AccessibilitySnapshot(
@@ -208,39 +229,35 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         val isKnownRidePackage = SourceApp.fromPackageName(targetPkg) != SourceApp.UNKNOWN
-        val isRideApp = detectedApp == SourceApp.UBER_DRIVER ||
-            detectedApp == SourceApp.NINETY_NINE_DRIVER ||
-            isKnownRidePackage
-
         val effectiveApp = when {
             detectedApp != SourceApp.UNKNOWN -> detectedApp
             isKnownRidePackage -> SourceApp.fromPackageName(targetPkg)
             else -> SourceApp.UNKNOWN
         }
 
-        // 1º Tentativa: extrair ofertas diretamente pelos nós de Acessibilidade
-        val parsedOffers = if (effectiveApp != SourceApp.UNKNOWN) {
+        // 1º Tentativa: extrair ofertas diretamente pelos nós de Acessibilidade (testando Uber e 99)
+        var parsedOffers = if (effectiveApp != SourceApp.UNKNOWN) {
             extractOffersForApp(effectiveApp, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
         } else {
             emptyList()
         }
+        if (parsedOffers.isEmpty() && normalizedTexts.isNotEmpty()) {
+            parsedOffers = extractOffersForApp(SourceApp.NINETY_NINE_DRIVER, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
+                .ifEmpty { extractOffersForApp(SourceApp.UBER_DRIVER, normalizedTexts, CaptureMethod.ACCESSIBILITY, now) }
+        }
 
         if (parsedOffers.isNotEmpty()) {
+            consecutiveScansWithoutOffers = 0
             processAndShowOffers(parsedOffers, normalizedTexts, now)
             return
         }
 
         // 2º Tentativa Automática (Leitura Visual Silenciosa via takeScreenshot + ML Kit OCR):
-        // Acionada sempre que a 99 ou Uber estiver na tela (mesmo que esconda os nós e retorne 0 ou 2 itens)
-        // OU quando o motorista estiver testando um print na Galeria/Fotos!
-        val isGalleryOrPhotoViewer = targetPkg.contains("gallery", ignoreCase = true) ||
-            targetPkg.contains("photos", ignoreCase = true) ||
-            targetPkg.contains("media", ignoreCase = true)
-
-        if (isRideApp || isGalleryOrPhotoViewer) {
-            val fallbackApp = if (effectiveApp != SourceApp.UNKNOWN) effectiveApp else SourceApp.NINETY_NINE_DRIVER
-            triggerAutomaticAccessibilityOcrIfNeeded(fallbackApp, targetPkg, now)
-        }
+        // Sempre executada quando não estamos dentro do próprio GoOrNo!
+        // Assim, mesmo que o motorista tenha acabado de sair do WhatsApp e voltado para a 99 (que oculta os nós),
+        // o leitor NUNCA perde a leitura da tela!
+        val fallbackApp = if (effectiveApp != SourceApp.UNKNOWN) effectiveApp else SourceApp.NINETY_NINE_DRIVER
+        triggerAutomaticAccessibilityOcrIfNeeded(fallbackApp, targetPkg, now)
     }
 
     private fun extractOffersForApp(
@@ -269,8 +286,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
     /**
      * Captura silenciosa via AccessibilityService.takeScreenshot (Android 11 / API 30+)
-     * e leitura de todos os preços, km, metros, minutos e endereços via ML Kit OCR local —
-     * abrindo a janelinha de cálculo SOZINHO sem nenhuma barrinha flutuante em espera!
+     * com Watchdog anti-travamento em transições de aplicativos (WhatsApp <-> 99/Uber).
      */
     private fun triggerAutomaticAccessibilityOcrIfNeeded(
         targetApp: SourceApp,
@@ -278,10 +294,20 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        if (isTakingAutoScreenshot) return
+
+        // Watchdog anti-travamento: se o Android descartou um callback durante a troca de app (ex: abrir WhatsApp),
+        // libera o semáforo após 2.4 segundos para nunca parar de ler!
+        if (isTakingAutoScreenshot) {
+            if (now - lastAutoScreenshotTimeMillis > 2400L) {
+                isTakingAutoScreenshot = false
+            } else {
+                return
+            }
+        }
+
         val app = applicationContext as? GoOrNoApplication
         if (app?.overlayPanel?.isCardCurrentlyVisible() == true) return
-        if (now - lastAutoScreenshotTimeMillis < 1050L) return
+        if (now - lastAutoScreenshotTimeMillis < 950L) return
 
         isTakingAutoScreenshot = true
         lastAutoScreenshotTimeMillis = now
@@ -348,6 +374,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         if (txt.isNotEmpty() &&
                                             !txt.contains("GoOrNo", ignoreCase = true) &&
                                             !txt.contains("COMPENSA", ignoreCase = true) &&
+                                            !txt.contains("AVALIAR", ignoreCase = true) &&
+                                            !txt.contains("DADOS INSUFICIENTES", ignoreCase = true) &&
+                                            !txt.contains("segure p/ mover", ignoreCase = true) &&
                                             !txt.contains("Toque em qualquer parte", ignoreCase = true) &&
                                             !txt.startsWith("📍 Origem:") &&
                                             !txt.startsWith("🏁 Destino:") &&
@@ -376,16 +405,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         else -> SourceApp.NINETY_NINE_DRIVER
                                     }
 
-                                    RuntimeDiagnosticsBus.recordAccessibilitySnapshot(
-                                        AccessibilitySnapshot(
-                                            timestampMillis = System.currentTimeMillis(),
-                                            packageName = "$targetPkg (Leitura Visual Automática)",
-                                            detectedApp = effectiveOcrApp,
-                                            nodeCount = normalizedOcr.size,
-                                            extractedTexts = normalizedOcr.take(90)
-                                        )
-                                    )
-
                                     var ocrOffers = extractOffersForApp(
                                         appType = effectiveOcrApp,
                                         lines = normalizedOcr,
@@ -393,7 +412,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         timestampMillis = System.currentTimeMillis()
                                     )
 
-                                    // Fallback cruzado caso um print seja de Uber ou 99 sem pacote explícito
                                     if (ocrOffers.isEmpty()) {
                                         val altApp = if (effectiveOcrApp == SourceApp.NINETY_NINE_DRIVER) {
                                             SourceApp.UBER_DRIVER
@@ -409,7 +427,31 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                     }
 
                                     if (ocrOffers.isNotEmpty()) {
+                                        consecutiveScansWithoutOffers = 0
+                                        RuntimeDiagnosticsBus.recordAccessibilitySnapshot(
+                                            AccessibilitySnapshot(
+                                                timestampMillis = System.currentTimeMillis(),
+                                                packageName = "${effectiveOcrApp.displayName} (Leitura Visual Automática)",
+                                                detectedApp = effectiveOcrApp,
+                                                nodeCount = normalizedOcr.size,
+                                                extractedTexts = normalizedOcr.take(90)
+                                            )
+                                        )
                                         processAndShowOffers(ocrOffers, normalizedOcr, System.currentTimeMillis())
+                                    } else {
+                                        consecutiveScansWithoutOffers++
+                                        // Se ficou 2 leituras sem nenhuma oferta na tela (ex: abriu WhatsApp ou saiu da chamada),
+                                        // limpa o bloqueio de repetição para reabrir imediatamente quando voltar para a oferta!
+                                        if (consecutiveScansWithoutOffers >= 2) {
+                                            shownOfferTimestamps.clear()
+                                            lastScreenContextMode = ""
+                                        }
+                                    }
+                                } else {
+                                    consecutiveScansWithoutOffers++
+                                    if (consecutiveScansWithoutOffers >= 2) {
+                                        shownOfferTimestamps.clear()
+                                        lastScreenContextMode = ""
                                     }
                                 }
                                 isTakingAutoScreenshot = false
@@ -430,13 +472,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
     }
 
-    /**
-     * Cria uma chave estável por oferta (baseada apenas em modo de tela + preço + distância arredondada),
-     * garantindo que depois que o motorista fechar a janelinha (ou o tempo acabar), a MESMA corrida
-     * NUNCA fique reabrindo sozinha!
-     * Porém, se o motorista clicar no ícone do "mapinha" na lista de Solicitações da 99, o modo muda
-     * de LIST_VIEW para DETAIL_VIEW e o app mostra o cálculo 1 vez para a tela detalhada do mapa!
-     */
     private fun buildStableOfferKey(screenMode: String, offer: StandardRideOffer): String {
         val priceKey = offer.offeredPrice?.let { String.format(Locale.US, "%.2f", it) } ?: "0.00"
         val totalKm = offer.totalDistanceKmExplicit
@@ -452,7 +487,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     ) {
         if (parsedOffers.isEmpty()) return
 
-        // Identifica se estamos na tela de Lista ("Solicitações / Escolha uma") ou na tela de Detalhe do Mapa / Tocando
         val joinedLower = screenLines.joinToString(" ").lowercase(Locale.getDefault())
         val currentScreenMode = when {
             joinedLower.contains("solicitações") ||
@@ -461,33 +495,45 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             else -> "DETAIL_VIEW"
         }
 
-        // Se o motorista estava na Lista de Solicitações ("LIST_VIEW") e clicou no ícone do mapinha para abrir
-        // os detalhes da viagem ("DETAIL_VIEW"), limpamos o histórico de "DETAIL_VIEW" para exibir o cálculo da viagem clicada 1 vez!
         if (lastScreenContextMode == "LIST_VIEW" && currentScreenMode == "DETAIL_VIEW") {
             val detailKeys = shownOfferTimestamps.keys.filter { it.startsWith("DETAIL_VIEW|") }
             detailKeys.forEach { shownOfferTimestamps.remove(it) }
         }
         lastScreenContextMode = currentScreenMode
 
-        // Limpa chaves antigas (> 75 segundos)
         val expiredKeys = shownOfferTimestamps.entries
-            .filter { now - it.value > 75_000L }
+            .filter { now - it.value > 60_000L }
             .map { it.key }
         expiredKeys.forEach { shownOfferTimestamps.remove(it) }
 
-        // Filtra: verifica se há pelo menos 1 oferta nova neste contexto de tela que ainda NÃO foi mostrada/fechada!
         val hasUnshownOfferInThisMode = parsedOffers.any { offer ->
             val key = buildStableOfferKey(currentScreenMode, offer)
             !shownOfferTimestamps.containsKey(key)
         }
 
+        // Mesmo que o card flutuante já tenha sido exibido e fechado neste contexto, se a leitura atual trouxe
+        // endereços mais completos para a notificação, atualizamos a notificação persistente sem reabrir o card!
+        val app = applicationContext as? GoOrNoApplication ?: return
         if (!hasUnshownOfferInThisMode) {
-            // Todas as ofertas presentes nesta tela já foram mostradas (e fechadas pelo motorista ou pelo timer).
-            // Não reabre a janela para não incomodar!
+            serviceScope.launch {
+                val config = app.preferencesRepository.getConfigOnce()
+                val evaluations = parsedOffers.map { FinancialEngine.evaluate(it, config) }
+                val richestEval = evaluations.maxByOrNull { eval ->
+                    (if (!eval.offer.originAddress.isNullOrBlank()) 3 else 0) +
+                        (if (!eval.offer.destinationAddress.isNullOrBlank()) 3 else 0) +
+                        (if (eval.totalConsideredDurationMin != null) 2 else 0) +
+                        (if (eval.totalConsideredDistanceKm != null) 1 else 0)
+                } ?: evaluations.first()
+                CopilotNotificationReceiver.showActiveNotification(
+                    context = this@GoOrNoAccessibilityService,
+                    latestEvaluation = richestEval,
+                    showProfit = config.showProfitOnOverlay,
+                    showCost = config.showCostOnOverlay
+                )
+            }
             return
         }
 
-        // Registra todas as ofertas atuais como já mostradas neste modo de tela
         for (offer in parsedOffers) {
             val key = buildStableOfferKey(currentScreenMode, offer)
             shownOfferTimestamps[key] = now
@@ -495,20 +541,26 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.OFFER_DETECTED)
 
-        val app = applicationContext as? GoOrNoApplication ?: return
         serviceScope.launch {
             val config = app.preferencesRepository.getConfigOnce()
             val evaluations = parsedOffers.map { offer ->
                 FinancialEngine.evaluate(offer, config)
             }
 
-            // Abre a janelinha flutuante AUTOMATICAMENTE (1 única vez por oferta/contexto!)
-            RuntimeDiagnosticsBus.publishEvaluation(evaluations.first())
+            // Escolhe a avaliação mais completa (com Origem, Destino e Tempo) para persistir na Notificação do Topo!
+            val richestEval = evaluations.maxByOrNull { eval ->
+                (if (!eval.offer.originAddress.isNullOrBlank()) 3 else 0) +
+                    (if (!eval.offer.destinationAddress.isNullOrBlank()) 3 else 0) +
+                    (if (eval.totalConsideredDurationMin != null) 2 else 0) +
+                    (if (eval.totalConsideredDistanceKm != null) 1 else 0)
+            } ?: evaluations.first()
+
+            RuntimeDiagnosticsBus.publishEvaluation(richestEval)
             app.overlayPanel.applyConfig(config)
             app.overlayPanel.showEvaluations(evaluations)
             CopilotNotificationReceiver.showActiveNotification(
                 context = this@GoOrNoAccessibilityService,
-                latestEvaluation = evaluations.first(),
+                latestEvaluation = richestEval,
                 showProfit = config.showProfitOnOverlay,
                 showCost = config.showCostOnOverlay
             )
@@ -553,9 +605,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
     }
 
-    /**
-     * Junta nós de texto que estão alinhados na mesma linha horizontal (diferença de Y <= 24px).
-     */
     private fun mergeSameRowNodes(nodes: List<PositionedText>): List<String> {
         if (nodes.isEmpty()) return emptyList()
         val sorted = nodes.sortedWith(compareBy<PositionedText>({ it.topY }, { it.leftX }))
@@ -627,14 +676,12 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     override fun onInterrupt() {
         RuntimeDiagnosticsBus.setAccessibilityConnected(false)
         (applicationContext as? GoOrNoApplication)?.overlayPanel?.hidePanel()
-        CopilotNotificationReceiver.cancelActiveNotification(this)
     }
 
     override fun onDestroy() {
         pollingJob?.cancel()
         RuntimeDiagnosticsBus.setAccessibilityConnected(false)
         (applicationContext as? GoOrNoApplication)?.overlayPanel?.hidePanel()
-        CopilotNotificationReceiver.cancelActiveNotification(this)
         serviceScope.cancel()
         super.onDestroy()
     }

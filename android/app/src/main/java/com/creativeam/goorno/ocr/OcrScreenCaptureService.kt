@@ -156,9 +156,6 @@ class OcrScreenCaptureService : Service() {
         val reader = imageReader ?: return
 
         val foregroundApp = RuntimeDiagnosticsBus.lastSnapshot.value.detectedApp
-        if (foregroundApp != SourceApp.UBER_DRIVER && foregroundApp != SourceApp.NINETY_NINE_DRIVER) {
-            return
-        }
 
         val image = try {
             reader.acquireLatestImage()
@@ -182,8 +179,7 @@ class OcrScreenCaptureService : Service() {
             fullBitmap.copyPixelsFromBuffer(buffer)
             image.close()
 
-            // Região de interesse: metade inferior da tela (onde Uber e 99 exibem o card de oferta)
-            val roiTop = (fullBitmap.height * 0.25).toInt()
+            val roiTop = (fullBitmap.height * 0.10).toInt()
             val roiHeight = fullBitmap.height - roiTop
             val roiBitmap = Bitmap.createBitmap(fullBitmap, 0, roiTop, image.width, roiHeight)
             fullBitmap.recycle()
@@ -193,6 +189,10 @@ class OcrScreenCaptureService : Service() {
                 .addOnSuccessListener { visionText ->
                     val lines = visionText.textBlocks.flatMap { block ->
                         block.lines.map { it.text }
+                    }.filter { txt ->
+                        !txt.contains("GoOrNo", ignoreCase = true) &&
+                            !txt.contains("COMPENSA", ignoreCase = true) &&
+                            !txt.contains("AVALIAR", ignoreCase = true)
                     }
                     roiBitmap.recycle()
                     handleRecognizedLines(lines, foregroundApp)
@@ -220,23 +220,33 @@ class OcrScreenCaptureService : Service() {
             BrazilianOfferParser.inferSourceAppFromScreenContent(null, lines)
         }
 
-        val parsedOffers = when (inferredApp) {
+        var parsedOffers = when (inferredApp) {
             SourceApp.UBER_DRIVER -> UberOfferReader.parseMultipleOffersFromScreen(
                 rawNodes = lines,
                 captureMethod = CaptureMethod.OCR,
                 timestampMillis = now,
                 isSimulated = false
             )
-            SourceApp.NINETY_NINE_DRIVER -> NinetyNineOfferReader.parseMultipleOffersFromScreen(
+            else -> NinetyNineOfferReader.parseMultipleOffersFromScreen(
                 rawNodes = lines,
                 captureMethod = CaptureMethod.OCR,
                 timestampMillis = now,
                 isSimulated = false
             )
-            else -> emptyList()
+        }
+        if (parsedOffers.isEmpty()) {
+            parsedOffers = UberOfferReader.parseMultipleOffersFromScreen(
+                rawNodes = lines,
+                captureMethod = CaptureMethod.OCR,
+                timestampMillis = now,
+                isSimulated = false
+            )
         }
 
-        if (parsedOffers.isEmpty()) return
+        if (parsedOffers.isEmpty()) {
+            lastOcrOffer = null
+            return
+        }
         val firstOffer = parsedOffers.first()
 
         val dup = BrazilianOfferParser.isSameOrUpdatedOffer(lastOcrOffer, firstOffer)
@@ -247,9 +257,20 @@ class OcrScreenCaptureService : Service() {
         serviceScope.launch {
             val config = app.preferencesRepository.getConfigOnce()
             val evaluations = parsedOffers.map { FinancialEngine.evaluate(it, config) }
-            RuntimeDiagnosticsBus.publishEvaluation(evaluations.first())
+            val richestEval = evaluations.maxByOrNull { eval ->
+                (if (!eval.offer.originAddress.isNullOrBlank()) 3 else 0) +
+                    (if (!eval.offer.destinationAddress.isNullOrBlank()) 3 else 0) +
+                    (if (eval.totalConsideredDurationMin != null) 2 else 0)
+            } ?: evaluations.first()
+            RuntimeDiagnosticsBus.publishEvaluation(richestEval)
             app.overlayPanel.applyConfig(config)
             app.overlayPanel.showEvaluations(evaluations)
+            com.creativeam.goorno.service.CopilotNotificationReceiver.showActiveNotification(
+                context = this@OcrScreenCaptureService,
+                latestEvaluation = richestEval,
+                showProfit = config.showProfitOnOverlay,
+                showCost = config.showCostOnOverlay
+            )
 
             if (config.saveHistoryEnabled) {
                 for (evaluation in evaluations) {

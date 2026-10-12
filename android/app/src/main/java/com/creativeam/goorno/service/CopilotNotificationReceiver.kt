@@ -23,16 +23,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.math.abs
 
 /**
- * Receptor das ações clicadas diretamente na notificação da barra de status do Android
- * (onde fica o ícone do GoOrNo ao lado do relógio e do ícone da 99).
+ * Receptor e Gerenciador Persistente da Notificação Superior do GoOrNo (v2.9.0).
  *
- * Exibe:
- * - Os dados completos da ÚLTIMA CORRIDA LIDA (Semáforo, Valor, R$/km, R$/h, Lucro, Endereço de Origem e Destino).
+ * Melhorias v2.9.0:
+ * - PERSISTÊNCIA TOTAL DOS DADOS DA CORRIDA NA NOTIFICAÇÃO:
+ *   Salva todos os campos da corrida em SharedPreferences ("goorno_persisted_notification") e faz
+ *   fusão inteligente (Smart Merge): se uma segunda atualização rápida da tela vier sem endereço
+ *   de Origem, sem Destino ou sem minutos, NUNCA apaga os dados completos que já estavam na notificação!
  * - Botão 1: "📍 Origem 360°" -> Abre direto o Street View 360° da rua de embarque!
  * - Botão 2: "🏁 Destino 360°" -> Abre direto o Street View 360° da rua de destino!
- * - Botão 3: "🔴 Desativar" -> Desliga o GoOrNo e remove a notificação quando o motorista parar de rodar!
+ * - Botão 3: "🔴 Desativar" -> Desliga o GoOrNo quando o motorista parar de rodar!
  */
 class CopilotNotificationReceiver : BroadcastReceiver() {
 
@@ -106,40 +109,78 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
         const val EXTRA_ADDRESS = "extra_street_address"
         const val STATUS_NOTIFICATION_ID = 4102
         private const val CHANNEL_ID = "goorno_active_bar_v4"
-
-        @Volatile
-        private var cachedLastEvaluation: FinancialEvaluationResult? = null
-
-        @Volatile
-        private var cachedShowProfit: Boolean = false
-
-        @Volatile
-        private var cachedShowCost: Boolean = false
+        private const val PREFS_NAME = "goorno_persisted_notification"
 
         /**
-         * Exibe ou atualiza na barra superior do Android a notificação silenciosa com:
-         * - Resumo completo da última corrida lida (Valor, Total KM/Tempo, R$/km, R$/h, Origem e Destino,
-         *   e Lucro/Custo apenas se o motorista ativou nas configurações!)
-         * - Botões para abrir Origem 360° (Street View), Destino 360° (Street View) e Desativar GoOrNo.
+         * Exibe ou atualiza na barra superior do Android a notificação silenciosa com persistência total:
+         * - Se uma atualização parcial chegar sem endereço ou sem tempo, preserva os dados já capturados
+         *   para que NENHUMA informação suma da notificação quando a tela atualizar!
          */
         fun showActiveNotification(
             context: Context,
-            latestEvaluation: FinancialEvaluationResult? = cachedLastEvaluation,
+            latestEvaluation: FinancialEvaluationResult? = null,
             showProfit: Boolean? = null,
             showCost: Boolean? = null
         ) {
-            if (latestEvaluation != null) {
-                cachedLastEvaluation = latestEvaluation
-            }
-            if (showProfit != null) {
-                cachedShowProfit = showProfit
-            }
-            if (showCost != null) {
-                cachedShowCost = showCost
-            }
-            val eval = cachedLastEvaluation
-
             try {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val editor = prefs.edit()
+
+                if (showProfit != null) {
+                    editor.putBoolean("show_profit", showProfit)
+                }
+                if (showCost != null) {
+                    editor.putBoolean("show_cost", showCost)
+                }
+
+                if (latestEvaluation != null && latestEvaluation.offer.offeredPrice != null) {
+                    val offer = latestEvaluation.offer
+                    val newPrice = offer.offeredPrice ?: 0.0
+                    val prevPrice = prefs.getFloat("price", -1f).toDouble()
+                    val prevTimestamp = prefs.getLong("timestamp", 0L)
+                    val now = System.currentTimeMillis()
+
+                    // Verifica se é uma releitura/atualização rápida da mesma corrida (ou dentro de 12s sem endereço novo)
+                    val isSameRideOrQuickUpdate = (prevPrice > 0 && abs(newPrice - prevPrice) < 0.15) ||
+                        (now - prevTimestamp < 12_000L && offer.originAddress.isNullOrBlank() && offer.destinationAddress.isNullOrBlank())
+
+                    val prevOrigin = prefs.getString("origin_address", "") ?: ""
+                    val prevDest = prefs.getString("dest_address", "") ?: ""
+                    val prevMin = prefs.getInt("total_min", -1)
+                    val prevKm = prefs.getFloat("total_km", -1f).toDouble()
+                    val prevGrossHr = prefs.getFloat("gross_hr", -1f).toDouble()
+
+                    // Preserva endereços e métricas já capturadas caso a nova leitura parcial venha sem eles!
+                    val mergedOrigin = offer.originAddress?.takeIf { it.isNotBlank() }
+                        ?: if (isSameRideOrQuickUpdate && prevOrigin.isNotBlank()) prevOrigin else prevOrigin
+                    val mergedDest = offer.destinationAddress?.takeIf { it.isNotBlank() }
+                        ?: if (isSameRideOrQuickUpdate && prevDest.isNotBlank()) prevDest else prevDest
+
+                    val mergedMin = latestEvaluation.totalConsideredDurationMin
+                        ?: if (isSameRideOrQuickUpdate && prevMin > 0) prevMin else null
+                    val mergedKm = latestEvaluation.totalConsideredDistanceKm
+                        ?: if (isSameRideOrQuickUpdate && prevKm > 0) prevKm else null
+                    val mergedGrossHr = latestEvaluation.grossPerHour
+                        ?: if (isSameRideOrQuickUpdate && prevGrossHr > 0) prevGrossHr else null
+
+                    editor.putBoolean("has_ride", true)
+                    editor.putLong("timestamp", now)
+                    editor.putString("verdict_name", latestEvaluation.verdict.name)
+                    editor.putString("verdict_label", latestEvaluation.verdict.label)
+                    editor.putString("source_app", offer.sourceApp.displayName)
+                    editor.putFloat("price", newPrice.toFloat())
+                    editor.putFloat("total_km", (mergedKm ?: -1.0).toFloat())
+                    editor.putInt("total_min", mergedMin ?: -1)
+                    editor.putFloat("gross_km", (latestEvaluation.grossPerKm ?: -1.0).toFloat())
+                    editor.putFloat("gross_hr", (mergedGrossHr ?: -1.0).toFloat())
+                    editor.putFloat("net_profit", (latestEvaluation.estimatedNetProfit ?: 0.0).toFloat())
+                    editor.putFloat("total_cost", (latestEvaluation.estimatedTotalCost ?: 0.0).toFloat())
+                    editor.putString("origin_address", mergedOrigin)
+                    editor.putString("dest_address", mergedDest)
+                }
+
+                editor.apply()
+
                 val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     val channel = NotificationChannel(
@@ -149,7 +190,7 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     ).apply {
                         setSound(null, null)
                         enableVibration(false)
-                        description = "Mostra na barra superior o status do GoOrNo, os dados da última corrida e botões para Street View 360° e Desativar"
+                        description = "Mostra na barra superior o status do GoOrNo, os dados persistentes da última corrida e botões para Street View 360° e Desativar"
                     }
                     nm.createNotificationChannel(channel)
                 }
@@ -181,35 +222,49 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .setContentIntent(openPendingIntent)
 
-                if (eval != null) {
-                    val offer = eval.offer
-                    val emoji = when (eval.verdict) {
-                        TrafficLightVerdict.GREEN -> "🟢"
-                        TrafficLightVerdict.YELLOW -> "🟡"
-                        TrafficLightVerdict.RED -> "🔴"
-                        TrafficLightVerdict.GRAY_NEUTRAL -> "⚪"
+                val hasRide = prefs.getBoolean("has_ride", false)
+                if (hasRide) {
+                    val verdictName = prefs.getString("verdict_name", TrafficLightVerdict.GREEN.name) ?: TrafficLightVerdict.GREEN.name
+                    val verdictLabel = prefs.getString("verdict_label", "COMPENSA") ?: "COMPENSA"
+                    val sourceApp = prefs.getString("source_app", "99 Motorista") ?: "99 Motorista"
+                    val price = prefs.getFloat("price", 0f).toDouble()
+                    val totalKm = prefs.getFloat("total_km", -1f).toDouble()
+                    val totalMin = prefs.getInt("total_min", -1)
+                    val grossKm = prefs.getFloat("gross_km", -1f).toDouble()
+                    val grossHr = prefs.getFloat("gross_hr", -1f).toDouble()
+                    val netProfit = prefs.getFloat("net_profit", 0f).toDouble()
+                    val totalCost = prefs.getFloat("total_cost", 0f).toDouble()
+                    val origAddress = prefs.getString("origin_address", "") ?: ""
+                    val destAddress = prefs.getString("dest_address", "") ?: ""
+                    val effectiveShowProfit = prefs.getBoolean("show_profit", false)
+                    val effectiveShowCost = prefs.getBoolean("show_cost", false)
+
+                    val emoji = when (verdictName) {
+                        TrafficLightVerdict.GREEN.name -> "🟢"
+                        TrafficLightVerdict.YELLOW.name -> "🟡"
+                        TrafficLightVerdict.RED.name -> "🔴"
+                        else -> "⚪"
                     }
-                    val priceStr = offer.offeredPrice?.let { formatCurr(it) } ?: "R$ --"
-                    val kmStr = eval.grossPerKm?.let { formatCurr(it) + "/km" } ?: "--/km"
-                    val hrStr = eval.grossPerHour?.let { formatCurr(it) + "/h" } ?: "--/h"
-                    val netStr = eval.estimatedNetProfit?.let { formatCurr(it) } ?: "--"
-                    val costStr = eval.estimatedTotalCost?.let { formatCurr(it) } ?: "--"
-                    val distStr = eval.totalConsideredDistanceKm?.let {
-                        String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it)
-                    } ?: "-- km"
-                    val minStr = eval.totalConsideredDurationMin?.let { "$it min" } ?: "-- min"
+
+                    val priceStr = formatCurr(price)
+                    val kmStr = if (grossKm > 0) formatCurr(grossKm) + "/km" else "--/km"
+                    val hrStr = if (grossHr > 0) formatCurr(grossHr) + "/h" else "--/h"
+                    val netStr = formatCurr(netProfit)
+                    val costStr = formatCurr(totalCost)
+                    val distStr = if (totalKm > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", totalKm) else "-- km"
+                    val minStr = if (totalMin > 0) "$totalMin min" else "-- min"
 
                     val extraParts = mutableListOf<String>()
-                    if (cachedShowProfit) extraParts.add("Lucro: $netStr")
-                    if (cachedShowCost) extraParts.add("Custo: $costStr")
+                    if (effectiveShowProfit) extraParts.add("Lucro: $netStr")
+                    if (effectiveShowCost) extraParts.add("Custo: $costStr")
                     val extraSuffix = if (extraParts.isEmpty()) "" else " · " + extraParts.joinToString(" · ")
 
-                    val title = "$emoji $priceStr (Total: $distStr · $minStr) · $kmStr"
-                    val origLine = offer.originAddress?.takeIf { it.isNotBlank() } ?: "Não informado na tela"
-                    val destLine = offer.destinationAddress?.takeIf { it.isNotBlank() } ?: "Não informado na tela"
+                    val title = "$emoji $verdictLabel · $priceStr ($distStr · $minStr) · $kmStr"
+                    val origLine = origAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
+                    val destLine = destAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
                     val shortText = "$hrStr$extraSuffix | 📍 $origLine ➔ 🏁 $destLine"
                     val expandedText = buildString {
-                        append("${offer.sourceApp.displayName} · Total: $distStr em $minStr\n")
+                        append("$sourceApp · Total: $distStr · $minStr\n")
                         append("$kmStr · $hrStr$extraSuffix\n")
                         append("📍 Origem: $origLine\n")
                         append("🏁 Destino: $destLine")
@@ -220,11 +275,11 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                         .setContentText(shortText)
                         .setStyle(NotificationCompat.BigTextStyle().bigText(expandedText))
 
-                    // Botão 1 na Notificação: Abrir Street View 360° da Origem (se disponível)
-                    if (!offer.originAddress.isNullOrBlank()) {
+                    // Botão 1 na Notificação: Abrir Street View 360° da Origem (sempre que persistido)
+                    if (origAddress.isNotBlank()) {
                         val origIntent = Intent(context, CopilotNotificationReceiver::class.java).apply {
                             action = ACTION_OPEN_ORIGIN_STREET_VIEW
-                            putExtra(EXTRA_ADDRESS, offer.originAddress)
+                            putExtra(EXTRA_ADDRESS, origAddress)
                         }
                         val origPending = PendingIntent.getBroadcast(
                             context,
@@ -239,11 +294,11 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                         )
                     }
 
-                    // Botão 2 na Notificação: Abrir Street View 360° do Destino (se disponível)
-                    if (!offer.destinationAddress.isNullOrBlank()) {
+                    // Botão 2 na Notificação: Abrir Street View 360° do Destino (sempre que persistido)
+                    if (destAddress.isNotBlank()) {
                         val destIntent = Intent(context, CopilotNotificationReceiver::class.java).apply {
                             action = ACTION_OPEN_DEST_STREET_VIEW
-                            putExtra(EXTRA_ADDRESS, offer.destinationAddress)
+                            putExtra(EXTRA_ADDRESS, destAddress)
                         }
                         val destPending = PendingIntent.getBroadcast(
                             context,
@@ -260,7 +315,7 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                 } else {
                     builder
                         .setContentTitle("🟢 GoOrNo ATIVO — Monitorando Uber e 99")
-                        .setContentText("Aguardando chamadas. Aqui aparecerão os dados e Street View da última corrida.")
+                        .setContentText("Aguardando chamadas. Aqui ficarão salvos os dados e Street View da última corrida.")
                         .setStyle(
                             NotificationCompat.BigTextStyle()
                                 .bigText("Lendo chamadas automaticamente em segundo plano. Assim que uma corrida tocar, você verá aqui o cálculo, endereço de Origem/Destino com botões 360° Street View, ou pode tocar em 'Desativar' quando parar de rodar.")

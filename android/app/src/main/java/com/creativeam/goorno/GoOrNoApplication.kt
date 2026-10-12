@@ -11,6 +11,7 @@ import com.creativeam.goorno.overlay.FloatingOverlayPanel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class GoOrNoApplication : Application() {
@@ -44,6 +45,13 @@ class GoOrNoApplication : Application() {
                 }
             }
         }
+
+        // Mantém todas as configurações do motorista sincronizadas continuamente em memória
+        // mesmo que o motorista abra WhatsApp, Waze ou outros aplicativos de terceiros!
+        appScope.launch {
+            preferencesRepository.configFlow.collectLatest { cfg ->
+                overlayPanel.applyConfig(cfg)
+            }
+        }
     }
 }
-

@@ -178,10 +178,10 @@ data class DriverFinancialConfig(
  * Classificação do Semáforo de Decisão.
  */
 enum class TrafficLightVerdict(val label: String, val shortAction: String) {
-    GREEN("VERDE — COMPENSA", "Atende às suas metas financeiras"),
-    YELLOW("AMARELO — AVALIAR", "Atende parcialmente às metas"),
-    RED("VERMELHO — NÃO COMPENSA", "Abaixo das metas definidas"),
-    GRAY_NEUTRAL("CINZA — DADOS INSUFICIENTES", "Leitura incompleta ou sem dados suficientes")
+    GREEN("COMPENSA", "Atende às suas metas financeiras"),
+    YELLOW("AVALIAR", "Atende parcialmente às metas"),
+    RED("NÃO COMPENSA", "Abaixo das metas definidas"),
+    GRAY_NEUTRAL("DADOS INSUFICIENTES", "Leitura incompleta ou sem dados suficientes")
 }
 
 /**
