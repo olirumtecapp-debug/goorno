@@ -131,6 +131,7 @@ data class DriverFinancialConfig(
     val minConfidenceThreshold: Double = 0.65,
     val overlayOpacityPercent: Int = 90,
     val overlayAutoMinimizeSec: Int = 12,
+    val copilotMonitoringEnabled: Boolean = true,
     val saveHistoryEnabled: Boolean = true,
     val cloudBackupConsent: Boolean = false,
     val driverRecoveryCode: String = ""

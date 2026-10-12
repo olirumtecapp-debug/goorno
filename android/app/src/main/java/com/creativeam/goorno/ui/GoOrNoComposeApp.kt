@@ -310,11 +310,19 @@ fun GoOrNoComposeApp(
                 // =====================================================
                 GoOrNoScreen.HOME -> {
                     item {
-                        val isCopilotReady = hasOverlayPermission && (hasAccessibilityPermission || ocrActive)
+                        val isPermsReady = hasOverlayPermission && (hasAccessibilityPermission || ocrActive)
+                        val isCopilotActive = isPermsReady && config.copilotMonitoringEnabled
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            border = BorderStroke(1.5.dp, if (isCopilotReady) TrafficGreen else TrafficYellow),
+                            border = BorderStroke(
+                                1.5.dp,
+                                when {
+                                    !config.copilotMonitoringEnabled -> TrafficRed
+                                    isCopilotActive -> TrafficGreen
+                                    else -> TrafficYellow
+                                }
+                            ),
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -325,31 +333,45 @@ fun GoOrNoComposeApp(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Surface(
-                                            color = if (isCopilotReady) TrafficGreenSoft else TrafficYellowSoft,
+                                            color = when {
+                                                !config.copilotMonitoringEnabled -> TrafficRedSoft
+                                                isCopilotActive -> TrafficGreenSoft
+                                                else -> TrafficYellowSoft
+                                            },
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(
-                                                text = if (isCopilotReady)
-                                                    "🟢 COPILOTO ATIVO E PRONTO"
-                                                else
-                                                    "🟡 FALTA ATIVAR PERMISSÃO ABAIXO",
+                                                text = when {
+                                                    !config.copilotMonitoringEnabled -> "🔴 COPILOTO DESATIVADO (FORA DE USO)"
+                                                    isCopilotActive -> "🟢 COPILOTO ATIVO E PRONTO"
+                                                    else -> "🟡 FALTA ATIVAR PERMISSÃO ABAIXO"
+                                                },
                                                 fontWeight = FontWeight.Black,
                                                 fontSize = 11.5.sp,
-                                                color = if (isCopilotReady) TrafficGreen else TrafficYellow,
+                                                color = when {
+                                                    !config.copilotMonitoringEnabled -> TrafficRed
+                                                    isCopilotActive -> TrafficGreen
+                                                    else -> TrafficYellow
+                                                },
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                             )
                                         }
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = if (isCopilotReady)
-                                                "A janelinha abre DIRETO com os cálculos ao tocar chamada na Uber ou 99 (inclusive múltiplas viagens) e some sozinha após ${config.overlayAutoMinimizeSec}s."
-                                            else
-                                                "Ative os 2 botões abaixo para o GoOrNo ler as ofertas da Uber e da 99 automaticamente.",
+                                            text = when {
+                                                !config.copilotMonitoringEnabled ->
+                                                    "O GoOrNo está desligado e a barrinha do topo foi ocultada. Toque em 'Ligar Copiloto' abaixo quando for rodar."
+                                                isCopilotActive ->
+                                                    "A janelinha abre SOZINHA ao tocar chamada ou abrir ofertas na Uber/99 e some após ${config.overlayAutoMinimizeSec}s."
+                                                else ->
+                                                    "Ative os 2 botões abaixo para o GoOrNo ler as ofertas da Uber e da 99 automaticamente."
+                                            },
                                             fontSize = 12.sp,
                                             color = MutedText
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(10.dp))
+                                    // Botão Ligar / Desligar Copiloto (ou Ativar permissão se faltar)
                                     Button(
                                         onClick = {
                                             if (!hasOverlayPermission) {
@@ -357,44 +379,49 @@ fun GoOrNoComposeApp(
                                             } else if (!hasAccessibilityPermission) {
                                                 onRequestAccessibilityPermission()
                                             } else {
-                                                val sampleNodes = listOf(
-                                                    "Pgto. no app",
-                                                    "R$8,10 ⚡1,1x",
-                                                    "R$2,18/km",
-                                                    "R$1,16 por deslocamento incl.",
-                                                    "5 min (1,2 km)",
-                                                    "Rua Antônio Zanetti, 84, Jardim Las Vegas",
-                                                    "6 min (2,5 km)",
-                                                    "Rua Solimões, 534, Vila Cecilia Maria"
-                                                )
-                                                val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(
-                                                    rawNodes = sampleNodes,
-                                                    captureMethod = CaptureMethod.SIMULATION,
-                                                    isSimulated = true
-                                                )
-                                                val evals = offers.map { FinancialEngine.evaluate(it, config) }
-                                                app.overlayPanel.applyConfig(config)
-                                                app.overlayPanel.showEvaluations(evals)
-                                                notifyUser("Janelinha clean exibida! Ela sumirá sozinha em ${config.overlayAutoMinimizeSec} segundos.")
+                                                val newEnabled = !config.copilotMonitoringEnabled
+                                                val updated = config.copy(copilotMonitoringEnabled = newEnabled)
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(updated)
+                                                    app.overlayPanel.setMonitoringEnabled(newEnabled, hasAccessibilityPermission)
+                                                    if (!newEnabled) {
+                                                        onStopAllBackgroundServices()
+                                                        notifyUser("GoOrNo desativado! A barrinha do topo e a leitura foram desligadas.")
+                                                    } else {
+                                                        RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READING_IN_PROGRESS)
+                                                        notifyUser("GoOrNo ligado! Monitorando chamadas da Uber e 99.")
+                                                    }
+                                                }
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = PetrolHeader,
+                                            containerColor = when {
+                                                !isPermsReady -> PetrolHeader
+                                                config.copilotMonitoringEnabled -> TrafficRed
+                                                else -> TrafficGreen
+                                            },
                                             contentColor = Color.White
                                         ),
                                         shape = RoundedCornerShape(14.dp),
                                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Visibility,
+                                            imageVector = if (config.copilotMonitoringEnabled && isPermsReady)
+                                                Icons.Default.PowerSettingsNew
+                                            else
+                                                Icons.Default.PlayArrow,
                                             contentDescription = null,
-                                            tint = LimeBright,
+                                            tint = Color.White,
                                             modifier = Modifier.size(17.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = if (isCopilotReady) "Testar (${config.overlayAutoMinimizeSec}s)" else "Ativar",
-                                            fontWeight = FontWeight.Bold,
+                                            text = when {
+                                                !isPermsReady -> "Ativar"
+                                                config.copilotMonitoringEnabled -> "Desativar"
+                                                else -> "Ligar Copiloto"
+                                            },
+                                            fontWeight = FontWeight.Black,
                                             fontSize = 12.sp
                                         )
                                     }

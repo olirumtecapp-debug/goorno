@@ -76,11 +76,19 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         RuntimeDiagnosticsBus.setAccessibilityConnected(true)
-        RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READING_IN_PROGRESS)
-        showActiveStatusNotification()
-
         val app = applicationContext as? GoOrNoApplication
-        app?.overlayPanel?.showOrUpdateTopStatusBar(accessibilityEnabled = true)
+        serviceScope.launch {
+            val cfg = app?.preferencesRepository?.getConfigOnce()
+            val enabled = cfg?.copilotMonitoringEnabled ?: true
+            app?.overlayPanel?.setMonitoringEnabled(enabled, accessibilityEnabled = true)
+            if (enabled) {
+                RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READING_IN_PROGRESS)
+                showActiveStatusNotification()
+            } else {
+                RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.SERVICE_OFF)
+                cancelActiveStatusNotification()
+            }
+        }
 
         startActivePollingLoop()
     }
@@ -90,7 +98,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         pollingJob = serviceScope.launch {
             while (isActive) {
                 try {
-                    scanCurrentScreen(eventPkg = null, forceThrottleBypass = true)
+                    val app = applicationContext as? GoOrNoApplication
+                    if (app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
+                        scanCurrentScreen(eventPkg = null, forceThrottleBypass = true)
+                    }
                 } catch (_: Exception) {
                 }
                 delay(900L)
@@ -99,6 +110,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        val app = applicationContext as? GoOrNoApplication
+        if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
+            return
+        }
+
         val evtType = event?.eventType ?: 0
         val evtPkg = event?.packageName?.toString()
 

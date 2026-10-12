@@ -40,6 +40,7 @@ class DriverPreferencesRepository(private val context: Context) {
         val MIN_CONFIDENCE = doublePreferencesKey("min_confidence")
         val OVERLAY_OPACITY = intPreferencesKey("overlay_opacity")
         val OVERLAY_AUTO_MIN_SEC = intPreferencesKey("overlay_auto_min_sec")
+        val COPILOT_MONITORING_ENABLED = booleanPreferencesKey("copilot_monitoring_enabled")
         val SAVE_HISTORY = booleanPreferencesKey("save_history")
         val CLOUD_BACKUP_CONSENT = booleanPreferencesKey("cloud_backup_consent")
         val DRIVER_RECOVERY_CODE = stringPreferencesKey("driver_recovery_code")
@@ -65,6 +66,7 @@ class DriverPreferencesRepository(private val context: Context) {
             minConfidenceThreshold = prefs[Keys.MIN_CONFIDENCE] ?: 0.65,
             overlayOpacityPercent = prefs[Keys.OVERLAY_OPACITY] ?: 90,
             overlayAutoMinimizeSec = prefs[Keys.OVERLAY_AUTO_MIN_SEC] ?: 12,
+            copilotMonitoringEnabled = prefs[Keys.COPILOT_MONITORING_ENABLED] ?: true,
             saveHistoryEnabled = prefs[Keys.SAVE_HISTORY] ?: true,
             cloudBackupConsent = prefs[Keys.CLOUD_BACKUP_CONSENT] ?: false,
             driverRecoveryCode = prefs[Keys.DRIVER_RECOVERY_CODE] ?: ""
@@ -92,7 +94,8 @@ class DriverPreferencesRepository(private val context: Context) {
             prefs[Keys.REQ_NET_HOUR] = config.requireNetPerHour
             prefs[Keys.MIN_CONFIDENCE] = config.minConfidenceThreshold
             prefs[Keys.OVERLAY_OPACITY] = config.overlayOpacityPercent.coerceIn(25, 100)
-            prefs[Keys.OVERLAY_AUTO_MIN_SEC] = config.overlayAutoMinimizeSec.coerceIn(5, 60)
+            prefs[Keys.OVERLAY_AUTO_MIN_SEC] = config.overlayAutoMinimizeSec.coerceIn(3, 60)
+            prefs[Keys.COPILOT_MONITORING_ENABLED] = config.copilotMonitoringEnabled
             prefs[Keys.SAVE_HISTORY] = config.saveHistoryEnabled
             prefs[Keys.CLOUD_BACKUP_CONSENT] = config.cloudBackupConsent
             prefs[Keys.DRIVER_RECOVERY_CODE] = config.driverRecoveryCode.trim()

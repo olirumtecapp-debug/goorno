@@ -57,6 +57,8 @@ class FloatingOverlayPanel(private val context: Context) {
 
     private var currentOpacityPercent: Int = 92
     private var displayDurationSec: Int = 10
+    private var isMonitoringEnabled: Boolean = true
+    var onUserRequestedDisableCopilot: (() -> Unit)? = null
 
     // Quando o tempo definido pelo motorista termina, o card de oferta fecha sozinho e fica apenas a barrinha no topo!
     private val autoHideCardRunnable = Runnable {
@@ -69,21 +71,39 @@ class FloatingOverlayPanel(private val context: Context) {
         } else true
     }
 
+    fun setMonitoringEnabled(enabled: Boolean, accessibilityEnabled: Boolean = isAccessibilityActive) {
+        isMonitoringEnabled = enabled
+        if (!enabled) {
+            hidePanel()
+        } else {
+            showOrUpdateTopStatusBar(accessibilityEnabled)
+        }
+    }
+
+    fun isCopilotMonitoringEnabled(): Boolean = isMonitoringEnabled
+
     fun applyConfig(config: DriverFinancialConfig) {
         mainHandler.post {
             currentOpacityPercent = config.overlayOpacityPercent.coerceIn(25, 100)
             displayDurationSec = config.overlayAutoMinimizeSec.coerceIn(3, 60)
+            isMonitoringEnabled = config.copilotMonitoringEnabled
             rootContainer?.alpha = currentOpacityPercent / 100f
+            if (!isMonitoringEnabled) {
+                hidePanel()
+            }
         }
     }
 
     /**
-     * Garante que a barrinha de status no topo da tela esteja visível e atualizada.
+     * Garante que a barrinha de status no topo da tela esteja visível e atualizada (apenas se o motorista não tiver desativado o app).
      */
     fun showOrUpdateTopStatusBar(accessibilityEnabled: Boolean, statusSubtext: String? = null) {
         mainHandler.post {
             isAccessibilityActive = accessibilityEnabled
-            if (!hasOverlayPermission()) return@post
+            if (!isMonitoringEnabled || !hasOverlayPermission()) {
+                if (!isMonitoringEnabled) hidePanel()
+                return@post
+            }
             ensureViewsCreated()
             attachWindowIfNeeded()
 
@@ -352,11 +372,11 @@ class FloatingOverlayPanel(private val context: Context) {
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         }
 
-        // 1. BARRINHA FIXA NO TOPO (Mostra claramente que o GoOrNo está ativo perto do relógio/ícone da 99)
+        // 1. BARRINHA FIXA NO TOPO (Mostra claramente que o GoOrNo está ativo + botão ✕ para desligar quando não estiver rodando)
         topStatusBarPill = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(5), dp(12), dp(5))
+            setPadding(dp(12), dp(5), dp(8), dp(5))
             background = roundedCardBg("#073B32", "#10B981", 20f, 1)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(6).toFloat()
@@ -387,14 +407,32 @@ class FloatingOverlayPanel(private val context: Context) {
                 } else {
                     Toast.makeText(
                         context,
-                        "🟢 GoOrNo está ATIVO e monitorando chamadas da Uber e 99!",
+                        "🟢 GoOrNo ATIVO! Toque no '✕' ao lado da barrinha quando quiser desligar o monitoramento.",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
             }
         }
 
+        val btnDisableTopBar = TextView(context).apply {
+            text = "✕"
+            setTextColor(Color.parseColor("#FCA5A5"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(8), dp(1), dp(4), dp(1))
+            setOnClickListener {
+                hidePanel()
+                onUserRequestedDisableCopilot?.invoke()
+                Toast.makeText(
+                    context,
+                    "🔴 GoOrNo desativado! Abra o app GoOrNo quando quiser ligar novamente.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+
         topStatusBarPill?.addView(tvTopStatusBarText)
+        topStatusBarPill?.addView(btnDisableTopBar)
         rootContainer?.addView(topStatusBarPill)
 
         // 2. CARD DE ANÁLISE DE OFERTA (Abre DIRETO quando toca corrida e fecha sozinho após N segundos)

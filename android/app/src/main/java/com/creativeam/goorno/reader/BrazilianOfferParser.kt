@@ -382,20 +382,34 @@ object BrazilianOfferParser {
                 if (i + 1 < normalized.size) {
                     val nextLine = normalized[i + 1].trim()
                     val nextLower = nextLine.lowercase(Locale.getDefault())
+                    val isOfferBoundary = nextLower.contains("pgto") ||
+                        nextLower.contains("pop") ||
+                        nextLower.contains("uber") ||
+                        nextLower.contains("escolha") ||
+                        nextLower.contains("escolher") ||
+                        nextLower.contains("aceitar") ||
+                        nextLower.contains("isso é tudo") ||
+                        nextLower.contains("corridas") ||
+                        nextLower.contains("perfil ") ||
+                        nextLower.contains("deslocamento")
                     val isNextContinuation = nextLine.length in 3..45 &&
+                        !isOfferBoundary &&
                         !STREET_PREFIX_REGEX.matches(nextLine) &&
                         !LEADING_DURATION_DISTANCE_PREFIX_REGEX.containsMatchIn(nextLine) &&
                         !nextLine.contains("R$", ignoreCase = true) &&
                         !KM_REGEX.containsMatchIn(nextLine) &&
                         !METERS_REGEX.containsMatchIn(nextLine) &&
-                        !MINUTES_REGEX.containsMatchIn(nextLine) &&
-                        !nextLower.equals("escolher", ignoreCase = true) &&
-                        !nextLower.equals("aceitar", ignoreCase = true) &&
-                        !nextLower.contains("isso é tudo") &&
-                        !nextLower.contains("corridas")
-                    val isShortWordContinuation = nextLine.split(Regex("""\s+""")).size <= 3 &&
-                        nextLine.firstOrNull()?.isUpperCase() == true
-                    if (isNextContinuation && (fullAddress.endsWith(",") || nextLine.contains(",") || !fullAddress.any { it.isDigit() } || isShortWordContinuation)) {
+                        !MINUTES_REGEX.containsMatchIn(nextLine)
+
+                    val looksIncompleteFirstLine = fullAddress.endsWith(",") ||
+                        fullAddress.lowercase(Locale.getDefault()).endsWith(" dos") ||
+                        fullAddress.lowercase(Locale.getDefault()).endsWith(" das") ||
+                        fullAddress.lowercase(Locale.getDefault()).endsWith(" de") ||
+                        fullAddress.lowercase(Locale.getDefault()).endsWith(" do") ||
+                        fullAddress.lowercase(Locale.getDefault()).endsWith(" da") ||
+                        !fullAddress.any { it.isDigit() }
+
+                    if (isNextContinuation && (looksIncompleteFirstLine || nextLine.contains(","))) {
                         fullAddress = "$fullAddress $nextLine".replace(Regex("""\s+"""), " ")
                         i++
                     }

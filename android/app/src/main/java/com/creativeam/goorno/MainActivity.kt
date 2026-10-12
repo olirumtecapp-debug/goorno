@@ -92,13 +92,17 @@ class MainActivity : ComponentActivity() {
         hasAccessibilityPerm = isAccessibilityServiceEnabled()
         RuntimeDiagnosticsBus.setAccessibilityConnected(hasAccessibilityPerm)
 
-        // Sempre que a permissão de sobreposição estiver concedida, exibe a barrinha de status no topo da tela!
-        if (hasOverlayPerm) {
-            val app = applicationContext as? GoOrNoApplication
-            app?.overlayPanel?.showOrUpdateTopStatusBar(accessibilityEnabled = hasAccessibilityPerm)
+        // Respeita a chave Liga/Desliga do motorista para mostrar ou esconder a barrinha do topo
+        val app = applicationContext as? GoOrNoApplication
+        if (hasOverlayPerm && app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
+            app.overlayPanel.showOrUpdateTopStatusBar(accessibilityEnabled = hasAccessibilityPerm)
+        } else if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
+            app.overlayPanel.hidePanel()
         }
 
-        if (!hasOverlayPerm || !hasAccessibilityPerm) {
+        if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
+            RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.SERVICE_OFF)
+        } else if (!hasOverlayPerm || !hasAccessibilityPerm) {
             if (!RuntimeDiagnosticsBus.ocrActive.value) {
                 RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.PERMISSION_MISSING)
             }
@@ -155,7 +159,10 @@ class MainActivity : ComponentActivity() {
     private fun stopAllBackgroundMonitoring() {
         try {
             val app = applicationContext as? GoOrNoApplication
-            app?.overlayPanel?.hidePanel()
+            app?.overlayPanel?.setMonitoringEnabled(false, hasAccessibilityPerm)
+
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            nm.cancelAll()
 
             val stopOcrIntent = Intent(this, OcrScreenCaptureService::class.java).apply {
                 action = OcrScreenCaptureService.ACTION_STOP_OCR
