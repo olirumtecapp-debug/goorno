@@ -393,7 +393,9 @@ object BrazilianOfferParser {
                         !nextLower.equals("aceitar", ignoreCase = true) &&
                         !nextLower.contains("isso é tudo") &&
                         !nextLower.contains("corridas")
-                    if (isNextContinuation && (fullAddress.endsWith(",") || nextLine.contains(",") || !fullAddress.any { it.isDigit() })) {
+                    val isShortWordContinuation = nextLine.split(Regex("""\s+""")).size <= 3 &&
+                        nextLine.firstOrNull()?.isUpperCase() == true
+                    if (isNextContinuation && (fullAddress.endsWith(",") || nextLine.contains(",") || !fullAddress.any { it.isDigit() } || isShortWordContinuation)) {
                         fullAddress = "$fullAddress $nextLine".replace(Regex("""\s+"""), " ")
                         i++
                     }
