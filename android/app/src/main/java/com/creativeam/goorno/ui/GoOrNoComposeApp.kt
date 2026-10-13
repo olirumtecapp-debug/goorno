@@ -15,7 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -144,7 +146,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v3.1.0",
+                                            text = "v3.2.1",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
@@ -277,7 +279,15 @@ fun GoOrNoComposeApp(
                             selected = currentScreen == screen,
                             onClick = { currentScreen = screen },
                             icon = { Icon(icon, contentDescription = label) },
-                            label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            label = {
+                                Text(
+                                    text = label,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.White,
                                 selectedTextColor = PetrolHeader,
@@ -2028,10 +2038,9 @@ fun GoOrNoComposeApp(
                                     color = MutedText
                                 )
 
-                                Row(
+                                Column(
                                     modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     OutlinedTextField(
                                         value = searchAddressQuery,
@@ -2039,10 +2048,18 @@ fun GoOrNoComposeApp(
                                             searchAddressQuery = it
                                             searchErrorMsg = null
                                         },
-                                        label = { Text("Ex: Rua Augusta, Jardim Elisa, Vila Mara...") },
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.weight(1f),
-                                        singleLine = true,
+                                        placeholder = {
+                                            Text(
+                                                text = "Digite o nome da rua ou bairro...",
+                                                fontSize = 12.5.sp,
+                                                color = MutedText,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Search, contentDescription = null, tint = PetrolHeader)
+                                        },
                                         trailingIcon = {
                                             if (searchAddressQuery.isNotBlank()) {
                                                 IconButton(onClick = {
@@ -2053,12 +2070,39 @@ fun GoOrNoComposeApp(
                                                     Icon(Icons.Default.Clear, contentDescription = "Limpar")
                                                 }
                                             }
-                                        }
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Text,
+                                            imeAction = ImeAction.Search
+                                        ),
+                                        keyboardActions = KeyboardActions(
+                                            onSearch = {
+                                                val q = searchAddressQuery.trim().replace(",", "")
+                                                if (q.length < 3) {
+                                                    notifyUser("Digite pelo menos 3 letras para pesquisar no mapa.")
+                                                } else {
+                                                    isSearchingPlace = true
+                                                    searchErrorMsg = null
+                                                    scope.launch {
+                                                        val places = PlaceSearchHelper.searchPlaces(context, q)
+                                                        isSearchingPlace = false
+                                                        if (places.isEmpty()) {
+                                                            searchErrorMsg = "Nenhum endereço oficial localizado no mapa para '$q'. Você pode bloquear diretamente pelo nome abaixo."
+                                                        } else {
+                                                            searchResults = places
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        )
                                     )
 
                                     Button(
                                         onClick = {
-                                            val q = searchAddressQuery.trim()
+                                            val q = searchAddressQuery.trim().replace(",", "")
                                             if (q.length < 3) {
                                                 notifyUser("Digite pelo menos 3 letras para pesquisar no mapa.")
                                                 return@Button
@@ -2080,7 +2124,9 @@ fun GoOrNoComposeApp(
                                             contentColor = Color.White
                                         ),
                                         shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.height(52.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(46.dp),
                                         enabled = !isSearchingPlace
                                     ) {
                                         if (isSearchingPlace) {
@@ -2089,10 +2135,24 @@ fun GoOrNoComposeApp(
                                                 modifier = Modifier.size(18.dp),
                                                 strokeWidth = 2.dp
                                             )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Localizando no Mapa...",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.5.sp,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
                                         } else {
-                                            Icon(Icons.Default.Search, contentDescription = null, tint = LimeBright)
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text("Buscar", fontWeight = FontWeight.Black)
+                                            Icon(Icons.Default.Search, contentDescription = null, tint = LimeBright, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Pesquisar Local no Mapa",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
                                         }
                                     }
                                 }
@@ -2188,17 +2248,19 @@ fun GoOrNoComposeApp(
                                                         modifier = Modifier.fillMaxWidth(),
                                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                                     ) {
-                                                        Button(
+                                                         Button(
                                                             onClick = {
-                                                                val toBlock = place.termToBlock
-                                                                val updatedList = (customZoneList + toBlock).distinct()
-                                                                scope.launch {
-                                                                    app.preferencesRepository.saveConfig(
-                                                                        config.copy(customRiskZones = updatedList.joinToString(", "))
-                                                                    )
-                                                                    searchResults = emptyList()
-                                                                    searchAddressQuery = ""
-                                                                    notifyUser("Local validado '$toBlock' bloqueado com sucesso!")
+                                                                val toBlock = place.termToBlock.trim().replace(",", "")
+                                                                if (toBlock.length >= 3) {
+                                                                    val updatedList = (customZoneList + toBlock).distinct()
+                                                                    scope.launch {
+                                                                        app.preferencesRepository.saveConfig(
+                                                                            config.copy(customRiskZones = updatedList.joinToString(", "))
+                                                                        )
+                                                                        searchResults = emptyList()
+                                                                        searchAddressQuery = ""
+                                                                        notifyUser("Local validado '$toBlock' bloqueado com sucesso!")
+                                                                    }
                                                                 }
                                                             },
                                                             colors = ButtonDefaults.buttonColors(containerColor = TrafficRed),
@@ -2207,7 +2269,13 @@ fun GoOrNoComposeApp(
                                                         ) {
                                                             Icon(Icons.Default.Warning, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
                                                             Spacer(modifier = Modifier.width(4.dp))
-                                                            Text("Bloquear Este Local", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                            Text(
+                                                                text = "Bloquear Este Local",
+                                                                fontSize = 11.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                maxLines = 1,
+                                                                softWrap = false
+                                                            )
                                                         }
 
                                                         FilledTonalButton(
@@ -2232,7 +2300,7 @@ fun GoOrNoComposeApp(
                                                         ) {
                                                             Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(14.dp))
                                                             Spacer(modifier = Modifier.width(4.dp))
-                                                            Text("Ver no Maps", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                            Text("Ver no Maps", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                                                         }
                                                     }
                                                 }
@@ -2387,7 +2455,13 @@ fun GoOrNoComposeApp(
                                 ) {
                                     Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFEE2E2), modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("🚨 Testar Alerta de Área de Risco na Tela", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                                    Text(
+                                        text = "🚨 Testar Alerta de Risco na Janela",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
                                 }
                             }
                         }

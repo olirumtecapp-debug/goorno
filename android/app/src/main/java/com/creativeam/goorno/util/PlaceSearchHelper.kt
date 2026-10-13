@@ -44,22 +44,19 @@ object PlaceSearchHelper {
                     val adminArea = addr.adminArea?.trim()       // Estado
                     val fullLine = addr.getAddressLine(0)?.trim().orEmpty()
 
+                    val cleanStreet = thoroughfare?.replace(",", "")?.trim()
+                    val cleanDistrict = subLocality?.replace(",", "")?.trim()
+
                     val mainTitle = when {
-                        !thoroughfare.isNullOrBlank() && !subLocality.isNullOrBlank() ->
-                            "$thoroughfare ($subLocality)"
-                        !thoroughfare.isNullOrBlank() ->
-                            thoroughfare
-                        !subLocality.isNullOrBlank() ->
-                            subLocality
-                        !addr.featureName.isNullOrBlank() ->
-                            addr.featureName
-                        else ->
-                            cleanQuery
+                        !cleanStreet.isNullOrBlank() -> cleanStreet
+                        !cleanDistrict.isNullOrBlank() -> cleanDistrict
+                        !addr.featureName.isNullOrBlank() -> addr.featureName.trim().replace(",", "")
+                        else -> cleanQuery.replace(",", "")
                     }
 
                     val subList = mutableListOf<String>()
-                    if (!subLocality.isNullOrBlank() && subLocality != mainTitle) {
-                        subList.add(subLocality)
+                    if (!cleanDistrict.isNullOrBlank() && cleanDistrict != mainTitle) {
+                        subList.add(cleanDistrict)
                     }
                     if (!locality.isNullOrBlank()) {
                         subList.add(locality)
@@ -69,15 +66,12 @@ object PlaceSearchHelper {
                     }
                     val subtitle = if (subList.isNotEmpty()) subList.joinToString(" - ") else "Brasil"
 
+                    // Bloqueia SOMENTE o termo específico pesquisado (nunca concatena rua e bairro com vírgula)
                     val termToBlock = when {
-                        !subLocality.isNullOrBlank() && thoroughfare.isNullOrBlank() ->
-                            subLocality
-                        !thoroughfare.isNullOrBlank() && !subLocality.isNullOrBlank() ->
-                            "$thoroughfare, $subLocality"
-                        !thoroughfare.isNullOrBlank() ->
-                            thoroughfare
-                        else ->
-                            mainTitle
+                        !cleanStreet.isNullOrBlank() -> cleanStreet
+                        !cleanDistrict.isNullOrBlank() -> cleanDistrict
+                        !addr.featureName.isNullOrBlank() -> addr.featureName.trim().replace(",", "")
+                        else -> cleanQuery.replace(",", "")
                     }
 
                     GeocodedPlace(
