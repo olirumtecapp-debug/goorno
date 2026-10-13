@@ -887,6 +887,21 @@ app.post("/api/redeem-voucher", async (req, res) => {
   }
 });
 
+// Direct APK download routes
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.3.apk", "/download/apk"], (_req, res) => {
+  const candidatePaths = [
+    path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.3.apk"),
+  ];
+  for (const apkPath of candidatePaths) {
+    if (fs.existsSync(apkPath)) {
+      return res.download(apkPath, "GoOrNo-v3.3.3.apk");
+    }
+  }
+  res.status(404).send("APK não encontrado no servidor.");
+});
+
 // Serve static build in production/local start
 const distPublic = path.resolve(process.cwd(), "dist/public");
 if (fs.existsSync(distPublic)) {
