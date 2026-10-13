@@ -1,2260 +1,1458 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useState, useEffect, useRef } from 'react';
+import { AdminDashboard } from './AdminDashboard';
 import {
-  AlertTriangle,
-  ArrowRight,
-  Check,
-  CheckCircle2,
-  Car,
-  ClipboardCheck,
-  Clock,
-  Copy,
-  DollarSign,
-  Eye,
-  Filter,
-  Fuel,
-  Gauge,
+  Power,
+  Sliders,
   History,
-  Lock,
   MapPin,
   Navigation,
-  Play,
-  Plus,
-  RefreshCw,
-  ShieldAlert,
-  ShieldCheck,
-  Smartphone,
-  Sparkles,
-  Trash2,
-  TrendingUp,
   Volume2,
   VolumeX,
-  Wrench,
-  X,
+  Eye,
+  CheckCircle2,
+  AlertTriangle,
   XCircle,
-} from "lucide-react";
+  Camera,
+  ShieldCheck,
+  ExternalLink,
+  Smartphone,
+  Clock,
+  DollarSign,
+  Download,
+  ChevronRight,
+  Layers,
+  Sparkles,
+  Check
+} from 'lucide-react';
 
-interface VehicleConfig {
-  vehicleType: "car_flex" | "car_gnv" | "car_electric" | "moto";
-  vehicleModel: string;
-  fuelPricePerUnit: number;
-  consumptionPerUnit: number;
-  maintenanceCostPerKm: number;
-  rentalOrInstallmentDaily: number;
-  greenMinPerKm: number;
-  yellowMinPerKm: number;
-  greenMinPerHour: number;
-  yellowMinPerHour: number;
-  dailyNetGoal: number;
-  voiceAlertEnabled: boolean;
-  overlayEnabled: boolean;
-  autoOpenStreetViewOnAccept: boolean;
+export interface DriverConfig {
+  greenPerKm: number;
+  yellowPerKm: number;
+  greenPerHour: number;
+  yellowPerHour: number;
+  fuelPricePerLiter: number;
+  carKmPerLiter: number;
+  maintenancePerKm: number;
+  voiceEnabled: boolean;
+  overlayOpacity: number;
+  overlayDurationSec: number;
+  autoStreetViewOnAccept: boolean;
+  targetPlatforms: string[];
 }
 
-interface RideRecord {
+export interface RideRecord {
   id: string;
-  driverEmail: string;
-  platform: "Uber" | "99" | "inDrive";
-  category: string;
-  offeredValue: number;
-  receivedValue: number | null;
-  pickupDistanceKm: number;
-  tripDistanceKm: number;
-  totalDistanceKm: number;
-  pickupTimeMin: number;
-  tripTimeMin: number;
-  totalTimeMin: number;
-  valuePerKm: number;
-  valuePerHour: number;
-  estimatedFuelCost: number;
-  estimatedTotalCost: number;
-  netProfit: number;
-  verdict: "GO" | "WARN" | "NO";
+  timestamp: string;
+  platform: 'UBER' | '99' | 'INDRIVE' | 'OUTRO';
+  offeredPrice: number;
+  receivedPrice: number | null;
+  pickupKm: number;
+  tripKm: number;
+  totalKm: number;
+  durationMin: number;
   originAddress: string;
-  originNeighborhood: string;
   destinationAddress: string;
-  destinationNeighborhood: string;
-  passengerName: string;
-  passengerRating: number;
-  decision: "accepted" | "declined" | "evaluating" | "cancelled_after_review";
-  paymentAuditNote?: string;
-  isRiskArea?: boolean;
-  createdAt: string;
+  pricePerKm: number;
+  pricePerHour: number;
+  estimatedCost: number;
+  netProfit: number;
+  verdict: 'GREEN' | 'YELLOW' | 'RED';
+  accepted: boolean;
+  paymentStatus: 'PENDING' | 'MATCH' | 'UNDERPAID' | 'OVERPAID';
+  notes?: string;
 }
 
-interface RiskZoneRecord {
-  id: string;
-  neighborhoodOrStreet: string;
-  city: string;
-  riskLevel: "high" | "medium";
-  reason: string;
-  addedBy: string;
-  createdAt: string;
-}
-
-interface DriverUser {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  city: string;
-  plan: "trial" | "pro_monthly" | "pro_annual" | "vip";
-  status: "active" | "blocked";
-  trialEndsAt: string;
-  createdAt: string;
-  lastActiveAt: string;
-  vehicleConfig: VehicleConfig;
-}
-
-type ActiveTab = "copilot" | "evaluate" | "history" | "settings" | "apk" | "admin";
-
-const PRESET_SIMULATIONS = [
-  {
-    label: "🟢 Uber Comfort (Corrida Top)",
-    platform: "Uber" as const,
-    category: "Uber Comfort",
-    offeredValue: 38.90,
-    pickupDistanceKm: 0.9,
-    tripDistanceKm: 11.6,
-    pickupTimeMin: 3,
-    tripTimeMin: 21,
-    originAddress: "Shopping Ibirapuera - Av. Ibirapuera, 3103 - Moema, São Paulo - SP",
-    originNeighborhood: "Moema",
-    destinationAddress: "Av. Brig. Faria Lima, 2232 - Jardim Paulistano, São Paulo - SP",
-    destinationNeighborhood: "Jardim Paulistano",
-    passengerName: "Fernanda L.",
-    passengerRating: 4.97,
-  },
-  {
-    label: "🟡 99Pop (Corrida Média — Avaliar)",
-    platform: "99" as const,
-    category: "99Pop",
-    offeredValue: 19.80,
-    pickupDistanceKm: 1.6,
-    tripDistanceKm: 9.2,
-    pickupTimeMin: 5,
-    tripTimeMin: 23,
-    originAddress: "Rua Vergueiro, 1200 - Liberdade, São Paulo - SP",
-    originNeighborhood: "Liberdade",
-    destinationAddress: "Av. Celso Garcia, 1900 - Belenzinho, São Paulo - SP",
-    destinationNeighborhood: "Belenzinho",
-    passengerName: "Carlos E.",
-    passengerRating: 4.82,
-  },
-  {
-    label: "🔴 UberX (Prejuízo + Área de Risco)",
-    platform: "Uber" as const,
-    category: "UberX",
-    offeredValue: 12.50,
-    pickupDistanceKm: 3.4,
-    tripDistanceKm: 7.5,
-    pickupTimeMin: 10,
-    tripTimeMin: 22,
-    originAddress: "Av. Santo Amaro, 4500 - Brooklin, São Paulo - SP",
-    originNeighborhood: "Brooklin",
-    destinationAddress: "Estrada do M'Boi Mirim, 4150 - Jardim Ângela, São Paulo - SP",
-    destinationNeighborhood: "Jardim Ângela",
-    passengerName: "Passageiro Novo",
-    passengerRating: 4.58,
-  },
-  {
-    label: "⚡ inDrive (Oferta Negociada)",
-    platform: "inDrive" as const,
-    category: "inDrive Urbano",
-    offeredValue: 29.00,
-    pickupDistanceKm: 1.1,
-    tripDistanceKm: 10.4,
-    pickupTimeMin: 4,
-    tripTimeMin: 19,
-    originAddress: "Rua Turiassu, 2100 - Perdizes, São Paulo - SP",
-    originNeighborhood: "Perdizes",
-    destinationAddress: "Av. Paulista, 900 - Bela Vista, São Paulo - SP",
-    destinationNeighborhood: "Bela Vista",
-    passengerName: "Juliana R.",
-    passengerRating: 4.93,
-  },
-];
-
-function formatBRL(val: number): string {
-  return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-function buildStreetViewExternalUrl(address: string): string {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-}
-
-function buildEmbedMapUrl(address: string): string {
-  return `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=k&z=18&ie=UTF8&iwloc=&output=embed`;
-}
-
-export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("copilot");
-  const [user, setUser] = useState<DriverUser | null>(null);
-  const [rides, setRides] = useState<RideRecord[]>([]);
-  const [riskZones, setRiskZones] = useState<RiskZoneRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-
-  // Floating Ride Popup (Overlay Semáforo)
-  const [incomingRide, setIncomingRide] = useState<RideRecord | null>(null);
-  const [overlayCountdown, setOverlayCountdown] = useState<number>(12);
-
-  // Selected ride for "Avaliar Corrida Aceita & Street View"
-  const [selectedRideId, setSelectedRideId] = useState<string | null>(null);
-  const [streetViewTarget, setStreetViewTarget] = useState<{ label: string; address: string } | null>(null);
-
-  // Manual Calculator form on Copilot tab
-  const [calcPlatform, setCalcPlatform] = useState<"Uber" | "99" | "inDrive">("Uber");
-  const [calcCategory, setCalcCategory] = useState("UberX");
-  const [calcOffered, setCalcOffered] = useState("24.50");
-  const [calcPickupKm, setCalcPickupKm] = useState("1.3");
-  const [calcTripKm, setCalcTripKm] = useState("8.7");
-  const [calcPickupMin, setCalcPickupMin] = useState("4");
-  const [calcTripMin, setCalcTripMin] = useState("18");
-  const [calcOrigin, setCalcOrigin] = useState("Av. Paulista, 1000 - Bela Vista, São Paulo - SP");
-  const [calcDest, setCalcDest] = useState("Rua Funchal, 418 - Vila Olímpia, São Paulo - SP");
-
-  // History filters & payment audit
-  const [historyPlatformFilter, setHistoryPlatformFilter] = useState<string>("ALL");
-  const [historyDecisionFilter, setHistoryDecisionFilter] = useState<string>("ALL");
-  const [auditingRideId, setAuditingRideId] = useState<string | null>(null);
-  const [auditReceivedInput, setAuditReceivedInput] = useState<string>("");
-  const [auditNoteInput, setAuditNoteInput] = useState<string>("");
-
-  // New Risk Zone input
-  const [newRiskStreet, setNewRiskStreet] = useState("");
-  const [newRiskReason, setNewRiskReason] = useState("");
-
-  // Secret Admin Unlock (Alt + Shift + M or 5x tap on GoOrNo logo)
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
-  const [adminData, setAdminData] = useState<any>(null);
-  const [scanningScreenshot, setScanningScreenshot] = useState(false);
-  const screenshotInputRef = useRef<HTMLInputElement | null>(null);
-  const logoTapCount = useRef(0);
-  const logoTapTimer = useRef<any>(null);
-
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3500);
-  };
-
-  const handleScreenshotFile = async (file: File) => {
-    setScanningScreenshot(true);
-    showToast("📸 Lendo dados do print da corrida com IA...");
-    try {
-      const reader = new FileReader();
-      const base64: string = await new Promise((resolve, reject) => {
-        reader.onload = () => resolve(String(reader.result || ""));
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const res = await fetch("/api/rides/scan-screenshot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: base64,
-          fileName: file.name,
-        }),
-      });
-      const data = await res.json();
-      if (data.ride) {
-        setRides((prev) => [data.ride, ...prev]);
-        setSelectedRideId(data.ride.id);
-        setIncomingRide(data.ride);
-        speakRideVerdict(data.ride);
-        showToast("✅ Print lido! Semáforo calculado.");
-      } else {
-        showToast("Não foi possível ler o print");
-      }
-    } catch {
-      showToast("Erro ao processar print da corrida");
-    } finally {
-      setScanningScreenshot(false);
-    }
-  };
-
-  const speakRideVerdict = (ride: RideRecord, enabled?: boolean) => {
-    const shouldSpeak = enabled ?? user?.vehicleConfig?.voiceAlertEnabled ?? true;
-    if (!shouldSpeak || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const verdictWord =
-        ride.verdict === "GO"
-          ? "Gôu! Corrida Boa, Aceitar!"
-          : ride.verdict === "WARN"
-          ? "Atenção! Corrida Média, Avaliar rota!"
-          : "Nôu! Corrida Ruim, Recusar!";
-      const riskText = ride.isRiskArea ? " Cuidado: Endereço em área de risco sinalizada!" : "";
-      const text = `${verdictWord} ${ride.platform}, ${ride.offeredValue.toFixed(2).replace(".", " e ")} reais. ${ride.valuePerKm
-        .toFixed(2)
-        .replace(".", " e ")} por quilômetro. Lucro livre de ${ride.netProfit.toFixed(0)} reais.${riskText}`;
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = "pt-BR";
-      utter.rate = 1.12;
-      window.speechSynthesis.speak(utter);
-    } catch {}
-  };
-
-  const fetchState = async () => {
-    try {
-      const res = await fetch("/api/state");
-      const data = await res.json();
-      if (data.user) setUser(data.user);
-      if (Array.isArray(data.rides)) {
-        setRides(data.rides);
-        if (!selectedRideId && data.rides.length > 0) {
-          setSelectedRideId(data.rides[0].id);
-        }
-      }
-      if (Array.isArray(data.riskZones)) setRiskZones(data.riskZones);
-    } catch {
-      showToast("Modo offline local ativo");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchState();
-  }, []);
-
-  // Keyboard shortcut Alt + Shift + M for Admin
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.altKey && e.shiftKey && (e.key === "M" || e.key === "m")) {
-        e.preventDefault();
-        setAdminUnlocked(true);
-        setActiveTab("admin");
-        loadAdminOverview();
-        showToast("👑 Painel Admin Master Desbloqueado!");
-      }
+declare global {
+  interface Window {
+    AndroidBridge?: {
+      isNativeAndroid: () => boolean;
+      hasOverlayPermission: () => boolean;
+      hasAccessibilityPermission: () => boolean;
+      openOverlaySettings: () => void;
+      openAccessibilitySettings: () => void;
+      startCopilotOverlay: () => void;
+      stopCopilotOverlay: () => void;
+      syncCopilotConfig: (
+        greenKm: number,
+        yellowKm: number,
+        greenHour: number,
+        yellowHour: number,
+        costPerKm: number,
+        opacityPercent: number,
+        durationSec: number,
+        voiceOn: boolean
+      ) => void;
+      previewOverlayCard: (
+        platform: string,
+        price: number,
+        totalKm: number,
+        durationMin: number,
+        origin: string,
+        destination: string
+      ) => void;
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }
+}
 
-  // Countdown timer for floating incoming ride overlay
-  useEffect(() => {
-    if (!incomingRide) return;
-    setOverlayCountdown(12);
-    const interval = setInterval(() => {
-      setOverlayCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [incomingRide]);
+const DEFAULT_CONFIG: DriverConfig = {
+  greenPerKm: 2.2,
+  yellowPerKm: 1.6,
+  greenPerHour: 45,
+  yellowPerHour: 32,
+  fuelPricePerLiter: 5.89,
+  carKmPerLiter: 10.5,
+  maintenancePerKm: 0.25,
+  voiceEnabled: true,
+  overlayOpacity: 90,
+  overlayDurationSec: 10,
+  autoStreetViewOnAccept: true,
+  targetPlatforms: ['UBER', '99', 'INDRIVE'],
+};
 
-  // Listen to native Android Accessibility Service bridge events if running inside APK
-  useEffect(() => {
-    (window as any).onGoOrNoNativeRide = async (payload: any) => {
-      await triggerRideCapture(payload);
-    };
-    return () => {
-      delete (window as any).onGoOrNoNativeRide;
-    };
+export function App() {
+  const [isAdminView, setIsAdminView] = useState<boolean>(() => {
+    return (
+      window.location.pathname.startsWith('/admin') ||
+      window.location.hash.includes('admin') ||
+      window.location.search.includes('admin')
+    );
   });
 
-  const handleLogoTap = () => {
-    logoTapCount.current += 1;
-    if (logoTapTimer.current) clearTimeout(logoTapTimer.current);
-    if (logoTapCount.current >= 5) {
-      logoTapCount.current = 0;
-      setAdminUnlocked(true);
-      setActiveTab("admin");
-      loadAdminOverview();
-      showToast("👑 Painel Admin Master Desbloqueado!");
-      return;
+  useEffect(() => {
+    const handleNav = () => {
+      setIsAdminView(
+        window.location.pathname.startsWith('/admin') ||
+        window.location.hash.includes('admin') ||
+        window.location.search.includes('admin')
+      );
+    };
+    window.addEventListener('hashchange', handleNav);
+    window.addEventListener('popstate', handleNav);
+    return () => {
+      window.removeEventListener('hashchange', handleNav);
+      window.removeEventListener('popstate', handleNav);
+    };
+  }, []);
+
+  const [activeTab, setActiveTab] = useState<'copilot' | 'overlay' | 'targets' | 'history'>('copilot');
+  const [config, setConfig] = useState<DriverConfig>(DEFAULT_CONFIG);
+  const [rides, setRides] = useState<RideRecord[]>([]);
+  const [copilotActive, setCopilotActive] = useState<boolean>(false);
+
+  // Native Android permissions state
+  const [isNative, setIsNative] = useState<boolean>(false);
+  const [hasOverlayPerm, setHasOverlayPerm] = useState<boolean>(false);
+  const [hasAccessPerm, setHasAccessPerm] = useState<boolean>(false);
+
+  // Floating overlay preview on screen (works both on Web and Native)
+  const [showFloatingPreview, setShowFloatingPreview] = useState<boolean>(true);
+  const [floatingCollapsed, setFloatingCollapsed] = useState<boolean>(false);
+
+  // Street View Modal state
+  const [streetViewModal, setStreetViewModal] = useState<{
+    open: boolean;
+    label: string;
+    address: string;
+  }>({ open: false, label: '', state: '', address: '' } as any);
+
+  // Audit Payment Modal/Inline state
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const [receivedInput, setReceivedInput] = useState<string>('');
+
+  // Screenshot OCR scanning state
+  const [isScanningPrint, setIsScanningPrint] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const costPerKm = Number(
+    (config.fuelPricePerLiter / Math.max(config.carKmPerLiter, 1) + config.maintenancePerKm).toFixed(2)
+  );
+
+  // Check native Android bridge and permissions
+  const refreshAndroidPermissions = () => {
+    if (window.AndroidBridge && typeof window.AndroidBridge.isNativeAndroid === 'function') {
+      setIsNative(true);
+      try {
+        const ov = window.AndroidBridge.hasOverlayPermission();
+        const ac = window.AndroidBridge.hasAccessibilityPermission();
+        setHasOverlayPerm(ov);
+        setHasAccessPerm(ac);
+      } catch (err) {
+        console.error(err);
+      }
     }
-    logoTapTimer.current = setTimeout(() => {
-      logoTapCount.current = 0;
-    }, 1800);
   };
 
-  const loadAdminOverview = async () => {
-    try {
-      const res = await fetch("/api/admin/overview");
-      const data = await res.json();
-      setAdminData(data);
-    } catch {}
-  };
+  useEffect(() => {
+    refreshAndroidPermissions();
+    const timer = setInterval(refreshAndroidPermissions, 2500);
+    return () => clearInterval(timer);
+  }, []);
 
-  const triggerRideCapture = async (payload: {
-    platform: "Uber" | "99" | "inDrive";
-    category: string;
-    offeredValue: number;
-    pickupDistanceKm: number;
-    tripDistanceKm: number;
-    pickupTimeMin: number;
-    tripTimeMin: number;
-    originAddress: string;
-    originNeighborhood?: string;
-    destinationAddress: string;
-    destinationNeighborhood?: string;
-    passengerName?: string;
-    passengerRating?: number;
-  }) => {
-    try {
-      const res = await fetch("/api/rides/capture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.ride) {
-        setRides((prev) => [data.ride, ...prev]);
-        setSelectedRideId(data.ride.id);
-        setIncomingRide(data.ride);
-        speakRideVerdict(data.ride);
+  // Load state from backend
+  useEffect(() => {
+    fetch('/api/state')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.config) setConfig({ ...DEFAULT_CONFIG, ...data.config });
+        if (Array.isArray(data?.rides)) setRides(data.rides);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Sync config with Android Native Overlay whenever config changes
+  useEffect(() => {
+    if (window.AndroidBridge && typeof window.AndroidBridge.syncCopilotConfig === 'function') {
+      try {
+        window.AndroidBridge.syncCopilotConfig(
+          config.greenPerKm,
+          config.yellowPerKm,
+          config.greenPerHour,
+          config.yellowPerHour,
+          costPerKm,
+          config.overlayOpacity,
+          config.overlayDurationSec,
+          config.voiceEnabled
+        );
+      } catch (e) {
+        console.error(e);
       }
-    } catch {
-      showToast("Erro ao processar chamada");
+    }
+  }, [config, costPerKm]);
+
+  const saveNewConfig = async (updated: DriverConfig) => {
+    setConfig(updated);
+    try {
+      await fetch('/api/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const handleDecision = async (ride: RideRecord, decision: RideRecord["decision"], openEvaluateAfter = false) => {
-    try {
-      const res = await fetch(`/api/rides/${ride.id}/decision`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision }),
-      });
-      const data = await res.json();
-      if (data.ride) {
-        setRides((prev) => prev.map((r) => (r.id === ride.id ? data.ride : r)));
-      }
-      setIncomingRide(null);
-      setSelectedRideId(ride.id);
-      if (openEvaluateAfter) {
-        setActiveTab("evaluate");
-        setStreetViewTarget({
-          label: "Destino da Corrida",
-          address: ride.destinationAddress,
-        });
-        showToast("Corrida aceita! Confira a rua no Street View antes de ir.");
-      } else if (decision === "declined") {
-        showToast("Corrida recusada (NO) e salva no histórico.");
-      } else if (decision === "cancelled_after_review") {
-        showToast("Corrida marcada como Cancelada após avaliar Street View!");
-      } else {
-        showToast("Status da corrida atualizado!");
-      }
-    } catch {}
-  };
-
-  const handleSavePaymentAudit = async (rideId: string) => {
-    try {
-      const val = parseFloat(auditReceivedInput.replace(",", "."));
-      if (isNaN(val)) {
-        showToast("Digite um valor numérico válido");
+  const toggleCopilot = () => {
+    if (isNative && window.AndroidBridge) {
+      if (!hasOverlayPerm) {
+        window.AndroidBridge.openOverlaySettings();
         return;
       }
-      const res = await fetch(`/api/rides/${rideId}/audit-payment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          receivedValue: val,
-          paymentAuditNote: auditNoteInput || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (data.ride) {
-        setRides((prev) => prev.map((r) => (r.id === rideId ? data.ride : r)));
-        setAuditingRideId(null);
-        showToast("✅ Auditoria de valor salva no histórico!");
+      if (!hasAccessPerm) {
+        window.AndroidBridge.openAccessibilitySettings();
+        return;
       }
-    } catch {
-      showToast("Erro ao salvar conferência");
+      if (!copilotActive) {
+        window.AndroidBridge.startCopilotOverlay();
+        setCopilotActive(true);
+      } else {
+        window.AndroidBridge.stopCopilotOverlay();
+        setCopilotActive(false);
+      }
+    } else {
+      const next = !copilotActive;
+      setCopilotActive(next);
+      setShowFloatingPreview(true);
+      setFloatingCollapsed(false);
     }
   };
 
-  const handleSaveVehicleConfig = async (updatedPartial: Partial<VehicleConfig>) => {
-    if (!user) return;
-    const nextConfig = { ...user.vehicleConfig, ...updatedPartial };
-    setUser({ ...user, vehicleConfig: nextConfig });
-    try {
-      await fetch("/api/config/vehicle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email, vehicleConfig: nextConfig }),
-      });
-      showToast("✅ Configurações e metas do Semáforo salvas!");
-    } catch {}
+  const triggerFloatingDemo = (
+    platform: 'UBER' | '99' | 'INDRIVE',
+    price: number,
+    pickupKm: number,
+    tripKm: number,
+    durationMin: number,
+    originAddress: string,
+    destinationAddress: string
+  ) => {
+    const totalKm = Number((pickupKm + tripKm).toFixed(1));
+    if (isNative && window.AndroidBridge) {
+      window.AndroidBridge.previewOverlayCard(
+        platform,
+        price,
+        totalKm,
+        durationMin,
+        originAddress,
+        destinationAddress
+      );
+    }
+    setShowFloatingPreview(true);
+    setFloatingCollapsed(false);
+
+    // Also save/evaluate via API
+    fetch('/api/rides/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        platform,
+        offeredPrice: price,
+        pickupKm,
+        tripKm,
+        durationMin,
+        originAddress,
+        destinationAddress,
+        accepted: true,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.ride) {
+          setRides((prev) => [data.ride, ...prev]);
+          if (config.voiceEnabled && 'speechSynthesis' in window && !isNative) {
+            window.speechSynthesis.cancel();
+            const vText =
+              data.ride.verdict === 'GREEN'
+                ? `Boa chamada! ${data.ride.pricePerKm.toFixed(2).replace('.', ',')} reais por quilômetro.`
+                : data.ride.verdict === 'YELLOW'
+                ? `Atenção. ${data.ride.pricePerKm.toFixed(2).replace('.', ',')} por quilômetro.`
+                : `Corrida ruim! Apenas ${data.ride.pricePerKm.toFixed(2).replace('.', ',')} por quilômetro.`;
+            const utter = new SpeechSynthesisUtterance(vText);
+            utter.lang = 'pt-BR';
+            window.speechSynthesis.speak(utter);
+          }
+        }
+      })
+      .catch(() => {});
   };
 
-  const handleAddRiskZone = async (addressOrNeighborhood: string, reasonText?: string) => {
-    if (!addressOrNeighborhood.trim()) return;
+  const handlePrintUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsScanningPrint(true);
     try {
-      const res = await fetch("/api/risk-zones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          neighborhoodOrStreet: addressOrNeighborhood.trim(),
-          reason: reasonText || "Marcado pelo motorista durante análise de corrida",
-        }),
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = String(reader.result || '');
+        const res = await fetch('/api/rides/scan-screenshot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64 }),
+        });
+        const data = await res.json();
+        if (data?.ride) {
+          setRides((prev) => [data.ride, ...prev]);
+          setShowFloatingPreview(true);
+          setFloatingCollapsed(false);
+          if (isNative && window.AndroidBridge) {
+            window.AndroidBridge.previewOverlayCard(
+              data.ride.platform,
+              data.ride.offeredPrice,
+              data.ride.totalKm,
+              data.ride.durationMin,
+              data.ride.originAddress,
+              data.ride.destinationAddress
+            );
+          }
+        }
+        setIsScanningPrint(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setIsScanningPrint(false);
+    }
+  };
+
+  const handleVerifyPayment = async (rideId: string) => {
+    const val = parseFloat(receivedInput.replace(',', '.'));
+    if (isNaN(val) || val < 0) return;
+    try {
+      const res = await fetch(`/api/rides/${rideId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receivedPrice: val, accepted: true }),
       });
       const data = await res.json();
-      if (data.riskZone) {
-        setRiskZones((prev) => [data.riskZone, ...prev]);
-        setNewRiskStreet("");
-        setNewRiskReason("");
-        showToast("⚠️ Endereço adicionado à lista de Áreas de Risco!");
+      if (data?.ride) {
+        setRides((prev) => prev.map((r) => (r.id === rideId ? data.ride : r)));
       }
-    } catch {}
+      setEditingPaymentId(null);
+      setReceivedInput('');
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const handleDeleteRiskZone = async (id: string) => {
-    try {
-      await fetch(`/api/risk-zones/${id}`, { method: "DELETE" });
-      setRiskZones((prev) => prev.filter((rz) => rz.id !== id));
-      showToast("Área de risco removida");
-    } catch {}
+  const openStreetView = (label: string, address: string) => {
+    setStreetViewModal({ open: true, label, address });
   };
 
-  // Selected ride for Evaluate Tab
-  const activeRideToEvaluate = useMemo(() => {
-    return rides.find((r) => r.id === selectedRideId) || rides[0] || null;
-  }, [rides, selectedRideId]);
+  const currentRide: RideRecord = rides[0] || {
+    id: 'demo-1',
+    timestamp: new Date().toISOString(),
+    platform: 'UBER',
+    offeredPrice: 28.5,
+    receivedPrice: null,
+    pickupKm: 1.4,
+    tripKm: 8.6,
+    totalKm: 10.0,
+    durationMin: 19,
+    originAddress: 'Av. Paulista, 1578 - Bela Vista, São Paulo',
+    destinationAddress: 'Rua Funchal, 418 - Vila Olímpia, São Paulo',
+    pricePerKm: 2.85,
+    pricePerHour: 90.0,
+    estimatedCost: 8.1,
+    netProfit: 20.4,
+    verdict: 'GREEN',
+    accepted: true,
+    paymentStatus: 'PENDING',
+  };
 
-  // Shift / Day Summary Metrics
-  const shiftMetrics = useMemo(() => {
-    const acceptedRides = rides.filter((r) => r.decision === "accepted");
-    const totalGross = acceptedRides.reduce((acc, r) => acc + (r.receivedValue ?? r.offeredValue), 0);
-    const totalOffered = acceptedRides.reduce((acc, r) => acc + r.offeredValue, 0);
-    const totalNet = acceptedRides.reduce((acc, r) => acc + r.netProfit, 0);
-    const totalKm = acceptedRides.reduce((acc, r) => acc + r.totalDistanceKm, 0);
-    const totalDiscrepancy = acceptedRides.reduce((acc, r) => {
-      if (r.receivedValue !== null && r.receivedValue < r.offeredValue) {
-        return acc + (r.offeredValue - r.receivedValue);
-      }
-      return acc;
-    }, 0);
-    const avgPerKm = totalKm > 0 ? totalGross / totalKm : 0;
-
+  const getVerdictColors = (verdict: 'GREEN' | 'YELLOW' | 'RED') => {
+    if (verdict === 'GREEN') {
+      return {
+        bg: '#0E9F6E',
+        border: '#31C48D',
+        badge: '🟢 ACEITAR · ÓTIMA',
+        text: '#E3FCEF',
+      };
+    }
+    if (verdict === 'YELLOW') {
+      return {
+        bg: '#D97706',
+        border: '#FBBF24',
+        badge: '🟡 ATENÇÃO · MÉDIA',
+        text: '#FEF3C7',
+      };
+    }
     return {
-      acceptedCount: acceptedRides.length,
-      declinedCount: rides.filter((r) => r.decision === "declined" || r.decision === "cancelled_after_review").length,
-      totalCallsCount: rides.length,
-      totalGross,
-      totalOffered,
-      totalNet,
-      totalKm,
-      avgPerKm,
-      totalDiscrepancy,
+      bg: '#DC2626',
+      border: '#F87171',
+      badge: '🔴 RECUSAR · PREJUÍZO',
+      text: '#FEE2E2',
     };
-  }, [rides]);
-
-  // Filtered history list
-  const filteredRides = useMemo(() => {
-    return rides.filter((r) => {
-      if (historyPlatformFilter !== "ALL" && r.platform !== historyPlatformFilter) return false;
-      if (historyDecisionFilter === "ACCEPTED" && r.decision !== "accepted") return false;
-      if (historyDecisionFilter === "DECLINED" && r.decision !== "declined" && r.decision !== "cancelled_after_review")
-        return false;
-      if (
-        historyDecisionFilter === "DISCREPANCY" &&
-        !(r.receivedValue !== null && r.receivedValue < r.offeredValue)
-      )
-        return false;
-      return true;
-    });
-  }, [rides, historyPlatformFilter, historyDecisionFilter]);
-
-  const vConfig = user?.vehicleConfig || {
-    vehicleType: "car_flex",
-    vehicleModel: "Veículo Padrão",
-    fuelPricePerUnit: 5.89,
-    consumptionPerUnit: 11.5,
-    maintenanceCostPerKm: 0.24,
-    rentalOrInstallmentDaily: 0,
-    greenMinPerKm: 2.0,
-    yellowMinPerKm: 1.55,
-    greenMinPerHour: 42.0,
-    yellowMinPerHour: 30.0,
-    dailyNetGoal: 280.0,
-    voiceAlertEnabled: true,
-    overlayEnabled: true,
-    autoOpenStreetViewOnAccept: false,
   };
 
-  const realVehicleCostPerKm =
-    (vConfig.consumptionPerUnit > 0 ? vConfig.fuelPricePerUnit / vConfig.consumptionPerUnit : 0.5) +
-    vConfig.maintenanceCostPerKm;
+  const vStyle = getVerdictColors(currentRide.verdict);
 
-  if (loading) {
+  if (isAdminView) {
     return (
-      <div className="min-h-screen bg-[#04241E] flex flex-col items-center justify-center p-6 text-white">
-        <img src="/logo-goorno-clean.png" alt="GoOrNo" className="h-24 object-contain mb-4 animate-pulse" />
-        <p className="text-sm font-semibold tracking-wider text-[#97B304] uppercase">
-          Carregando Copiloto GoOrNo...
-        </p>
-      </div>
+      <AdminDashboard
+        onBackToApp={() => {
+          window.location.hash = '';
+          setIsAdminView(false);
+        }}
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#04241E] text-[#F6F8F5] flex flex-col pb-16">
-      {/* Toast Notification */}
-      {toastMsg && (
-        <div className="fixed top-4 right-4 z-[100] bg-[#073B32] border-2 border-[#97B304] text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 animate-bounce">
-          <CheckCircle2 className="w-5 h-5 text-[#97B304] shrink-0" />
-          <span className="text-sm font-bold">{toastMsg}</span>
-        </div>
-      )}
-
-      {/* =====================================================================
-          FLOATING OVERLAY POP-UP (SEMÁFORO EM TEMPO REAL SOBRE UBER / 99)
-         ===================================================================== */}
-      {incomingRide && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-          <div
-            className={`w-full max-w-md rounded-3xl border-4 shadow-2xl overflow-hidden transition-all ${
-              incomingRide.verdict === "GO"
-                ? "bg-[#06352C] border-[#97B304]"
-                : incomingRide.verdict === "WARN"
-                ? "bg-[#2D2606] border-amber-400"
-                : "bg-[#330C0C] border-red-500"
-            }`}
-          >
-            {/* Top Bar of Floating Card */}
-            <div className="px-4 py-3 bg-black/35 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase bg-white/15 text-white">
-                  {incomingRide.platform} • {incomingRide.category}
-                </span>
-                <span className="text-xs font-bold text-amber-300">★ {incomingRide.passengerRating.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-white/10 text-white">
-                  ⏱️ {overlayCountdown}s
-                </span>
-                <button
-                  onClick={() => setIncomingRide(null)}
-                  className="p-1 rounded-full hover:bg-white/10 text-white/70 hover:text-white"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Big Semáforo Banner: GO vs WARN vs NO */}
-            <div
-              className={`px-5 py-3.5 flex items-center justify-between ${
-                incomingRide.verdict === "GO"
-                  ? "bg-gradient-to-r from-[#7C9303] to-[#97B304] text-[#04241E]"
-                  : incomingRide.verdict === "WARN"
-                  ? "bg-amber-400 text-slate-950"
-                  : "bg-red-600 text-white"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                {incomingRide.verdict === "GO" ? (
-                  <div className="w-9 h-9 rounded-full bg-[#073B32] text-[#97B304] flex items-center justify-center font-black text-xl">
-                    ✓
-                  </div>
-                ) : incomingRide.verdict === "WARN" ? (
-                  <AlertTriangle className="w-8 h-8 text-slate-950" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-white text-red-600 flex items-center justify-center font-black text-xl">
-                    −
-                  </div>
-                )}
-                <div>
-                  <div className="text-xs font-black uppercase tracking-wider opacity-85">
-                    SEMÁFORO GO OR NO
-                  </div>
-                  <div className="text-xl font-black tracking-tight">
-                    {incomingRide.verdict === "GO"
-                      ? "GO! COMPENSA ACEITAR"
-                      : incomingRide.verdict === "WARN"
-                      ? "ATENÇÃO! CORRIDA MÉDIA"
-                      : "NO! NÃO COMPENSA (PREJUÍZO)"}
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs font-bold uppercase opacity-80">Oferta Tela</div>
-                <div className="text-2xl font-black">{formatBRL(incomingRide.offeredValue)}</div>
-              </div>
-            </div>
-
-            {/* Risk Area Alert inside Popup if detected */}
-            {incomingRide.isRiskArea && (
-              <div className="bg-red-600/90 text-white px-4 py-2 text-xs font-extrabold flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 shrink-0" />
-                <span>ALERTA DE SEGURANÇA: Endereço em Área de Risco! Verifique o Street View!</span>
-              </div>
-            )}
-
-            {/* 3 Core Metrics Grid: R$/KM, R$/Hora, Lucro Líquido */}
-            <div className="p-4 grid grid-cols-3 gap-2.5 bg-black/20">
-              <div className="rounded-2xl bg-white/10 p-3 text-center border border-white/10">
-                <div className="text-[11px] font-bold uppercase text-white/70">Ganho / KM</div>
-                <div
-                  className={`text-lg sm:text-xl font-black mt-0.5 ${
-                    incomingRide.valuePerKm >= vConfig.greenMinPerKm
-                      ? "text-[#97B304]"
-                      : incomingRide.valuePerKm >= vConfig.yellowMinPerKm
-                      ? "text-amber-300"
-                      : "text-red-400"
-                  }`}
-                >
-                  R$ {incomingRide.valuePerKm.toFixed(2)}
-                </div>
-                <div className="text-[10px] text-white/60">Total: {incomingRide.totalDistanceKm} km</div>
-              </div>
-
-              <div className="rounded-2xl bg-white/10 p-3 text-center border border-white/10">
-                <div className="text-[11px] font-bold uppercase text-white/70">Ganho / Hora</div>
-                <div
-                  className={`text-lg sm:text-xl font-black mt-0.5 ${
-                    incomingRide.valuePerHour >= vConfig.greenMinPerHour
-                      ? "text-[#97B304]"
-                      : incomingRide.valuePerHour >= vConfig.yellowMinPerHour
-                      ? "text-amber-300"
-                      : "text-red-400"
-                  }`}
-                >
-                  R$ {incomingRide.valuePerHour.toFixed(0)}/h
-                </div>
-                <div className="text-[10px] text-white/60">Tempo: {incomingRide.totalTimeMin} min</div>
-              </div>
-
-              <div className="rounded-2xl bg-white/10 p-3 text-center border border-white/10">
-                <div className="text-[11px] font-bold uppercase text-white/70">Lucro Limpo</div>
-                <div className="text-lg sm:text-xl font-black mt-0.5 text-emerald-300">
-                  {formatBRL(incomingRide.netProfit)}
-                </div>
-                <div className="text-[10px] text-white/60">Custo: -{formatBRL(incomingRide.estimatedTotalCost)}</div>
-              </div>
-            </div>
-
-            {/* Origin & Destination with quick Street View triggers */}
-            <div className="px-4 py-3 space-y-2.5 text-xs">
-              <div className="flex items-start justify-between gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-[#97B304] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-[#97B304] uppercase text-[10px]">
-                      Embarque ({incomingRide.pickupDistanceKm} km • {incomingRide.pickupTimeMin} min)
-                    </span>
-                    <p className="text-white font-semibold leading-snug mt-0.5">{incomingRide.originAddress}</p>
-                  </div>
-                </div>
-                <a
-                  href={buildStreetViewExternalUrl(incomingRide.originAddress)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-2.5 py-1.5 rounded-lg bg-[#7C9303] text-white font-bold text-[11px] shrink-0 hover:bg-[#97B304] hover:text-[#04241E] transition"
-                >
-                  📸 Rua
-                </a>
-              </div>
-
-              <div className="flex items-start justify-between gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
-                <div className="flex items-start gap-2">
-                  <Navigation className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-amber-300 uppercase text-[10px]">
-                      Destino ({incomingRide.tripDistanceKm} km • {incomingRide.tripTimeMin} min)
-                    </span>
-                    <p className="text-white font-semibold leading-snug mt-0.5">{incomingRide.destinationAddress}</p>
-                  </div>
-                </div>
-                <a
-                  href={buildStreetViewExternalUrl(incomingRide.destinationAddress)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-2.5 py-1.5 rounded-lg bg-[#7C9303] text-white font-bold text-[11px] shrink-0 hover:bg-[#97B304] hover:text-[#04241E] transition"
-                >
-                  📸 Rua
-                </a>
-              </div>
-            </div>
-
-            {/* Bottom Decision Buttons: GO (Accept & Inspect Street View) vs NO (Decline) */}
-            <div className="p-4 pt-2 grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleDecision(incomingRide, "declined", false)}
-                className="py-3.5 px-4 rounded-2xl bg-red-600/25 hover:bg-red-600/40 border-2 border-red-500 text-red-200 font-black text-sm flex items-center justify-center gap-2 transition cursor-pointer"
-              >
-                <XCircle className="w-5 h-5" />
-                <span>NO • RECUSAR</span>
-              </button>
-              <button
-                onClick={() => handleDecision(incomingRide, "accepted", true)}
-                className="py-3.5 px-4 rounded-2xl bg-[#97B304] hover:bg-[#a9c906] text-[#04241E] font-black text-sm flex items-center justify-center gap-2 shadow-lg transition cursor-pointer"
-              >
-                <CheckCircle2 className="w-5 h-5" />
-                <span>GO • ACEITAR & VER RUA</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================================
-          TOP HEADER BAR (BRAND IDENTITY + VOICE TOGGLE + QUICK SIMULATE)
-         ===================================================================== */}
-      <header className="bg-[#073B32] border-b border-[#7C9303]/40 sticky top-0 z-30 shadow-lg">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          {/* Official Brand Logo (5x tap unlocks Admin) */}
-          <div
-            onClick={handleLogoTap}
-            className="flex items-center gap-3 cursor-pointer select-none"
-            title="GoOrNo — Aceitar ou Recusar?"
-          >
-            <div className="bg-white rounded-2xl px-2.5 py-1.5 shadow-md border-2 border-[#7C9303] flex items-center justify-center">
-              <img src="/logo-goorno-clean.png" alt="GoOrNo Logo" className="h-9 sm:h-10 w-auto object-contain" />
-            </div>
+    <div className="min-h-screen bg-[#031B17] text-white flex justify-center select-none font-sans">
+      {/* Mobile-First Container (Identical proportions to GigU / JetMax / JustoApp) */}
+      <div className="w-full max-w-md min-h-screen bg-[#04241E] flex flex-col justify-between relative shadow-2xl border-x border-[#0D4A3E]/60 pb-20">
+        
+        {/* TOP COMPACT APP HEADER */}
+        <header className="px-4 pt-3 pb-2.5 bg-[#073B32] border-b border-[#115E50]/60 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/logo-goorno.png"
+              alt="GoOrNo"
+              className="w-9 h-9 rounded-xl object-contain bg-[#04241E] p-0.5 border border-[#97B304]/50"
+            />
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-lg sm:text-xl font-black tracking-tight text-white">
-                  Go<span className="text-[#97B304]">Or</span>No
-                </span>
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#7C9303]/30 text-[#97B304] border border-[#97B304]/40">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#97B304] animate-ping" />
-                  COPILOTO ATIVO
+                <span className="font-black text-base tracking-tight text-white">GoOrNo</span>
+                <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-[#97B304] text-[#04241E]">
+                  Copiloto
                 </span>
               </div>
-              <p className="text-[10px] sm:text-xs font-bold tracking-widest uppercase text-[#97B304]">
-                ACEITAR OU RECUSAR?
+              <p className="text-[11px] text-emerald-200/80 leading-none mt-0.5">
+                Leitor de Tela Uber · 99 · inDrive
               </p>
             </div>
           </div>
 
-          {/* Right Header Controls */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleSaveVehicleConfig({ voiceAlertEnabled: !vConfig.voiceAlertEnabled })}
-              className={`px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border transition cursor-pointer ${
-                vConfig.voiceAlertEnabled
-                  ? "bg-[#7C9303]/25 border-[#97B304] text-[#97B304]"
-                  : "bg-white/5 border-white/15 text-white/60"
-              }`}
-              title="Ligar/Desligar aviso por voz quando tocar corrida"
-            >
-              {vConfig.voiceAlertEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              <span className="hidden md:inline">{vConfig.voiceAlertEnabled ? "Voz ON" : "Voz OFF"}</span>
-            </button>
-
+            {/* Quick Admin Access */}
             <button
               onClick={() => {
-                const randomPreset = PRESET_SIMULATIONS[Math.floor(Math.random() * PRESET_SIMULATIONS.length)];
-                triggerRideCapture(randomPreset);
+                window.location.hash = 'admin';
+                setIsAdminView(true);
               }}
-              className="px-3.5 py-2 rounded-xl bg-[#97B304] hover:bg-[#a8c605] text-[#04241E] font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition cursor-pointer pulse-lime"
+              className="p-2 rounded-xl border border-white/10 bg-[#04241E] hover:bg-[#0D4A3E] text-slate-300 hover:text-white transition"
+              title="Painel Admin Master"
             >
-              <Play className="w-4 h-4 fill-current" />
-              <span>Simular Chamada</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            </button>
+
+            {/* Quick Voice Toggle */}
+            <button
+              onClick={() => saveNewConfig({ ...config, voiceEnabled: !config.voiceEnabled })}
+              className={`p-2 rounded-xl border transition ${
+                config.voiceEnabled
+                  ? 'bg-[#0D4A3E] border-[#97B304]/60 text-[#B8D906]'
+                  : 'bg-[#04241E] border-white/10 text-white/40'
+              }`}
+              title="Voz do Copiloto"
+            >
+              {config.voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+
+            {/* Quick Opacity Pill */}
+            <button
+              onClick={() => setActiveTab('overlay')}
+              className="px-2.5 py-1.5 rounded-xl bg-[#04241E] border border-white/15 text-xs font-bold text-emerald-200 flex items-center gap-1"
+            >
+              <Eye className="w-3.5 h-3.5 text-[#97B304]" />
+              {config.overlayOpacity}%
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Navigation Bar (Strict Single-Line no-wrap-bar) */}
-        <div className="bg-[#04241E]/80 border-t border-white/10">
-          <div className="max-w-6xl mx-auto px-4 py-2 no-wrap-bar gap-2">
-            <button
-              onClick={() => setActiveTab("copilot")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition cursor-pointer ${
-                activeTab === "copilot"
-                  ? "bg-[#7C9303] text-white shadow-md"
-                  : "bg-white/5 text-white/75 hover:bg-white/10"
-              }`}
-            >
-              <Gauge className="w-4 h-4" />
-              <span>1. Copiloto & Semáforo</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("evaluate")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition cursor-pointer ${
-                activeTab === "evaluate"
-                  ? "bg-[#7C9303] text-white shadow-md"
-                  : "bg-white/5 text-white/75 hover:bg-white/10"
-              }`}
-            >
-              <Eye className="w-4 h-4" />
-              <span>2. Avaliar Corrida Aceita & Street View</span>
-              {activeRideToEvaluate && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-[#04241E] text-[#97B304] font-black">
-                  360°
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab("history")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition cursor-pointer ${
-                activeTab === "history"
-                  ? "bg-[#7C9303] text-white shadow-md"
-                  : "bg-white/5 text-white/75 hover:bg-white/10"
-              }`}
-            >
-              <History className="w-4 h-4" />
-              <span>3. Histórico & Conferir Pagamentos ({rides.length})</span>
-              {shiftMetrics.totalDiscrepancy > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-red-600 text-white font-black">
-                  Alerta R$
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition cursor-pointer ${
-                activeTab === "settings"
-                  ? "bg-[#7C9303] text-white shadow-md"
-                  : "bg-white/5 text-white/75 hover:bg-white/10"
-              }`}
-            >
-              <Wrench className="w-4 h-4" />
-              <span>4. Veículo, Metas & Áreas de Risco</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("apk")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition cursor-pointer ${
-                activeTab === "apk"
-                  ? "bg-[#7C9303] text-white shadow-md"
-                  : "bg-white/5 text-white/75 hover:bg-white/10"
-              }`}
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>5. Leitor de Tela Android (.APK)</span>
-            </button>
-
-            {adminUnlocked && (
-              <button
-                onClick={() => {
-                  setActiveTab("admin");
-                  loadAdminOverview();
-                }}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition cursor-pointer ${
-                  activeTab === "admin"
-                    ? "bg-amber-500 text-slate-950 shadow-md"
-                    : "bg-amber-500/20 text-amber-300 border border-amber-400/40"
-                }`}
-              >
-                <Lock className="w-4 h-4" />
-                <span>👑 Admin & Cofre 7 Dias</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* =====================================================================
-          MAIN CONTENT CONTAINER
-         ===================================================================== */}
-      <main className="max-w-6xl mx-auto w-full px-4 py-6 space-y-6 flex-1">
-        {/* TOP SHIFT KPI CARDS */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-[#073B32] border border-[#7C9303]/40 rounded-2xl p-4 shadow-md">
-            <div className="flex items-center justify-between text-xs text-white/70 font-bold uppercase">
-              <span>Lucro Líquido (Bolso)</span>
-              <DollarSign className="w-4 h-4 text-[#97B304]" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-[#97B304] mt-1">
-              {formatBRL(shiftMetrics.totalNet)}
-            </div>
-            <div className="text-[11px] text-white/65 mt-1">
-              Bruto: {formatBRL(shiftMetrics.totalGross)} • Meta: {formatBRL(vConfig.dailyNetGoal)}
-            </div>
-          </div>
-
-          <div className="bg-[#073B32] border border-[#7C9303]/40 rounded-2xl p-4 shadow-md">
-            <div className="flex items-center justify-between text-xs text-white/70 font-bold uppercase">
-              <span>Média R$ / KM Hoje</span>
-              <TrendingUp className="w-4 h-4 text-[#97B304]" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-white mt-1">
-              R$ {shiftMetrics.avgPerKm.toFixed(2)}/km
-            </div>
-            <div className="text-[11px] text-white/65 mt-1">
-              Seu custo real: R$ {realVehicleCostPerKm.toFixed(2)}/km ({shiftMetrics.totalKm.toFixed(1)} km)
-            </div>
-          </div>
-
-          <div className="bg-[#073B32] border border-[#7C9303]/40 rounded-2xl p-4 shadow-md">
-            <div className="flex items-center justify-between text-xs text-white/70 font-bold uppercase">
-              <span>Filtro GoOrNo (Chamadas)</span>
-              <CheckCircle2 className="w-4 h-4 text-[#97B304]" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-white mt-1">
-              {shiftMetrics.acceptedCount} GO <span className="text-white/40 text-lg">/ {shiftMetrics.declinedCount} NO</span>
-            </div>
-            <div className="text-[11px] text-white/65 mt-1">
-              {shiftMetrics.totalCallsCount} corridas gravadas no histórico
-            </div>
-          </div>
-
+        {/* FLOATING OVERLAY WINDOW (JANELA FLUTUANTE REAL SOBRE A TELA COM TRANSPARÊNCIA) */}
+        {showFloatingPreview && (
           <div
-            onClick={() => {
-              setHistoryDecisionFilter("DISCREPANCY");
-              setActiveTab("history");
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[380px] transition-all duration-200"
+            style={{
+              opacity: Math.max(0.25, Math.min(1, config.overlayOpacity / 100)),
             }}
-            className={`rounded-2xl p-4 shadow-md border cursor-pointer transition ${
-              shiftMetrics.totalDiscrepancy > 0
-                ? "bg-red-950/60 border-red-500/70 hover:bg-red-950/80"
-                : "bg-[#073B32] border-[#7C9303]/40"
-            }`}
           >
-            <div className="flex items-center justify-between text-xs text-white/80 font-bold uppercase">
-              <span>Auditoria de Pagamento</span>
-              <ClipboardCheck className="w-4 h-4 text-amber-400" />
-            </div>
-            <div
-              className={`text-2xl sm:text-3xl font-black mt-1 ${
-                shiftMetrics.totalDiscrepancy > 0 ? "text-red-400" : "text-emerald-300"
-              }`}
-            >
-              {shiftMetrics.totalDiscrepancy > 0 ? `-${formatBRL(shiftMetrics.totalDiscrepancy)}` : "100% Certo"}
-            </div>
-            <div className="text-[11px] text-white/70 mt-1">
-              {shiftMetrics.totalDiscrepancy > 0
-                ? "⚠️ Diferença detectada! Clique p/ conferir"
-                : "Nenhum desconto indevido nas corridas"}
-            </div>
-          </div>
-        </section>
-
-        {/* ===================================================================
-            TAB 1: COPILOTO & SEMÁFORO (SIMULADOR EM TEMPO REAL + CALCULADORA)
-           =================================================================== */}
-        {activeTab === "copilot" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column: Live Screen Reader Simulator & Presets */}
-            <div className="lg:col-span-7 space-y-5">
-              <div className="bg-[#073B32] border border-[#7C9303]/50 rounded-3xl p-5 sm:p-6 shadow-xl">
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <div>
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-[#7C9303]/30 text-[#97B304]">
-                      LEITOR DE TELA EM TEMPO REAL
+            {floatingCollapsed ? (
+              /* Pílula Flutuante Minimizada (estilo botão flutuante JetMax / GigU) */
+              <div className="flex items-center justify-between bg-[#073B32] border-2 border-[#97B304] rounded-full px-3.5 py-2 shadow-2xl">
+                <button
+                  onClick={() => setFloatingCollapsed(false)}
+                  className="flex items-center gap-2 text-left"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#B8D906] animate-pulse" />
+                  <span className="text-xs font-black tracking-wide text-white">
+                    {currentRide.platform} · R$ {currentRide.pricePerKm.toFixed(2)}/km · R${' '}
+                    {Math.round(currentRide.pricePerHour)}/h
+                  </span>
+                </button>
+                <button
+                  onClick={() => setFloatingCollapsed(false)}
+                  className="text-[11px] font-bold text-[#B8D906] bg-[#04241E] px-2.5 py-0.5 rounded-full ml-2"
+                >
+                  Abrir
+                </button>
+              </div>
+            ) : (
+              /* Card Semafórico Flutuante Completo (Abre por cima da Uber / 99) */
+              <div
+                className="rounded-2xl p-3.5 shadow-2xl border-2 text-white backdrop-blur-md"
+                style={{
+                  backgroundColor: '#062D26',
+                  borderColor: vStyle.border,
+                }}
+              >
+                {/* Top Strip: App + Semáforo + Transparência + Minimizar */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-md bg-black/40 text-[11px] font-black tracking-wider text-white">
+                      {currentRide.platform}
                     </span>
-                    <h2 className="text-xl sm:text-2xl font-black text-white mt-1.5">
-                      Toque de Chamada (Uber • 99 • inDrive)
-                    </h2>
-                    <p className="text-xs sm:text-sm text-white/75 mt-1">
-                      Quando uma viagem toca na tela do celular, o <strong>GoOrNo</strong> lê instantaneamente o valor,
-                      os KMs, o tempo e os endereços, mostrando o Semáforo Flutuante <strong>GO (✓)</strong> ou{" "}
-                      <strong>NO (−)</strong>.
-                    </p>
-                  </div>
-                </div>
-
-                {/* 4 Realistic One-Click Call Simulators */}
-                <div className="space-y-2.5">
-                  <div className="text-xs font-extrabold uppercase tracking-wider text-[#97B304]">
-                    ⚡ Clique para testar como o Semáforo aparece quando toca uma corrida:
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {PRESET_SIMULATIONS.map((preset, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => triggerRideCapture(preset)}
-                        className="text-left p-3.5 rounded-2xl bg-[#04241E] hover:bg-[#04241E]/70 border border-[#7C9303]/50 hover:border-[#97B304] transition group cursor-pointer"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-white group-hover:text-[#97B304] transition">
-                            {preset.label}
-                          </span>
-                          <span className="text-sm font-black text-[#97B304]">{formatBRL(preset.offeredValue)}</span>
-                        </div>
-                        <p className="text-[11px] text-white/65 mt-1 truncate">
-                          📍 {preset.originNeighborhood} ➔ {preset.destinationNeighborhood} (
-                          {(preset.pickupDistanceKm + preset.tripDistanceKm).toFixed(1)} km)
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Screenshot Reader Box */}
-                  <div className="mt-4 p-4 rounded-2xl bg-[#04241E] border-2 border-dashed border-[#97B304]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="text-xs font-black uppercase text-[#97B304]">
-                        📸 Tem um Print de Corrida da Uber / 99 no celular ou PC?
-                      </div>
-                      <p className="text-[11px] text-white/75 mt-0.5">
-                        Envie o print da chamada aqui: a IA lê o valor, os KMs e os endereços na hora e abre o Semáforo + Street View!
-                      </p>
-                    </div>
-                    <input
-                      ref={screenshotInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleScreenshotFile(f);
-                        e.target.value = "";
-                      }}
-                    />
-                    <button
-                      onClick={() => screenshotInputRef.current?.click()}
-                      disabled={scanningScreenshot}
-                      className="px-4 py-2.5 rounded-xl bg-[#97B304] hover:bg-[#a9c805] text-[#04241E] font-black text-xs shrink-0 cursor-pointer transition"
+                    <span
+                      className="px-2.5 py-0.5 rounded-md text-[11px] font-black tracking-wide"
+                      style={{ backgroundColor: vStyle.bg, color: '#fff' }}
                     >
-                      {scanningScreenshot ? "⏳ Lendo Print..." : "📸 Ler Print de Corrida"}
+                      {vStyle.badge}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setFloatingCollapsed(true)}
+                      className="text-[11px] font-bold px-2 py-0.5 rounded bg-black/30 text-white/80 hover:text-white"
+                      title="Minimizar para Pílula"
+                    >
+                      Minimizar
+                    </button>
+                    <button
+                      onClick={() => setShowFloatingPreview(false)}
+                      className="text-xs font-black px-2 py-0.5 rounded bg-black/30 text-white/70 hover:text-white"
+                    >
+                      ✕
                     </button>
                   </div>
                 </div>
 
-                {/* Last Captured Ride Quick Action Box */}
-                {activeRideToEvaluate && (
-                  <div className="mt-6 pt-5 border-t border-white/10">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-extrabold uppercase text-white/70">
-                        Última Corrida Capturada na Tela:
-                      </span>
-                      <button
-                        onClick={() => setActiveTab("evaluate")}
-                        className="text-xs font-black text-[#97B304] hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <span>Abrir Raio-X & Street View</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-[#04241E] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-black ${
-                              activeRideToEvaluate.verdict === "GO"
-                                ? "bg-[#97B304] text-[#04241E]"
-                                : activeRideToEvaluate.verdict === "WARN"
-                                ? "bg-amber-400 text-slate-950"
-                                : "bg-red-600 text-white"
-                            }`}
-                          >
-                            {activeRideToEvaluate.verdict === "GO"
-                              ? "✓ GO (COMPENSA)"
-                              : activeRideToEvaluate.verdict === "WARN"
-                              ? "! AVALIAR"
-                              : "− NO (RECUSAR)"}
-                          </span>
-                          <span className="font-black text-white">
-                            {activeRideToEvaluate.platform} • {formatBRL(activeRideToEvaluate.offeredValue)}
-                          </span>
-                          <span className="text-xs text-[#97B304] font-bold">
-                            (R$ {activeRideToEvaluate.valuePerKm.toFixed(2)}/km • Lucro{" "}
-                            {formatBRL(activeRideToEvaluate.netProfit)})
-                          </span>
-                        </div>
-                        <p className="text-xs text-white/75 mt-1.5">
-                          <strong>Origem:</strong> {activeRideToEvaluate.originAddress}
-                        </p>
-                        <p className="text-xs text-white/75 mt-0.5">
-                          <strong>Destino:</strong> {activeRideToEvaluate.destinationAddress}
-                        </p>
-                      </div>
-                      <div className="flex sm:flex-col gap-2 shrink-0">
-                        <button
-                          onClick={() => {
-                            setActiveTab("evaluate");
-                            setStreetViewTarget({
-                              label: "Destino",
-                              address: activeRideToEvaluate.destinationAddress,
-                            });
-                          }}
-                          className="px-3.5 py-2 rounded-xl bg-[#7C9303] hover:bg-[#97B304] text-white hover:text-[#04241E] font-extrabold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>Ver Rua (Street View)</span>
-                        </button>
-                        <button
-                          onClick={() => setIncomingRide(activeRideToEvaluate)}
-                          className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs cursor-pointer"
-                        >
-                          Reabrir Pop-up
-                        </button>
-                      </div>
+                {/* Big 3 Numbers (R$/KM, R$/HORA, LUCRO LÍQUIDO) - Leitura em 1 segundo */}
+                <div className="grid grid-cols-3 gap-2 my-2 bg-black/35 rounded-xl p-2.5 border border-white/10">
+                  <div className="text-center">
+                    <div className="text-[10px] font-bold uppercase text-white/60">R$ / KM</div>
+                    <div className="text-lg font-black text-white leading-tight">
+                      R$ {currentRide.pricePerKm.toFixed(2)}
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Column: Instant Manual Ride Analyzer */}
-            <div className="lg:col-span-5">
-              <div className="bg-[#073B32] border border-[#7C9303]/50 rounded-3xl p-5 sm:p-6 shadow-xl">
-                <h3 className="text-lg font-black text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-[#97B304]" />
-                  <span>Calculadora Manual de Corrida</span>
-                </h3>
-                <p className="text-xs text-white/70 mt-1 mb-4">
-                  Quer testar ou lançar uma corrida específica (ou corrida particular)? Digite abaixo para acionar o
-                  Semáforo e gravar no histórico:
-                </p>
-
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-white/75">Aplicativo</label>
-                      <select
-                        value={calcPlatform}
-                        onChange={(e) => setCalcPlatform(e.target.value as any)}
-                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-sm font-bold"
-                      >
-                        <option value="Uber">Uber</option>
-                        <option value="99">99 Motorista</option>
-                        <option value="inDrive">inDrive</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-white/75">Valor da Oferta (R$)</label>
-                      <input
-                        type="number"
-                        step="0.50"
-                        value={calcOffered}
-                        onChange={(e) => setCalcOffered(e.target.value)}
-                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-[#97B304]/60 text-[#97B304] text-sm font-black"
-                      />
+                  <div className="text-center border-x border-white/10">
+                    <div className="text-[10px] font-bold uppercase text-white/60">R$ / HORA</div>
+                    <div className="text-lg font-black text-white leading-tight">
+                      R$ {Math.round(currentRide.pricePerHour)}
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-white/75">KM até Passageiro</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={calcPickupKm}
-                        onChange={(e) => setCalcPickupKm(e.target.value)}
-                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-white/75">KM da Viagem</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={calcTripKm}
-                        onChange={(e) => setCalcTripKm(e.target.value)}
-                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-sm"
-                      />
+                  <div className="text-center">
+                    <div className="text-[10px] font-bold uppercase text-emerald-300/80">LUCRO LÍQ.</div>
+                    <div className="text-lg font-black text-[#B8D906] leading-tight">
+                      R$ {currentRide.netProfit.toFixed(2)}
                     </div>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-white/75">Tempo Busca (min)</label>
-                      <input
-                        type="number"
-                        value={calcPickupMin}
-                        onChange={(e) => setCalcPickupMin(e.target.value)}
-                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-white/75">Tempo Viagem (min)</label>
-                      <input
-                        type="number"
-                        value={calcTripMin}
-                        onChange={(e) => setCalcTripMin(e.target.value)}
-                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-sm"
-                      />
-                    </div>
-                  </div>
+                {/* Resumo da Chamada */}
+                <div className="flex items-center justify-between text-xs text-white/80 px-1 mb-2">
+                  <span>
+                    Oferta: <strong className="text-white">R$ {currentRide.offeredPrice.toFixed(2)}</strong>
+                  </span>
+                  <span>
+                    Distância: <strong className="text-white">{currentRide.totalKm} km</strong>
+                  </span>
+                  <span>
+                    Tempo: <strong className="text-white">{currentRide.durationMin} min</strong>
+                  </span>
+                </div>
 
-                  <div>
-                    <label className="text-[11px] font-bold uppercase text-white/75">
-                      Endereço de Origem (Embarque)
-                    </label>
-                    <input
-                      type="text"
-                      value={calcOrigin}
-                      onChange={(e) => setCalcOrigin(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold uppercase text-white/75">
-                      Endereço de Destino (Desembarque)
-                    </label>
-                    <input
-                      type="text"
-                      value={calcDest}
-                      onChange={(e) => setCalcDest(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-xs"
-                    />
-                  </div>
-
+                {/* Botões 1-Toque Street View (Origem e Destino) direto na janela flutuante */}
+                <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-white/10">
                   <button
-                    onClick={() =>
-                      triggerRideCapture({
-                        platform: calcPlatform,
-                        category: calcCategory,
-                        offeredValue: parseFloat(calcOffered) || 20,
-                        pickupDistanceKm: parseFloat(calcPickupKm) || 1,
-                        tripDistanceKm: parseFloat(calcTripKm) || 8,
-                        pickupTimeMin: parseInt(calcPickupMin, 10) || 4,
-                        tripTimeMin: parseInt(calcTripMin, 10) || 18,
-                        originAddress: calcOrigin,
-                        destinationAddress: calcDest,
-                      })
-                    }
-                    className="w-full py-3.5 rounded-2xl bg-[#97B304] hover:bg-[#a9c805] text-[#04241E] font-black text-sm flex items-center justify-center gap-2 shadow-lg transition cursor-pointer mt-2"
+                    onClick={() => openStreetView('Local de Embarque (Origem)', currentRide.originAddress)}
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-[#0B463B] hover:bg-[#0F5C4E] border border-[#97B304]/40 text-[11px] font-bold text-white truncate"
                   >
-                    <Gauge className="w-5 h-5" />
-                    <span>Calcular GO OR NO & Abrir Semáforo</span>
+                    <MapPin className="w-3.5 h-3.5 text-[#B8D906] shrink-0" />
+                    <span>Ver Origem (360°)</span>
+                  </button>
+                  <button
+                    onClick={() => openStreetView('Local de Desembarque (Destino)', currentRide.destinationAddress)}
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-[#0B463B] hover:bg-[#0F5C4E] border border-[#97B304]/40 text-[11px] font-bold text-white truncate"
+                  >
+                    <Navigation className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                    <span>Ver Destino (360°)</span>
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================================
-            TAB 2: AVALIAR CORRIDA ACEITA & STREET VIEW (SEGURANÇA ANTES DE IR)
-           =================================================================== */}
-        {activeTab === "evaluate" && (
-          <div className="space-y-6">
-            <div className="bg-[#073B32] border border-[#7C9303]/50 rounded-3xl p-5 sm:p-6 shadow-xl">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-white/10">
-                <div>
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-[#97B304] text-[#04241E]">
-                    ANÁLISE PÓS-ACEITE & STREET VIEW 360°
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-white mt-2">
-                    Aceitou no reflexo? Avalie a Corrida e Veja a Rua Antes de Ir!
-                  </h2>
-                  <p className="text-xs sm:text-sm text-white/75 mt-1">
-                    Clique em <strong>Ver Rua no Street View</strong> na Origem ou no Destino para inspecionar a
-                    vizinhança e decidir com segurança se vai buscar o passageiro ou se cancela a viagem.
-                  </p>
-                </div>
-
-                {/* Selector to switch between recent rides */}
-                <div className="shrink-0">
-                  <label className="block text-[11px] font-bold uppercase text-[#97B304] mb-1">
-                    Selecionar Corrida Recente:
-                  </label>
-                  <select
-                    value={activeRideToEvaluate?.id || ""}
-                    onChange={(e) => setSelectedRideId(e.target.value)}
-                    className="px-3.5 py-2.5 rounded-xl bg-[#04241E] border border-[#7C9303] text-white text-xs sm:text-sm font-bold"
-                  >
-                    {rides.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        [{r.verdict}] {r.platform} {formatBRL(r.offeredValue)} — {r.originNeighborhood} ➔{" "}
-                        {r.destinationNeighborhood}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {activeRideToEvaluate && (
-                <div className="mt-5 space-y-6">
-                  {/* Verdict + Financial Breakdown Banner */}
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                    <div
-                      className={`col-span-2 sm:col-span-1 rounded-2xl p-3.5 flex flex-col justify-center items-center text-center font-black ${
-                        activeRideToEvaluate.verdict === "GO"
-                          ? "bg-[#97B304] text-[#04241E]"
-                          : activeRideToEvaluate.verdict === "WARN"
-                          ? "bg-amber-400 text-slate-950"
-                          : "bg-red-600 text-white"
-                      }`}
-                    >
-                      <span className="text-[10px] uppercase tracking-wider opacity-80">Veredito</span>
-                      <span className="text-xl mt-0.5">
-                        {activeRideToEvaluate.verdict === "GO"
-                          ? "✓ GO (BOA)"
-                          : activeRideToEvaluate.verdict === "WARN"
-                          ? "! MÉDIA"
-                          : "− NO (RUIM)"}
-                      </span>
-                    </div>
-
-                    <div className="bg-[#04241E] rounded-2xl p-3.5 border border-white/10">
-                      <span className="text-[11px] text-white/65 font-bold uppercase">Valor na Tela</span>
-                      <div className="text-xl font-black text-white mt-0.5">
-                        {formatBRL(activeRideToEvaluate.offeredValue)}
-                      </div>
-                      <span className="text-[10px] text-[#97B304] font-bold">
-                        {activeRideToEvaluate.platform} • ★ {activeRideToEvaluate.passengerRating}
-                      </span>
-                    </div>
-
-                    <div className="bg-[#04241E] rounded-2xl p-3.5 border border-white/10">
-                      <span className="text-[11px] text-white/65 font-bold uppercase">Ganho / KM</span>
-                      <div className="text-xl font-black text-[#97B304] mt-0.5">
-                        R$ {activeRideToEvaluate.valuePerKm.toFixed(2)}/km
-                      </div>
-                      <span className="text-[10px] text-white/60">
-                        Busca {activeRideToEvaluate.pickupDistanceKm}km + Viagem {activeRideToEvaluate.tripDistanceKm}km
-                      </span>
-                    </div>
-
-                    <div className="bg-[#04241E] rounded-2xl p-3.5 border border-white/10">
-                      <span className="text-[11px] text-white/65 font-bold uppercase">Ganho / Hora</span>
-                      <div className="text-xl font-black text-white mt-0.5">
-                        R$ {activeRideToEvaluate.valuePerHour.toFixed(0)}/h
-                      </div>
-                      <span className="text-[10px] text-white/60">
-                        Tempo total: {activeRideToEvaluate.totalTimeMin} min
-                      </span>
-                    </div>
-
-                    <div className="bg-[#04241E] rounded-2xl p-3.5 border border-emerald-500/30">
-                      <span className="text-[11px] text-emerald-300 font-bold uppercase">Lucro Limpo</span>
-                      <div className="text-xl font-black text-emerald-300 mt-0.5">
-                        {formatBRL(activeRideToEvaluate.netProfit)}
-                      </div>
-                      <span className="text-[10px] text-white/60">
-                        Descontado R$ {activeRideToEvaluate.estimatedTotalCost.toFixed(2)} de custo
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* ORIGIN & DESTINATION INTERACTIVE STREET VIEW CARDS */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* ORIGIN CARD */}
-                    <div className="rounded-2xl bg-[#04241E] border-2 border-[#7C9303]/60 p-4 flex flex-col justify-between gap-4">
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="px-2.5 py-1 rounded-lg bg-[#7C9303]/25 text-[#97B304] text-xs font-black uppercase flex items-center gap-1.5">
-                            <MapPin className="w-4 h-4" />
-                            1. Endereço de Origem (Embarque)
-                          </span>
-                          <span className="text-xs font-bold text-white/70">
-                            {activeRideToEvaluate.pickupDistanceKm} km ({activeRideToEvaluate.pickupTimeMin} min)
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={() =>
-                            setStreetViewTarget({
-                              label: "Origem (Embarque)",
-                              address: activeRideToEvaluate.originAddress,
-                            })
-                          }
-                          className="mt-3 text-left group cursor-pointer block w-full"
-                        >
-                          <p className="text-base sm:text-lg font-black text-white group-hover:text-[#97B304] underline decoration-[#97B304]/60 underline-offset-4 transition">
-                            {activeRideToEvaluate.originAddress}
-                          </p>
-                          <span className="text-[11px] text-[#97B304] font-bold mt-1 inline-block">
-                            👆 Clique no endereço acima ou nos botões abaixo para abrir a rua no Street View
-                          </span>
-                        </button>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() =>
-                            setStreetViewTarget({
-                              label: "Origem (Embarque)",
-                              address: activeRideToEvaluate.originAddress,
-                            })
-                          }
-                          className="flex-1 py-2.5 px-3 rounded-xl bg-[#97B304] hover:bg-[#a8c605] text-[#04241E] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>📸 Ver Origem Aqui na Tela</span>
-                        </button>
-                        <a
-                          href={buildStreetViewExternalUrl(activeRideToEvaluate.originAddress)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-1.5"
-                        >
-                          <Navigation className="w-4 h-4 text-[#97B304]" />
-                          <span>App Google Maps / Street</span>
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* DESTINATION CARD */}
-                    <div
-                      className={`rounded-2xl bg-[#04241E] border-2 p-4 flex flex-col justify-between gap-4 ${
-                        activeRideToEvaluate.isRiskArea ? "border-red-500" : "border-amber-400/60"
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="px-2.5 py-1 rounded-lg bg-amber-400/20 text-amber-300 text-xs font-black uppercase flex items-center gap-1.5">
-                            <Navigation className="w-4 h-4" />
-                            2. Endereço de Destino (Desembarque)
-                          </span>
-                          <span className="text-xs font-bold text-white/70">
-                            +{activeRideToEvaluate.tripDistanceKm} km ({activeRideToEvaluate.tripTimeMin} min)
-                          </span>
-                        </div>
-
-                        {activeRideToEvaluate.isRiskArea && (
-                          <div className="mt-2 px-3 py-1.5 rounded-xl bg-red-600/30 border border-red-500 text-red-200 text-xs font-extrabold flex items-center gap-1.5">
-                            <ShieldAlert className="w-4 h-4 shrink-0 text-red-400" />
-                            <span>Atenção: Destino coincide com Área de Risco cadastrada!</span>
-                          </div>
-                        )}
-
-                        <button
-                          onClick={() =>
-                            setStreetViewTarget({
-                              label: "Destino (Desembarque)",
-                              address: activeRideToEvaluate.destinationAddress,
-                            })
-                          }
-                          className="mt-3 text-left group cursor-pointer block w-full"
-                        >
-                          <p className="text-base sm:text-lg font-black text-white group-hover:text-amber-300 underline decoration-amber-400/60 underline-offset-4 transition">
-                            {activeRideToEvaluate.destinationAddress}
-                          </p>
-                          <span className="text-[11px] text-amber-300 font-bold mt-1 inline-block">
-                            👆 Clique no endereço acima ou nos botões abaixo para ver o Destino no Street View
-                          </span>
-                        </button>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() =>
-                            setStreetViewTarget({
-                              label: "Destino (Desembarque)",
-                              address: activeRideToEvaluate.destinationAddress,
-                            })
-                          }
-                          className="flex-1 py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>📸 Ver Destino Aqui na Tela</span>
-                        </button>
-                        <a
-                          href={buildStreetViewExternalUrl(activeRideToEvaluate.destinationAddress)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-1.5"
-                        >
-                          <Navigation className="w-4 h-4 text-amber-300" />
-                          <span>App Google Maps / Street</span>
-                        </a>
-                        <button
-                          onClick={() =>
-                            handleAddRiskZone(
-                              activeRideToEvaluate.destinationAddress,
-                              "Sinalizado ao inspecionar corrida aceita"
-                            )
-                          }
-                          className="py-2.5 px-3 rounded-xl bg-red-600/25 hover:bg-red-600/40 border border-red-500/50 text-red-200 font-bold text-xs cursor-pointer"
-                          title="Adicionar este endereço como Área de Risco"
-                        >
-                          ⚠️ Marcar Risco
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Embedded Interactive Satellite / Street View Inspector */}
-                  <div className="rounded-3xl bg-[#04241E] border-2 border-[#7C9303] overflow-hidden shadow-2xl">
-                    <div className="px-4 py-3 bg-[#073B32] flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Eye className="w-5 h-5 text-[#97B304]" />
-                        <span className="text-xs sm:text-sm font-black text-white">
-                          Visor de Segurança da Rua:{" "}
-                          <span className="text-[#97B304]">
-                            {streetViewTarget?.label || "Destino"} —{" "}
-                            {streetViewTarget?.address || activeRideToEvaluate.destinationAddress}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() =>
-                            setStreetViewTarget({
-                              label: "Origem (Embarque)",
-                              address: activeRideToEvaluate.originAddress,
-                            })
-                          }
-                          className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-white cursor-pointer"
-                        >
-                          Focar Origem
-                        </button>
-                        <button
-                          onClick={() =>
-                            setStreetViewTarget({
-                              label: "Destino (Desembarque)",
-                              address: activeRideToEvaluate.destinationAddress,
-                            })
-                          }
-                          className="px-2.5 py-1 rounded-lg bg-[#7C9303] text-xs font-bold text-white cursor-pointer"
-                        >
-                          Focar Destino
-                        </button>
-                        <a
-                          href={buildStreetViewExternalUrl(
-                            streetViewTarget?.address || activeRideToEvaluate.destinationAddress
-                          )}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3 py-1 rounded-lg bg-[#97B304] text-[#04241E] text-xs font-black"
-                        >
-                          Abrir Street View 360° Tela Cheia ↗
-                        </a>
-                      </div>
-                    </div>
-                    <iframe
-                      title="Visor de Rua e Satélite GoOrNo"
-                      src={buildEmbedMapUrl(streetViewTarget?.address || activeRideToEvaluate.destinationAddress)}
-                      className="w-full h-[340px] sm:h-[400px] border-0"
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  </div>
-
-                  {/* Final Driver Decision Buttons after inspecting the street */}
-                  <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                      onClick={() => handleDecision(activeRideToEvaluate, "cancelled_after_review", false)}
-                      className="py-4 px-5 rounded-2xl bg-red-600/25 hover:bg-red-600/40 border-2 border-red-500 text-red-200 font-black text-sm flex items-center justify-center gap-2 transition cursor-pointer"
-                    >
-                      <XCircle className="w-5 h-5" />
-                      <span>🚫 Rua Perigosa / Não Compensa (Cancelar Viagem)</span>
-                    </button>
-                    <button
-                      onClick={() => handleDecision(activeRideToEvaluate, "accepted", false)}
-                      className="py-4 px-5 rounded-2xl bg-[#97B304] hover:bg-[#a9c805] text-[#04241E] font-black text-sm flex items-center justify-center gap-2 shadow-lg transition cursor-pointer"
-                    >
-                      <CheckCircle2 className="w-5 h-5" />
-                      <span>✅ Rua Segura & Lucro Confirmado (Realizar Corrida)</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================================
-            TAB 3: HISTÓRICO DE CORRIDAS & AUDITORIA DE PAGAMENTOS
-           =================================================================== */}
-        {activeTab === "history" && (
-          <div className="space-y-5">
-            <div className="bg-[#073B32] border border-[#7C9303]/50 rounded-3xl p-5 sm:p-6 shadow-xl">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
-                <div>
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-[#7C9303]/30 text-[#97B304]">
-                    MEMÓRIA AUTOMÁTICA DE CHAMADAS & AUDITORIA
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-white mt-1.5">
-                    Histórico Completo de Viagens & Conferência de Valor Recebido
-                  </h2>
-                  <p className="text-xs sm:text-sm text-white/75 mt-1">
-                    Toda viagem que toca no seu celular fica registrada aqui. Confira se o valor depositado pela Uber/99
-                    bate com o valor que apareceu na chamada!
-                  </p>
-                </div>
-
-                {/* Filters */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={historyPlatformFilter}
-                    onChange={(e) => setHistoryPlatformFilter(e.target.value)}
-                    className="px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-xs font-bold text-white"
-                  >
-                    <option value="ALL">Todas Plataformas</option>
-                    <option value="Uber">Apenas Uber</option>
-                    <option value="99">Apenas 99</option>
-                    <option value="inDrive">Apenas inDrive</option>
-                  </select>
-
-                  <select
-                    value={historyDecisionFilter}
-                    onChange={(e) => setHistoryDecisionFilter(e.target.value)}
-                    className="px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-xs font-bold text-white"
-                  >
-                    <option value="ALL">Todas ({rides.length})</option>
-                    <option value="ACCEPTED">Aceitas / Realizadas</option>
-                    <option value="DECLINED">Recusadas / Canceladas</option>
-                    <option value="DISCREPANCY">⚠️ Pagou a Menos (Divergência)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Rides List */}
-              <div className="mt-4 space-y-3">
-                {filteredRides.map((ride) => {
-                  const hasShortfall = ride.receivedValue !== null && ride.receivedValue < ride.offeredValue;
-                  const shortfallAmount = hasShortfall ? ride.offeredValue - (ride.receivedValue ?? 0) : 0;
-
-                  return (
-                    <div
-                      key={ride.id}
-                      className={`p-4 rounded-2xl bg-[#04241E] border transition ${
-                        hasShortfall
-                          ? "border-red-500/80"
-                          : ride.verdict === "GO"
-                          ? "border-[#7C9303]/50"
-                          : "border-white/10"
-                      }`}
-                    >
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div className="space-y-1.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[11px] font-black ${
-                                ride.verdict === "GO"
-                                  ? "bg-[#97B304] text-[#04241E]"
-                                  : ride.verdict === "WARN"
-                                  ? "bg-amber-400 text-slate-950"
-                                  : "bg-red-600 text-white"
-                              }`}
-                            >
-                              {ride.verdict === "GO" ? "✓ GO" : ride.verdict === "WARN" ? "! MÉDIA" : "− NO"}
-                            </span>
-                            <span className="px-2.5 py-0.5 rounded-lg bg-white/10 text-white text-xs font-extrabold">
-                              {ride.platform} • {ride.category}
-                            </span>
-                            <span className="text-xs text-white/60">
-                              🕒 {new Date(ride.createdAt).toLocaleString("pt-BR")}
-                            </span>
-                            <span
-                              className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
-                                ride.decision === "accepted"
-                                  ? "bg-emerald-500/20 text-emerald-300"
-                                  : "bg-red-500/20 text-red-300"
-                              }`}
-                            >
-                              {ride.decision === "accepted"
-                                ? "Aceita"
-                                : ride.decision === "cancelled_after_review"
-                                ? "Cancelada após Street View"
-                                : "Recusada"}
-                            </span>
-                          </div>
-
-                          <div className="text-xs text-white/85 pt-1 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[#97B304] font-bold">Embarque:</span>
-                              <span>{ride.originAddress}</span>
-                              <a
-                                href={buildStreetViewExternalUrl(ride.originAddress)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[11px] text-[#97B304] underline font-bold"
-                              >
-                                [Street View]
-                              </a>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-amber-300 font-bold">Destino:</span>
-                              <span>{ride.destinationAddress}</span>
-                              <a
-                                href={buildStreetViewExternalUrl(ride.destinationAddress)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[11px] text-amber-300 underline font-bold"
-                              >
-                                [Street View]
-                              </a>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-white/70">
-                            <span>📏 {ride.totalDistanceKm} km total</span>
-                            <span>⏱️ {ride.totalTimeMin} min</span>
-                            <span className="text-[#97B304] font-bold">R$ {ride.valuePerKm.toFixed(2)}/km</span>
-                            <span>R$ {ride.valuePerHour.toFixed(0)}/h</span>
-                            <span className="text-emerald-300 font-bold">Lucro: {formatBRL(ride.netProfit)}</span>
-                          </div>
-                        </div>
-
-                        {/* Payment Comparison & Audit Box */}
-                        <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-2 shrink-0 bg-[#073B32]/70 p-3.5 rounded-2xl border border-white/10">
-                          <div className="flex items-center gap-4">
-                            <div>
-                              <div className="text-[10px] uppercase text-white/60 font-bold">Tocou na Tela</div>
-                              <div className="text-lg font-black text-white">{formatBRL(ride.offeredValue)}</div>
-                            </div>
-                            <div className="border-l border-white/15 pl-4">
-                              <div className="text-[10px] uppercase text-white/60 font-bold">Valor Recebido</div>
-                              <div
-                                className={`text-lg font-black ${
-                                  hasShortfall
-                                    ? "text-red-400"
-                                    : ride.receivedValue !== null
-                                    ? "text-[#97B304]"
-                                    : "text-white/40"
-                                }`}
-                              >
-                                {ride.receivedValue !== null ? formatBRL(ride.receivedValue) : "Não conferido"}
-                              </div>
-                            </div>
-                          </div>
-
-                          {hasShortfall && (
-                            <div className="text-xs font-extrabold text-red-300 bg-red-950/80 px-2.5 py-1 rounded-lg border border-red-500/50">
-                              ⚠️ Pagou {formatBRL(shortfallAmount)} a menos!
-                            </div>
-                          )}
-
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <button
-                              onClick={() => {
-                                setAuditingRideId(ride.id);
-                                setAuditReceivedInput(String(ride.receivedValue ?? ride.offeredValue));
-                                setAuditNoteInput(ride.paymentAuditNote || "");
-                              }}
-                              className="px-3 py-1.5 rounded-xl bg-[#7C9303] hover:bg-[#97B304] text-white hover:text-[#04241E] text-xs font-extrabold transition cursor-pointer"
-                            >
-                              🔍 Conferir Valor Pago
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                setSelectedRideId(ride.id);
-                                setActiveTab("evaluate");
-                              }}
-                              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer"
-                            >
-                              📸 Avaliar / Street View
-                            </button>
-
-                            {hasShortfall && (
-                              <button
-                                onClick={() => {
-                                  const contestText = `Olá Suporte ${ride.platform}, na corrida realizada em ${new Date(
-                                    ride.createdAt
-                                  ).toLocaleString("pt-BR")} (Origem: ${ride.originAddress} -> Destino: ${
-                                    ride.destinationAddress
-                                  }, distância total ${ride.totalDistanceKm} km), o valor ofertado na tela ao aceitar foi de ${formatBRL(
-                                    ride.offeredValue
-                                  )}, porém o valor repassado foi de apenas ${formatBRL(
-                                    ride.receivedValue || 0
-                                  )} (diferença de ${formatBRL(
-                                    shortfallAmount
-                                  )}). Solicito a revisão e o ajuste da tarifa.`;
-                                  navigator.clipboard.writeText(contestText);
-                                  showToast("📋 Texto de contestação copiado para mandar no suporte!");
-                                }}
-                                className="px-3 py-1.5 rounded-xl bg-red-600 text-white text-xs font-black flex items-center gap-1 cursor-pointer"
-                              >
-                                <Copy className="w-3.5 h-3.5" />
-                                <span>Copiar Reclamação</span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Inline Audit Editor if open */}
-                      {auditingRideId === ride.id && (
-                        <div className="mt-3 pt-3 border-t border-white/15 flex flex-wrap items-end gap-3 bg-black/25 p-3 rounded-xl">
-                          <div>
-                            <label className="block text-[11px] font-bold text-[#97B304] uppercase">
-                              Quanto o App realmente te pagou (R$)?
-                            </label>
-                            <input
-                              type="number"
-                              step="0.10"
-                              value={auditReceivedInput}
-                              onChange={(e) => setAuditReceivedInput(e.target.value)}
-                              className="mt-1 px-3 py-1.5 rounded-lg bg-[#04241E] border border-[#97B304] text-white font-black text-sm w-36"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-[200px]">
-                            <label className="block text-[11px] font-bold text-white/70 uppercase">
-                              Observação (Opcional)
-                            </label>
-                            <input
-                              type="text"
-                              value={auditNoteInput}
-                              onChange={(e) => setAuditNoteInput(e.target.value)}
-                              placeholder="Ex: Pedágio não incluso ou taxa descontada a mais"
-                              className="mt-1 w-full px-3 py-1.5 rounded-lg bg-[#04241E] border border-white/15 text-white text-xs"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleSavePaymentAudit(ride.id)}
-                              className="px-4 py-2 rounded-lg bg-[#97B304] text-[#04241E] font-black text-xs cursor-pointer"
-                            >
-                              Salvar Conferência
-                            </button>
-                            <button
-                              onClick={() => setAuditingRideId(null)}
-                              className="px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-bold cursor-pointer"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================================
-            TAB 4: CONFIGURAÇÕES DO VEÍCULO, METAS DO SEMÁFORO & ÁREAS DE RISCO
-           =================================================================== */}
-        {activeTab === "settings" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Vehicle Cost & Semáforo Goals */}
-            <div className="lg:col-span-7 bg-[#073B32] border border-[#7C9303]/50 rounded-3xl p-5 sm:p-6 shadow-xl space-y-5">
-              <div>
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-[#7C9303]/30 text-[#97B304]">
-                  CALIBRAGEM DO SEMÁFORO GO OR NO
-                </span>
-                <h2 className="text-xl font-black text-white mt-1.5">
-                  Custos do Seu Veículo & Metas para Aceitar (GO) ou Recusar (NO)
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-white/80">Modelo do Veículo</label>
-                  <input
-                    type="text"
-                    value={vConfig.vehicleModel}
-                    onChange={(e) => handleSaveVehicleConfig({ vehicleModel: e.target.value })}
-                    className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-sm font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-white/80">Preço do Combustível (R$/L ou m³)</label>
-                  <input
-                    type="number"
-                    step="0.05"
-                    value={vConfig.fuelPricePerUnit}
-                    onChange={(e) => handleSaveVehicleConfig({ fuelPricePerUnit: parseFloat(e.target.value) || 5.89 })}
-                    className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-sm font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-white/80">Consumo Urbano (KM por Litro)</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={vConfig.consumptionPerUnit}
-                    onChange={(e) => handleSaveVehicleConfig({ consumptionPerUnit: parseFloat(e.target.value) || 10 })}
-                    className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-sm font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-white/80">Manutenção + Pneus + Óleo (R$/km)</label>
-                  <input
-                    type="number"
-                    step="0.02"
-                    value={vConfig.maintenanceCostPerKm}
-                    onChange={(e) =>
-                      handleSaveVehicleConfig({ maintenanceCostPerKm: parseFloat(e.target.value) || 0.2 })
-                    }
-                    className="w-full mt-1 px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-sm font-bold"
-                  />
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#04241E] border border-[#97B304]/50">
-                <div className="text-xs font-black uppercase text-[#97B304] mb-3">
-                  🚦 Regras do Seu Semáforo (Quando mostrar GO Verde vs NO Vermelho)
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-emerald-300">🟢 GO Verde — Mínimo R$ / KM</label>
-                    <input
-                      type="number"
-                      step="0.05"
-                      value={vConfig.greenMinPerKm}
-                      onChange={(e) => handleSaveVehicleConfig({ greenMinPerKm: parseFloat(e.target.value) || 2.0 })}
-                      className="w-full mt-1 px-3 py-2 rounded-xl bg-[#073B32] border border-emerald-400/50 text-white font-black text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-emerald-300">🟢 GO Verde — Mínimo R$ / Hora</label>
-                    <input
-                      type="number"
-                      step="1"
-                      value={vConfig.greenMinPerHour}
-                      onChange={(e) => handleSaveVehicleConfig({ greenMinPerHour: parseFloat(e.target.value) || 40 })}
-                      className="w-full mt-1 px-3 py-2 rounded-xl bg-[#073B32] border border-emerald-400/50 text-white font-black text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-amber-300">🟡 Amarelo — Mínimo R$ / KM</label>
-                    <input
-                      type="number"
-                      step="0.05"
-                      value={vConfig.yellowMinPerKm}
-                      onChange={(e) => handleSaveVehicleConfig({ yellowMinPerKm: parseFloat(e.target.value) || 1.5 })}
-                      className="w-full mt-1 px-3 py-2 rounded-xl bg-[#073B32] border border-amber-400/50 text-white font-black text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-amber-300">🟡 Amarelo — Mínimo R$ / Hora</label>
-                    <input
-                      type="number"
-                      step="1"
-                      value={vConfig.yellowMinPerHour}
-                      onChange={(e) => handleSaveVehicleConfig({ yellowMinPerHour: parseFloat(e.target.value) || 30 })}
-                      className="w-full mt-1 px-3 py-2 rounded-xl bg-[#073B32] border border-amber-400/50 text-white font-black text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Risk Zones Manager */}
-            <div className="lg:col-span-5 bg-[#073B32] border border-[#7C9303]/50 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-              <h3 className="text-lg font-black text-white flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-red-400" />
-                <span>Radar de Ruas & Bairros de Risco</span>
-              </h3>
-              <p className="text-xs text-white/75">
-                Cadastre bairros ou avenidas perigosas. Sempre que tocar uma corrida para esses locais, o{" "}
-                <strong>GoOrNo</strong> dispara um alerta vermelho na hora!
-              </p>
-
-              <div className="space-y-2.5">
-                <input
-                  type="text"
-                  placeholder="Ex: Jardim Ângela / Estrada do M'Boi Mirim"
-                  value={newRiskStreet}
-                  onChange={(e) => setNewRiskStreet(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-xs"
-                />
-                <input
-                  type="text"
-                  placeholder="Motivo (Ex: Risco alto à noite / viela sem saída)"
-                  value={newRiskReason}
-                  onChange={(e) => setNewRiskReason(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#04241E] border border-white/15 text-white text-xs"
-                />
-                <button
-                  onClick={() => handleAddRiskZone(newRiskStreet, newRiskReason)}
-                  className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Adicionar Área de Risco</span>
-                </button>
-              </div>
-
-              <div className="space-y-2 pt-2">
-                {riskZones.map((rz) => (
-                  <div
-                    key={rz.id}
-                    className="p-3 rounded-xl bg-[#04241E] border border-red-500/40 flex items-center justify-between gap-2"
-                  >
-                    <div>
-                      <div className="text-xs font-black text-red-300">⚠️ {rz.neighborhoodOrStreet}</div>
-                      <div className="text-[11px] text-white/65">{rz.reason}</div>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteRiskZone(rz.id)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-300 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================================
-            TAB 5: GERAR / INSTALAR APK ANDROID & PERMISSÕES NATIVAS
-           =================================================================== */}
-        {activeTab === "apk" && (
-          <div className="bg-[#073B32] border border-[#7C9303]/50 rounded-3xl p-6 shadow-xl space-y-5">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
-              <div>
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-[#97B304] text-[#04241E]">
-                  ARQUITETURA ANDROID NATIVA PRONTA (.APK)
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black text-white mt-2">
-                  Módulo Leitor de Tela Android & Janela Flutuante (GoOrNo APK)
-                </h2>
-                <p className="text-xs sm:text-sm text-white/75 mt-1">
-                  O pacote Android do <strong>GoOrNo</strong> já inclui o serviço nativo{" "}
-                  <code>GoOrNoAccessibilityService.java</code> configurado para ler automaticamente os cards de chamada
-                  da <strong>Uber Driver</strong>, <strong>99 Motorista</strong> e <strong>inDrive</strong>.
-                </p>
-              </div>
-              <a
-                href="/GoOrNo-v1.0.0.apk"
-                download="GoOrNo-v1.0.0.apk"
-                className="px-5 py-3 rounded-2xl bg-[#97B304] hover:bg-[#a9c805] text-[#04241E] font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shrink-0"
-              >
-                <Smartphone className="w-4 h-4" />
-                <span>📥 Baixar GoOrNo-v1.0.0.apk</span>
-              </a>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-2xl bg-[#04241E] border border-[#7C9303]/50 flex flex-col justify-between gap-3">
-                <div>
-                  <div className="text-xs font-black text-[#97B304] uppercase">Passo 1 no Celular</div>
-                  <h3 className="text-base font-black text-white mt-1">Permissão de Acessibilidade</h3>
-                  <p className="text-xs text-white/70 mt-1">
-                    Ao instalar o APK no Android, o motorista ativa a chave <strong>"GoOrNo Copiloto"</strong> em{" "}
-                    <em>Configurações ➔ Acessibilidade</em> para permitir que o app leia o preço, KM e endereço quando a
-                    corrida tocar.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    if ((window as any).AndroidBridge?.openAccessibilitySettings) {
-                      (window as any).AndroidBridge.openAccessibilitySettings();
-                    } else {
-                      showToast("Abra este botão dentro do APK instalado no Android para ir direto às Configurações!");
-                    }
-                  }}
-                  className="w-full py-2.5 px-3 rounded-xl bg-[#7C9303] hover:bg-[#97B304] text-white hover:text-[#04241E] font-black text-xs transition cursor-pointer"
-                >
-                  ⚙️ Abrir Acessibilidade no Android
-                </button>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#04241E] border border-[#7C9303]/50 flex flex-col justify-between gap-3">
-                <div>
-                  <div className="text-xs font-black text-[#97B304] uppercase">Passo 2 no Celular</div>
-                  <h3 className="text-base font-black text-white mt-1">Sobrepor a Outros Apps</h3>
-                  <p className="text-xs text-white/70 mt-1">
-                    Ativa a permissão <strong>"Aparecer sobre outros apps"</strong> para exibir o Semáforo Flutuante{" "}
-                    <strong>GO (✓) / NO (−)</strong> por cima da tela da Uber e da 99 sem fechar o mapa.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    if ((window as any).AndroidBridge?.openOverlaySettings) {
-                      (window as any).AndroidBridge.openOverlaySettings();
-                    } else {
-                      showToast("Abra este botão dentro do APK instalado no Android para ativar a Sobreposição!");
-                    }
-                  }}
-                  className="w-full py-2.5 px-3 rounded-xl bg-[#7C9303] hover:bg-[#97B304] text-white hover:text-[#04241E] font-black text-xs transition cursor-pointer"
-                >
-                  🪟 Ativar Janela Flutuante no Android
-                </button>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#04241E] border border-[#7C9303]/50 flex flex-col justify-between gap-3">
-                <div>
-                  <div className="text-xs font-black text-[#97B304] uppercase">Passo 3 (100% Automático)</div>
-                  <h3 className="text-base font-black text-white mt-1">Gravação no Histórico & Street View</h3>
-                  <p className="text-xs text-white/70 mt-1">
-                    Toda chamada lida na tela vai automaticamente para a nuvem (<code>goorno_cloud_store</code>) e libera o
-                    botão de 1 clique para abrir a rua no <strong>Google Street View</strong>!
-                  </p>
-                </div>
-                <button
-                  onClick={() => setActiveTab("copilot")}
-                  className="w-full py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs cursor-pointer"
-                >
-                  Ir para o Painel do Copiloto ➔
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================================
-            TAB 6: PAINEL ADMIN MASTER & COFRE TIME-MACHINE 7 DIAS
-           =================================================================== */}
-        {activeTab === "admin" && adminUnlocked && (
-          <div className="bg-[#073B32] border-2 border-amber-400 rounded-3xl p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-white/15 pb-4">
-              <div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase bg-amber-400 text-slate-950">
-                  👑 PAINEL ADMIN MASTER • GO OR NO
-                </span>
-                <h2 className="text-2xl font-black text-white mt-2">
-                  Gestão de Motoristas, Assinaturas & Cofre Time-Machine (7 Dias)
-                </h2>
-              </div>
-              <button
-                onClick={loadAdminOverview}
-                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span>Atualizar</span>
-              </button>
-            </div>
-
-            {adminData && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-[#04241E] border border-white/10">
-                    <h3 className="text-sm font-black text-[#97B304] uppercase mb-3">
-                      Motoristas Cadastrados ({adminData.users?.length || 0})
-                    </h3>
-                    <div className="space-y-2">
-                      {(adminData.users || []).map((u: DriverUser) => (
-                        <div
-                          key={u.id}
-                          className="p-3 rounded-xl bg-white/5 flex items-center justify-between text-xs"
-                        >
-                          <div>
-                            <div className="font-black text-white">{u.name}</div>
-                            <div className="text-white/65">{u.email} • {u.city}</div>
-                          </div>
-                          <span className="px-2.5 py-1 rounded-full bg-[#97B304] text-[#04241E] font-black uppercase">
-                            {u.plan}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-[#04241E] border border-emerald-500/40">
-                    <h3 className="text-sm font-black text-emerald-300 uppercase mb-3 flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4" />
-                      <span>Cofre Time-Machine 7 Dias (goorno_vault_snapshots)</span>
-                    </h3>
-                    <div className="space-y-2">
-                      {(adminData.snapshots || []).length === 0 ? (
-                        <p className="text-xs text-white/60">
-                          O primeiro snapshot automático é gravado na primeira operação do dia.
-                        </p>
-                      ) : (
-                        (adminData.snapshots || []).map((snap: any) => (
-                          <div
-                            key={snap.slot}
-                            className="p-3 rounded-xl bg-white/5 flex items-center justify-between text-xs"
-                          >
-                            <div>
-                              <div className="font-black text-white">{snap.slot}</div>
-                              <div className="text-white/60">
-                                {snap.updatedAt ? new Date(snap.updatedAt).toLocaleString("pt-BR") : ""} •{" "}
-                                {snap.ridesCount} corridas
-                              </div>
-                            </div>
-                            <button
-                              onClick={async () => {
-                                await fetch("/api/admin/restore-vault", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ slot: snap.slot }),
-                                });
-                                await fetchState();
-                                showToast(`Snapshot ${snap.slot} restaurado com sucesso!`);
-                              }}
-                              className="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-black cursor-pointer"
-                            >
-                              Restaurar
-                            </button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         )}
-      </main>
+
+        {/* MAIN TAB CONTENT */}
+        <main className="flex-1 px-4 pt-4 pb-6 space-y-4">
+          
+          {/* ==========================================
+              TAB 1: INÍCIO / COPILOTO (GIGU / JETMAX STYLE)
+             ========================================== */}
+          {activeTab === 'copilot' && (
+            <>
+              {/* 1. BIG POWER SWITCH CARD */}
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#B8D906]">
+                      Status do Leitor de Tela
+                    </span>
+                    <h2 className="text-lg font-black text-white mt-0.5">
+                      {copilotActive ? 'COPILOTO ATIVO NA TELA' : 'COPILOTO DESLIGADO'}
+                    </h2>
+                    <p className="text-xs text-emerald-100/75 mt-0.5">
+                      {copilotActive
+                        ? 'Lendo chamadas da Uber, 99 e inDrive automaticamente'
+                        : 'Toque no botão ao lado para abrir por cima da Uber/99'}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={toggleCopilot}
+                    className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center transition-all shadow-xl border-2 shrink-0 ${
+                      copilotActive
+                        ? 'bg-[#97B304] border-white text-[#04241E] scale-105'
+                        : 'bg-[#04241E] border-[#97B304]/60 text-[#B8D906] hover:bg-[#093129]'
+                    }`}
+                  >
+                    <Power className="w-7 h-7 stroke-[2.5]" />
+                    <span className="text-[10px] font-black mt-0.5">
+                      {copilotActive ? 'ON' : 'LIGAR'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Quick Controls for Floating Window */}
+                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => {
+                      setShowFloatingPreview(true);
+                      setFloatingCollapsed(false);
+                      if (isNative && window.AndroidBridge) {
+                        window.AndroidBridge.previewOverlayCard(
+                          currentRide.platform,
+                          currentRide.offeredPrice,
+                          currentRide.totalKm,
+                          currentRide.durationMin,
+                          currentRide.originAddress,
+                          currentRide.destinationAddress
+                        );
+                      }
+                    }}
+                    className="flex-1 py-2 px-3 rounded-xl bg-[#04241E] border border-[#97B304]/50 text-xs font-bold text-[#B8D906] flex items-center justify-center gap-1.5"
+                  >
+                    <Layers className="w-4 h-4" />
+                    Mostrar Janela Flutuante
+                  </button>
+
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isScanningPrint}
+                    className="py-2 px-3 rounded-xl bg-[#0D4A3E] border border-white/15 text-xs font-bold text-white flex items-center justify-center gap-1.5"
+                  >
+                    <Camera className="w-4 h-4 text-[#B8D906]" />
+                    {isScanningPrint ? 'Lendo...' : 'Ler Print'}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePrintUpload}
+                  />
+                </div>
+              </div>
+
+              {/* 2. ANDROID PERMISSIONS CHECKLIST (2 TAPS LIKE GIGU/JETMAX) */}
+              <div className="rounded-2xl bg-[#073B32]/90 border border-white/10 p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-200">
+                    Permissões para Abrir Sobre Uber e 99
+                  </span>
+                  <span className="text-[11px] font-bold text-[#B8D906]">
+                    {isNative ? 'App Android Nativo' : 'Modo Web / APK'}
+                  </span>
+                </div>
+
+                {/* Permissão 1: Sobrepor a outros apps */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#04241E] border border-white/10">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs ${
+                        hasOverlayPerm || copilotActive
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      }`}
+                    >
+                      1
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Janela Flutuante (Sobrepor Apps)</div>
+                      <div className="text-[11px] text-white/60">
+                        Abre o card transparente por cima da Uber e 99
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (isNative && window.AndroidBridge) {
+                        window.AndroidBridge.openOverlaySettings();
+                      } else {
+                        setShowFloatingPreview(true);
+                        setFloatingCollapsed(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[#97B304] text-[#04241E] text-xs font-black shrink-0"
+                  >
+                    {hasOverlayPerm ? 'Ativo ✓' : 'Ativar'}
+                  </button>
+                </div>
+
+                {/* Permissão 2: Acessibilidade Leitor de Tela */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#04241E] border border-white/10">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs ${
+                        hasAccessPerm || copilotActive
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      }`}
+                    >
+                      2
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Leitor de Tela (Acessibilidade)</div>
+                      <div className="text-[11px] text-white/60">
+                        Lê R$, KM, minutos e endereços automaticamente
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (isNative && window.AndroidBridge) {
+                        window.AndroidBridge.openAccessibilitySettings();
+                      } else {
+                        setCopilotActive(true);
+                        setShowFloatingPreview(true);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[#97B304] text-[#04241E] text-xs font-black shrink-0"
+                  >
+                    {hasAccessPerm ? 'Ativo ✓' : 'Ativar'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. CORRIDA ACEITA / ÚLTIMA CAPTURADA -> STREET VIEW EM 1 TOQUE */}
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#B8D906]">
+                      Avaliação de Segurança Pós-Aceite
+                    </span>
+                    <h3 className="text-sm font-black text-white">
+                      Última Corrida Lida · Toque no Endereço p/ Street View
+                    </h3>
+                  </div>
+                  <span
+                    className="px-2 py-0.5 rounded text-[11px] font-black"
+                    style={{ backgroundColor: vStyle.bg }}
+                  >
+                    R$ {currentRide.offeredPrice.toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Endereço de Origem (Clicável -> Street View) */}
+                <button
+                  onClick={() => openStreetView('Embarque (Origem)', currentRide.originAddress)}
+                  className="w-full text-left p-3 rounded-xl bg-[#04241E] hover:bg-[#063028] border border-[#97B304]/40 transition flex items-center justify-between gap-2 group"
+                >
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <MapPin className="w-4 h-4 text-[#B8D906] shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold uppercase text-[#B8D906]">
+                        Embarque · {currentRide.pickupKm} km até o passageiro
+                      </div>
+                      <div className="text-xs font-bold text-white truncate">
+                        {currentRide.originAddress}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-[#073B32] border border-[#97B304]/50 text-[11px] font-black text-[#B8D906] shrink-0 flex items-center gap-1">
+                    Street View
+                    <ExternalLink className="w-3 h-3" />
+                  </span>
+                </button>
+
+                {/* Endereço de Destino (Clicável -> Street View) */}
+                <button
+                  onClick={() => openStreetView('Desembarque (Destino)', currentRide.destinationAddress)}
+                  className="w-full text-left p-3 rounded-xl bg-[#04241E] hover:bg-[#063028] border border-emerald-400/30 transition flex items-center justify-between gap-2 group"
+                >
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <Navigation className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold uppercase text-emerald-300">
+                        Destino Final · Viagem de {currentRide.tripKm} km ({currentRide.durationMin} min)
+                      </div>
+                      <div className="text-xs font-bold text-white truncate">
+                        {currentRide.destinationAddress}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-[#073B32] border border-emerald-400/40 text-[11px] font-black text-emerald-300 shrink-0 flex items-center gap-1">
+                    Street View
+                    <ExternalLink className="w-3 h-3" />
+                  </span>
+                </button>
+
+                {/* Testar exemplos reais de corrida (1 toque) */}
+                <div className="pt-1">
+                  <div className="text-[11px] font-bold text-white/60 mb-1.5">
+                    Testar leitura da janela flutuante com chamadas reais:
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      onClick={() =>
+                        triggerFloatingDemo(
+                          'UBER',
+                          32.9,
+                          1.2,
+                          8.8,
+                          18,
+                          'Av. Paulista, 1578 - Bela Vista, São Paulo',
+                          'Rua Funchal, 418 - Vila Olímpia, São Paulo'
+                        )
+                      }
+                      className="py-2 px-2 rounded-xl bg-emerald-600/25 border border-emerald-400/50 text-[11px] font-black text-emerald-200 hover:bg-emerald-600/40"
+                    >
+                      🟢 Uber Boa
+                    </button>
+                    <button
+                      onClick={() =>
+                        triggerFloatingDemo(
+                          '99',
+                          17.5,
+                          2.1,
+                          7.9,
+                          22,
+                          'Rua da Consolação, 2200 - São Paulo',
+                          'Terminal Barra Funda - São Paulo'
+                        )
+                      }
+                      className="py-2 px-2 rounded-xl bg-amber-500/25 border border-amber-400/50 text-[11px] font-black text-amber-200 hover:bg-amber-500/40"
+                    >
+                      🟡 99 Média
+                    </button>
+                    <button
+                      onClick={() =>
+                        triggerFloatingDemo(
+                          'UBER',
+                          11.2,
+                          3.4,
+                          6.6,
+                          24,
+                          'Av. Brasil, 4500 - Rio de Janeiro',
+                          'Estrada do Galeão, 1200 - Rio de Janeiro'
+                        )
+                      }
+                      className="py-2 px-2 rounded-xl bg-red-600/25 border border-red-400/50 text-[11px] font-black text-red-200 hover:bg-red-600/40"
+                    >
+                      🔴 Uber Ruim
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. DOWNLOAD APK NATIVO + DICA PLAY PROTECT */}
+              {!isNative && (
+                <div className="rounded-2xl bg-[#04241E] border border-[#97B304]/40 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-[#B8D906]" />
+                      <span className="text-xs font-black text-white">
+                        Instalar APK Android Nativo (v1.0.0)
+                      </span>
+                    </div>
+                    <a
+                      href="/GoOrNo-v1.0.0.apk"
+                      download="GoOrNo-v1.0.0.apk"
+                      className="px-3 py-1.5 rounded-xl bg-[#97B304] text-[#04241E] text-xs font-black flex items-center gap-1"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Baixar APK
+                    </a>
+                  </div>
+                  <p className="text-[11px] text-white/70 leading-relaxed">
+                    <strong>Dica se o Google Play Protect avisar:</strong> Como o GoOrNo usa{' '}
+                    <em>Leitor de Tela + Janela Flutuante sobre a Uber/99</em> (igual ao GigU e JetMax), toque em{' '}
+                    <strong className="text-[#B8D906]">"Mais detalhes" → "Instalar assim mesmo"</strong> ou pause a verificação na Play Store → Perfil → Play Protect → ⚙️.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ==========================================================
+              TAB 2: JANELA FLUTUANTE & TRANSPARÊNCIA (OPACITY CONTROL)
+             ========================================================== */}
+          {activeTab === 'overlay' && (
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4 space-y-4">
+                <div>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[#B8D906]">
+                    Configuração Visual Sobre Uber e 99
+                  </span>
+                  <h2 className="text-base font-black text-white mt-0.5">
+                    Transparência da Janela Flutuante
+                  </h2>
+                  <p className="text-xs text-white/70 mt-0.5">
+                    Deixe o card mais transparente para enxergar o mapa da Uber e da 99 por baixo sem atrapalhar o toque.
+                  </p>
+                </div>
+
+                {/* SLIDER DE TRANSPARÊNCIA / OPACIDADE (25% a 100%) */}
+                <div className="p-3.5 rounded-xl bg-[#04241E] border border-[#97B304]/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Eye className="w-4 h-4 text-[#B8D906]" />
+                      Opacidade / Transparência da Janela
+                    </span>
+                    <span className="text-sm font-black text-[#B8D906]">
+                      {config.overlayOpacity}%
+                    </span>
+                  </div>
+
+                  <input
+                    type="range"
+                    min={25}
+                    max={100}
+                    step={5}
+                    value={config.overlayOpacity}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setShowFloatingPreview(true);
+                      setFloatingCollapsed(false);
+                      saveNewConfig({ ...config, overlayOpacity: val });
+                    }}
+                    className="w-full accent-[#97B304] cursor-pointer h-2 rounded-lg"
+                  />
+
+                  <div className="flex justify-between text-[10px] font-bold text-white/50">
+                    <span>25% (Bem Transparente)</span>
+                    <span>60% (Médio)</span>
+                    <span>100% (Sólido)</span>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="grid grid-cols-4 gap-1.5 pt-2">
+                    {[35, 55, 75, 95].map((pct) => (
+                      <button
+                        key={pct}
+                        onClick={() => {
+                          setShowFloatingPreview(true);
+                          setFloatingCollapsed(false);
+                          saveNewConfig({ ...config, overlayOpacity: pct });
+                        }}
+                        className={`py-1.5 rounded-lg text-xs font-black border transition ${
+                          config.overlayOpacity === pct
+                            ? 'bg-[#97B304] text-[#04241E] border-white'
+                            : 'bg-[#073B32] text-white/80 border-white/10'
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* TEMPO DO CARD NA TELA ANTES DE MINIMIZAR SOZINHO */}
+                <div className="p-3.5 rounded-xl bg-[#04241E] border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-emerald-300" />
+                      Tempo Aberto na Tela (Auto-Minimizar)
+                    </span>
+                    <span className="text-sm font-black text-emerald-300">
+                      {config.overlayDurationSec} seg
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[5, 8, 10, 15].map((sec) => (
+                      <button
+                        key={sec}
+                        onClick={() => saveNewConfig({ ...config, overlayDurationSec: sec })}
+                        className={`py-1.5 rounded-lg text-xs font-black border transition ${
+                          config.overlayDurationSec === sec
+                            ? 'bg-emerald-500 text-[#04241E] border-white'
+                            : 'bg-[#073B32] text-white/80 border-white/10'
+                        }`}
+                      >
+                        {sec} seg
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* VOZ DO COPILOTO (NARRAÇÃO R$/KM) */}
+                <div className="p-3.5 rounded-xl bg-[#04241E] border border-white/10 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-white">Falar Nota da Corrida em Voz Alta</div>
+                    <div className="text-[11px] text-white/60">
+                      Narra R$/km e semáforo sem você precisar tirar o olho do trânsito
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => saveNewConfig({ ...config, voiceEnabled: !config.voiceEnabled })}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-black ${
+                      config.voiceEnabled
+                        ? 'bg-[#97B304] text-[#04241E]'
+                        : 'bg-white/10 text-white/60'
+                    }`}
+                  >
+                    {config.voiceEnabled ? 'Voz Ligada' : 'Mudo'}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowFloatingPreview(true);
+                    setFloatingCollapsed(false);
+                    if (isNative && window.AndroidBridge) {
+                      window.AndroidBridge.previewOverlayCard(
+                        currentRide.platform,
+                        currentRide.offeredPrice,
+                        currentRide.totalKm,
+                        currentRide.durationMin,
+                        currentRide.originAddress,
+                        currentRide.destinationAddress
+                      );
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl bg-[#97B304] text-[#04241E] font-black text-xs uppercase tracking-wider shadow-lg"
+                >
+                  Testar Janela Flutuante com {config.overlayOpacity}% de Opacidade
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ==========================================================
+              TAB 3: METAS DO SEMÁFORO & CUSTO DO CARRO (R$/KM E R$/H)
+             ========================================================== */}
+          {activeTab === 'targets' && (
+            <div className="space-y-4">
+              {/* Metas do Semáforo */}
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4 space-y-3.5">
+                <div>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[#B8D906]">
+                    Critérios do Seu Semáforo
+                  </span>
+                  <h2 className="text-base font-black text-white">
+                    Quanto Você Quer Ganhar por KM e Hora?
+                  </h2>
+                </div>
+
+                {/* VERDE (ACEITAR) */}
+                <div className="p-3 rounded-xl bg-[#04241E] border border-emerald-500/40 space-y-2.5">
+                  <div className="text-xs font-black text-emerald-400">
+                    🟢 SINAL VERDE (Corrida Ótima - Aceitar)
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] text-white/70 block mb-1">Mínimo R$ / KM</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={config.greenPerKm}
+                        onChange={(e) =>
+                          saveNewConfig({ ...config, greenPerKm: Number(e.target.value) })
+                        }
+                        className="w-full bg-[#073B32] border border-white/15 rounded-lg px-3 py-2 text-sm font-black text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-white/70 block mb-1">Mínimo R$ / Hora</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={config.greenPerHour}
+                        onChange={(e) =>
+                          saveNewConfig({ ...config, greenPerHour: Number(e.target.value) })
+                        }
+                        className="w-full bg-[#073B32] border border-white/15 rounded-lg px-3 py-2 text-sm font-black text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* AMARELO (ATENÇÃO) */}
+                <div className="p-3 rounded-xl bg-[#04241E] border border-amber-500/40 space-y-2.5">
+                  <div className="text-xs font-black text-amber-300">
+                    🟡 SINAL AMARELO (Corrida Média - Avaliar)
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] text-white/70 block mb-1">Mínimo R$ / KM</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={config.yellowPerKm}
+                        onChange={(e) =>
+                          saveNewConfig({ ...config, yellowPerKm: Number(e.target.value) })
+                        }
+                        className="w-full bg-[#073B32] border border-white/15 rounded-lg px-3 py-2 text-sm font-black text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-white/70 block mb-1">Mínimo R$ / Hora</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={config.yellowPerHour}
+                        onChange={(e) =>
+                          saveNewConfig({ ...config, yellowPerHour: Number(e.target.value) })
+                        }
+                        className="w-full bg-[#073B32] border border-white/15 rounded-lg px-3 py-2 text-sm font-black text-white"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-[11px] text-red-300 pt-1">
+                    🔴 Abaixo de <strong>R$ {config.yellowPerKm.toFixed(2)}/km</strong> ou{' '}
+                    <strong>R$ {config.yellowPerHour}/h</strong> o card ficará <strong>VERMELHO (Recusar)</strong>.
+                  </div>
+                </div>
+              </div>
+
+              {/* Custo por KM do Veículo */}
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-black uppercase tracking-wider text-[#B8D906]">
+                      Cálculo de Lucro Líquido Real
+                    </span>
+                    <h3 className="text-sm font-black text-white">Custo do Seu Veículo</h3>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-[#04241E] border border-[#97B304]/50 text-xs font-black text-[#B8D906]">
+                    R$ {costPerKm.toFixed(2)} / km
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[10px] text-white/70 block mb-1">Combustível (R$/L)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={config.fuelPricePerLiter}
+                      onChange={(e) =>
+                        saveNewConfig({ ...config, fuelPricePerLiter: Number(e.target.value) })
+                      }
+                      className="w-full bg-[#04241E] border border-white/15 rounded-lg px-2.5 py-2 text-xs font-black text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-white/70 block mb-1">Consumo (km/L)</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={config.carKmPerLiter}
+                      onChange={(e) =>
+                        saveNewConfig({ ...config, carKmPerLiter: Number(e.target.value) })
+                      }
+                      className="w-full bg-[#04241E] border border-white/15 rounded-lg px-2.5 py-2 text-xs font-black text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-white/70 block mb-1">Manut. (R$/km)</label>
+                    <input
+                      type="number"
+                      step="0.05"
+                      value={config.maintenancePerKm}
+                      onChange={(e) =>
+                        saveNewConfig({ ...config, maintenancePerKm: Number(e.target.value) })
+                      }
+                      className="w-full bg-[#04241E] border border-white/15 rounded-lg px-2.5 py-2 text-xs font-black text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==========================================================
+              TAB 4: HISTÓRICO & CONFERÊNCIA DE PAGAMENTO UBER / 99
+             ========================================================== */}
+          {activeTab === 'history' && (
+            <div className="space-y-3">
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-3.5">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#B8D906]">
+                  Auditoria do Motorista
+                </span>
+                <h2 className="text-base font-black text-white">
+                  Histórico de Chamadas & Conferência de Valor
+                </h2>
+                <p className="text-xs text-white/70 mt-0.5">
+                  Confira se o valor pago pela Uber/99 ao final da corrida bateu com o valor ofertado na tela e abra o Street View de qualquer endereço.
+                </p>
+              </div>
+
+              {rides.map((r) => {
+                const vc = getVerdictColors(r.verdict);
+                const diff =
+                  r.receivedPrice !== null ? Number((r.receivedPrice - r.offeredPrice).toFixed(2)) : null;
+
+                return (
+                  <div
+                    key={r.id}
+                    className="rounded-2xl bg-[#073B32] border border-white/10 p-3.5 space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded bg-[#04241E] text-[11px] font-black text-white">
+                          {r.platform}
+                        </span>
+                        <span
+                          className="px-2 py-0.5 rounded text-[10px] font-black text-white"
+                          style={{ backgroundColor: vc.bg }}
+                        >
+                          R$ {r.pricePerKm.toFixed(2)}/km · R$ {Math.round(r.pricePerHour)}/h
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-white/60">
+                        {new Date(r.timestamp).toLocaleTimeString('pt-BR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+
+                    {/* Valores: Ofertado vs Recebido */}
+                    <div className="grid grid-cols-3 gap-2 bg-[#04241E] rounded-xl p-2.5 border border-white/10 text-center">
+                      <div>
+                        <div className="text-[10px] text-white/60">Ofertado na Tela</div>
+                        <div className="text-sm font-black text-white">
+                          R$ {r.offeredPrice.toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="border-x border-white/10">
+                        <div className="text-[10px] text-white/60">Lucro Líquido</div>
+                        <div className="text-sm font-black text-[#B8D906]">
+                          R$ {r.netProfit.toFixed(2)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-white/60">Valor Recebido</div>
+                        {r.receivedPrice !== null ? (
+                          <div
+                            className={`text-sm font-black ${
+                              diff && diff < 0 ? 'text-red-400' : 'text-emerald-400'
+                            }`}
+                          >
+                            R$ {r.receivedPrice.toFixed(2)}
+                            {diff !== null && diff < 0 && ` (${diff.toFixed(2)})`}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setEditingPaymentId(r.id);
+                              setReceivedInput(String(r.offeredPrice));
+                            }}
+                            className="text-xs font-black text-[#B8D906] underline mt-0.5"
+                          >
+                            Conferir
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Input de conferência de pagamento */}
+                    {editingPaymentId === r.id && (
+                      <div className="flex items-center gap-2 bg-[#04241E] p-2 rounded-xl border border-[#97B304]">
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="Valor pago no app (R$)"
+                          value={receivedInput}
+                          onChange={(e) => setReceivedInput(e.target.value)}
+                          className="flex-1 bg-[#073B32] rounded-lg px-2.5 py-1.5 text-xs font-black text-white"
+                        />
+                        <button
+                          onClick={() => handleVerifyPayment(r.id)}
+                          className="px-3 py-1.5 rounded-lg bg-[#97B304] text-[#04241E] text-xs font-black flex items-center gap-1"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Salvar
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Endereços Clicáveis para Street View */}
+                    <div className="space-y-1 text-xs">
+                      <button
+                        onClick={() => openStreetView('Origem da Corrida', r.originAddress)}
+                        className="w-full text-left flex items-center justify-between text-white/85 hover:text-[#B8D906] py-1 px-2 rounded bg-[#04241E]/60"
+                      >
+                        <span className="truncate">📍 Origem: {r.originAddress}</span>
+                        <span className="text-[10px] font-bold text-[#B8D906] shrink-0 ml-2">
+                          Street View ↗
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => openStreetView('Destino da Corrida', r.destinationAddress)}
+                        className="w-full text-left flex items-center justify-between text-white/85 hover:text-emerald-300 py-1 px-2 rounded bg-[#04241E]/60"
+                      >
+                        <span className="truncate">🏁 Destino: {r.destinationAddress}</span>
+                        <span className="text-[10px] font-bold text-emerald-300 shrink-0 ml-2">
+                          Street View ↗
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+
+        {/* STREET VIEW 360° MODAL (INSPEÇÃO DE SEGURANÇA DE RUA EM 1 TOQUE) */}
+        {streetViewModal.open && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-3">
+            <div className="w-full max-w-md bg-[#073B32] border-2 border-[#97B304] rounded-2xl overflow-hidden shadow-2xl">
+              <div className="p-3.5 bg-[#04241E] flex items-center justify-between border-b border-white/10">
+                <div className="min-w-0 pr-2">
+                  <span className="text-[10px] font-black uppercase text-[#B8D906]">
+                    {streetViewModal.label}
+                  </span>
+                  <h4 className="text-xs font-bold text-white truncate">
+                    {streetViewModal.address}
+                  </h4>
+                </div>
+                <button
+                  onClick={() => setStreetViewModal({ open: false, label: '', address: '' })}
+                  className="px-2.5 py-1 rounded-lg bg-white/10 text-xs font-black text-white"
+                >
+                  Fechar ✕
+                </button>
+              </div>
+
+              {/* Embedded Interactive Map + Direct Google Street View 360 App Launcher */}
+              <div className="h-64 w-full bg-black relative">
+                <iframe
+                  title="Google Maps View"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(
+                    streetViewModal.address
+                  )}&t=k&z=18&ie=UTF8&iwloc=&output=embed`}
+                />
+              </div>
+
+              <div className="p-3.5 space-y-2 bg-[#073B32]">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    streetViewModal.address
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#97B304] text-[#04241E] font-black text-xs flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Abrir Foto 360° da Rua no App Google Street View
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BOTTOM NAVIGATION BAR (4 SIMPLE TABS LIKE GIGU / JETMAX) */}
+        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#073B32] border-t border-[#126152] grid grid-cols-4 py-1.5 px-2 z-30">
+          <button
+            onClick={() => setActiveTab('copilot')}
+            className={`flex flex-col items-center justify-center py-1 rounded-xl transition ${
+              activeTab === 'copilot' ? 'text-[#B8D906] font-black' : 'text-white/60'
+            }`}
+          >
+            <Power className="w-5 h-5" />
+            <span className="text-[11px] mt-0.5">Copiloto</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('overlay')}
+            className={`flex flex-col items-center justify-center py-1 rounded-xl transition ${
+              activeTab === 'overlay' ? 'text-[#B8D906] font-black' : 'text-white/60'
+            }`}
+          >
+            <Eye className="w-5 h-5" />
+            <span className="text-[11px] mt-0.5">Transparência</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('targets')}
+            className={`flex flex-col items-center justify-center py-1 rounded-xl transition ${
+              activeTab === 'targets' ? 'text-[#B8D906] font-black' : 'text-white/60'
+            }`}
+          >
+            <Sliders className="w-5 h-5" />
+            <span className="text-[11px] mt-0.5">Metas R$/km</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex flex-col items-center justify-center py-1 rounded-xl transition ${
+              activeTab === 'history' ? 'text-[#B8D906] font-black' : 'text-white/60'
+            }`}
+          >
+            <History className="w-5 h-5" />
+            <span className="text-[11px] mt-0.5">Histórico</span>
+          </button>
+        </nav>
+      </div>
     </div>
   );
 }
+
+export default App;

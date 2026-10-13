@@ -10,6 +10,18 @@ import {
   RideRecord,
   DriverUser,
 } from "./store.js";
+import {
+  checkOrActivateLicense,
+  getLicense,
+  saveLicense,
+  listAllLicenses,
+  applyPayment,
+  cleanPhone,
+  formatPhoneBr,
+  LicenseRecord,
+} from "./licenseStore.js";
+import { createPixCharge, verifyPaymentStatus } from "./asaas.js";
+import { sendFraudAlertEmail } from "./fraudAlert.js";
 
 export const app = express();
 app.use(express.json({ limit: "5mb" }));
@@ -486,6 +498,272 @@ app.post("/api/admin/restore-vault", async (req, res) => {
     res.json({ ok: true, restored });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || "Erro ao restaurar snapshot" });
+  }
+});
+
+// =========================================================================
+// GOORNO MONETIZAÇÃO, LICENÇAS E ANTI-FRAUDE (ASAAS + PIX + PAINEL ADMIN)
+// =========================================================================
+
+function checkAdminAuth(req: express.Request): boolean {
+  const masterPass = process.env.ADMIN_PASSWORD || "goorno2026admin";
+  const passed =
+    req.headers["x-admin-password"] ||
+    req.query.adminPassword ||
+    req.body?.adminPassword;
+  return passed === masterPass;
+}
+
+// 1. Check or Activate Driver License (App Startup & Background Sync)
+app.post("/api/license/check-or-activate", async (req, res) => {
+  try {
+    const { whatsapp, deviceId, deviceModel, action = "check" } = req.body || {};
+    const clientIp = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "");
+
+    if (!whatsapp || !deviceId) {
+      return res.status(400).json({
+        allowed: false,
+        message: "WhatsApp e ID do Aparelho são obrigatórios.",
+      });
+    }
+
+    const result = await checkOrActivateLicense({
+      whatsapp: String(whatsapp),
+      deviceId: String(deviceId),
+      deviceModel: deviceModel ? String(deviceModel) : undefined,
+      action: action as "check" | "transfer",
+      clientIp,
+    });
+
+    // Se houve alerta de fraude por trocas excessivas, dispara email imediatamente
+    if (result.fraudAlert && result.license) {
+      sendFraudAlertEmail({
+        whatsapp: result.license.whatsapp,
+        fromDevice: result.license.transfers?.slice(-2)?.[0]?.fromDevice || result.license.deviceId,
+        toDevice: String(deviceId),
+        transfersCount: result.license.deviceTransfersCount || 0,
+        reason: result.license.fraudReason || "Trocas excessivas de aparelho",
+        clientIp,
+        timestamp: new Date().toISOString(),
+      }).catch((e) => console.warn("[fraudAlert] Erro em background:", e));
+    }
+
+    res.json(result);
+  } catch (err: any) {
+    console.error("[license] Erro em check-or-activate:", err);
+    res.status(500).json({ allowed: false, message: err?.message || "Erro interno ao validar licença." });
+  }
+});
+
+// 2. Create Asaas PIX Charge for Subscription
+app.post("/api/license/create-pix", async (req, res) => {
+  try {
+    const { whatsapp, plan = "mensal" } = req.body || {};
+    if (!whatsapp) {
+      return res.status(400).json({ error: "Informe o WhatsApp do motorista." });
+    }
+
+    const pixData = await createPixCharge({
+      whatsapp: String(whatsapp),
+      plan: plan === "vitalicio" ? "vitalicio" : "mensal",
+    });
+
+    res.json({ ok: true, pix: pixData });
+  } catch (err: any) {
+    console.error("[license] Erro ao gerar PIX Asaas:", err);
+    res.status(500).json({ error: err?.message || "Erro ao conectar com gateway PIX Asaas." });
+  }
+});
+
+// 3. Manual / Instant Payment Status Check
+app.get("/api/license/check-payment/:paymentId", async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { phone } = req.query;
+    const status = await verifyPaymentStatus(paymentId);
+
+    if (status.confirmed) {
+      const targetPhone = phone
+        ? String(phone)
+        : status.externalReference?.replace("goorno_tel_", "") || "";
+
+      if (targetPhone) {
+        const updated = await applyPayment({
+          phone: targetPhone,
+          amount: status.value,
+          paymentId: paymentId,
+        });
+        return res.json({ confirmed: true, updatedLicense: updated });
+      }
+    }
+
+    res.json({ confirmed: status.confirmed, status: status.status });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao verificar pagamento." });
+  }
+});
+
+// 4. Asaas Webhook (Automated Payment Notifications)
+app.post("/api/goorno-webhook", async (req, res) => {
+  try {
+    const body = req.body || {};
+    const event = String(body.event || "");
+    const payment = body.payment || {};
+
+    console.log(`[Asaas Webhook] Evento recebido: ${event} para cobrança ${payment.id}`);
+
+    const APPROVED_EVENTS = ["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED_IN_CASH"];
+    if (APPROVED_EVENTS.includes(event)) {
+      let phone = "";
+      if (payment.externalReference && payment.externalReference.startsWith("goorno_tel_")) {
+        phone = payment.externalReference.replace("goorno_tel_", "");
+      } else if (payment.customer) {
+        // Fallback: try customer mobilePhone
+        try {
+          const custRes = await fetch(`https://api.asaas.com/v3/customers/${payment.customer}`, {
+            headers: { access_token: process.env.ASAAS_API_KEY || "" },
+          });
+          if (custRes.ok) {
+            const custJson: any = await custRes.json();
+            phone = custJson.mobilePhone || custJson.phone || "";
+          }
+        } catch {}
+      }
+
+      if (phone) {
+        const updated = await applyPayment({
+          phone: phone,
+          amount: Number(payment.value || 0),
+          paymentId: String(payment.id || "webhook"),
+        });
+        console.log(`[Asaas Webhook] Licença ativada/renovada com sucesso para ${updated.whatsapp}`);
+      } else {
+        console.warn(`[Asaas Webhook] Pagamento aprovado mas nenhum telefone vinculado encontrado: ${payment.id}`);
+      }
+    }
+
+    res.status(200).json({ received: true });
+  } catch (err: any) {
+    console.error("[Asaas Webhook] Erro:", err);
+    res.status(200).json({ received: true, error: err?.message });
+  }
+});
+
+// 5. Admin Dashboard: Real-time Stats & Users / Licenses
+app.get("/api/admin/stats-and-licenses", async (req, res) => {
+  if (!checkAdminAuth(req)) {
+    return res.status(401).json({ error: "Acesso não autorizado ao painel admin." });
+  }
+
+  try {
+    const licenses = await listAllLicenses();
+    const nowMs = Date.now();
+
+    let totalUsers = licenses.length;
+    let activePaid = 0;
+    let inTrial = 0;
+    let expired = 0;
+    let blocked = 0;
+    let fraudAlerts = 0;
+    let estimatedMonthlyRevenue = 0;
+
+    for (const lic of licenses) {
+      if (lic.fraudSuspicion) fraudAlerts++;
+
+      if (lic.status === "blocked") {
+        blocked++;
+      } else if (lic.plano === "vitalicio" || lic.plano === "cortesia") {
+        activePaid++;
+      } else if (lic.plano === "mensal") {
+        const validMs = new Date(lic.validoAte || 0).getTime();
+        if (validMs >= nowMs) {
+          activePaid++;
+          estimatedMonthlyRevenue += 9.90;
+        } else {
+          expired++;
+        }
+      } else if (lic.plano === "trial") {
+        const trialMs = new Date(lic.trialEndsAt || 0).getTime();
+        if (trialMs >= nowMs) {
+          inTrial++;
+        } else {
+          expired++;
+        }
+      }
+    }
+
+    res.json({
+      stats: {
+        totalUsers,
+        activePaid,
+        inTrial,
+        expired,
+        blocked,
+        fraudAlerts,
+        estimatedMonthlyRevenue: Number(estimatedMonthlyRevenue.toFixed(2)),
+      },
+      licenses,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao carregar estatísticas do admin." });
+  }
+});
+
+// 6. Admin Actions: 1-Click Manage Driver License
+app.post("/api/admin/manage-license", async (req, res) => {
+  if (!checkAdminAuth(req)) {
+    return res.status(401).json({ error: "Acesso não autorizado." });
+  }
+
+  try {
+    const { whatsapp, action, days, note } = req.body || {};
+    const phone = cleanPhone(String(whatsapp || ""));
+    let lic = await getLicense(phone);
+
+    if (!lic) {
+      return res.status(404).json({ error: "Licença não encontrada para este WhatsApp." });
+    }
+
+    const now = new Date();
+
+    if (action === "add_days") {
+      const addedDays = Number(days || 30);
+      const baseMs = Math.max(now.getTime(), new Date(lic.validoAte || 0).getTime());
+      const newValid = new Date(baseMs + addedDays * 24 * 60 * 60 * 1000);
+      lic.validoAte = newValid.toISOString();
+      lic.status = "active";
+      if (lic.plano === "trial") lic.plano = "mensal";
+      lic.notes = `${lic.notes || ""}\n+${addedDays} dias adicionados manualmente via Admin em ${now.toLocaleString("pt-BR")}`.trim();
+    } else if (action === "set_lifetime" || action === "set_courtesy") {
+      lic.status = "active";
+      lic.plano = action === "set_lifetime" ? "vitalicio" : "cortesia";
+      lic.validoAte = new Date("2099-12-31T23:59:59.000Z").toISOString();
+      lic.notes = `${lic.notes || ""}\nPlano ${lic.plano.toUpperCase()} concedido via Admin em ${now.toLocaleString("pt-BR")}`.trim();
+    } else if (action === "block") {
+      lic.status = "blocked";
+      lic.notes = `${lic.notes || ""}\nBloqueado via Admin em ${now.toLocaleString("pt-BR")}`.trim();
+    } else if (action === "unblock") {
+      lic.status = "active";
+      lic.fraudSuspicion = false;
+      lic.fraudReason = undefined;
+      lic.notes = `${lic.notes || ""}\nDesbloqueado via Admin em ${now.toLocaleString("pt-BR")}`.trim();
+    } else if (action === "reset_device") {
+      lic.deviceId = "";
+      lic.deviceTransfersCount = 0;
+      lic.transfers = [];
+      lic.fraudSuspicion = false;
+      lic.fraudReason = undefined;
+      lic.notes = `${lic.notes || ""}\nAparelho desvinculado e contador zerado via Admin em ${now.toLocaleString("pt-BR")}`.trim();
+    }
+
+    if (note) {
+      lic.notes = `${lic.notes || ""}\nNota: ${note}`.trim();
+    }
+
+    await saveLicense(lic);
+    res.json({ ok: true, license: lic });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao atualizar licença." });
   }
 });
 

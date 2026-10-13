@@ -1,0 +1,7 @@
+android/
+android-native-service/
+*.apk
+.data/
+node_modules/
+dist/
+.git/
