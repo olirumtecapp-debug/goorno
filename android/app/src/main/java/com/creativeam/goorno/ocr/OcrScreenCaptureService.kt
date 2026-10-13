@@ -191,6 +191,9 @@ class OcrScreenCaptureService : Service() {
                         block.lines.map { it.text }
                     }.filter { txt ->
                         !txt.contains("GoOrNo", ignoreCase = true) &&
+                            !txt.contains("Aceitar", ignoreCase = true) &&
+                            !txt.contains("Avaliar", ignoreCase = true) &&
+                            !txt.contains("Recusar", ignoreCase = true) &&
                             !txt.contains("COMPENSA", ignoreCase = true) &&
                             !txt.contains("AVALIAR", ignoreCase = true)
                     }

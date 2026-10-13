@@ -150,11 +150,15 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val prevKm = prefs.getFloat("total_km", -1f).toDouble()
                     val prevGrossHr = prefs.getFloat("gross_hr", -1f).toDouble()
 
-                    // Preserva endereços e métricas já capturadas caso a nova leitura parcial venha sem eles!
-                    val mergedOrigin = offer.originAddress?.takeIf { it.isNotBlank() }
-                        ?: if (isSameRideOrQuickUpdate && prevOrigin.isNotBlank()) prevOrigin else prevOrigin
-                    val mergedDest = offer.destinationAddress?.takeIf { it.isNotBlank() }
-                        ?: if (isSameRideOrQuickUpdate && prevDest.isNotBlank()) prevDest else prevDest
+                    // Preserva endereços e métricas já capturadas caso a nova leitura parcial venha sem eles,
+                    // mas NUNCA herda endereços de corridas antigas diferentes!
+                    val sanitizedOrigin = offer.originAddress?.let { BrazilianOfferParser.cleanAddressCandidate(it) }
+                    val sanitizedDest = offer.destinationAddress?.let { BrazilianOfferParser.cleanAddressCandidate(it) }
+
+                    val mergedOrigin = sanitizedOrigin?.takeIf { it.isNotBlank() }
+                        ?: if (isSameRideOrQuickUpdate && prevOrigin.isNotBlank()) prevOrigin else ""
+                    val mergedDest = sanitizedDest?.takeIf { it.isNotBlank() }
+                        ?: if (isSameRideOrQuickUpdate && prevDest.isNotBlank()) prevDest else ""
 
                     val mergedMin = latestEvaluation.totalConsideredDurationMin
                         ?: if (isSameRideOrQuickUpdate && prevMin > 0) prevMin else null
@@ -238,7 +242,7 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                 val hasRide = prefs.getBoolean("has_ride", false)
                 if (hasRide) {
                     val verdictName = prefs.getString("verdict_name", TrafficLightVerdict.GREEN.name) ?: TrafficLightVerdict.GREEN.name
-                    val verdictLabel = prefs.getString("verdict_label", "COMPENSA") ?: "COMPENSA"
+                    val verdictLabel = prefs.getString("verdict_label", "Aceitar") ?: "Aceitar"
                     val sourceApp = prefs.getString("source_app", "99 Motorista") ?: "99 Motorista"
                     val price = prefs.getFloat("price", 0f).toDouble()
                     val totalKm = prefs.getFloat("total_km", -1f).toDouble()

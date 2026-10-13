@@ -181,9 +181,13 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             val activeRoot = rootInActiveWindow
             if (activeRoot != null) {
                 val activePkg = activeRoot.packageName?.toString() ?: eventPkg ?: lastKnownForegroundPkg
+                if (activePkg == "com.android.systemui") {
+                    // Usuário está com o painel de notificações aberto; não escaneia para não capturar textos do sistema
+                    return
+                }
                 if (activePkg == packageName) {
                     isOurOwnAppVisible = true
-                } else if (activePkg.isNotBlank() && activePkg != "com.android.systemui") {
+                } else if (activePkg.isNotBlank()) {
                     if (candidateWindows.none { it.second == activeRoot }) {
                         candidateWindows.add(0, Pair(activePkg, activeRoot))
                     }
@@ -391,14 +395,20 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         val txt = line.text.trim()
                                         if (txt.isNotEmpty() &&
                                             !txt.contains("GoOrNo", ignoreCase = true) &&
+                                            !txt.contains("Aceitar", ignoreCase = true) &&
+                                            !txt.contains("Avaliar", ignoreCase = true) &&
+                                            !txt.contains("Recusar", ignoreCase = true) &&
                                             !txt.contains("COMPENSA", ignoreCase = true) &&
                                             !txt.contains("AVALIAR", ignoreCase = true) &&
+                                            !txt.contains("NÃO COMPENSA", ignoreCase = true) &&
                                             !txt.contains("DADOS INSUFICIENTES", ignoreCase = true) &&
                                             !txt.contains("segure p/ mover", ignoreCase = true) &&
-                                            !txt.contains("Toque em qualquer parte", ignoreCase = true) &&
+                                            !txt.contains("Toque em qualquer", ignoreCase = true) &&
                                             !txt.startsWith("📍 Origem:") &&
                                             !txt.startsWith("🏁 Destino:") &&
-                                            !txt.startsWith("Embarque:")
+                                            !txt.startsWith("Embarque:") &&
+                                            !txt.contains("silencioso está ativado", ignoreCase = true) &&
+                                            !txt.contains("retornar chamada", ignoreCase = true)
                                         ) {
                                             val topY = box?.top ?: 0
                                             val centerY = if (box != null) (box.top + box.bottom) / 2 else topY

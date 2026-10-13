@@ -82,30 +82,47 @@ object NinetyNineOfferReader {
             else -> ExtractedField.Missing
         }
 
-        // 3. Distâncias (Ex: "5 min (1,2 km)" + "6 min (2,5 km)")
-        val distances = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
+        // 3. Trechos de Viagem, Distâncias e Durações (Ex: "5 min (1,2 km)" + "10 min (2,4 km)")
+        val legs = BrazilianOfferParser.extractRideLegs(cleanedLines)
         var pickupKmField: ExtractedField<Double> = ExtractedField.Missing
         var tripKmField: ExtractedField<Double> = ExtractedField.Missing
         var totalKmField: ExtractedField<Double> = ExtractedField.Missing
 
-        if (distances.size >= 2) {
-            pickupKmField = ExtractedField.Present(distances[0])
-            tripKmField = ExtractedField.Present(distances[1])
-        } else if (distances.size == 1) {
-            totalKmField = ExtractedField.Present(distances[0])
-        }
-
-        // 4. Durações (Ex: "5 min" + "6 min")
-        val durations = BrazilianOfferParser.extractAllDurationsMinutes(cleanedLines)
         var pickupMinField: ExtractedField<Int> = ExtractedField.Missing
         var tripMinField: ExtractedField<Int> = ExtractedField.Missing
         var totalMinField: ExtractedField<Int> = ExtractedField.Missing
 
-        if (durations.size >= 2) {
-            pickupMinField = ExtractedField.Present(durations[0])
-            tripMinField = ExtractedField.Present(durations[1])
-        } else if (durations.size == 1) {
-            totalMinField = ExtractedField.Present(durations[0])
+        var legOrigin: String? = null
+        var legDestination: String? = null
+
+        if (legs.size >= 2) {
+            pickupKmField = ExtractedField.Present(legs[0].distanceKm)
+            tripKmField = ExtractedField.Present(legs[1].distanceKm)
+            pickupMinField = ExtractedField.Present(legs[0].durationMin)
+            tripMinField = ExtractedField.Present(legs[1].durationMin)
+            legOrigin = legs[0].address
+            legDestination = legs[1].address
+        } else if (legs.size == 1) {
+            totalKmField = ExtractedField.Present(legs[0].distanceKm)
+            totalMinField = ExtractedField.Present(legs[0].durationMin)
+            legOrigin = legs[0].address
+        } else {
+            // Fallback para quando os dados de km e min vierem em nós separados
+            val distances = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
+            if (distances.size >= 2) {
+                pickupKmField = ExtractedField.Present(distances[0])
+                tripKmField = ExtractedField.Present(distances[1])
+            } else if (distances.size == 1) {
+                totalKmField = ExtractedField.Present(distances[0])
+            }
+
+            val durations = BrazilianOfferParser.extractAllDurationsMinutes(cleanedLines)
+            if (durations.size >= 2) {
+                pickupMinField = ExtractedField.Present(durations[0])
+                tripMinField = ExtractedField.Present(durations[1])
+            } else if (durations.size == 1) {
+                totalMinField = ExtractedField.Present(durations[0])
+            }
         }
 
         // 5. Modalidade 99
@@ -114,7 +131,9 @@ object NinetyNineOfferReader {
         } ?: "99Pop"
 
         // 6. Endereços de Origem e Destino + Avaliação do Passageiro
-        val (origin, destination) = BrazilianOfferParser.extractOriginAndDestination(cleanedLines)
+        val (parsedOrigin, parsedDestination) = BrazilianOfferParser.extractOriginAndDestination(cleanedLines)
+        val origin = legOrigin ?: parsedOrigin
+        val destination = legDestination ?: parsedDestination
         val passengerRating = BrazilianOfferParser.extractPassengerRating(cleanedLines)
 
         // 7. Validação de consistência

@@ -1325,7 +1325,7 @@ fun GoOrNoComposeApp(
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = "Forçar VERMELHO (NÃO COMPENSA) se Nota for Ruim",
+                                                text = "Forçar VERMELHO (Recusar) se Nota for Ruim",
                                                 fontWeight = FontWeight.Black,
                                                 fontSize = 12.5.sp,
                                                 color = TrafficRed
@@ -1958,7 +1958,7 @@ fun GoOrNoComposeApp(
                                                 color = TrafficRed
                                             )
                                             Text(
-                                                text = "Mesmo que pague bem por KM, avisa NÃO COMPENSA se for local perigoso",
+                                                text = "Mesmo que pague bem por KM, avisa Recusar se for local perigoso",
                                                 fontSize = 11.sp,
                                                 color = MutedText
                                             )

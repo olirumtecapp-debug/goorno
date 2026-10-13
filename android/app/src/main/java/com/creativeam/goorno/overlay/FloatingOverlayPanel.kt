@@ -82,6 +82,8 @@ class FloatingOverlayPanel(private val context: Context) {
         showCurrentQueuedOffer()
     }
 
+    private var activeCardFingerprint: String = ""
+
     fun hasOverlayPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Settings.canDrawOverlays(context)
@@ -160,6 +162,18 @@ class FloatingOverlayPanel(private val context: Context) {
                 return@post
             }
 
+            val firstEval = results.first()
+            val newPrice = firstEval.offer.offeredPrice ?: 0.0
+            val newKm = firstEval.totalConsideredDistanceKm ?: 0.0
+            val newFingerprint = "${firstEval.offer.sourceApp.name}|${String.format(Locale.US, "%.2f", newPrice)}|${String.format(Locale.US, "%.1f", newKm)}"
+
+            // Proteção Anti-Flicker: se o card flutuante já está visível para a mesma corrida,
+            // NÃO destrói nem recria as views (evita sumir o valor ou piscar a janela!)
+            if (isCardCurrentlyVisible() && activeCardFingerprint == newFingerprint && offerQueue.isNotEmpty()) {
+                return@post
+            }
+            activeCardFingerprint = newFingerprint
+
             mainHandler.removeCallbacks(countdownRunnable)
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
             isTransitioningBetweenOffers = false
@@ -220,6 +234,7 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     fun dismissCurrentOfferCardByUser() {
+        activeCardFingerprint = ""
         offerQueue = emptyList()
         currentQueueIndex = 0
         isTransitioningBetweenOffers = false
@@ -244,6 +259,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun hidePanel() {
         mainHandler.post {
+            activeCardFingerprint = ""
             mainHandler.removeCallbacks(countdownRunnable)
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
             isTransitioningBetweenOffers = false
@@ -340,9 +356,9 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val riskTitleTag = if (result.hasRiskAlert) " · ⚠️ ÁREA DE RISCO" else ""
         val tvLine1 = TextView(context).apply {
-            text = "$seqTag${result.verdict.label}$riskTitleTag · $priceStr ($distStr · $minStr)"
+            text = "$seqTag$priceStr  •  ${result.verdict.label} ($distStr · $minStr)$riskTitleTag"
             setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             setTypeface(typeface, Typeface.BOLD)
         }
 
@@ -451,9 +467,9 @@ class FloatingOverlayPanel(private val context: Context) {
         } else ""
 
         val tvCompact = TextView(context).apply {
-            text = "$seqTag$riskMiniTag$ratingMiniTag$priceStr ($distStr · $minStr)  •  $grossKmStr · $grossHrStr$optionalSuffix"
+            text = "$seqTag$priceStr ($distStr · $minStr)  •  ${result.verdict.label}  •  $grossKmStr · $grossHrStr$optionalSuffix$riskMiniTag$ratingMiniTag"
             setTextColor(if (result.hasRiskAlert) Color.parseColor("#FDE047") else Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
             setPadding(0, 0, dp(8), 0)
         }
@@ -475,7 +491,7 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     // =========================================================================
-    // FORMATO 3: CARD COMPLETO (Sem botões de rua para não poluir a tela)
+    // FORMATO 3: CARD COMPLETO (Com Preço Grande em Destaque + Aceitar/Avaliar/Recusar)
     // =========================================================================
     @SuppressLint("ClickableViewAccessibility")
     private fun buildFullCardView(
@@ -563,34 +579,92 @@ class FloatingOverlayPanel(private val context: Context) {
         val grossHrStr = result.grossPerHour?.let { formatCurrency(it) + "/h" } ?: "--/h"
         val optionalSuffix = buildOptionalProfitAndCostSuffix(result)
 
+        // 1. HERO ROW: VALOR GIGANTE (24sp) + BADGE VEREDITO (Aceitar/Avaliar/Recusar) + DISTÂNCIA/TEMPO
+        val heroRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val tvPrice = TextView(context).apply {
+            text = priceStr
+            setTextColor(Color.parseColor("#073B32"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        heroRow.addView(tvPrice)
+
         val tvBadge = TextView(context).apply {
-            text = "${result.verdict.label}  ·  $priceStr  (Total: $distStr · $minStr)"
+            text = result.verdict.label
             setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(8), dp(3), dp(8), dp(3))
+            background = roundedBg(badgeHex, 8f)
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginStart = dp(8)
+            }
+            layoutParams = lp
+        }
+        heroRow.addView(tvBadge)
+
+        val tvTotalInfo = TextView(context).apply {
+            text = "$distStr · $minStr"
+            setTextColor(Color.parseColor("#334155"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(10), dp(4), dp(10), dp(4))
-            background = roundedBg(badgeHex, 8f)
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            val lp = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+            layoutParams = lp
         }
-        box.addView(tvBadge)
+        heroRow.addView(tvTotalInfo)
+        box.addView(heroRow)
 
+        // 2. MÉTRICAS FINANCEIRAS (R$/km e R$/h)
+        val tvMetrics = TextView(context).apply {
+            text = "$grossKmStr   •   $grossHrStr$optionalSuffix"
+            setTextColor(Color.parseColor("#073B32"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            lp.topMargin = dp(6)
+            layoutParams = lp
+        }
+        box.addView(tvMetrics)
+
+        // 3. AVISO DO PASSAGEIRO (se disponível)
         if (!result.passengerRatingBadge.isNullOrBlank()) {
             val tvRating = TextView(context).apply {
                 text = "Passageiro: ${result.passengerRatingBadge}"
                 setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 setTypeface(typeface, Typeface.BOLD)
-                setPadding(dp(10), dp(3), dp(10), dp(3))
+                setPadding(dp(8), dp(3), dp(8), dp(3))
                 background = roundedBg(result.passengerRatingVerdict.hexColor, 8f)
                 val lp = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
-                lp.topMargin = dp(4)
+                lp.topMargin = dp(5)
                 layoutParams = lp
             }
             box.addView(tvRating)
         }
 
+        // 4. ALERTA DE ÁREA DE RISCO (se detectado)
         if (result.hasRiskAlert && !result.riskAlertBadge.isNullOrBlank()) {
             val tvRisk = TextView(context).apply {
                 text = "🚨 ${result.riskAlertBadge}"
@@ -606,20 +680,6 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             box.addView(tvRisk)
         }
-
-        val tvMetrics = TextView(context).apply {
-            text = "$grossKmStr   •   $grossHrStr$optionalSuffix"
-            setTextColor(Color.parseColor("#073B32"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-            setTypeface(typeface, Typeface.BOLD)
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            lp.topMargin = dp(5)
-            layoutParams = lp
-        }
-        box.addView(tvMetrics)
 
         card.addView(box)
         return card

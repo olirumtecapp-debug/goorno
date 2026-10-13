@@ -392,6 +392,115 @@ class GoOrNoEngineAndParserTest {
         assertEquals("Travessa Salvador, 40, Canhema, Diadema", offer.destinationAddress)
         assertNotEquals(TrafficLightVerdict.GRAY_NEUTRAL, eval.verdict)
     }
+
+    // 15. TESTE DO PRINT 1 ENVIADO PELO MOTORISTA: R$ 7,70 COM NAVEGAÇÃO "61 m" NO TOPO E CORRIDA CURTA
+    @Test
+    fun `test user screenshot 1 with top navigation arrow 61m noise and short ride R7_70`() {
+        val screenNodes = listOf(
+            "61 m",
+            "Av. Armando Ítalo Setti",
+            "Não afeta a TA",
+            "Pgto. no app",
+            "Prioritário",
+            "R$7,70 ⚡1,1x",
+            "R$2,14/km",
+            "R$1,41 Tarifa base dinâmica incl.",
+            "★ 4,96 · 287 corridas",
+            "Perfil Premium",
+            "5 min (1,2 km)",
+            "Rua Miguel Rubino, 139, Vila Vianas",
+            "10 min (2,4 km)",
+            "AmorSaúde são Bernardo, Rua Santa Filomena, 856 - Centro"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(screenNodes)
+        assertEquals(1, offers.size)
+
+        val offer = offers.first()
+        val config = DriverFinancialConfig(
+            targetGrossPerKm = 2.00,
+            targetGrossPerHour = 40.00,
+            requireGrossPerKm = true,
+            requireGrossPerHour = false
+        )
+        val eval = FinancialEngine.evaluate(offer, config)
+
+        // Deve ignorar completamente os 61m da barra de navegação!
+        assertEquals(7.70, offer.offeredPrice!!, 0.001)
+        assertEquals(1.2, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(2.4, offer.tripDistanceKm!!, 0.001)
+        assertEquals(3.6, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(15, eval.totalConsideredDurationMin)
+        assertEquals(2.14, eval.grossPerKm!!, 0.01)
+        assertEquals("Rua Miguel Rubino, 139, Vila Vianas", offer.originAddress)
+        assertTrue(offer.destinationAddress!!.startsWith("AmorSaúde são Bernardo"))
+        // Como paga R$ 2,14/km (acima da meta de R$ 2,00), deve classificar como Aceitar!
+        assertEquals(TrafficLightVerdict.GREEN, eval.verdict)
+    }
+
+    // 16. TESTE DO PRINT 2 ENVIADO PELO MOTORISTA: R$ 9,60 COM NOTA 4,69 QUE NÃO DEVE FORÇAR RECUSAR
+    @Test
+    fun `test user screenshot 2 with R9_60 passenger rating 4_69 does not reject good financial offer`() {
+        val screenNodes = listOf(
+            "Pgto. no app",
+            "R$9,60 ⚡1,1x",
+            "R$2,72/km",
+            "R$1,97 por embarque distante in...",
+            "★ 4,69 · 67 corridas",
+            "Perfil Essencial",
+            "9 min (2,4 km)",
+            "Tv. Púrpura, 18, Jardim Las Vegas",
+            "3 min (1,1 km)",
+            "EMEB Professora Maria Therezinha Besana, Rua dos Vianas, 2897 - ..."
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(screenNodes)
+        assertEquals(1, offers.size)
+
+        val offer = offers.first()
+        val config = DriverFinancialConfig(
+            targetGrossPerKm = 2.00,
+            targetGrossPerHour = 40.00,
+            minAcceptablePassengerRating = 4.70,
+            requireGrossPerKm = true,
+            requireGrossPerHour = false,
+            forceRedOnBadPassengerRating = false
+        )
+        val eval = FinancialEngine.evaluate(offer, config)
+
+        assertEquals(9.60, offer.offeredPrice!!, 0.001)
+        assertEquals(2.4, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(1.1, offer.tripDistanceKm!!, 0.001)
+        assertEquals(3.5, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(12, eval.totalConsideredDurationMin)
+        assertEquals(2.74, eval.grossPerKm!!, 0.01)
+        assertEquals(4.69, offer.passengerRating!!, 0.001)
+        assertEquals("Tv. Púrpura, 18, Jardim Las Vegas", offer.originAddress)
+        assertTrue(offer.destinationAddress!!.startsWith("EMEB Professora Maria Therezinha Besana"))
+
+        // O semáforo financeiro é bom (R$ 2,74/km). Com a nota do passageiro em 4,69, deve ser Avaliar (Amarelo) e NUNCA Recusar!
+        assertEquals(TrafficLightVerdict.YELLOW, eval.verdict)
+        assertEquals(PassengerRatingVerdict.BAD, eval.passengerRatingVerdict)
+    }
+
+    // 17. TESTE DO PRINT 3: LIMPEZA DE SUJEIRA DE BOTÕES E TEXTOS ALEATÓRIOS DE NOTIFICAÇÃO
+    @Test
+    fun `test user screenshot 3 address cleaning discards action buttons and system garbage`() {
+        val dirtyOrigin = "Zanela, 90, Centro Escolher R$9,60 1k"
+        val dirtyDest = "s.E os empos das cardes s af. F os empos dos cardes t R$9,60"
+        val systemNoise = "silencioso está ativado"
+
+        val cleanedOrigin = BrazilianOfferParser.cleanAddressCandidate(dirtyOrigin)
+        val cleanedDest = BrazilianOfferParser.cleanAddressCandidate(dirtyDest)
+        val cleanedNoise = BrazilianOfferParser.cleanAddressCandidate(systemNoise)
+
+        // Origem deve ser limpa preservando apenas o endereço real
+        assertEquals("Zanela, 90, Centro", cleanedOrigin)
+        // Destino com sujeira de cardes deve ser descartado
+        assertNull(cleanedDest)
+        // Linha de notificação de sistema deve ser descartada
+        assertNull(cleanedNoise)
+    }
 }
 
 

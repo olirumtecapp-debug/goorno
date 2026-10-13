@@ -231,7 +231,7 @@ object FinancialEngine {
                 )
                 warnings.add(msg)
                 if (config.requirePassengerRating && baseVerdict == TrafficLightVerdict.GREEN) {
-                    reasons.add(0, "Nota do passageiro MÉDIA (★ ${String.format(ptBr, "%.2f", rating)}) — Semáforo em AVALIAR")
+                    reasons.add(0, "Nota do passageiro MÉDIA (★ ${String.format(ptBr, "%.2f", rating)}) — Semáforo em Avaliar")
                     TrafficLightVerdict.YELLOW
                 } else {
                     baseVerdict
@@ -246,11 +246,11 @@ object FinancialEngine {
                 )
                 warnings.add(0, msg)
                 if (config.requirePassengerRating) {
-                    if (config.forceRedOnBadPassengerRating) {
-                        reasons.add(0, "🔴 Nota do passageiro RUIM (★ ${String.format(ptBr, "%.2f", rating)}) — Semáforo em NÃO COMPENSA")
+                    if (config.forceRedOnBadPassengerRating && baseVerdict != TrafficLightVerdict.GREEN) {
+                        reasons.add(0, "🔴 Nota do passageiro RUIM (★ ${String.format(ptBr, "%.2f", rating)}) — Semáforo em Recusar")
                         TrafficLightVerdict.RED
                     } else {
-                        reasons.add(0, "🟡 Nota do passageiro baixa (★ ${String.format(ptBr, "%.2f", rating)}) — Atenção")
+                        reasons.add(0, "🟡 Nota do passageiro baixa (★ ${String.format(ptBr, "%.2f", rating)}) — Semáforo em Avaliar")
                         if (baseVerdict == TrafficLightVerdict.GREEN) TrafficLightVerdict.YELLOW else baseVerdict
                     }
                 } else {
@@ -388,8 +388,15 @@ object FinancialEngine {
                 }
                 else -> {
                     allGreen = false
-                    anyRed = true
-                    reasons.add(formatBr("%s: R$ %.2f abaixo do mínimo R$ %.2f", c.name, c.actual, c.target))
+                    // Se o R$/km atinge ou supera a meta, o R$/h abaixo não pode forçar Vermelho direto (vira Avaliar/Amarelo)
+                    val isHourlyCheck = c.name.contains("/h")
+                    val hasGoodKmRate = grossPerKm != null && grossPerKm >= config.targetGrossPerKm
+                    if (isHourlyCheck && hasGoodKmRate) {
+                        reasons.add(formatBr("%s: R$ %.2f abaixo da meta R$ %.2f (R$/km é bom)", c.name, c.actual, c.target))
+                    } else {
+                        anyRed = true
+                        reasons.add(formatBr("%s: R$ %.2f abaixo do mínimo R$ %.2f", c.name, c.actual, c.target))
+                    }
                 }
             }
         }
