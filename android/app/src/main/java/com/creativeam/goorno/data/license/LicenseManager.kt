@@ -260,4 +260,58 @@ object LicenseManager {
             Result.failure(e)
         }
     }
+
+    suspend fun redeemVoucherOnline(
+        context: Context,
+        whatsapp: String,
+        voucherCode: String
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val phone = cleanPhone(whatsapp)
+            if (phone.length < 10) {
+                return@withContext Result.failure(RuntimeException("Informe um número de WhatsApp válido."))
+            }
+            val code = voucherCode.trim().uppercase()
+            if (code.isEmpty()) {
+                return@withContext Result.failure(RuntimeException("Informe o código do cupom."))
+            }
+
+            val deviceId = getDeviceId(context)
+            val url = URL("$API_BASE_URL/redeem-voucher")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("Content-Type", "application/json")
+                doOutput = true
+                connectTimeout = 8000
+                readTimeout = 8000
+            }
+
+            val reqBody = JSONObject().apply {
+                put("whatsapp", phone)
+                put("code", code)
+                put("deviceId", deviceId)
+            }
+
+            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(reqBody.toString()) }
+
+            val responseCode = conn.responseCode
+            if (responseCode !in 200..299) {
+                val errText = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                val errJson = try { JSONObject(errText) } catch (_: Exception) { null }
+                val errMsg = errJson?.optString("error") ?: "Falha ao resgatar cupom (código $responseCode)"
+                return@withContext Result.failure(RuntimeException(errMsg))
+            }
+
+            val respText = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val json = JSONObject(respText)
+            val message = json.optString("message", "Cupom resgatado com sucesso!")
+
+            saveWhatsApp(context, phone)
+            checkOrActivateOnline(context, phone, "check")
+
+            Result.success(message)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

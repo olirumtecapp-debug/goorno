@@ -43,6 +43,8 @@ fun SubscriptionScreenCard(
     var isLoading by remember { mutableStateOf(false) }
     var isVerifying by remember { mutableStateOf(false) }
     var statusFeedback by remember { mutableStateOf<String?>(null) }
+    var voucherInput by remember { mutableStateOf("") }
+    var isRedeemingVoucher by remember { mutableStateOf(false) }
 
     // Silently refresh status on open if whatsapp was previously saved
     LaunchedEffect(Unit) {
@@ -499,6 +501,101 @@ fun SubscriptionScreenCard(
                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = TrafficGreen, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Já Paguei! Verificar Pagamento Agora", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TrafficGreen)
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4b. Cupom / Voucher de Cortesia
+        Card(
+            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            border = BorderStroke(1.dp, CleanCardBorder),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = PetrolHeader,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Tem um Cupom / Voucher de Cortesia?",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                        color = PetrolHeader
+                    )
+                }
+
+                Text(
+                    text = "Se você recebeu um código promocional de bônus, parceria ou cortesia, digite abaixo para ativar na sua conta:",
+                    fontSize = 11.5.sp,
+                    color = MutedText,
+                    lineHeight = 16.sp
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = voucherInput,
+                        onValueChange = { voucherInput = it.uppercase() },
+                        label = { Text("Código do Cupom") },
+                        placeholder = { Text("Ex: BEMVINDO7") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Button(
+                        onClick = {
+                            if (whatsappInput.isBlank()) {
+                                onNotify("Informe seu WhatsApp no topo antes de resgatar o cupom.")
+                                return@Button
+                            }
+                            if (voucherInput.isBlank()) {
+                                onNotify("Digite o código do cupom.")
+                                return@Button
+                            }
+                            isRedeemingVoucher = true
+                            scope.launch {
+                                val res = LicenseManager.redeemVoucherOnline(
+                                    context = context,
+                                    whatsapp = whatsappInput,
+                                    voucherCode = voucherInput
+                                )
+                                isRedeemingVoucher = false
+                                res.onSuccess { msg ->
+                                    val newState = LicenseManager.getCachedLicenseState(context)
+                                    licenseState = newState
+                                    voucherInput = ""
+                                    onNotify(msg)
+                                }.onFailure { err ->
+                                    onNotify(err.message ?: "Erro ao resgatar cupom.")
+                                }
+                            }
+                        },
+                        enabled = !isRedeemingVoucher && voucherInput.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PetrolHeader,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.height(56.dp)
+                    ) {
+                        if (isRedeemingVoucher) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                        } else {
+                            Text("Resgatar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                     }
                 }
