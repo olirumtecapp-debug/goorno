@@ -44,6 +44,8 @@ import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
 import com.creativeam.goorno.reader.uber.UberOfferReader
 import com.creativeam.goorno.service.CopilotNotificationReceiver
 import com.creativeam.goorno.ui.theme.*
+import com.creativeam.goorno.util.GeocodedPlace
+import com.creativeam.goorno.util.PlaceSearchHelper
 import com.creativeam.goorno.util.StreetViewLauncher
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -51,7 +53,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Telas Oficiais do GoOrNo v2.7.0 — Interface Clean, Clara e Moderna.
+ * Telas Oficiais do GoOrNo v3.1.0 — Interface Clean, Clara e Moderna.
  */
 enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: String) {
     HOME(1, "Painel Principal — Copiloto", "Início"),
@@ -61,7 +63,7 @@ enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: St
     SERVICES_ACTIVATION(5, "Permissões e Serviços de Leitura", "Serviços"),
     CONNECTION_STATUS(6, "Conexão com Uber e 99", "Uber / 99"),
     HISTORY(7, "Histórico, Endereços e Street View 360°", "Histórico"),
-    FINANCIAL_SUMMARY(8, "Estatísticas de Ofertas Lidas", "Estatísticas"),
+    SECURITY(8, "Segurança e Áreas de Risco", "Segurança"),
     DIAGNOSTICS_TESTS(9, "Diagnóstico, OCR e Simulador", "Testes"),
     PRIVACY_BACKUP(10, "Privacidade e Troca de Aparelho", "Backup")
 }
@@ -142,7 +144,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v3.0.1",
+                                            text = "v3.1.0",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
@@ -266,8 +268,8 @@ fun GoOrNoComposeApp(
                     val quickTabs = listOf(
                         Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
                         Triple(GoOrNoScreen.DRIVER_SETUP, Icons.Default.Layers, "Janela"),
-                        Triple(GoOrNoScreen.VEHICLE_COSTS, Icons.Default.LocalGasStation, "Custos"),
                         Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
+                        Triple(GoOrNoScreen.SECURITY, Icons.Default.Security, "Segurança"),
                         Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico")
                     )
                     quickTabs.forEach { (screen, icon, label) ->
@@ -1476,311 +1478,6 @@ fun GoOrNoComposeApp(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // =========================================================
-                        // CARD DE ALERTA DE ÁREAS DE RISCO (ORIGEM E DESTINO) v3.0.0
-                        // =========================================================
-                        var newRiskZoneText by remember { mutableStateOf("") }
-                        val customZoneList = remember(config.customRiskZones) {
-                            RiskAreaEvaluator.parseCustomZonesList(config.customRiskZones)
-                        }
-
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                            border = BorderStroke(1.5.dp, TrafficRed.copy(alpha = 0.55f)),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Surface(
-                                        color = TrafficRed,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            text = "⚠️ NOVO",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 10.sp,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = "Alerta de Áreas de Risco (Origem / Destino)",
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 14.sp,
-                                        color = PetrolHeader
-                                    )
-                                }
-
-                                Text(
-                                    text = "O Copiloto cruza em tempo real os endereços de embarque e desembarque da Uber e 99 com a base nacional de zonas críticas + seus bairros/ruas bloqueados.",
-                                    fontSize = 11.5.sp,
-                                    color = MutedText
-                                )
-
-                                // Switch 1: Ativar Alerta de Risco
-                                Surface(
-                                    color = SoftSurfaceVariant,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, CleanCardBorder)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Ativar Alerta de Área de Risco",
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 12.5.sp,
-                                                color = PetrolHeader
-                                            )
-                                            Text(
-                                                text = "Mostra '⚠️ ÁREA DE RISCO' na Janela Flutuante e na Notificação",
-                                                fontSize = 11.sp,
-                                                color = MutedText
-                                            )
-                                        }
-                                        Switch(
-                                            checked = config.riskAlertEnabled,
-                                            onCheckedChange = { enabled ->
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(config.copy(riskAlertEnabled = enabled))
-                                                    notifyUser(if (enabled) "Alerta de Área de Risco ativado!" else "Alerta de Área de Risco desativado.")
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-
-                                // Switch 2: Forçar Semáforo VERMELHO
-                                Surface(
-                                    color = SoftSurfaceVariant,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, CleanCardBorder)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Forçar Semáforo VERMELHO em Área de Risco",
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 12.5.sp,
-                                                color = TrafficRed
-                                            )
-                                            Text(
-                                                text = "Mesmo que pague bem por KM, avisa NÃO COMPENSA se for local perigoso",
-                                                fontSize = 11.sp,
-                                                color = MutedText
-                                            )
-                                        }
-                                        Switch(
-                                            checked = config.forceRedOnRiskArea,
-                                            onCheckedChange = { forceRed ->
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(config.copy(forceRedOnRiskArea = forceRed))
-                                                    notifyUser(if (forceRed) "Semáforo forçará VERMELHO em áreas de risco!" else "Semáforo mostrará alerta mantendo avaliação.")
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-
-                                // Switch 3: Base Nacional + Termos Críticos (viela, beco, favela, etc.)
-                                Surface(
-                                    color = SoftSurfaceVariant,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, CleanCardBorder)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Base Nacional de Zonas Críticas + Termos",
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 12.5.sp,
-                                                color = PetrolHeader
-                                            )
-                                            Text(
-                                                text = "Detecta automaticamente: viela, beco, favela, invasão, ocupação, comunidade + áreas críticas das capitais",
-                                                fontSize = 11.sp,
-                                                color = MutedText
-                                            )
-                                        }
-                                        Switch(
-                                            checked = config.useDefaultRiskKeywords,
-                                            onCheckedChange = { useDef ->
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(config.copy(useDefaultRiskKeywords = useDef))
-                                                    notifyUser(if (useDef) "Base nacional de risco ativada!" else "Usando apenas sua lista personalizada.")
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-
-                                HorizontalDivider(color = CleanCardBorder)
-
-                                Text(
-                                    text = "📌 Seus Bairros / Ruas Bloqueados (${customZoneList.size}):",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 12.5.sp,
-                                    color = PetrolHeader
-                                )
-                                Text(
-                                    text = "Adicione abaixo qualquer bairro, rua ou comunidade da sua cidade que você considera perigoso (ou marque com 1 toque direto na aba Histórico):",
-                                    fontSize = 11.sp,
-                                    color = MutedText
-                                )
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = newRiskZoneText,
-                                        onValueChange = { newRiskZoneText = it },
-                                        label = { Text("Ex: Jardim Elisa, Rua X, Vila Y...") },
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.weight(1f),
-                                        singleLine = true
-                                    )
-                                    Button(
-                                        onClick = {
-                                            val clean = newRiskZoneText.trim()
-                                            if (clean.length >= 3) {
-                                                val updatedList = (customZoneList + clean).distinct()
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(
-                                                        config.copy(customRiskZones = updatedList.joinToString(", "))
-                                                    )
-                                                    newRiskZoneText = ""
-                                                    notifyUser("'$clean' adicionado à sua lista de Áreas de Risco!")
-                                                }
-                                            } else {
-                                                notifyUser("Digite pelo menos 3 letras do bairro ou rua.")
-                                            }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = TrafficRed,
-                                            contentColor = Color.White
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.height(50.dp)
-                                    ) {
-                                        Text("+ Adicionar", fontWeight = FontWeight.Black)
-                                    }
-                                }
-
-                                if (customZoneList.isNotEmpty()) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .horizontalScroll(rememberScrollState()),
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        customZoneList.forEach { zone ->
-                                            Surface(
-                                                color = Color(0xFFFEF2F2),
-                                                shape = RoundedCornerShape(18.dp),
-                                                border = BorderStroke(1.dp, TrafficRed.copy(alpha = 0.5f)),
-                                                modifier = Modifier.clickable {
-                                                    val remaining = customZoneList.filterNot { it.equals(zone, ignoreCase = true) }
-                                                    scope.launch {
-                                                        app.preferencesRepository.saveConfig(
-                                                            config.copy(customRiskZones = remaining.joinToString(", "))
-                                                        )
-                                                        notifyUser("'$zone' removido da lista de risco.")
-                                                    }
-                                                }
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "⚠️ $zone",
-                                                        fontSize = 11.5.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = TrafficRed
-                                                    )
-                                                    Text(
-                                                        text = "✕",
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Black,
-                                                        color = TrafficRed
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Botão para testar imediatamente o alerta de risco na tela flutuante e notificação
-                                Button(
-                                    onClick = {
-                                        val sampleRiskZone = customZoneList.firstOrNull() ?: "Capão Redondo"
-                                        val testOffer = NinetyNineOfferReader.parseScreenNodes(
-                                            rawNodes = listOf(
-                                                "99Pop",
-                                                "R$ 24,50",
-                                                "★ 4,88 (34 corridas)",
-                                                "4 min (1,2 km) Av. Paulista, 1000 - Bela Vista",
-                                                "14 min (6,8 km) Viela 4, 120 - $sampleRiskZone"
-                                            ),
-                                            captureMethod = CaptureMethod.SIMULATION,
-                                            isSimulated = true
-                                        )
-                                        val eval = FinancialEngine.evaluate(testOffer, config)
-                                        RuntimeDiagnosticsBus.publishEvaluation(eval)
-                                        if (hasOverlayPermission) {
-                                            app.overlayPanel.applyConfig(config)
-                                            app.overlayPanel.showEvaluation(eval)
-                                        }
-                                        CopilotNotificationReceiver.showActiveNotification(
-                                            context = context,
-                                            latestEvaluation = eval,
-                                            showProfit = config.showProfitOnOverlay,
-                                            showCost = config.showCostOnOverlay
-                                        )
-                                        notifyUser("Simulação de Área de Risco enviada para a Janela Flutuante e Notificação!")
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF7F1D1D),
-                                        contentColor = Color.White
-                                    ),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFEE2E2), modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("🚨 Testar Alerta de Área de Risco na Tela", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -2145,75 +1842,553 @@ fun GoOrNoComposeApp(
                 }
 
                 // =====================================================
-                // TELA 8: RESUMO FINANCEIRO
+                // TELA 8: SEGURANÇA E ÁREAS DE RISCO (NOVA TAB DEDICADA)
                 // =====================================================
-                GoOrNoScreen.FINANCIAL_SUMMARY -> {
+                GoOrNoScreen.SECURITY -> {
                     item {
-                        val totalOffers = realHistory.size
-                        val greenCount = realHistory.count { it.verdict == TrafficLightVerdict.GREEN.name }
-                        val yellowCount = realHistory.count { it.verdict == TrafficLightVerdict.YELLOW.name }
-                        val redCount = realHistory.count { it.verdict == TrafficLightVerdict.RED.name }
+                        var searchAddressQuery by remember { mutableStateOf("") }
+                        var isSearchingPlace by remember { mutableStateOf(false) }
+                        var searchResults by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
+                        var searchErrorMsg by remember { mutableStateOf<String?>(null) }
 
-                        val sumGross = realHistory.sumOf { it.offeredPrice }
-                        val sumCost = realHistory.sumOf { it.estimatedTotalCost ?: 0.0 }
-                        val sumNet = realHistory.sumOf { it.estimatedNetProfit ?: 0.0 }
-                        val avgGrossKm = realHistory.mapNotNull { it.grossPerKm }.takeIf { it.isNotEmpty() }?.average() ?: 0.0
-                        val avgGrossHr = realHistory.mapNotNull { it.grossPerHour }.takeIf { it.isNotEmpty() }?.average() ?: 0.0
+                        val customZoneList = remember(config.customRiskZones) {
+                            RiskAreaEvaluator.parseCustomZonesList(config.customRiskZones)
+                        }
 
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            border = BorderStroke(1.dp, CleanCardBorder),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                            border = BorderStroke(1.5.dp, TrafficRed.copy(alpha = 0.55f)),
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        color = TrafficRed,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Security,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .padding(4.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Central de Segurança & Áreas de Risco",
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 15.sp,
+                                            color = PetrolHeader
+                                        )
+                                        Text(
+                                            text = "Validação geográfica no mapa e bloqueio preventivo de locais perigosos",
+                                            fontSize = 11.sp,
+                                            color = MutedText
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                // Switch 1: Ativar Alerta de Risco
+                                Surface(
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, CleanCardBorder)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Ativar Alerta de Área de Risco",
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 12.5.sp,
+                                                color = PetrolHeader
+                                            )
+                                            Text(
+                                                text = "Mostra '⚠️ ÁREA DE RISCO' na Janela Flutuante e na Notificação",
+                                                fontSize = 11.sp,
+                                                color = MutedText
+                                            )
+                                        }
+                                        Switch(
+                                            checked = config.riskAlertEnabled,
+                                            onCheckedChange = { enabled ->
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(config.copy(riskAlertEnabled = enabled))
+                                                    notifyUser(if (enabled) "Alerta de Área de Risco ativado!" else "Alerta de Área de Risco desativado.")
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+
+                                // Switch 2: Forçar Semáforo VERMELHO
+                                Surface(
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, CleanCardBorder)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Forçar Semáforo VERMELHO em Área de Risco",
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 12.5.sp,
+                                                color = TrafficRed
+                                            )
+                                            Text(
+                                                text = "Mesmo que pague bem por KM, avisa NÃO COMPENSA se for local perigoso",
+                                                fontSize = 11.sp,
+                                                color = MutedText
+                                            )
+                                        }
+                                        Switch(
+                                            checked = config.forceRedOnRiskArea,
+                                            onCheckedChange = { forceRed ->
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(config.copy(forceRedOnRiskArea = forceRed))
+                                                    notifyUser(if (forceRed) "Semáforo forçará VERMELHO em áreas de risco!" else "Semáforo mostrará alerta mantendo avaliação.")
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+
+                                // Switch 3: Base Nacional + Termos Críticos
+                                Surface(
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, CleanCardBorder)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Base Nacional de Zonas Críticas + Termos",
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 12.5.sp,
+                                                color = PetrolHeader
+                                            )
+                                            Text(
+                                                text = "Detecta automaticamente: viela, beco, favela, invasão, ocupação, comunidade + capitais",
+                                                fontSize = 11.sp,
+                                                color = MutedText
+                                            )
+                                        }
+                                        Switch(
+                                            checked = config.useDefaultRiskKeywords,
+                                            onCheckedChange = { useDef ->
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(config.copy(useDefaultRiskKeywords = useDef))
+                                                    notifyUser(if (useDef) "Base nacional de risco ativada!" else "Usando apenas sua lista personalizada.")
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                // BUSCADOR DE ENDEREÇO ESTILO GOOGLE MAPS
                                 Text(
-                                    text = "Consolidado das Ofertas Reais Analisadas",
+                                    text = "🔍 Pesquisar e Validar Endereço no Mapa (Oficial)",
                                     fontWeight = FontWeight.Black,
+                                    fontSize = 13.sp,
                                     color = PetrolHeader
                                 )
                                 Text(
-                                    text = "Ofertas Analisadas: $totalOffers  (🟢 $greenCount  |  🟡 $yellowCount  |  🔴 $redCount)",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PetrolDarkText
+                                    text = "Digite o nome da rua, comunidade ou bairro para validar a localização real no mapa antes de bloquear:",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
                                 )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = searchAddressQuery,
+                                        onValueChange = {
+                                            searchAddressQuery = it
+                                            searchErrorMsg = null
+                                        },
+                                        label = { Text("Ex: Rua Augusta, Jardim Elisa, Vila Mara...") },
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true,
+                                        trailingIcon = {
+                                            if (searchAddressQuery.isNotBlank()) {
+                                                IconButton(onClick = {
+                                                    searchAddressQuery = ""
+                                                    searchResults = emptyList()
+                                                    searchErrorMsg = null
+                                                }) {
+                                                    Icon(Icons.Default.Clear, contentDescription = "Limpar")
+                                                }
+                                            }
+                                        }
+                                    )
+
+                                    Button(
+                                        onClick = {
+                                            val q = searchAddressQuery.trim()
+                                            if (q.length < 3) {
+                                                notifyUser("Digite pelo menos 3 letras para pesquisar no mapa.")
+                                                return@Button
+                                            }
+                                            isSearchingPlace = true
+                                            searchErrorMsg = null
+                                            scope.launch {
+                                                val places = PlaceSearchHelper.searchPlaces(context, q)
+                                                isSearchingPlace = false
+                                                if (places.isEmpty()) {
+                                                    searchErrorMsg = "Nenhum endereço oficial localizado no mapa para '$q'. Você pode bloquear diretamente pelo nome abaixo."
+                                                } else {
+                                                    searchResults = places
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = PetrolHeader,
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.height(52.dp),
+                                        enabled = !isSearchingPlace
+                                    ) {
+                                        if (isSearchingPlace) {
+                                            CircularProgressIndicator(
+                                                color = Color.White,
+                                                modifier = Modifier.size(18.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                        } else {
+                                            Icon(Icons.Default.Search, contentDescription = null, tint = LimeBright)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Buscar", fontWeight = FontWeight.Black)
+                                        }
+                                    }
+                                }
+
+                                if (searchErrorMsg != null) {
+                                    Surface(
+                                        color = Color(0xFFFEF2F2),
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, TrafficRed.copy(alpha = 0.4f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Text(
+                                                text = searchErrorMsg!!,
+                                                color = TrafficRed,
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Button(
+                                                onClick = {
+                                                    val raw = searchAddressQuery.trim()
+                                                    if (raw.length >= 3) {
+                                                        val updatedList = (customZoneList + raw).distinct()
+                                                        scope.launch {
+                                                            app.preferencesRepository.saveConfig(
+                                                                config.copy(customRiskZones = updatedList.joinToString(", "))
+                                                            )
+                                                            searchAddressQuery = ""
+                                                            searchErrorMsg = null
+                                                            searchResults = emptyList()
+                                                            notifyUser("'$raw' bloqueado diretamente!")
+                                                        }
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = TrafficRed),
+                                                shape = RoundedCornerShape(8.dp),
+                                                modifier = Modifier.height(36.dp)
+                                            ) {
+                                                Text("+ Bloquear com este nome mesmo assim", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // RESULTADOS DA BUSCA NO MAPA
+                                if (searchResults.isNotEmpty()) {
+                                    Text(
+                                        text = "📍 Locais encontrados no Mapa (Toque para confirmar o bloqueio):",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = PetrolHeader
+                                    )
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        searchResults.forEach { place ->
+                                            Surface(
+                                                color = SoftSurfaceVariant,
+                                                shape = RoundedCornerShape(12.dp),
+                                                border = BorderStroke(1.dp, CleanCardBorder),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Column(modifier = Modifier.padding(12.dp)) {
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.Top
+                                                    ) {
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            Text(
+                                                                text = "📍 ${place.title}",
+                                                                fontWeight = FontWeight.Black,
+                                                                fontSize = 13.sp,
+                                                                color = PetrolHeader
+                                                            )
+                                                            Text(
+                                                                text = place.subtitle,
+                                                                fontSize = 11.5.sp,
+                                                                fontWeight = FontWeight.SemiBold,
+                                                                color = PetrolDarkText
+                                                            )
+                                                            Text(
+                                                                text = place.fullFormattedAddress,
+                                                                fontSize = 10.5.sp,
+                                                                color = MutedText
+                                                            )
+                                                        }
+                                                    }
+
+                                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        Button(
+                                                            onClick = {
+                                                                val toBlock = place.termToBlock
+                                                                val updatedList = (customZoneList + toBlock).distinct()
+                                                                scope.launch {
+                                                                    app.preferencesRepository.saveConfig(
+                                                                        config.copy(customRiskZones = updatedList.joinToString(", "))
+                                                                    )
+                                                                    searchResults = emptyList()
+                                                                    searchAddressQuery = ""
+                                                                    notifyUser("Local validado '$toBlock' bloqueado com sucesso!")
+                                                                }
+                                                            },
+                                                            colors = ButtonDefaults.buttonColors(containerColor = TrafficRed),
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            modifier = Modifier.weight(1f).height(38.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Warning, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                            Text("Bloquear Este Local", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                        }
+
+                                                        FilledTonalButton(
+                                                            onClick = {
+                                                                try {
+                                                                    val mapIntent = Intent(
+                                                                        Intent.ACTION_VIEW,
+                                                                        Uri.parse("geo:0,0?q=" + Uri.encode(place.fullFormattedAddress))
+                                                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                                                                    context.startActivity(mapIntent)
+                                                                } catch (_: Exception) {
+                                                                    notifyUser("Não foi possível abrir o Google Maps.")
+                                                                }
+                                                            },
+                                                            colors = ButtonDefaults.filledTonalButtonColors(
+                                                                containerColor = PureWhiteSurface,
+                                                                contentColor = PetrolHeader
+                                                            ),
+                                                            border = BorderStroke(1.dp, CleanCardBorder),
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            modifier = Modifier.height(38.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                            Text("Ver no Maps", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
                                 HorizontalDivider(color = CleanCardBorder)
-                                Text(
-                                    text = String.format(Locale.forLanguageTag("pt-BR"), "Receita Bruta Ofertada Total: R$ %.2f", sumGross),
-                                    fontSize = 13.sp,
-                                    color = PetrolDarkText
-                                )
-                                Text(
-                                    text = String.format(Locale.forLanguageTag("pt-BR"), "Custo Operacional Estimado Total: R$ %.2f", sumCost),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TrafficYellow
-                                )
-                                Text(
-                                    text = String.format(Locale.forLanguageTag("pt-BR"), "Lucro Líquido Estimado Total: R$ %.2f", sumNet),
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = TrafficGreen
-                                )
-                                Text(
-                                    text = String.format(
-                                        Locale.forLanguageTag("pt-BR"),
-                                        "Média Bruta das Ofertas: R$ %.2f/km  ·  R$ %.2f/h",
-                                        avgGrossKm,
-                                        avgGrossHr
+
+                                // LISTA DE LOCAIS BLOQUEADOS
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "🛡️ Seus Locais Bloqueados (${customZoneList.size}):",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 13.sp,
+                                        color = PetrolHeader
+                                    )
+                                    if (customZoneList.isNotEmpty()) {
+                                        TextButton(onClick = {
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(config.copy(customRiskZones = ""))
+                                                notifyUser("Lista de locais bloqueados esvaziada.")
+                                            }
+                                        }) {
+                                            Text("Limpar Todos", color = TrafficRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+
+                                if (customZoneList.isEmpty()) {
+                                    Surface(
+                                        color = SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "Nenhum local bloqueado manualmente ainda. Pesquise ruas ou bairros acima no mapa para adicionar à sua lista de segurança.",
+                                            fontSize = 11.5.sp,
+                                            color = MutedText,
+                                            modifier = Modifier.padding(12.dp)
+                                        )
+                                    }
+                                } else {
+                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        customZoneList.forEach { zone ->
+                                            Surface(
+                                                color = Color(0xFFFEF2F2),
+                                                shape = RoundedCornerShape(12.dp),
+                                                border = BorderStroke(1.dp, TrafficRed.copy(alpha = 0.35f)),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        Icon(Icons.Default.Warning, contentDescription = null, tint = TrafficRed, modifier = Modifier.size(16.dp))
+                                                        Text(
+                                                            text = zone,
+                                                            fontSize = 12.5.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = TrafficRed
+                                                        )
+                                                    }
+
+                                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                try {
+                                                                    val mapIntent = Intent(
+                                                                        Intent.ACTION_VIEW,
+                                                                        Uri.parse("geo:0,0?q=" + Uri.encode(zone))
+                                                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                                                                    context.startActivity(mapIntent)
+                                                                } catch (_: Exception) {}
+                                                            },
+                                                            modifier = Modifier.size(32.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Map, contentDescription = "Ver no mapa", tint = PetrolHeader, modifier = Modifier.size(16.dp))
+                                                        }
+
+                                                        IconButton(
+                                                            onClick = {
+                                                                val remaining = customZoneList.filterNot { it.equals(zone, ignoreCase = true) }
+                                                                scope.launch {
+                                                                    app.preferencesRepository.saveConfig(
+                                                                        config.copy(customRiskZones = remaining.joinToString(", "))
+                                                                    )
+                                                                    notifyUser("'$zone' removido da lista de segurança.")
+                                                                }
+                                                            },
+                                                            modifier = Modifier.size(32.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Delete, contentDescription = "Remover", tint = TrafficRed, modifier = Modifier.size(16.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Botão de teste na tela flutuante
+                                Button(
+                                    onClick = {
+                                        val sampleRiskZone = customZoneList.firstOrNull() ?: "Capão Redondo"
+                                        val testOffer = NinetyNineOfferReader.parseScreenNodes(
+                                            rawNodes = listOf(
+                                                "99Pop",
+                                                "R$ 24,50",
+                                                "★ 4,88 (34 corridas)",
+                                                "4 min (1,2 km) Av. Paulista, 1000 - Bela Vista",
+                                                "14 min (6,8 km) Viela 4, 120 - $sampleRiskZone"
+                                            ),
+                                            captureMethod = CaptureMethod.SIMULATION,
+                                            isSimulated = true
+                                        )
+                                        val eval = FinancialEngine.evaluate(testOffer, config)
+                                        RuntimeDiagnosticsBus.publishEvaluation(eval)
+                                        if (hasOverlayPermission) {
+                                            app.overlayPanel.applyConfig(config)
+                                            app.overlayPanel.showEvaluation(eval)
+                                        }
+                                        CopilotNotificationReceiver.showActiveNotification(
+                                            context = context,
+                                            latestEvaluation = eval,
+                                            showProfit = config.showProfitOnOverlay,
+                                            showCost = config.showCostOnOverlay
+                                        )
+                                        notifyUser("Simulação de Área de Risco enviada para a Janela Flutuante e Notificação!")
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF7F1D1D),
+                                        contentColor = Color.White
                                     ),
-                                    fontSize = 12.sp,
-                                    color = MutedText
-                                )
-                                Text(
-                                    text = "Aviso: Valores de custo e lucro são estimativas baseadas nos parâmetros configurados para o seu veículo, não representando lucro líquido garantido.",
-                                    fontSize = 11.sp,
-                                    color = MutedText
-                                )
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(46.dp)
+                                ) {
+                                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFEE2E2), modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("🚨 Testar Alerta de Área de Risco na Tela", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                                }
                             }
                         }
                     }
