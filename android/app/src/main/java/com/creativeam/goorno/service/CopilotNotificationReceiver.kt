@@ -17,6 +17,7 @@ import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.model.FinancialEvaluationResult
 import com.creativeam.goorno.model.TrafficLightVerdict
 import com.creativeam.goorno.ocr.OcrScreenCaptureService
+import com.creativeam.goorno.reader.BrazilianOfferParser
 import com.creativeam.goorno.util.StreetViewLauncher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
