@@ -630,20 +630,84 @@ class FloatingOverlayPanel(private val context: Context) {
         heroRow.addView(tvTotalInfo)
         box.addView(heroRow)
 
-        // 2. MÉTRICAS FINANCEIRAS (R$/km e R$/h)
-        val tvMetrics = TextView(context).apply {
-            text = "$grossKmStr   •   $grossHrStr$optionalSuffix"
-            setTextColor(Color.parseColor("#073B32"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
-            setTypeface(typeface, Typeface.BOLD)
+        // 2. MÉTRICAS FINANCEIRAS (R$/km e R$/h com quadradinhos coloridos individuais)
+        val metricsRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            lp.topMargin = dp(6)
+            lp.topMargin = dp(7)
             layoutParams = lp
         }
-        box.addView(tvMetrics)
+
+        // Quadradinho 1: R$/km (borda e fundo coloridos conforme a meta de R$/km)
+        val (kmBadgeHex, kmSoftBgHex, _) = verdictPalette(result.kmVerdict)
+        val kmTextColor = when (result.kmVerdict) {
+            TrafficLightVerdict.GREEN -> Color.parseColor("#065F46")
+            TrafficLightVerdict.YELLOW -> Color.parseColor("#92400E")
+            TrafficLightVerdict.RED -> Color.parseColor("#991B1B")
+            TrafficLightVerdict.GRAY_NEUTRAL -> Color.parseColor("#334155")
+        }
+        val tvKmBadge = TextView(context).apply {
+            text = grossKmStr
+            setTextColor(kmTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(7), dp(3), dp(7), dp(3))
+            background = roundedCardBg(kmSoftBgHex, kmBadgeHex, 7f, 2)
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = dp(8)
+            }
+            layoutParams = lp
+        }
+        metricsRow.addView(tvKmBadge)
+
+        // Quadradinho 2: R$/h (borda e fundo coloridos conforme a meta de R$/hora)
+        val (hrBadgeHex, hrSoftBgHex, _) = verdictPalette(result.hourVerdict)
+        val hrTextColor = when (result.hourVerdict) {
+            TrafficLightVerdict.GREEN -> Color.parseColor("#065F46")
+            TrafficLightVerdict.YELLOW -> Color.parseColor("#92400E")
+            TrafficLightVerdict.RED -> Color.parseColor("#991B1B")
+            TrafficLightVerdict.GRAY_NEUTRAL -> Color.parseColor("#334155")
+        }
+        val tvHrBadge = TextView(context).apply {
+            text = grossHrStr
+            setTextColor(hrTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(7), dp(3), dp(7), dp(3))
+            background = roundedCardBg(hrSoftBgHex, hrBadgeHex, 7f, 2)
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams = lp
+        }
+        metricsRow.addView(tvHrBadge)
+
+        if (optionalSuffix.isNotBlank()) {
+            val tvSuffix = TextView(context).apply {
+                text = optionalSuffix
+                setTextColor(Color.parseColor("#073B32"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                val lp = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginStart = dp(6)
+                }
+                layoutParams = lp
+            }
+            metricsRow.addView(tvSuffix)
+        }
+
+        box.addView(metricsRow)
 
         // 3. AVISO DO PASSAGEIRO (se disponível)
         if (!result.passengerRatingBadge.isNullOrBlank()) {

@@ -147,7 +147,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v3.3.0",
+                                            text = "v3.3.1",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
@@ -472,7 +472,7 @@ fun GoOrNoComposeApp(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    listOf(5, 8, 10, 12, 15).forEach { sec ->
+                                    listOf(3, 5, 8, 10).forEach { sec ->
                                         val selected = config.overlayAutoMinimizeSec == sec
                                         FilledTonalButton(
                                             onClick = {
@@ -841,15 +841,37 @@ fun GoOrNoComposeApp(
                                     )
                                 )
 
-                                OutlinedTextField(
-                                    value = autoMinSec,
-                                    onValueChange = { autoMinSec = it; savedFlag = false },
-                                    label = { Text("Tempo que a janelinha fica aberta antes de sumir (segundos)") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
+                                Text(
+                                    text = "Tempo da janelinha aberta antes de sumir:",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PetrolDarkText
                                 )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(3, 5, 8, 10).forEach { sec ->
+                                        val selected = autoMinSec == sec.toString()
+                                        FilledTonalButton(
+                                            onClick = {
+                                                autoMinSec = sec.toString()
+                                                savedFlag = false
+                                            },
+                                            colors = ButtonDefaults.filledTonalButtonColors(
+                                                containerColor = if (selected) PetrolHeader else SoftSurfaceVariant,
+                                                contentColor = if (selected) Color.White else PetrolDarkText
+                                            ),
+                                            shape = RoundedCornerShape(12.dp),
+                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(36.dp)
+                                        ) {
+                                            Text("${sec}s", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                                        }
+                                    }
+                                }
 
                                 HorizontalDivider(color = CleanCardBorder)
 

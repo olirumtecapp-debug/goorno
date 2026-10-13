@@ -418,6 +418,16 @@ object BrazilianOfferParser {
 
         // 2ª Passada: Número decimal típico de avaliação (ex: 4,92 / 4,85 / 4,68 / 5,00) fora de preço/km/dinâmico
         for (line in normalized) {
+            val lineLower = line.lowercase(Locale.getDefault())
+            if (line.contains("R$") ||
+                lineLower.contains("posto") ||
+                lineLower.contains("abastece") ||
+                lineLower.contains("combust") ||
+                lineLower.contains("desconto")
+            ) {
+                continue
+            }
+
             val clean = stripNonOfferPriceNoise(line)
                 .replace(CURRENCY_REGEX, " ")
                 .replace(DISTANCE_TOKEN_REGEX, " ")
@@ -426,7 +436,9 @@ object BrazilianOfferParser {
             val twoDecMatch = TWO_DECIMAL_RATING_REGEX.find(clean)
             if (twoDecMatch != null) {
                 val rating = parseBrazilianDecimal(twoDecMatch.groupValues[1])
-                if (rating != null && rating in 3.00..5.00) {
+                // Sem contexto explícito de estrela/corridas, notas válidas ficam entre 4.00 e 5.00
+                // (evita que preços como R$ 3,39 / 3,59 sejam interpretados como avaliação do passageiro)
+                if (rating != null && rating in 4.00..5.00) {
                     return rating
                 }
             }
@@ -940,5 +952,57 @@ object BrazilianOfferParser {
         NEW_OFFER,
         UPDATED_OFFER,
         EXACT_DUPLICATE
+    }
+
+    /**
+     * Identifica e filtra anúncios que NÃO são ofertas reais de passageiros, como:
+     * - "99 Abastece" / Descontos em Postos de Combustível (ex: Auto Posto Malu dos Vianas, R$ 3,39, 1.3 km)
+     * - Troca de óleo, lava rápido, pneus, seguros, empréstimos, cartões ou indicações
+     * - Telas em modo de busca ocioso ("Buscando", "Procurando viagens") sem botões de ação de chamada.
+     */
+    fun isNonRideAdOrService(lines: List<String>): Boolean {
+        if (lines.isEmpty()) return false
+        val joined = lines.joinToString(" ").lowercase(Locale.ROOT)
+
+        // 1. Palavras-chave explícitas de postos, combustíveis e serviços automotivos
+        val nonRideKeywords = listOf(
+            "abastece", "abasteça", "abastecer", "abastecimento",
+            "auto posto", "autoposto", "posto de gasolina", "posto de combustível", "posto de combustivel",
+            "combustível", "combustivel", "gasolina", "etanol", "diesel", "gnv",
+            "desconto no combustível", "desconto combustível", "desconto combustivel",
+            "troca de óleo", "troca de oleo", "lava rápido", "lava rapido",
+            "loja 99", "99pay", "uber pro card", "empréstimo", "emprestimo",
+            "indique e ganhe", "compre com desconto", "compre seu carro", "aluguel de carro",
+            "fatura", "recarga de celular", "seguro auto"
+        )
+        if (nonRideKeywords.any { joined.contains(it) }) {
+            return true
+        }
+
+        val hasRideAction = joined.contains("escolher") ||
+            joined.contains("aceitar") ||
+            joined.contains("selecionar") ||
+            joined.contains("deslize") ||
+            joined.contains("nova corrida")
+
+        // 2. Ocorrência de "posto" isolado sem botão de ação de corrida
+        if ((joined.contains("posto ") || joined.contains(" postos") || joined.startsWith("posto")) &&
+            !hasRideAction && !joined.contains("embarque")
+        ) {
+            return true
+        }
+
+        // 3. Telas em modo de busca ("Buscando" / "Procurando viagens") sem chamada ativa
+        val isSearchingOrIdle = joined.contains("buscando") ||
+            joined.contains("procurando viagens") ||
+            joined.contains("procurando passageiros") ||
+            joined.contains("você está online") ||
+            joined.contains("voce esta online")
+
+        if (isSearchingOrIdle && !hasRideAction) {
+            return true
+        }
+
+        return false
     }
 }

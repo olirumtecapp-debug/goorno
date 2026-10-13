@@ -280,6 +280,21 @@ object FinancialEngine {
             verdictAfterRating
         }
 
+        val yellowRatio = config.yellowToleranceRatio.coerceIn(0.50, 0.99)
+        val kmVerdict = when {
+            grossPerKm == null -> TrafficLightVerdict.GRAY_NEUTRAL
+            grossPerKm >= config.targetGrossPerKm -> TrafficLightVerdict.GREEN
+            grossPerKm >= round2(config.targetGrossPerKm * yellowRatio) -> TrafficLightVerdict.YELLOW
+            else -> TrafficLightVerdict.RED
+        }
+
+        val hourVerdict = when {
+            grossPerHour == null -> TrafficLightVerdict.GRAY_NEUTRAL
+            grossPerHour >= config.targetGrossPerHour -> TrafficLightVerdict.GREEN
+            grossPerHour >= round2(config.targetGrossPerHour * yellowRatio) -> TrafficLightVerdict.YELLOW
+            else -> TrafficLightVerdict.RED
+        }
+
         return FinancialEvaluationResult(
             offer = offer,
             totalConsideredDistanceKm = totalDistanceKm?.let { round2(it) },
@@ -297,6 +312,8 @@ object FinancialEngine {
             netProfitPerKm = netPerKm,
             netProfitPerHour = netPerHour,
             verdict = finalVerdict,
+            kmVerdict = kmVerdict,
+            hourVerdict = hourVerdict,
             reasons = reasons,
             warnings = warnings,
             passengerRating = rating,
@@ -435,6 +452,8 @@ object FinancialEngine {
             netProfitPerKm = null,
             netProfitPerHour = null,
             verdict = TrafficLightVerdict.GRAY_NEUTRAL,
+            kmVerdict = TrafficLightVerdict.GRAY_NEUTRAL,
+            hourVerdict = TrafficLightVerdict.GRAY_NEUTRAL,
             reasons = reasons,
             warnings = warnings
         )

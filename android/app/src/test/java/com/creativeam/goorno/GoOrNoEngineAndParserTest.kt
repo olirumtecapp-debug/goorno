@@ -501,6 +501,74 @@ class GoOrNoEngineAndParserTest {
         // Linha de notificação de sistema deve ser descartada
         assertNull(cleanedNoise)
     }
+
+    // 18. TESTE DO PRINT 1 DO USUÁRIO: BLOQUEIO DE PROPAGANDA DE COMBUSTÍVEL / 99 ABASTECE
+    @Test
+    fun `test fuel station ad 99 abastece is strictly ignored as non-offer`() {
+        val fuelAdNodes = listOf(
+            "99 Abastece",
+            "Mais >",
+            "Auto Posto Malu dos Vianas",
+            "R$3,39",
+            "R$3,59",
+            "R. dos Vianas, 3397 - Baeta ...",
+            "1.3km",
+            "Buscando"
+        )
+
+        // Verifica função central de detecção de anúncio
+        assertTrue(BrazilianOfferParser.isNonRideAdOrService(fuelAdNodes))
+
+        // Verifica que o leitor da 99 descarta o anúncio como NON_OFFER
+        val singleResult = NinetyNineOfferReader.parseScreenNodes(fuelAdNodes)
+        assertEquals(ScreenClassification.NON_OFFER, singleResult.screenClassification)
+
+        val multipleOffers = NinetyNineOfferReader.parseMultipleOffersFromScreen(fuelAdNodes)
+        assertTrue(multipleOffers.isEmpty())
+    }
+
+    // 19. TESTE DO PRINT 2 DO USUÁRIO: VEREDITOS INDIVIDUAIS DE KM E HORA
+    @Test
+    fun `test user screenshot 2 individual km and hour verdicts`() {
+        val popRideNodes = listOf(
+            "Pop Nova",
+            "R$9,48",
+            "R$2,46/km",
+            "4,85 · 470 corridas · Perfil Premium",
+            "(5 min 1 km) Rua dos Vianas, 241, Baeta Neves",
+            "(10 min 2,9 km) Rua Diretora Maria Cleuza, 87, Jardim Nascimento",
+            "Escolher"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(popRideNodes)
+        assertEquals(1, offers.size)
+
+        val offer = offers.first()
+        val config = DriverFinancialConfig(
+            targetGrossPerKm = 2.00,
+            targetGrossPerHour = 40.00,
+            yellowToleranceRatio = 0.80, // amarelo entre 32.00 e 39.99/h
+            requireGrossPerKm = true,
+            requireGrossPerHour = true
+        )
+        val eval = FinancialEngine.evaluate(offer, config)
+
+        // 3.9 km e 15 min -> R$ 2,43/km e R$ 37,92/h
+        assertEquals(9.48, offer.offeredPrice!!, 0.001)
+        assertEquals(3.9, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(15, eval.totalConsideredDurationMin)
+        assertEquals(2.43, eval.grossPerKm!!, 0.01)
+        assertEquals(37.92, eval.grossPerHour!!, 0.01)
+
+        // R$/km (2,43 >= 2,00) -> VERDE
+        assertEquals(TrafficLightVerdict.GREEN, eval.kmVerdict)
+
+        // R$/h (37,92 >= 32,00 e < 40,00) -> AMARELO
+        assertEquals(TrafficLightVerdict.YELLOW, eval.hourVerdict)
+
+        // Veredito geral com meta combinada -> AVALIAR (AMARELO)
+        assertEquals(TrafficLightVerdict.YELLOW, eval.verdict)
+    }
 }
 
 

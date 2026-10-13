@@ -64,6 +64,21 @@ object UberOfferReader {
             )
         }
 
+        // Filtro rigoroso de Anúncios e Serviços (ex: postos de combustível, Uber Pro Card, empréstimos, etc.)
+        if (BrazilianOfferParser.isNonRideAdOrService(cleanedLines)) {
+            return StandardRideOffer(
+                offerId = UUID.randomUUID().toString(),
+                sourceApp = if (isSimulated) SourceApp.SIMULATION else SourceApp.UBER_DRIVER,
+                captureMethod = captureMethod,
+                screenClassification = ScreenClassification.NON_OFFER,
+                timestampMillis = timestampMillis,
+                offeredPriceField = ExtractedField.Missing,
+                confidenceScore = 0.0,
+                rawCapturedTexts = cleanedLines,
+                isSimulated = isSimulated
+            )
+        }
+
         val prices = BrazilianOfferParser.extractAllCurrencies(cleanedLines)
         val hasInvalidCurrencyToken = cleanedLines.any {
             it.contains("R$", ignoreCase = true) && BrazilianOfferParser.parseCurrencyBr(it).isUnrecognized
@@ -128,7 +143,8 @@ object UberOfferReader {
 
         // Toda oferta real da Uber (seja chamada direta ou Radar de Viagens) possui obrigatoriamente preço (R$) e distância (km/m).
         // Telas de mapa com saldo/dinâmico (ex: R$ 6,25 + "5 min" sem km) NÃO são ofertas e não devem disparar "DADOS INSUFICIENTES".
-        val isOfferScreen = priceField.isPresent && totalKmVal != null && totalKmVal > 0.0
+        val isOfferScreen = priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
+            !BrazilianOfferParser.isNonRideAdOrService(cleanedLines)
 
         var confidence = 0.0
         if (priceField.isPresent) confidence += 0.45

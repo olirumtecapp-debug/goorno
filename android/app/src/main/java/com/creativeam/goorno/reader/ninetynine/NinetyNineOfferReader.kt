@@ -70,6 +70,21 @@ object NinetyNineOfferReader {
             )
         }
 
+        // 1b. Filtro rigoroso de Anúncios e Serviços (ex: "99 Abastece", postos de combustível, empréstimos, etc.)
+        if (BrazilianOfferParser.isNonRideAdOrService(cleanedLines)) {
+            return StandardRideOffer(
+                offerId = UUID.randomUUID().toString(),
+                sourceApp = if (isSimulated) SourceApp.SIMULATION else SourceApp.NINETY_NINE_DRIVER,
+                captureMethod = captureMethod,
+                screenClassification = ScreenClassification.NON_OFFER,
+                timestampMillis = timestampMillis,
+                offeredPriceField = ExtractedField.Missing,
+                confidenceScore = 0.0,
+                rawCapturedTexts = cleanedLines,
+                isSimulated = isSimulated
+            )
+        }
+
         // 2. Preço oferecido principal (ignorando R$/km e R$ por deslocamento incl.)
         val prices = BrazilianOfferParser.extractAllCurrencies(cleanedLines)
         val hasInvalidCurrency = cleanedLines.any {
@@ -166,7 +181,8 @@ object NinetyNineOfferReader {
         if (captureMethod == CaptureMethod.OCR) confidence *= 0.90
         if (conflictNotes.isNotEmpty()) confidence *= 0.50
 
-        val isOffer = priceField.isPresent && totalKmVal != null && totalKmVal > 0.0
+        val isOffer = priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
+            !BrazilianOfferParser.isNonRideAdOrService(cleanedLines)
         val classification = if (isOffer) {
             ScreenClassification.NEW_OFFER
         } else {

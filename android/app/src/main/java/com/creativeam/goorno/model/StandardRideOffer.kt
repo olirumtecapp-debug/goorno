@@ -223,6 +223,8 @@ data class FinancialEvaluationResult(
     val netProfitPerKm: Double?,
     val netProfitPerHour: Double?,
     val verdict: TrafficLightVerdict,
+    val kmVerdict: TrafficLightVerdict = TrafficLightVerdict.GRAY_NEUTRAL,
+    val hourVerdict: TrafficLightVerdict = TrafficLightVerdict.GRAY_NEUTRAL,
     val reasons: List<String>,
     val warnings: List<String>,
     val passengerRating: Double? = null,
