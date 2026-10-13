@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "expedicao-brasil";
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyBUHGXoUMg0bV3EdmfpfmVAEYMLQceqkQc";
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
 const COL_LICENSES = "goorno_licencas";
 
 const IS_VERCEL = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);

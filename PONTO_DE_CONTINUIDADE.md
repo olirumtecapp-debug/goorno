@@ -69,9 +69,9 @@
 Configuradas em `D:\GoOrNo\.env` e integradas ao Vercel e Firebase:
 - `PORT=3000`
 - `FIREBASE_PROJECT_ID=expedicao-brasil`
-- `FIREBASE_API_KEY=AIzaSyBUHGXoUMg0bV3EdmfpfmVAEYMLQceqkQc`
-- `ASAAS_API_KEY=$aact_prod_...` (Asaas Produção)
-- `RESEND_API_KEY=re_3usMJYFF_...` (Resend Alertas)
+- `FIREBASE_API_KEY` (Configurado no .env local e Vercel)
+- `ASAAS_API_KEY` (Chave de produção Asaas no .env local e Vercel)
+- `RESEND_API_KEY` (Chave de alertas Resend no .env local e Vercel)
 - `GMAIL_USER=contatocreativeam@gmail.com`
 - `ADMIN_PASSWORD=goorno2026admin`
 
