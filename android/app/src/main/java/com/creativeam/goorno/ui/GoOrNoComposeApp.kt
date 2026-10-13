@@ -67,7 +67,8 @@ enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: St
     HISTORY(7, "Histórico, Endereços e Street View 360°", "Histórico"),
     SECURITY(8, "Segurança e Áreas de Risco", "Segurança"),
     DIAGNOSTICS_TESTS(9, "Diagnóstico, OCR e Simulador", "Testes"),
-    PRIVACY_BACKUP(10, "Privacidade e Troca de Aparelho", "Backup")
+    PRIVACY_BACKUP(10, "Privacidade e Troca de Aparelho", "Backup"),
+    SUBSCRIPTION(11, "Assinatura Pro, PIX e Licença", "Plano Pro")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -146,8 +147,22 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text(
-                                            text = "v3.2.1",
+                                            text = "v3.3.0",
                                             color = PetrolDarkText,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = 10.sp,
+                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Surface(
+                                        color = Color.White.copy(alpha = 0.22f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.clickable { currentScreen = GoOrNoScreen.SUBSCRIPTION }
+                                    ) {
+                                        Text(
+                                            text = "⭐ PRO",
+                                            color = Color.White,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
                                             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
@@ -2933,6 +2948,15 @@ fun GoOrNoComposeApp(
                                 )
                             }
                         }
+                    }
+                }
+
+                // =====================================================
+                // TELA 11: ASSINATURA PRO, PIX E LICENÇA
+                // =====================================================
+                GoOrNoScreen.SUBSCRIPTION -> {
+                    item {
+                        SubscriptionScreenCard(onNotify = notifyUser)
                     }
                 }
             }
