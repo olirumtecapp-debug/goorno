@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AdminDashboard } from './AdminDashboard';
+import { DownloadLandingPage } from './DownloadLandingPage';
 import {
   Power,
   Sliders,
@@ -118,6 +119,10 @@ export function App() {
     );
   });
 
+  const [showSimulator, setShowSimulator] = useState<boolean>(() => {
+    return window.location.hash.includes('simulator');
+  });
+
   useEffect(() => {
     const handleNav = () => {
       setIsAdminView(
@@ -125,6 +130,7 @@ export function App() {
         window.location.hash.includes('admin') ||
         window.location.search.includes('admin')
       );
+      setShowSimulator(window.location.hash.includes('simulator'));
     };
     window.addEventListener('hashchange', handleNav);
     window.addEventListener('popstate', handleNav);
@@ -140,7 +146,7 @@ export function App() {
   const [copilotActive, setCopilotActive] = useState<boolean>(false);
 
   // Native Android permissions state
-  const [isNative, setIsNative] = useState<boolean>(false);
+  const [isNative, setIsNative] = useState<boolean>(() => typeof window !== 'undefined' && !!(window as any).AndroidBridge);
   const [hasOverlayPerm, setHasOverlayPerm] = useState<boolean>(false);
   const [hasAccessPerm, setHasAccessPerm] = useState<boolean>(false);
 
@@ -436,6 +442,21 @@ export function App() {
     );
   }
 
+  if (!isNative && !showSimulator) {
+    return (
+      <DownloadLandingPage
+        onOpenSimulator={() => {
+          window.location.hash = 'simulator';
+          setShowSimulator(true);
+        }}
+        onOpenAdmin={() => {
+          window.location.hash = 'admin';
+          setIsAdminView(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#031B17] text-white flex justify-center select-none font-sans">
       {/* Mobile-First Container (Identical proportions to GigU / JetMax / JustoApp) */}
@@ -463,6 +484,20 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            {!isNative && (
+              <button
+                onClick={() => {
+                  window.location.hash = '';
+                  setShowSimulator(false);
+                }}
+                className="px-2 py-1.5 rounded-xl border border-[#97B304]/40 bg-[#04241E] hover:bg-[#0D4A3E] text-[11px] font-bold text-[#d9f56a] transition flex items-center gap-1 shadow-sm"
+                title="Voltar para a Página de Download do APK"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Baixar APK</span>
+              </button>
+            )}
+
             {/* Quick Admin Access */}
             <button
               onClick={() => {
