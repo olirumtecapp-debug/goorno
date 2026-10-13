@@ -4,10 +4,24 @@ import path from "path";
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "expedicao-brasil";
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
 const COL_LICENSES = "goorno_licencas";
+const COL_VOUCHERS = "goorno_vouchers";
 
 const IS_VERCEL = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 const DATA_DIR = IS_VERCEL ? "/tmp" : path.resolve(process.cwd(), ".data");
 const LOCAL_CACHE_FILE = path.join(DATA_DIR, "goorno-licenses-cache.json");
+const LOCAL_VOUCHERS_FILE = path.join(DATA_DIR, "goorno-vouchers-cache.json");
+
+export interface VoucherRecord {
+  id: string; // uppercase code e.g. "BEMVINDO7"
+  code: string;
+  description: string;
+  days: number; // e.g. 7, 15, 30, 999
+  isLifetime: boolean;
+  maxUses: number; // 0 = unlimited
+  usedCount: number;
+  active: boolean;
+  createdAt: string;
+}
 
 export interface LicenseTransfer {
   date: string;
@@ -430,4 +444,215 @@ export async function applyPayment(params: {
 
   await saveLicense(record);
   return record;
+}
+
+// Local vouchers cache fallback
+function readLocalVouchersCache(): Record<string, VoucherRecord> {
+  try {
+    if (fs.existsSync(LOCAL_VOUCHERS_FILE)) {
+      return JSON.parse(fs.readFileSync(LOCAL_VOUCHERS_FILE, "utf-8"));
+    }
+  } catch {}
+  return {};
+}
+
+function saveLocalVouchersCache(cache: Record<string, VoucherRecord>) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(LOCAL_VOUCHERS_FILE, JSON.stringify(cache, null, 2), "utf-8");
+  } catch {}
+}
+
+export async function getVoucher(code: string): Promise<VoucherRecord | null> {
+  const cleanCode = code.trim().toUpperCase();
+  if (!cleanCode) return null;
+
+  try {
+    const res = await fetch(firestoreUrl(COL_VOUCHERS, `vouch_${cleanCode}`));
+    if (res.ok) {
+      const json: any = await res.json();
+      const raw = json?.fields?.payload?.stringValue;
+      if (raw) {
+        const doc: VoucherRecord = JSON.parse(raw);
+        const cache = readLocalVouchersCache();
+        cache[cleanCode] = doc;
+        saveLocalVouchersCache(cache);
+        return doc;
+      }
+    }
+  } catch (err) {
+    console.warn("[licenseStore] Erro ao ler voucher do Firestore:", err);
+  }
+
+  const cache = readLocalVouchersCache();
+  return cache[cleanCode] || null;
+}
+
+export async function saveVoucher(voucher: VoucherRecord): Promise<boolean> {
+  const code = voucher.code.trim().toUpperCase();
+  if (!code) return false;
+  voucher.id = code;
+  voucher.code = code;
+
+  // Save to cache
+  const cache = readLocalVouchersCache();
+  cache[code] = voucher;
+  saveLocalVouchersCache(cache);
+
+  // Save to Firestore
+  try {
+    const body = {
+      fields: {
+        payload: { stringValue: JSON.stringify(voucher) },
+        updatedAt: { stringValue: new Date().toISOString() },
+      },
+    };
+    const res = await fetch(firestoreUrl(COL_VOUCHERS, `vouch_${code}`), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("[licenseStore] Erro ao salvar voucher no Firestore:", err);
+    return false;
+  }
+}
+
+export async function deleteVoucher(code: string): Promise<boolean> {
+  const cleanCode = code.trim().toUpperCase();
+  if (!cleanCode) return false;
+
+  const cache = readLocalVouchersCache();
+  delete cache[cleanCode];
+  saveLocalVouchersCache(cache);
+
+  try {
+    const res = await fetch(firestoreUrl(COL_VOUCHERS, `vouch_${cleanCode}`), {
+      method: "DELETE",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function listAllVouchers(): Promise<VoucherRecord[]> {
+  const mapById = new Map<string, VoucherRecord>();
+
+  try {
+    const res = await fetch(`${firestoreUrl(COL_VOUCHERS)}?pageSize=300`);
+    if (res.ok) {
+      const json: any = await res.json();
+      const docs = json.documents || [];
+      for (const d of docs) {
+        const raw = d.fields?.payload?.stringValue;
+        if (raw) {
+          try {
+            const parsed: VoucherRecord = JSON.parse(raw);
+            mapById.set(parsed.code, parsed);
+          } catch {}
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[licenseStore] Erro ao listar vouchers do Firestore:", err);
+  }
+
+  // Merge with local cache
+  const cache = readLocalVouchersCache();
+  for (const [code, item] of Object.entries(cache)) {
+    if (!mapById.has(code)) {
+      mapById.set(code, item);
+    }
+  }
+
+  return Array.from(mapById.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function redeemVoucher(params: {
+  phone: string;
+  code: string;
+  deviceId?: string;
+}): Promise<{ ok: boolean; message: string; license?: LicenseRecord; voucher?: VoucherRecord }> {
+  const cleanCode = params.code.trim().toUpperCase();
+  if (!cleanCode) {
+    return { ok: false, message: "Digite um código de cupom válido." };
+  }
+
+  const voucher = await getVoucher(cleanCode);
+  if (!voucher) {
+    return { ok: false, message: `Cupom "${cleanCode}" não encontrado.` };
+  }
+
+  if (!voucher.active) {
+    return { ok: false, message: `O cupom "${cleanCode}" está desativado.` };
+  }
+
+  if (voucher.maxUses > 0 && voucher.usedCount >= voucher.maxUses) {
+    return { ok: false, message: `Limite de utilizações do cupom "${cleanCode}" foi atingido.` };
+  }
+
+  const phone = cleanPhone(params.phone);
+  if (!phone) {
+    return { ok: false, message: "Informe seu número de WhatsApp para resgatar." };
+  }
+
+  let record = await getLicense(phone);
+  const now = new Date();
+
+  // Check if driver already redeemed this specific coupon
+  if (record && record.notes && record.notes.includes(`Cupom ${cleanCode} resgatado`)) {
+    return { ok: false, message: `Você já resgatou o cupom "${cleanCode}" anteriormente neste número.` };
+  }
+
+  let currentValidMs = record && record.validoAte ? new Date(record.validoAte).getTime() : 0;
+  if (currentValidMs < now.getTime()) {
+    currentValidMs = now.getTime();
+  }
+
+  const isLifetime = voucher.isLifetime || voucher.days >= 365;
+  const newValidDate = isLifetime
+    ? new Date("2099-12-31T23:59:59.000Z")
+    : new Date(currentValidMs + voucher.days * 24 * 60 * 60 * 1000);
+
+  if (!record) {
+    record = {
+      id: phone,
+      whatsapp: formatPhoneBr(phone),
+      deviceId: params.deviceId || "",
+      status: "active",
+      plano: isLifetime ? "vitalicio" : "cortesia",
+      trialEndsAt: now.toISOString(),
+      validoAte: newValidDate.toISOString(),
+      createdAt: now.toISOString(),
+      lastSeenAt: now.toISOString(),
+      deviceTransfersCount: 0,
+      transfers: [],
+      fraudSuspicion: false,
+      notes: `Cupom ${cleanCode} resgatado (+${voucher.days} dias) em ${now.toLocaleString("pt-BR")}`,
+    };
+  } else {
+    record.status = "active";
+    record.plano = isLifetime ? "vitalicio" : (record.plano === "vitalicio" ? "vitalicio" : "cortesia");
+    record.validoAte = newValidDate.toISOString();
+    record.lastSeenAt = now.toISOString();
+    if (params.deviceId && !record.deviceId) {
+      record.deviceId = params.deviceId;
+    }
+    record.notes = `${record.notes || ""}\nCupom ${cleanCode} resgatado (+${voucher.days} dias) em ${now.toLocaleString("pt-BR")}`.trim();
+  }
+
+  // Increment voucher usage
+  voucher.usedCount++;
+  await saveVoucher(voucher);
+  await saveLicense(record);
+
+  const msg = isLifetime
+    ? `🎉 Parabéns! Cupom "${cleanCode}" ativado: Acesso Vitalício liberado com sucesso!`
+    : `🎉 Sucesso! Cupom "${cleanCode}" ativado: +${voucher.days} dias liberados (válido até ${new Date(record.validoAte).toLocaleDateString("pt-BR")}).`;
+
+  return { ok: true, message: msg, license: record, voucher };
 }

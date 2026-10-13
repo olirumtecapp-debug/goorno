@@ -1,17 +1,60 @@
-# 📌 Ponto de Continuidade — Projeto GoOrNo (v3.3.0)
+# 📌 Ponto de Continuidade — Projeto GoOrNo (v3.3.2)
 
 **Data do Checkpoint:** 13/10/2026  
 **Diretório do Projeto:** `D:\GoOrNo`  
 **Código-Fonte Nativo Android:** `D:\GoOrNo\android`  
 **Pacote Android:** `com.creativeam.goorno`  
-**Última Versão Compilada:** `GoOrNo-v3.3.0.apk` (`versionCode 17` | `versionName "3.3.0"`)  
-**Caminho do APK Atual:** `D:\GoOrNo\GoOrNo-v3.3.0.apk`  
+**Última Versão Compilada:** `GoOrNo-v3.3.2.apk` (`versionCode 19` | `versionName "3.3.2"`)  
+**Caminho do APK Atual:** `D:\GoOrNo\GoOrNo-v3.3.2.apk`  
 **Painel Web Administrativo:** `https://goorno-app.vercel.app/#admin` (ou `/admin`)  
 **Repositório GitHub (CI/CD Actions):** `https://github.com/olirumtecapp-debug/goorno`
 
 ---
 
 ## 1. Estado Atual do Projeto (100% Funcional e Integrado)
+
+### 🚀 Novidades da `v3.3.2` (Painel Clean MeuAutônomo + Sistema Completo de Vouchers/Cupons):
+1. **Painel Admin Clean Inspirado no MeuAutônomo:**
+   - Visual limpo e moderno usando a paleta exata:
+     - Fundo suave `#f5f7f2`
+     - Tom de destaque/títulos verde-escuro petróleo `#173a34`
+     - Realces vibrantes em lime/chartreuse `#d9f56a`
+     - Textos secundários `#71867f` e bordas `#dce5dc`
+     - Cards em branco com cantos arredondados (`rounded-2xl`).
+   - 3 Abas claras e organizadas:
+     - 📊 **Visão Geral & Faturamento** (MRR, Total de motoristas, pagantes, gráficos e métricas).
+     - 👥 **Motoristas & Licenças** (busca, filtros, concessão de cortesia e reset de aparelho).
+     - 🎟️ **Cupons & Vouchers** (gestão completa de vouchers promocionais e de cortesia).
+
+2. **Sistema Completo de Vouchers / Cupons de Cortesia:**
+   - **Criação pelo Painel Admin:**
+     - Código customizado ou gerador automático em caixa alta (ex: `BEMVINDO7`, `LANCAMENTO30`, `PARCEIROVIP`).
+     - Duração flexível: 7 dias, 15 dias, 30 dias ou Acesso Vitalício.
+     - Limite de usos (ex: primeiros 50 motoristas) ou ilimitado.
+     - Descrição ou notas do cupom.
+   - **Gestão no Painel:**
+     - Cópia com 1 clique para colar no WhatsApp.
+     - Ativação / desativação instantânea com toggle.
+     - Contador de usos em tempo real.
+     - Exclusão com confirmação.
+   - **Resgate pelo Motorista no App Android:**
+     - Campo dedicado na aba *"⭐ Plano Pro"* com botão *"Resgatar Cupom"*.
+     - Validação instantânea contra o backend `/api/redeem-voucher`.
+     - Prevenção de resgate duplo pelo mesmo número de WhatsApp.
+     - Ativação imediata da licença cortesia/vitalícia no aparelho do motorista.
+
+### 🚀 Novidades da `v3.3.1` (Filtro Anti-Propaganda, Destaque R$/km e R$/h e Novos Tempos):
+1. **Filtro Anti-Propaganda e Postos de Combustível (`isNonRideAdOrService`):**
+   - Ignora anúncios como "99 Abastece", "Auto Posto", descontos de combustível, troca de óleo, empréstimos, cartões e telas em modo de busca ("Buscando") sem ação de chamada.
+   - Aplica tanto no leitor da 99 quanto da Uber.
+2. **Destaque Visual com Quadradinhos no Flutuante (`kmVerdict` e `hourVerdict`):**
+   - R$/km e R$/h agora possuem caixas/tags individuais coloridas com contorno 2dp e fundo suave:
+     - 🟢 **Verde:** atende ou supera a meta.
+     - 🟡 **Amarelo:** na faixa de tolerância próxima à meta.
+     - 🔴 **Vermelho:** abaixo da meta.
+   - Veredito geral e cores de fundo do card preservados como no design original aprovado.
+3. **Novas Opções de Tempo da Janelinha:**
+   - Opções estritas de **3s, 5s, 8s e 10s** (removidos 12s e 15s).
 
 ### 🚀 Novidades da `v3.3.0` (Sistema Completo de Monetização, Anti-Fraude e Painel Master)
 

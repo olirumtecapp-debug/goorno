@@ -19,6 +19,12 @@ import {
   cleanPhone,
   formatPhoneBr,
   LicenseRecord,
+  listAllVouchers,
+  getVoucher,
+  saveVoucher,
+  deleteVoucher,
+  redeemVoucher,
+  VoucherRecord,
 } from "./licenseStore.js";
 import { createPixCharge, verifyPaymentStatus } from "./asaas.js";
 import { sendFraudAlertEmail } from "./fraudAlert.js";
@@ -764,6 +770,120 @@ app.post("/api/admin/manage-license", async (req, res) => {
     res.json({ ok: true, license: lic });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || "Erro ao atualizar licença." });
+  }
+});
+
+// 7. Admin Vouchers: List all vouchers
+app.get("/api/admin/vouchers", async (req, res) => {
+  if (!checkAdminAuth(req)) {
+    return res.status(401).json({ error: "Acesso não autorizado ao painel admin." });
+  }
+  try {
+    const vouchers = await listAllVouchers();
+    res.json({ ok: true, vouchers });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao listar vouchers." });
+  }
+});
+
+// 8. Admin Vouchers: Create new voucher
+app.post("/api/admin/create-voucher", async (req, res) => {
+  if (!checkAdminAuth(req)) {
+    return res.status(401).json({ error: "Acesso não autorizado ao painel admin." });
+  }
+  try {
+    const { code, description, days, isLifetime, maxUses } = req.body || {};
+    const cleanCode = String(code || "").trim().toUpperCase();
+    if (!cleanCode || cleanCode.length < 3) {
+      return res.status(400).json({ error: "Código do voucher deve ter pelo menos 3 caracteres." });
+    }
+
+    const existing = await getVoucher(cleanCode);
+    if (existing) {
+      return res.status(400).json({ error: `O voucher "${cleanCode}" já existe.` });
+    }
+
+    const newVoucher: VoucherRecord = {
+      id: cleanCode,
+      code: cleanCode,
+      description: String(description || "").trim() || "Voucher Promocional GoOrNo",
+      days: Number(days || 7),
+      isLifetime: Boolean(isLifetime),
+      maxUses: Number(maxUses || 0),
+      usedCount: 0,
+      active: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    await saveVoucher(newVoucher);
+    res.json({ ok: true, voucher: newVoucher });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao criar voucher." });
+  }
+});
+
+// 9. Admin Vouchers: Toggle Active Status
+app.post("/api/admin/toggle-voucher", async (req, res) => {
+  if (!checkAdminAuth(req)) {
+    return res.status(401).json({ error: "Acesso não autorizado ao painel admin." });
+  }
+  try {
+    const { code, active } = req.body || {};
+    const cleanCode = String(code || "").trim().toUpperCase();
+    const voucher = await getVoucher(cleanCode);
+    if (!voucher) {
+      return res.status(404).json({ error: "Voucher não encontrado." });
+    }
+
+    voucher.active = typeof active === "boolean" ? active : !voucher.active;
+    await saveVoucher(voucher);
+    res.json({ ok: true, voucher });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao atualizar voucher." });
+  }
+});
+
+// 10. Admin Vouchers: Delete voucher
+app.post("/api/admin/delete-voucher", async (req, res) => {
+  if (!checkAdminAuth(req)) {
+    return res.status(401).json({ error: "Acesso não autorizado ao painel admin." });
+  }
+  try {
+    const { code } = req.body || {};
+    const cleanCode = String(code || "").trim().toUpperCase();
+    await deleteVoucher(cleanCode);
+    res.json({ ok: true, message: `Voucher "${cleanCode}" excluído com sucesso.` });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao excluir voucher." });
+  }
+});
+
+// 11. Public Route: Driver Redeems Voucher (via App or Web)
+app.post("/api/redeem-voucher", async (req, res) => {
+  try {
+    const { whatsapp, code, deviceId } = req.body || {};
+    if (!whatsapp || !code) {
+      return res.status(400).json({ error: "WhatsApp e código do cupom são obrigatórios." });
+    }
+
+    const result = await redeemVoucher({
+      phone: String(whatsapp),
+      code: String(code),
+      deviceId: deviceId ? String(deviceId) : undefined,
+    });
+
+    if (!result.ok) {
+      return res.status(400).json({ error: result.message });
+    }
+
+    res.json({
+      ok: true,
+      message: result.message,
+      license: result.license,
+      voucher: result.voucher,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao resgatar cupom." });
   }
 });
 
