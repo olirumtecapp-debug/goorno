@@ -317,16 +317,6 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
             >
               {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : 'Acessar Painel Master'}
             </button>
-
-            {onBackToApp && (
-              <button
-                type="button"
-                onClick={onBackToApp}
-                className="w-full text-xs font-semibold text-[#71867f] hover:text-[#173a34] py-2 text-center transition cursor-pointer"
-              >
-                ← Voltar ao App GoOrNo
-              </button>
-            )}
           </form>
         </div>
       </div>

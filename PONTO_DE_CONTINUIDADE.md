@@ -1,11 +1,11 @@
-# 📌 Ponto de Continuidade — Projeto GoOrNo (v3.3.2)
+# 📌 Ponto de Continuidade — Projeto GoOrNo (v3.3.3)
 
 **Data do Checkpoint:** 13/10/2026  
 **Diretório do Projeto:** `D:\GoOrNo`  
 **Código-Fonte Nativo Android:** `D:\GoOrNo\android`  
 **Pacote Android:** `com.creativeam.goorno`  
-**Última Versão Compilada:** `GoOrNo-v3.3.2.apk` (`versionCode 19` | `versionName "3.3.2"`)  
-**Caminho do APK Atual:** `D:\GoOrNo\GoOrNo-v3.3.2.apk`  
+**Última Versão Compilada:** `GoOrNo-v3.3.3.apk` (`versionCode 20` | `versionName "3.3.3"`)  
+**Caminho do APK Atual:** `D:\GoOrNo\GoOrNo-v3.3.3.apk`  
 **Painel Web Administrativo:** `https://goorno-app.vercel.app/#admin` (ou `/admin`)  
 **Repositório GitHub (CI/CD Actions):** `https://github.com/olirumtecapp-debug/goorno`
 
@@ -13,7 +13,26 @@
 
 ## 1. Estado Atual do Projeto (100% Funcional e Integrado)
 
-### 🚀 Novidades da `v3.3.2` (Painel Clean MeuAutônomo + Sistema Completo de Vouchers/Cupons):
+### 🚀 Novidades da `v3.3.3` (Fim da Leitura Repetida, Notificação Discreta & Correção Visual dos Preços):
+1. **Deduplicação Inteligente de Ofertas (Fim das Leituras Infinitas):**
+   - Corrigido o bug que fazia chamadas na tela serem lidas repetidamente a cada poucos segundos.
+   - Criada chave estável (`sourceApp|price|km|origem|destino`) com tolerância de GPS (0.5km) e centavos.
+   - Implementado **cooldown de 90 segundos**: após uma corrida ser avaliada e exibida ao motorista, ela é silenciada e **nunca mais reabre o card na tela** enquanto permanecer ativa ou em retentativas.
+   - Removida a limpeza de cache que ocorria por alternância de modo de tela.
+
+2. **Volta ao Iconezinho Discreto na Barra Superior (Sem Notificação Gigante):**
+   - Canal de notificação rebaixado para `IMPORTANCE_LOW` e prioridade `PRIORITY_LOW`.
+   - Removido o bloco `BigTextStyle` com textos longos que expandia a notificação em um quadrado invasivo.
+   - Agora é apenas um iconezinho silencioso e discreto na barra de status do Android.
+
+3. **Correção do Layout dos Preços (`SubscriptionScreen.kt`):**
+   - Preços dos planos Pro (`R$ 9,90` e `R$ 39,90`) agora possuem `weight(1f)` e `maxLines = 1` com `softWrap = false`.
+   - Alinhamento 100% horizontal perfeito sem qualquer quebra vertical em coluna.
+
+4. **Painel Admin Clean Inspirado no MeuAutônomo + Cupons:**
+   - Paleta `#f5f7f2`, `#173a34`, `#d9f56a`, `#71867f`, `#dce5dc`.
+   - Removido qualquer link de retorno ao app do motorista.
+   - Aba completa de **Cupons & Vouchers** com criação, cópia com 1 clique, toggle ativo/pausado e contador de usos.
 1. **Painel Admin Clean Inspirado no MeuAutônomo:**
    - Visual limpo e moderno usando a paleta exata:
      - Fundo suave `#f5f7f2`
