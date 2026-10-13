@@ -479,12 +479,9 @@ object BrazilianOfferParser {
 
         // Se a linha tem um botão de ação no final (ex: "Zanela, 90, Centro Escolher R$9,60 1k" ou "Escolher"),
         // corta o texto no início do botão para salvar o endereço real!
-        val actionKeywords = listOf("escolher", "selecionar", "aceitar", "recusar", "rejeitar")
-        for (kw in actionKeywords) {
-            val idx = lower.indexOf(kw)
-            if (idx >= 0) {
-                clean = clean.substring(0, idx).trim()
-            }
+        val actionMatch = Regex("""\b(escolher|selecionar|aceitar|recusar|rejeitar)\b""", RegexOption.IGNORE_CASE).find(clean)
+        if (actionMatch != null) {
+            clean = clean.substring(0, actionMatch.range.first).trim()
         }
 
         // Remove resquícios de preços e distâncias coladas
@@ -531,33 +528,80 @@ object BrazilianOfferParser {
 
                 if (strippedPrefix.length >= 5 && (STREET_PREFIX_REGEX.matches(strippedPrefix) || strippedPrefix.contains(","))) {
                     var fullAddr = strippedPrefix
-                    if (i + 1 < normalized.size) {
+                    var rawLast = strippedPrefix
+                    while (i + 1 < normalized.size) {
                         val nextLine = normalized[i + 1].trim()
+                        val nextLower = nextLine.lowercase(Locale.getDefault())
+                        val isLegMarker = (extractAllDurationsMinutes(listOf(nextLine)).isNotEmpty() &&
+                            extractAllDistancesKm(listOf(nextLine)).isNotEmpty()) ||
+                            LEADING_DURATION_DISTANCE_PREFIX_REGEX.containsMatchIn(nextLine)
+                        val isOfferBoundary = isLegMarker ||
+                            nextLower.contains("pgto") ||
+                            nextLower.contains("uber") ||
+                            nextLower.contains("99") ||
+                            nextLower.contains("r$") ||
+                            nextLower.contains("escolher") ||
+                            nextLower.contains("selecionar") ||
+                            nextLower.contains("aceitar") ||
+                            nextLower.contains("recusar") ||
+                            nextLower.contains("verificado") ||
+                            nextLower.contains("perfil") ||
+                            nextLower.contains("corridas") ||
+                            nextLower.contains("deslocamento") ||
+                            STREET_PREFIX_REGEX.matches(nextLine)
+
+                        if (isOfferBoundary) break
+
                         val cleanedNext = cleanAddressCandidate(nextLine)
-                        if (cleanedNext != null && (fullAddr.endsWith(",") || nextLine.contains(","))) {
-                            fullAddr = "$fullAddr $cleanedNext".replace(Regex("""\s+"""), " ")
+                        if (cleanedNext != null && cleanedNext.length in 2..50) {
+                            val separator = if (rawLast.endsWith(",") || fullAddr.endsWith(",")) ", " else " "
+                            fullAddr = "$fullAddr$separator$cleanedNext".replace(Regex(""",\s*,"""), ",").replace(Regex("""\s+"""), " ")
+                            rawLast = nextLine
                             i++
+                        } else {
+                            break
                         }
                     }
                     legAddress = cleanAddressCandidate(fullAddr)
                 } else if (i + 1 < normalized.size) {
                     // 2. Se a linha era apenas "5 min (1,2 km)", o endereço está na PRÓXIMA linha!
-                    val nextLine = normalized[i + 1].trim()
-                    var cand = cleanAddressCandidate(nextLine)
+                    val rawNext = normalized[i + 1].trim()
+                    var cand = cleanAddressCandidate(rawNext)
                     if (cand != null) {
+                        var rawLast = rawNext
                         i++
-                        // Verifica continuação na linha seguinte
-                        if (i + 1 < normalized.size) {
+                        // Verifica continuação na linha seguinte (bairro, complemento ou cidade)
+                        while (i + 1 < normalized.size) {
                             val nextNext = normalized[i + 1].trim()
                             val nextNextLower = nextNext.lowercase(Locale.getDefault())
-                            val isLegMarker = extractAllDurationsMinutes(listOf(nextNext)).isNotEmpty() &&
-                                extractAllDistancesKm(listOf(nextNext)).isNotEmpty()
-                            if (!isLegMarker && !nextNextLower.contains("pgto") && !nextNextLower.contains("r$")) {
-                                val cleanedCont = cleanAddressCandidate(nextNext)
-                                if (cleanedCont != null && (cand.endsWith(",") || nextNext.contains(","))) {
-                                    cand = "$cand $cleanedCont".replace(Regex("""\s+"""), " ")
-                                    i++
-                                }
+                            val isLegMarker = (extractAllDurationsMinutes(listOf(nextNext)).isNotEmpty() &&
+                                extractAllDistancesKm(listOf(nextNext)).isNotEmpty()) ||
+                                LEADING_DURATION_DISTANCE_PREFIX_REGEX.containsMatchIn(nextNext)
+                            val isOfferBoundary = isLegMarker ||
+                                nextNextLower.contains("pgto") ||
+                                nextNextLower.contains("uber") ||
+                                nextNextLower.contains("99") ||
+                                nextNextLower.contains("r$") ||
+                                nextNextLower.contains("escolher") ||
+                                nextNextLower.contains("selecionar") ||
+                                nextNextLower.contains("aceitar") ||
+                                nextNextLower.contains("recusar") ||
+                                nextNextLower.contains("verificado") ||
+                                nextNextLower.contains("perfil") ||
+                                nextNextLower.contains("corridas") ||
+                                nextNextLower.contains("deslocamento") ||
+                                STREET_PREFIX_REGEX.matches(nextNext)
+
+                            if (isOfferBoundary) break
+
+                            val cleanedCont = cleanAddressCandidate(nextNext)
+                            if (cleanedCont != null && cleanedCont.length in 2..50) {
+                                val separator = if (rawLast.endsWith(",") || cand.endsWith(",")) ", " else " "
+                                cand = "$cand$separator$cleanedCont".replace(Regex(""",\s*,"""), ",").replace(Regex("""\s+"""), " ")
+                                rawLast = nextNext
+                                i++
+                            } else {
+                                break
                             }
                         }
                         legAddress = cand
