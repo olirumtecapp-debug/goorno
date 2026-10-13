@@ -311,22 +311,33 @@ fun SubscriptionScreenCard(
                         .clickable { selectedPlan = "mensal" }
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
                             RadioButton(
                                 selected = selectedPlan == "mensal",
                                 onClick = { selectedPlan = "mensal" }
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text("Plano Mensal Pro", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = PetrolHeader)
                                 Text("Acesso completo por 30 dias", fontSize = 11.5.sp, color = MutedText)
                             }
                         }
-                        Text("R$ 9,90", fontWeight = FontWeight.Black, fontSize = 16.sp, color = TrafficGreen)
+                        Text(
+                            text = "R$ 9,90",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            color = TrafficGreen,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
                     }
                 }
 
@@ -343,28 +354,39 @@ fun SubscriptionScreenCard(
                         .clickable { selectedPlan = "vitalicio" }
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
                             RadioButton(
                                 selected = selectedPlan == "vitalicio",
                                 onClick = { selectedPlan = "vitalicio" }
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("Plano Vitalício", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = PetrolHeader)
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Surface(color = LimeBright, shape = RoundedCornerShape(6.dp)) {
-                                        Text("RECOMENDADO", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PetrolDarkText, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        Text("RECOMENDADO", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PetrolDarkText, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
                                     }
                                 }
                                 Text("Pague uma única vez para sempre", fontSize = 11.5.sp, color = MutedText)
                             }
                         }
-                        Text("R$ 39,90", fontWeight = FontWeight.Black, fontSize = 16.sp, color = PetrolHeader)
+                        Text(
+                            text = "R$ 39,90",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            color = PetrolHeader,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
                     }
                 }
 

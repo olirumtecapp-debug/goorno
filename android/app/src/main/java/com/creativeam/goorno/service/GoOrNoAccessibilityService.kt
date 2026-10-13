@@ -503,12 +503,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun buildStableOfferKey(screenMode: String, offer: StandardRideOffer): String {
-        val priceKey = offer.offeredPrice?.let { String.format(Locale.US, "%.2f", it) } ?: "0.00"
+    private fun buildStableOfferKey(offer: StandardRideOffer): String {
+        val price = offer.offeredPrice ?: 0.0
+        val priceRounded = (Math.round(price * 10.0) / 10.0)
         val totalKm = offer.totalDistanceKmExplicit
             ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
-        val kmKey = String.format(Locale.US, "%.1f", totalKm)
-        return "$screenMode|$priceKey|$kmKey"
+        val kmRounded = (Math.round(totalKm * 2.0) / 2.0)
+        val origPrefix = offer.originAddress?.take(8)?.lowercase(Locale.getDefault()) ?: ""
+        val destPrefix = offer.destinationAddress?.take(8)?.lowercase(Locale.getDefault()) ?: ""
+        return "${offer.sourceApp.name}|$priceRounded|$kmRounded|$origPrefix|$destPrefix"
     }
 
     private fun processAndShowOffers(
@@ -518,62 +521,34 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     ) {
         if (parsedOffers.isEmpty()) return
 
-        val joinedLower = screenLines.joinToString(" ").lowercase(Locale.getDefault())
-        val currentScreenMode = when {
-            joinedLower.contains("solicitações") ||
-                joinedLower.contains("solicitacoes") ||
-                joinedLower.contains("escolha uma") ||
-                joinedLower.contains("radar de viagens") ||
-                joinedLower.contains("selecionar") -> "LIST_VIEW"
-            else -> "DETAIL_VIEW"
+        val app = applicationContext as? GoOrNoApplication ?: return
+
+        // Se o card já está atualmente aberto na tela do motorista, não reabre nem reinicia
+        if (app.overlayPanel.isCardCurrentlyVisible()) {
+            return
         }
 
-        if (lastScreenContextMode.isNotEmpty() && lastScreenContextMode != currentScreenMode) {
-            val prefixToClear = "$currentScreenMode|"
-            val keysToRemove = shownOfferTimestamps.keys.filter { it.startsWith(prefixToClear) }
-            keysToRemove.forEach { shownOfferTimestamps.remove(it) }
-        }
-        lastScreenContextMode = currentScreenMode
-
+        // Remove apenas chaves que já expiraram há mais de 90 segundos
         val expiredKeys = shownOfferTimestamps.entries
-            .filter { now - it.value > 60_000L }
+            .filter { now - it.value > 90_000L }
             .map { it.key }
         expiredKeys.forEach { shownOfferTimestamps.remove(it) }
 
-        val hasUnshownOfferInThisMode = parsedOffers.any { offer ->
-            val key = buildStableOfferKey(currentScreenMode, offer)
-            !shownOfferTimestamps.containsKey(key)
+        // Filtra estritamente ofertas que ainda NÃO foram exibidas nos últimos 90 segundos
+        val unshownOffers = parsedOffers.filter { offer ->
+            val key = buildStableOfferKey(offer)
+            val lastShown = shownOfferTimestamps[key]
+            lastShown == null || (now - lastShown > 90_000L)
         }
 
-        // Mesmo que o card flutuante já tenha sido exibido e fechado neste contexto, se a leitura atual trouxe
-        // endereços mais completos para a notificação, atualizamos a notificação persistente sem reabrir o card!
-        val app = applicationContext as? GoOrNoApplication ?: return
-        if (!hasUnshownOfferInThisMode) {
-            serviceScope.launch {
-                val config = app.preferencesRepository.getConfigOnce()
-                val evaluations = parsedOffers
-                    .map { FinancialEngine.evaluate(it, config) }
-                    .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
-                if (evaluations.isEmpty()) return@launch
-                val richestEval = evaluations.maxByOrNull { eval ->
-                    (if (!eval.offer.originAddress.isNullOrBlank()) 3 else 0) +
-                        (if (!eval.offer.destinationAddress.isNullOrBlank()) 3 else 0) +
-                        (if (eval.totalConsideredDurationMin != null) 2 else 0) +
-                        (if (eval.totalConsideredDistanceKm != null) 1 else 0)
-                } ?: evaluations.first()
-                CopilotNotificationReceiver.showActiveNotification(
-                    context = this@GoOrNoAccessibilityService,
-                    latestEvaluation = richestEval,
-                    showProfit = config.showProfitOnOverlay,
-                    showCost = config.showCostOnOverlay
-                )
-            }
+        if (unshownOffers.isEmpty()) {
+            // Todos os chamados já foram avaliados e exibidos recentemente; não repete para não incomodar o motorista!
             return
         }
 
         serviceScope.launch {
             val config = app.preferencesRepository.getConfigOnce()
-            val evaluations = parsedOffers
+            val evaluations = unshownOffers
                 .map { offer -> FinancialEngine.evaluate(offer, config) }
                 .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
 
@@ -584,7 +559,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             }
 
             for (eval in evaluations) {
-                val key = buildStableOfferKey(currentScreenMode, eval.offer)
+                val key = buildStableOfferKey(eval.offer)
                 shownOfferTimestamps[key] = now
             }
 

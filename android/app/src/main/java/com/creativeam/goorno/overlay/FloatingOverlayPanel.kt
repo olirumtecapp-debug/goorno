@@ -83,6 +83,7 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     private var activeCardFingerprint: String = ""
+    private val recentlyDismissedOfferTimestamps = mutableMapOf<String, Long>()
 
     fun hasOverlayPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -166,6 +167,14 @@ class FloatingOverlayPanel(private val context: Context) {
             val newPrice = firstEval.offer.offeredPrice ?: 0.0
             val newKm = firstEval.totalConsideredDistanceKm ?: 0.0
             val newFingerprint = "${firstEval.offer.sourceApp.name}|${String.format(Locale.US, "%.2f", newPrice)}|${String.format(Locale.US, "%.1f", newKm)}"
+
+            val now = System.currentTimeMillis()
+            recentlyDismissedOfferTimestamps.entries.removeAll { now - it.value > 75_000L }
+
+            // Se esse mesmo chamado foi exibido ou fechado nos últimos 75 segundos, NÃO reabre na tela!
+            if (recentlyDismissedOfferTimestamps.containsKey(newFingerprint)) {
+                return@post
+            }
 
             // Proteção Anti-Flicker: se o card flutuante já está visível para a mesma corrida,
             // NÃO destrói nem recria as views (evita sumir o valor ou piscar a janela!)
@@ -259,6 +268,9 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun hidePanel() {
         mainHandler.post {
+            if (activeCardFingerprint.isNotBlank()) {
+                recentlyDismissedOfferTimestamps[activeCardFingerprint] = System.currentTimeMillis()
+            }
             activeCardFingerprint = ""
             mainHandler.removeCallbacks(countdownRunnable)
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)

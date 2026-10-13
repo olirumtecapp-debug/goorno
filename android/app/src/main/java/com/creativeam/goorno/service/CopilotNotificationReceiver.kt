@@ -204,11 +204,12 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val channel = NotificationChannel(
                         CHANNEL_ID,
                         "GoOrNo — Copiloto e Última Corrida",
-                        NotificationManager.IMPORTANCE_DEFAULT
+                        NotificationManager.IMPORTANCE_LOW
                     ).apply {
                         setSound(null, null)
                         enableVibration(false)
-                        description = "Mostra na barra superior o status do GoOrNo, os dados persistentes da última corrida e botões para Street View 360° e Desativar"
+                        setShowBadge(false)
+                        description = "Status do GoOrNo e dados da última corrida"
                     }
                     nm.createNotificationChannel(channel)
                 }
@@ -237,7 +238,7 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setOngoing(true)
                     .setSilent(true)
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
                     .setContentIntent(openPendingIntent)
 
                 val hasRide = prefs.getBoolean("has_ride", false)
@@ -347,20 +348,9 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     }
                 } else {
                     builder
-                        .setContentTitle("🟢 GoOrNo ATIVO — Monitorando Uber e 99")
-                        .setContentText("Aguardando chamadas. Aqui ficarão salvos os dados e Street View da última corrida.")
-                        .setStyle(
-                            NotificationCompat.BigTextStyle()
-                                .bigText("Lendo chamadas automaticamente em segundo plano. Assim que uma corrida tocar, você verá aqui o cálculo, endereço de Origem/Destino com botões 360° Street View, ou pode tocar em 'Desativar' quando parar de rodar.")
-                        )
+                        .setContentTitle("🟢 GoOrNo Ativo")
+                        .setContentText("Monitorando chamadas em segundo plano")
                 }
-
-                // Botão 3 (sempre presente): Desativar GoOrNo
-                builder.addAction(
-                    android.R.drawable.ic_menu_close_clear_cancel,
-                    "🔴 Desativar",
-                    disablePendingIntent
-                )
 
                 nm.notify(STATUS_NOTIFICATION_ID, builder.build())
             } catch (_: Exception) {
