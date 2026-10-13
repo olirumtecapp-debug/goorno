@@ -566,8 +566,9 @@ object BrazilianOfferParser {
                 } else if (i + 1 < normalized.size) {
                     // 2. Se a linha era apenas "5 min (1,2 km)", o endereço está na PRÓXIMA linha!
                     val rawNext = normalized[i + 1].trim()
-                    var cand = cleanAddressCandidate(rawNext)
-                    if (cand != null) {
+                    val initialCand = cleanAddressCandidate(rawNext)
+                    if (initialCand != null) {
+                        var cand: String = initialCand
                         var rawLast = rawNext
                         i++
                         // Verifica continuação na linha seguinte (bairro, complemento ou cidade)
