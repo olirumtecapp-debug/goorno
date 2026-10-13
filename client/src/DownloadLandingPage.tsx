@@ -1,0 +1,438 @@
+import React, { useState } from 'react';
+import {
+  Download,
+  ShieldCheck,
+  Smartphone,
+  AlertTriangle,
+  CheckCircle2,
+  HelpCircle,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Zap,
+  Clock,
+  DollarSign,
+  Layers,
+  ArrowRight
+} from 'lucide-react';
+
+interface DownloadLandingPageProps {
+  onOpenSimulator?: () => void;
+  onOpenAdmin?: () => void;
+}
+
+export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLandingPageProps) {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
+
+  const handleDownloadApk = () => {
+    // Redireciona para o download do APK oficial
+    window.location.href = '/GoOrNo.apk';
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f5f7f2] text-[#173a34] font-sans antialiased selection:bg-[#d9f56a] selection:text-[#173a34]">
+      {/* TOP HEADER */}
+      <header className="sticky top-0 z-50 bg-[#173a34] border-b border-[#122e29] shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img
+              src="/logo-goorno-clean.png"
+              alt="GoOrNo"
+              className="w-10 h-10 rounded-xl bg-white/10 p-1 object-contain"
+              onError={(e) => {
+                // Fallback para logo padrão
+                (e.target as HTMLImageElement).src = '/logo-goorno.png';
+              }}
+            />
+            <div>
+              <span className="text-xl font-black text-white tracking-tight flex items-center gap-1.5">
+                GoOrNo
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#d9f56a] text-[#173a34] uppercase">
+                  v3.3.3
+                </span>
+              </span>
+              <p className="text-[10px] text-[#dce5dc]/70 hidden sm:block">
+                Copiloto de Ganhos para Motoristas de App
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {onOpenSimulator && (
+              <button
+                onClick={onOpenSimulator}
+                className="text-xs font-semibold text-[#dce5dc] hover:text-[#d9f56a] px-3 py-1.5 rounded-lg transition"
+              >
+                Ver Demonstração
+              </button>
+            )}
+            <button
+              onClick={handleDownloadApk}
+              className="bg-[#d9f56a] hover:bg-[#cbf052] text-[#173a34] font-bold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>Baixar APK</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* HERO SECTION */}
+      <section className="relative overflow-hidden pt-10 pb-16 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-[#173a34]/10 border border-[#173a34]/20 rounded-full px-4 py-1.5 text-xs font-bold text-[#173a34] mb-6 shadow-xs">
+            <Sparkles className="w-3.5 h-3.5 text-[#173a34]" />
+            <span>7 DIAS DE TESTE GRÁTIS · SEM CARTÃO DE CRÉDITO</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-5xl font-black text-[#173a34] tracking-tight leading-tight mb-4">
+            Descubra se a corrida compensa em menos de 1 segundo!
+          </h1>
+
+          <p className="text-sm sm:text-lg text-[#71867f] max-w-2xl mx-auto mb-8 leading-relaxed">
+            O GoOrNo lê a tela da <strong>Uber</strong> e da <strong>99</strong> automaticamente e exibe um card flutuante com cálculo de <strong>R$/km</strong>, <strong>R$/hora</strong> e veredito em cores para você não perder dinheiro na rua.
+          </p>
+
+          {/* MAIN DOWNLOAD ACTION CARD */}
+          <div className="bg-white border-2 border-[#173a34] rounded-[28px] p-6 sm:p-8 max-w-md mx-auto shadow-[0_20px_50px_rgba(23,58,52,0.12)]">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="text-xs font-bold px-3 py-1 bg-[#173a34] text-[#d9f56a] rounded-full">
+                OFICIAL ANDROID
+              </span>
+              <span className="text-xs text-[#71867f] font-semibold">
+                60.7 MB · Versão 3.3.3
+              </span>
+            </div>
+
+            <button
+              onClick={handleDownloadApk}
+              className="w-full bg-[#173a34] hover:bg-[#122e29] text-[#d9f56a] font-extrabold text-lg py-4 px-6 rounded-2xl shadow-md transition flex items-center justify-center gap-3 cursor-pointer group"
+            >
+              <Download className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              <span>Baixar GoOrNo APK Grátis</span>
+            </button>
+
+            <p className="text-[11px] text-[#71867f] mt-3">
+              Compatível com Android 8.0 até Android 14+ (Samsung, Motorola, Xiaomi, etc.)
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* POR QUE O GOORNO NÃO ESTÁ NA PLAY STORE? (TRANSPARÊNCIA TOTAL) */}
+      <section className="py-12 px-4 sm:px-6 bg-white border-y border-[#dce5dc]">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-[#f8faf7] border border-[#dce5dc] rounded-2xl p-6 sm:p-8">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#173a34] text-[#d9f56a] grid place-items-center shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-[#173a34] mb-2">
+                  Por que o GoOrNo é baixado em formato APK e não na Google Play Store?
+                </h2>
+                <p className="text-sm text-[#71867f] leading-relaxed mb-4">
+                  Para conseguir calcular os ganhos dos motoristas em tempo real, o GoOrNo precisa de duas permissões especiais do Android:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  <div className="bg-white p-3.5 rounded-xl border border-[#dce5dc]">
+                    <h3 className="font-bold text-xs text-[#173a34] flex items-center gap-1.5 mb-1">
+                      <Layers className="w-4 h-4 text-[#173a34]" />
+                      Janela Flutuante (Sobreposição)
+                    </h3>
+                    <p className="text-xs text-[#71867f]">
+                      Para exibir o card colorido por cima da Uber ou da 99 sem fechar seu app de corrida.
+                    </p>
+                  </div>
+                  <div className="bg-white p-3.5 rounded-xl border border-[#dce5dc]">
+                    <h3 className="font-bold text-xs text-[#173a34] flex items-center gap-1.5 mb-1">
+                      <Zap className="w-4 h-4 text-[#173a34]" />
+                      Acessibilidade (Leitura de Tela)
+                    </h3>
+                    <p className="text-xs text-[#71867f]">
+                      Para ler o preço, a quilometragem e o tempo da chamada sem você precisar digitar nada.
+                    </p>
+                  </div>
+                </div>
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs leading-relaxed flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
+                  <div>
+                    <strong>Aviso importante:</strong> O Google restringe na Play Store aplicativos que interagem por cima de outros apps. Por essa razão, os maiores copilotos do Brasil são distribuídos via APK oficial direto aos motoristas. O GoOrNo é <strong>100% seguro, verificado, livre de anúncios de terceiros e sem vírus</strong>.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* GUIA PASSO A PASSO: COMO INSTALAR NO SEU ANDROID */}
+      <section className="py-16 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-xs font-bold text-[#173a34] uppercase tracking-wider bg-[#173a34]/10 px-3 py-1 rounded-full">
+              Tutorial Rápido
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-[#173a34] mt-3">
+              Como Instalar o APK no seu Celular em 3 Passos
+            </h2>
+            <p className="text-sm text-[#71867f] mt-1">
+              Leva menos de 1 minuto para deixar o GoOrNo rodando no seu aparelho
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* PASSO 1 */}
+            <div className="bg-white border border-[#dce5dc] rounded-2xl p-6 shadow-xs relative flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-[#173a34] text-[#d9f56a] font-black text-lg grid place-items-center mb-4">
+                  1
+                </div>
+                <h3 className="font-bold text-base text-[#173a34] mb-2">
+                  Baixe o Arquivo APK
+                </h3>
+                <p className="text-xs text-[#71867f] leading-relaxed mb-4">
+                  Clique no botão de download. Se o navegador Google Chrome exibir a mensagem:
+                </p>
+                <div className="p-3 bg-[#f8faf7] border border-[#dce5dc] rounded-xl text-[11px] font-mono text-[#173a34] mb-3">
+                  ⚠️ "O arquivo pode ser nocivo. Fazer o download mesmo assim?"
+                </div>
+                <p className="text-xs text-[#173a34] font-semibold">
+                  👉 Toque em <strong>"Fazer o download mesmo assim"</strong> (aviso padrão do Android para qualquer app baixado fora da Play Store).
+                </p>
+              </div>
+            </div>
+
+            {/* PASSO 2 */}
+            <div className="bg-white border border-[#dce5dc] rounded-2xl p-6 shadow-xs relative flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-[#173a34] text-[#d9f56a] font-black text-lg grid place-items-center mb-4">
+                  2
+                </div>
+                <h3 className="font-bold text-base text-[#173a34] mb-2">
+                  Permitir Fontes Desconhecidas
+                </h3>
+                <p className="text-xs text-[#71867f] leading-relaxed mb-4">
+                  Abra a notificação de download concluído e clique em <strong>Instalar</strong>. Se o celular pedir permissão:
+                </p>
+                <div className="p-3 bg-[#f8faf7] border border-[#dce5dc] rounded-xl text-[11px] text-[#173a34] mb-3">
+                  📱 Toque em <strong>"Configurações"</strong> e ative a chavinha <strong>"Permitir desta fonte"</strong> (do Chrome ou Gerenciador de Arquivos).
+                </div>
+                <p className="text-xs text-[#173a34] font-semibold">
+                  🛡️ Se o Play Protect avisar <em>"App não reconhecido"</em>, clique em <strong>"Mais detalhes"</strong> e depois em <strong>"Instalar assim mesmo"</strong>.
+                </p>
+              </div>
+            </div>
+
+            {/* PASSO 3 */}
+            <div className="bg-white border border-[#dce5dc] rounded-2xl p-6 shadow-xs relative flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-[#173a34] text-[#d9f56a] font-black text-lg grid place-items-center mb-4">
+                  3
+                </div>
+                <h3 className="font-bold text-base text-[#173a34] mb-2">
+                  Ative seus 7 Dias Grátis
+                </h3>
+                <p className="text-xs text-[#71867f] leading-relaxed mb-4">
+                  Abra o GoOrNo, digite seu WhatsApp com DDD e toque em <strong>"Verificar / Ativar Teste"</strong>.
+                </p>
+                <div className="p-3 bg-[#f8faf7] border border-[#dce5dc] rounded-xl text-[11px] text-[#173a34] mb-3">
+                  ✅ Conceda a permissão de <strong>Sobreposição de Tela</strong> e de <strong>Acessibilidade</strong> quando o app solicitar.
+                </div>
+                <p className="text-xs text-[#173a34] font-semibold">
+                  🎉 Pronto! Pode abrir a Uber ou a 99 e rodar tranquilo na rua com seu copiloto ativado!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 text-center">
+            <button
+              onClick={handleDownloadApk}
+              className="inline-flex items-center gap-3 bg-[#173a34] hover:bg-[#122e29] text-[#d9f56a] font-bold px-8 py-3.5 rounded-xl shadow-md transition cursor-pointer"
+            >
+              <Download className="w-5 h-5" />
+              <span>Clique aqui para Baixar o APK Agora</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* RECURSOS PRINCIPAIS */}
+      <section className="py-14 px-4 sm:px-6 bg-white border-t border-[#dce5dc]">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#173a34]">
+              Por que milhares de motoristas usam o GoOrNo?
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="p-5 rounded-2xl border border-[#dce5dc] bg-[#f8faf7]">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 grid place-items-center mb-3">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-[#173a34] mb-1">Cálculo Instantâneo de R$/km</h3>
+              <p className="text-xs text-[#71867f]">
+                Veja na hora se a corrida paga acima de R$ 2,00, R$ 2,50 ou se está te dando prejuízo.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-[#dce5dc] bg-[#f8faf7]">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 grid place-items-center mb-3">
+                <Clock className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-[#173a34] mb-1">Cálculo de R$/Hora</h3>
+              <p className="text-xs text-[#71867f]">
+                Descubra quanto você vai faturar por hora trabalhada considerando o tempo até o passageiro.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-[#dce5dc] bg-[#f8faf7]">
+              <div className="w-10 h-10 rounded-xl bg-lime-100 text-[#173a34] grid place-items-center mb-3">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-[#173a34] mb-1">Veredito em Cores</h3>
+              <p className="text-xs text-[#71867f]">
+                🟢 Aceitar (Ótima), 🟡 Atenção (Média) ou 🔴 Recusar (Ruim) num relance de olho.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-[#dce5dc] bg-[#f8faf7]">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 grid place-items-center mb-3">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-[#173a34] mb-1">Filtro Anti-Propaganda</h3>
+              <p className="text-xs text-[#71867f]">
+                Não se confunde com anúncios de postos de gasolina, 99 Abastece ou ofertas de cartões.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-[#dce5dc] bg-[#f8faf7]">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 grid place-items-center mb-3">
+                <Smartphone className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-[#173a34] mb-1">Iconezinho Discreto</h3>
+              <p className="text-xs text-[#71867f]">
+                Não polui a barra de notificações e só abre na tela quando realmente toca uma chamada.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-[#dce5dc] bg-[#f8faf7]">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 grid place-items-center mb-3">
+                <Zap className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-[#173a34] mb-1">Sem Travamentos</h3>
+              <p className="text-xs text-[#71867f]">
+                App nativo ultra rápido desenvolvido em Kotlin, sem gastar sua bateria nem travar o GPS.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PERGUNTAS FREQUENTES (FAQ) */}
+      <section className="py-16 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#173a34]">
+              Dúvidas Frequentes dos Motoristas
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              {
+                q: 'O GoOrNo realmente é gratuito para testar?',
+                a: 'Sim! Todo motorista ganha 7 dias de acesso completo gratuito para testar na rua. Não pedimos cartão de crédito, você só precisa digitar seu WhatsApp para ativar.'
+              },
+              {
+                q: 'O aplicativo dá banimento na Uber ou 99?',
+                a: 'Não! O GoOrNo não modifica o aplicativo da Uber ou da 99, não altera seu GPS e não aceita corridas automaticamente. Ele funciona exclusivamente como um leitor visual e calculadora de tela para ajudar você a decidir.'
+              },
+              {
+                q: 'Por que o celular avisa sobre "aplicativo nocivo"?',
+                a: 'Esse é um aviso de segurança obrigatório que o Android e o Chrome mostram sempre que você baixa qualquer arquivo fora da Google Play Store. O GoOrNo é 100% limpo, verificado e não contém nenhum vírus ou propaganda.'
+              },
+              {
+                q: 'Se eu trocar de aparelho ou formatar, perco meu acesso?',
+                a: 'Não! Sua licença fica vinculada ao seu número de WhatsApp. Pelo próprio aplicativo você pode transferir sua assinatura para seu novo celular.'
+              },
+              {
+                q: 'Tenho um cupom de cortesia. Como resgatar?',
+                a: 'Basta abrir o GoOrNo, ir na aba Plano Pro, digitar seu cupom no campo "Tem um Cupom / Voucher?" e clicar em Resgatar. Seu acesso será liberado na hora.'
+              }
+            ].map((faq, idx) => (
+              <div
+                key={idx}
+                className="bg-white border border-[#dce5dc] rounded-2xl overflow-hidden shadow-xs"
+              >
+                <button
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full p-4 sm:p-5 text-left font-bold text-sm sm:text-base text-[#173a34] flex items-center justify-between cursor-pointer"
+                >
+                  <span>{faq.q}</span>
+                  {openFaq === idx ? (
+                    <ChevronUp className="w-5 h-5 text-[#71867f] shrink-0" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-[#71867f] shrink-0" />
+                  )}
+                </button>
+                {openFaq === idx && (
+                  <div className="px-4 sm:px-5 pb-5 text-xs sm:text-sm text-[#71867f] leading-relaxed border-t border-[#f5f7f2] pt-3">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-[#173a34] text-[#dce5dc] py-10 px-4 sm:px-6 border-t border-[#122e29]">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <img
+              src="/logo-goorno-clean.png"
+              alt="GoOrNo"
+              className="w-8 h-8 rounded-lg bg-white/10 p-0.5"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo-goorno.png';
+              }}
+            />
+            <div>
+              <span className="font-bold text-white text-sm">GoOrNo Copiloto</span>
+              <p className="text-[11px] text-[#71867f]">© 2026 Todos os direitos reservados.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs">
+            {onOpenAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="text-[#71867f] hover:text-[#d9f56a] transition"
+              >
+                Acesso Administrativo
+              </button>
+            )}
+            <a
+              href="https://wa.me/5511999998888?text=Olá!%20Gostaria%20de%20tirar%20uma%20dúvida%20sobre%20o%20GoOrNo."
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#d9f56a] hover:underline flex items-center gap-1 font-semibold"
+            >
+              Suporte WhatsApp
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
