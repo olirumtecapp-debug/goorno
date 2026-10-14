@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AdminDashboard } from './AdminDashboard';
 import { DownloadLandingPage } from './DownloadLandingPage';
+import { ScreenshotsShowcase } from './ScreenshotsShowcase';
 import {
   Power,
   Sliders,
@@ -442,7 +443,18 @@ export function App() {
     );
   }
 
-  if (!isNative && !showSimulator) {
+  if (showSimulator) {
+    return (
+      <ScreenshotsShowcase
+        onBackToLanding={() => {
+          window.location.hash = '';
+          setShowSimulator(false);
+        }}
+      />
+    );
+  }
+
+  if (!isNative) {
     return (
       <DownloadLandingPage
         onOpenSimulator={() => {

@@ -366,16 +366,42 @@ fun SubscriptionScreenCard(
                                 selected = selectedPlan == "vitalicio",
                                 onClick = { selectedPlan = "vitalicio" }
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Plano Vitalício", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = PetrolHeader)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Surface(color = LimeBright, shape = RoundedCornerShape(6.dp)) {
-                                        Text("RECOMENDADO", fontSize = 9.sp, fontWeight = FontWeight.Black, color = PetrolDarkText, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Plano Vitalício",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = PetrolHeader,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                    Surface(
+                                        color = LimeBright,
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "RECOMENDADO",
+                                            fontSize = 8.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = PetrolDarkText,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.5.dp)
+                                        )
                                     }
                                 }
-                                Text("Pague uma única vez para sempre", fontSize = 11.5.sp, color = MutedText)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Pague uma única vez para sempre",
+                                    fontSize = 11.sp,
+                                    color = MutedText,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         }
                         Text(

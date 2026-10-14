@@ -53,7 +53,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <span className="text-xl font-black text-white tracking-tight flex items-center gap-1.5">
                 GoOrNo
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#d9f56a] text-[#173a34] uppercase">
-                  v3.3.3
+                  v3.3.4
                 </span>
               </span>
               <p className="text-[10px] text-[#dce5dc]/70 hidden sm:block">
@@ -66,9 +66,10 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             {onOpenSimulator && (
               <button
                 onClick={onOpenSimulator}
-                className="text-xs font-semibold text-[#dce5dc] hover:text-[#d9f56a] px-3 py-1.5 rounded-lg transition"
+                className="text-xs font-semibold text-[#dce5dc] hover:text-[#d9f56a] px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
               >
-                Ver Demonstração
+                <span>📸</span>
+                <span>Ver 22 Telas Reais</span>
               </button>
             )}
             <button
@@ -105,7 +106,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 OFICIAL ANDROID
               </span>
               <span className="text-xs text-[#71867f] font-semibold">
-                60.7 MB · Versão 3.3.3
+                60.7 MB · Versão 3.3.4
               </span>
             </div>
 
@@ -116,6 +117,16 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <Download className="w-6 h-6 group-hover:scale-110 transition-transform" />
               <span>Baixar GoOrNo APK Grátis</span>
             </button>
+
+            {onOpenSimulator && (
+              <button
+                onClick={onOpenSimulator}
+                className="w-full mt-3 bg-[#f5f7f2] hover:bg-[#edf2eb] text-[#173a34] font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer border border-[#dce5dc]"
+              >
+                <span>📸 Ver as 22 Telas do App na Prática</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#173a34]" />
+              </button>
+            )}
 
             <p className="text-[11px] text-[#71867f] mt-3">
               Compatível com Android 8.0 até Android 14+ (Samsung, Motorola, Xiaomi, etc.)
@@ -332,6 +343,193 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 App nativo ultra rápido desenvolvido em Kotlin, sem gastar sua bateria nem travar o GPS.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO GALERIA DE TELAS REAIS DO APP */}
+      <section className="py-16 px-4 sm:px-6 bg-[#edf2eb] border-t border-[#dce5dc]">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <span className="text-xs font-bold text-[#173a34] uppercase tracking-wider bg-[#173a34]/10 px-3.5 py-1.5 rounded-full inline-flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#173a34]" />
+              Galeria Oficial · 22 Telas Reais
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-[#173a34] mt-3">
+              Veja Como o GoOrNo Funciona na Prática
+            </h2>
+            <p className="text-sm sm:text-base text-[#71867f] max-w-2xl mx-auto mt-2">
+              Capturas reais de chamadas na Uber e na 99, cálculo de ganho por km, Street View e configurações.
+            </p>
+          </div>
+
+          {/* DESTAQUE PRINCIPAL: VIAGEM BOA VS VIAGEM RUIM */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* CARD VIAGEM BOA */}
+            <div className="bg-white border-2 border-emerald-500 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black px-3 py-1 bg-emerald-600 text-white rounded-full flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    VIAGEM BOA (CARD VERDE)
+                  </span>
+                  <span className="text-xs font-bold text-emerald-700">R$ 3,35/km</span>
+                </div>
+                <h3 className="text-base font-extrabold text-[#173a34] mb-1">
+                  Uber: R$ 22,46 por 6.7 km totais
+                </h3>
+                <p className="text-xs text-[#71867f] mb-4">
+                  O GoOrNo analisa o tempo e a distância em milissegundos e colore o card em verde para você aceitar com confiança.
+                </p>
+                <div className="bg-[#173a34]/5 rounded-2xl overflow-hidden aspect-[9/14] flex items-center justify-center p-2">
+                  <img
+                    src="/telas/UberBoa.jpeg"
+                    alt="Chamada Uber Boa com GoOrNo"
+                    className="w-full h-full object-contain rounded-xl"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-[#f5f7f2] flex items-center justify-between">
+                <span className="text-xs font-semibold text-emerald-700">🟢 Ótimo Rendimento</span>
+                {onOpenSimulator && (
+                  <button
+                    onClick={onOpenSimulator}
+                    className="text-xs font-bold text-[#173a34] hover:underline"
+                  >
+                    Ver detalhes →
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* CARD VIAGEM RUIM */}
+            <div className="bg-white border-2 border-rose-400 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black px-3 py-1 bg-rose-600 text-white rounded-full flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    VIAGEM RUIM (CARD VERMELHO)
+                  </span>
+                  <span className="text-xs font-bold text-rose-700">R$ 1,23/km</span>
+                </div>
+                <h3 className="text-base font-extrabold text-[#173a34] mb-1">
+                  Uber: R$ 13,85 por 11.2 km totais
+                </h3>
+                <p className="text-xs text-[#71867f] mb-4">
+                  O GoOrNo desconta combustível e manutenção e alerta em vermelho para você não pagar para trabalhar!
+                </p>
+                <div className="bg-[#173a34]/5 rounded-2xl overflow-hidden aspect-[9/14] flex items-center justify-center p-2">
+                  <img
+                    src="/telas/UberRuim.jpeg"
+                    alt="Chamada Uber Ruim com alerta do GoOrNo"
+                    className="w-full h-full object-contain rounded-xl"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-[#f5f7f2] flex items-center justify-between">
+                <span className="text-xs font-semibold text-rose-700">🔴 Prejuízo Estimado</span>
+                {onOpenSimulator && (
+                  <button
+                    onClick={onOpenSimulator}
+                    className="text-xs font-bold text-[#173a34] hover:underline"
+                  >
+                    Ver detalhes →
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* CARDS DE OUTRAS FUNCIONALIDADES */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div
+              onClick={onOpenSimulator}
+              className="bg-white border border-[#dce5dc] p-4 rounded-2xl cursor-pointer hover:border-[#173a34] transition group shadow-xs"
+            >
+              <div className="aspect-[9/12] bg-[#173a34]/5 rounded-xl overflow-hidden mb-3 p-1">
+                <img
+                  src="/telas/NotificacoesOrigem.jpeg"
+                  alt="Street View da Origem"
+                  className="w-full h-full object-contain rounded-lg group-hover:scale-105 transition"
+                />
+              </div>
+              <span className="text-[10px] font-bold text-blue-700 uppercase bg-blue-50 px-2 py-0.5 rounded-md">
+                Street View 360°
+              </span>
+              <h4 className="font-bold text-xs sm:text-sm text-[#173a34] mt-1.5">
+                Foto Real da Rua do Passageiro
+              </h4>
+              <p className="text-[11px] text-[#71867f] mt-1">
+                Veja a fachada do embarque e do destino em 1 clique antes de se deslocar.
+              </p>
+            </div>
+
+            <div
+              onClick={onOpenSimulator}
+              className="bg-white border border-[#dce5dc] p-4 rounded-2xl cursor-pointer hover:border-[#173a34] transition group shadow-xs"
+            >
+              <div className="aspect-[9/12] bg-[#173a34]/5 rounded-xl overflow-hidden mb-3 p-1">
+                <img
+                  src="/telas/Notificacoes.jpeg"
+                  alt="Notificação na barra com ícone e botão desativar"
+                  className="w-full h-full object-contain rounded-lg group-hover:scale-105 transition"
+                />
+              </div>
+              <span className="text-[10px] font-bold text-purple-700 uppercase bg-purple-50 px-2 py-0.5 rounded-md">
+                Barra de Status Android
+              </span>
+              <h4 className="font-bold text-xs sm:text-sm text-[#173a34] mt-1.5">
+                Ícone no Relógio & Botão Desativar
+              </h4>
+              <p className="text-[11px] text-[#71867f] mt-1">
+                Fica na barra de notificações sem barulho e permite desligar o copiloto em 1 toque.
+              </p>
+            </div>
+
+            <div
+              onClick={onOpenSimulator}
+              className="bg-white border border-[#dce5dc] p-4 rounded-2xl cursor-pointer hover:border-[#173a34] transition group shadow-xs"
+            >
+              <div className="aspect-[9/12] bg-[#173a34]/5 rounded-xl overflow-hidden mb-3 p-1">
+                <img
+                  src="/telas/TelaConfigCustos.jpeg"
+                  alt="Calculadora de Custos"
+                  className="w-full h-full object-contain rounded-lg group-hover:scale-105 transition"
+                />
+              </div>
+              <span className="text-[10px] font-bold text-amber-700 uppercase bg-amber-50 px-2 py-0.5 rounded-md">
+                Financeiro
+              </span>
+              <h4 className="font-bold text-xs sm:text-sm text-[#173a34] mt-1.5">
+                Calculadora de Custo Real
+              </h4>
+              <p className="text-[11px] text-[#71867f] mt-1">
+                Ajuste o valor do combustível e consumo do seu veículo para ver o lucro líquido real.
+              </p>
+            </div>
+          </div>
+
+          {/* CTA PARA ABRIR A GALERIA COMPLETA */}
+          <div className="text-center">
+            {onOpenSimulator ? (
+              <button
+                onClick={onOpenSimulator}
+                className="inline-flex items-center gap-3 bg-[#173a34] hover:bg-[#122e29] text-[#d9f56a] font-bold text-sm sm:text-base px-8 py-4 rounded-2xl shadow-md transition cursor-pointer"
+              >
+                <span>📸 Abrir Galeria Completa com Todas as 22 Telas</span>
+                <ArrowRight className="w-5 h-5 text-[#d9f56a]" />
+              </button>
+            ) : (
+              <a
+                href="#simulator"
+                className="inline-flex items-center gap-3 bg-[#173a34] hover:bg-[#122e29] text-[#d9f56a] font-bold text-sm sm:text-base px-8 py-4 rounded-2xl shadow-md transition cursor-pointer"
+              >
+                <span>📸 Abrir Galeria Completa com Todas as 22 Telas</span>
+                <ArrowRight className="w-5 h-5 text-[#d9f56a]" />
+              </a>
+            )}
           </div>
         </div>
       </section>

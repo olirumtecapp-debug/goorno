@@ -109,7 +109,7 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
         const val ACTION_DISMISS_OVERLAY_CARD = "com.creativeam.goorno.ACTION_DISMISS_OVERLAY_CARD"
         const val EXTRA_ADDRESS = "extra_street_address"
         const val STATUS_NOTIFICATION_ID = 4102
-        private const val CHANNEL_ID = "goorno_active_bar_v4"
+        private const val CHANNEL_ID = "goorno_status_bar_v5"
         private const val PREFS_NAME = "goorno_persisted_notification"
 
         /**
@@ -203,13 +203,13 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     val channel = NotificationChannel(
                         CHANNEL_ID,
-                        "GoOrNo — Copiloto e Última Corrida",
-                        NotificationManager.IMPORTANCE_LOW
+                        "GoOrNo — Copiloto Ativo",
+                        NotificationManager.IMPORTANCE_DEFAULT
                     ).apply {
                         setSound(null, null)
                         enableVibration(false)
-                        setShowBadge(false)
-                        description = "Status do GoOrNo e dados da última corrida"
+                        setShowBadge(true)
+                        description = "Exibe o ícone do GoOrNo ao lado do relógio e status"
                     }
                     nm.createNotificationChannel(channel)
                 }
@@ -238,7 +238,7 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setOngoing(true)
                     .setSilent(true)
-                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .setContentIntent(openPendingIntent)
 
                 val hasRide = prefs.getBoolean("has_ride", false)
@@ -351,6 +351,13 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                         .setContentTitle("🟢 GoOrNo Ativo")
                         .setContentText("Monitorando chamadas em segundo plano")
                 }
+
+                // Botão Desativar sempre presente na notificação superior
+                builder.addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "⏹️ Desativar",
+                    disablePendingIntent
+                )
 
                 nm.notify(STATUS_NOTIFICATION_ID, builder.build())
             } catch (_: Exception) {
