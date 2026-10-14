@@ -114,47 +114,40 @@ fun GoOrNoComposeApp(
                 shadowElevation = 4.dp
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    // Header Superior Verde-Petróleo Oficial com Logo e Versão v2.3.0
+                    // Header Superior Verde-Petróleo Oficial com Logo Nítido e Estrutura Limpa
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(PetrolHeader)
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
                             Image(
                                 painter = painterResource(id = R.drawable.logo_goorno),
                                 contentDescription = "Logo GoOrNo",
                                 modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF04241E))
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color.White)
+                                    .padding(3.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(verticalArrangement = Arrangement.Center) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
                                     Text(
                                         text = "GoOrNo",
                                         fontWeight = FontWeight.Black,
-                                        fontSize = 19.sp,
+                                        fontSize = 18.sp,
                                         color = Color.White
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Surface(
-                                        color = LimeBright,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            text = "v3.3.3",
-                                            color = PetrolDarkText,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            fontSize = 10.sp,
-                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(6.dp))
                                     Surface(
                                         color = Color.White.copy(alpha = 0.22f),
                                         shape = RoundedCornerShape(8.dp),
@@ -165,17 +158,45 @@ fun GoOrNoComposeApp(
                                             color = Color.White,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
-                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                         )
                                     }
                                 }
-                                Text(
-                                    text = runtimeState.label,
-                                    fontSize = 11.sp,
-                                    color = if (accessibilityConnected || ocrActive) Color(0xFFA7F3D0) else Color(0xFFFDE68A)
-                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    Surface(
+                                        color = LimeBright,
+                                        shape = RoundedCornerShape(5.dp)
+                                    ) {
+                                        Text(
+                                            text = "v3.3.4",
+                                            color = PetrolDarkText,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 9.sp,
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "•",
+                                        fontSize = 9.sp,
+                                        color = Color.White.copy(alpha = 0.5f)
+                                    )
+                                    Text(
+                                        text = runtimeState.label,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (accessibilityConnected || ocrActive) Color(0xFFA7F3D0) else Color(0xFFFDE68A),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
+
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         // Botão Pílula Moderno de Ajuste Rápido da Janela
                         FilledTonalButton(
@@ -185,19 +206,19 @@ fun GoOrNoComposeApp(
                                 contentColor = Color.White
                             ),
                             shape = RoundedCornerShape(20.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            modifier = Modifier.height(34.dp)
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Timer,
                                 contentDescription = null,
                                 tint = LimeBright,
-                                modifier = Modifier.size(15.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "${config.overlayAutoMinimizeSec}s · ${config.overlayOpacityPercent}%",
-                                fontSize = 11.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )

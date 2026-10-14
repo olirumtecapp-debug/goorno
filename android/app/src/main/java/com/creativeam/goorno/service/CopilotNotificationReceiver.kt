@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -235,7 +236,8 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                 )
 
                 val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setSmallIcon(R.drawable.ic_stat_goorno)
+                    .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
                     .setOngoing(true)
                     .setSilent(true)
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
