@@ -28,6 +28,7 @@ import {
 } from "./licenseStore.js";
 import { createPixCharge, verifyPaymentStatus } from "./asaas.js";
 import { sendFraudAlertEmail } from "./fraudAlert.js";
+import { saveMessage, listAllMessages, markMessageStatus, deleteMessage } from "./mailboxStore.js";
 
 export const app = express();
 app.use(express.json({ limit: "5mb" }));
@@ -887,8 +888,114 @@ app.post("/api/redeem-voucher", async (req, res) => {
   }
 });
 
+// 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
+app.get("/api/app-version", (_req, res) => {
+  res.json({
+    versionName: "3.3.4",
+    versionCode: 21,
+    releaseDate: "2026-10-14",
+    apkUrl: "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.4.apk",
+    directDownload: "/GoOrNo.apk",
+    fileSizeBytes: 60744343,
+    fileSizeFormatted: "57.9 MB",
+    changelog: [
+      "Ícone oficial do GoOrNo exibido na barra superior ao lado do relógio.",
+      "Botão '⏹️ Desativar' na notificação para desligar o copiloto em 1 toque.",
+      "Ajuste visual no card do Plano Vitalício eliminando quebra de linhas no selo RECOMENDADO.",
+      "Demonstração visual com 21 chamadas reais da Uber e 99 na rua.",
+      "Fale Conosco integrado (Caixa Postal) para dúvidas e sugestões dos motoristas."
+    ],
+    mandatory: false,
+  });
+});
+
+// 13. Public Route: Driver submits message to Caixa Postal (Fale Conosco)
+app.post("/api/contact", async (req, res) => {
+  try {
+    const { name, contact, category = "duvida", subject = "", message, source = "web" } = req.body || {};
+    if (!message || String(message).trim().length === 0) {
+      return res.status(400).json({ error: "A mensagem é obrigatória." });
+    }
+    const cleanName = String(name || "Motorista").trim();
+    const cleanContact = String(contact || "").trim();
+    const cleanSubject = String(subject || "").trim() || "Contato pelo App";
+    const cleanMessage = String(message).trim();
+
+    const categoryLabels: Record<string, string> = {
+      duvida: "Dúvida sobre o App",
+      sugestao: "Sugestão de Melhoria",
+      problema: "Relato de Problema",
+      elogio: "Elogio",
+      outro: "Outro Assunto"
+    };
+
+    const saved = await saveMessage({
+      name: cleanName,
+      contact: cleanContact,
+      category: category as any,
+      categoryLabel: categoryLabels[category] || "Geral",
+      subject: cleanSubject,
+      message: cleanMessage,
+      source: source === "app" ? "app" : "web"
+    });
+
+    res.json({
+      ok: true,
+      message: "Mensagem recebida com sucesso na nossa Caixa Postal! Nossa equipe entrará em contato se necessário.",
+      ticketId: saved.id
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao enviar mensagem para a caixa postal." });
+  }
+});
+
+// 14. Admin Route: List all Caixa Postal messages
+app.get("/api/contact", async (req, res) => {
+  const secret = req.headers["x-admin-secret"] || req.query.secret;
+  if (secret !== "goorno2026admin" && process.env.NODE_ENV === "production") {
+    return res.status(401).json({ error: "Não autorizado" });
+  }
+  try {
+    const messages = await listAllMessages();
+    res.json({ ok: true, messages, total: messages.length });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao listar mensagens." });
+  }
+});
+
+// 15. Admin Route: Update message status (e.g. mark as read)
+app.patch("/api/contact/:id", async (req, res) => {
+  const secret = req.headers["x-admin-secret"] || req.query.secret;
+  if (secret !== "goorno2026admin" && process.env.NODE_ENV === "production") {
+    return res.status(401).json({ error: "Não autorizado" });
+  }
+  try {
+    const { id } = req.params;
+    const { status } = req.body || {};
+    const ok = await markMessageStatus(id, status);
+    res.json({ ok });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao atualizar status da mensagem." });
+  }
+});
+
+// 16. Admin Route: Delete message
+app.delete("/api/contact/:id", async (req, res) => {
+  const secret = req.headers["x-admin-secret"] || req.query.secret;
+  if (secret !== "goorno2026admin" && process.env.NODE_ENV === "production") {
+    return res.status(401).json({ error: "Não autorizado" });
+  }
+  try {
+    const { id } = req.params;
+    const ok = await deleteMessage(id);
+    res.json({ ok });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao excluir mensagem." });
+  }
+});
+
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.3.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.4.apk", "/GoOrNo-v3.3.3.apk", "/download/apk"], (_req, res) => {
   const candidatePaths = [
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),

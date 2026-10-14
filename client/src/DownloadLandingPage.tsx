@@ -14,8 +14,12 @@ import {
   Clock,
   DollarSign,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Mail,
+  Bell,
+  RefreshCw
 } from 'lucide-react';
+import { ContactModal } from './ContactModal';
 
 interface DownloadLandingPageProps {
   onOpenSimulator?: () => void;
@@ -24,6 +28,7 @@ interface DownloadLandingPageProps {
 
 export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -38,21 +43,22 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
     <div className="min-h-screen bg-[#f5f7f2] text-[#173a34] font-sans antialiased selection:bg-[#d9f56a] selection:text-[#173a34]">
       {/* TOP HEADER */}
       <header className="sticky top-0 z-50 bg-[#173a34] border-b border-[#122e29] shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo-goorno-clean.png"
-              alt="GoOrNo"
-              className="w-10 h-10 rounded-xl bg-white/10 p-1 object-contain"
-              onError={(e) => {
-                // Fallback para logo padrão
-                (e.target as HTMLImageElement).src = '/logo-goorno.png';
-              }}
-            />
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-[#234e45] to-[#122e29] border border-[#d9f56a]/40 shadow-md p-1.5 flex items-center justify-center">
+              <img
+                src="/logo-goorno-clean.png"
+                alt="GoOrNo Copiloto Oficial"
+                className="w-full h-full object-contain filter drop-shadow-sm"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo-goorno.png';
+                }}
+              />
+            </div>
             <div>
-              <span className="text-xl font-black text-white tracking-tight flex items-center gap-1.5">
+              <span className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
                 GoOrNo
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#d9f56a] text-[#173a34] uppercase">
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#d9f56a] text-[#173a34] uppercase tracking-normal">
                   v3.3.4
                 </span>
               </span>
@@ -62,19 +68,28 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setIsContactOpen(true)}
+              className="text-xs font-semibold text-[#dce5dc] hover:text-[#d9f56a] px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
+            >
+              <Mail className="w-4 h-4 text-[#d9f56a]" />
+              <span className="hidden sm:inline">Fale Conosco</span>
+            </button>
+
             {onOpenSimulator && (
               <button
                 onClick={onOpenSimulator}
-                className="text-xs font-semibold text-[#dce5dc] hover:text-[#d9f56a] px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                className="text-xs font-semibold text-[#dce5dc] hover:text-[#d9f56a] px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
               >
                 <span>📸</span>
-                <span>Ver 22 Telas Reais</span>
+                <span className="hidden sm:inline">Ver 21 Telas Reais</span>
               </button>
             )}
+
             <button
               onClick={handleDownloadApk}
-              className="bg-[#d9f56a] hover:bg-[#cbf052] text-[#173a34] font-bold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer"
+              className="bg-[#d9f56a] hover:bg-[#cbf052] text-[#173a34] font-black text-xs sm:text-sm px-3.5 sm:px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Baixar APK</span>
@@ -83,10 +98,33 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
         </div>
       </header>
 
-      {/* HERO SECTION */}
+      {/* HERO SECTION COM DESTAQUE MÁXIMO PARA O LOGO */}
       <section className="relative overflow-hidden pt-10 pb-16 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-[#173a34]/10 border border-[#173a34]/20 rounded-full px-4 py-1.5 text-xs font-bold text-[#173a34] mb-6 shadow-xs">
+          
+          {/* DESTAQUE PRINCIPAL DO LOGO */}
+          <div className="flex flex-col items-center justify-center mb-6">
+            <div className="relative group cursor-pointer" onClick={handleDownloadApk}>
+              <div className="absolute -inset-1.5 bg-gradient-to-r from-[#d9f56a] via-emerald-400 to-[#d9f56a] rounded-[32px] blur-md opacity-40 group-hover:opacity-75 transition duration-500"></div>
+              <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-[#173a34] border-2 border-[#d9f56a] p-3 shadow-2xl flex items-center justify-center">
+                <img
+                  src="/logo-goorno-clean.png"
+                  alt="GoOrNo Copiloto"
+                  className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/logo-goorno.png';
+                  }}
+                />
+              </div>
+            </div>
+            <div className="mt-3.5 flex items-center gap-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#173a34] bg-[#173a34]/10 px-3 py-1 rounded-full">
+                Copiloto Oficial do Motorista
+              </span>
+            </div>
+          </div>
+
+          <div className="inline-flex items-center gap-2 bg-[#173a34]/10 border border-[#173a34]/20 rounded-full px-4 py-1.5 text-xs font-bold text-[#173a34] mb-4 shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-[#173a34]" />
             <span>7 DIAS DE TESTE GRÁTIS · SEM CARTÃO DE CRÉDITO</span>
           </div>
@@ -123,7 +161,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 onClick={onOpenSimulator}
                 className="w-full mt-3 bg-[#f5f7f2] hover:bg-[#edf2eb] text-[#173a34] font-bold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer border border-[#dce5dc]"
               >
-                <span>📸 Ver as 22 Telas do App na Prática</span>
+                <span>📸 Ver as 21 Telas do App na Prática</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#173a34]" />
               </button>
             )}
@@ -131,6 +169,65 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             <p className="text-[11px] text-[#71867f] mt-3">
               Compatível com Android 8.0 até Android 14+ (Samsung, Motorola, Xiaomi, etc.)
             </p>
+          </div>
+
+          {/* PROCESSO DE ÚLTIMA VERSÃO & NOTIFICAÇÕES DE ATUALIZAÇÃO NO CELULAR */}
+          <div className="mt-10 bg-[#173a34] text-white border border-[#234e45] rounded-3xl p-6 sm:p-7 max-w-2xl mx-auto text-left shadow-lg">
+            <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#d9f56a]/20 text-[#d9f56a] grid place-items-center">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm sm:text-base text-white">
+                    Última Versão Disponível: v3.3.4 (Build 21)
+                  </h3>
+                  <p className="text-[11px] text-[#dce5dc]/70">
+                    Lançamento oficial atualizado em 14/10/2026
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-[#d9f56a] text-[#173a34]">
+                🟢 VERSÃO ESTÁVEL
+              </span>
+            </div>
+
+            {/* COMO O MOTORISTA FICA SABENDO DAS ATUALIZAÇÕES */}
+            <div className="bg-[#122e29] border border-[#234e45] rounded-2xl p-4 mb-4">
+              <h4 className="text-xs font-bold text-[#d9f56a] flex items-center gap-1.5 mb-1.5">
+                <Bell className="w-4 h-4 text-[#d9f56a]" />
+                Como você fica sabendo de novas atualizações?
+              </h4>
+              <p className="text-xs text-[#dce5dc]/90 leading-relaxed">
+                O GoOrNo possui <strong>verificação automática integrada ao iniciar</strong>. Sempre que uma nova versão ou melhoria for disponibilizada, você receberá um <strong>aviso direto na tela do aplicativo</strong> com o resumo das novidades e o botão para atualizar em 1 clique sem perder nenhuma de suas configurações.
+              </p>
+            </div>
+
+            <div className="space-y-2 text-xs text-[#dce5dc]">
+              <div className="font-bold text-[11px] uppercase tracking-wider text-[#d9f56a] mb-1">
+                Novidades da Versão 3.3.4:
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#d9f56a] shrink-0 mt-0.5" />
+                <span>Ícone oficial do GoOrNo exibido na barra superior ao lado do relógio.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#d9f56a] shrink-0 mt-0.5" />
+                <span>Botão '⏹️ Desativar' na notificação para desligar o copiloto em 1 toque.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#d9f56a] shrink-0 mt-0.5" />
+                <span>Layout do Plano Vitalício 100% alinhado (sem letras espremidas).</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#d9f56a] shrink-0 mt-0.5" />
+                <span>Demonstração oficial com 21 chamadas reais da Uber e 99 na rua.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#d9f56a] shrink-0 mt-0.5" />
+                <span>Fale Conosco integrado (Caixa Postal) para contato direto com a equipe.</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -373,29 +470,29 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     VIAGEM BOA (CARD VERDE)
                   </span>
-                  <span className="text-xs font-bold text-emerald-700">R$ 3,35/km</span>
+                  <span className="text-xs font-bold text-emerald-700">R$ 2,17/km</span>
                 </div>
                 <h3 className="text-base font-extrabold text-[#173a34] mb-1">
-                  Uber: R$ 22,46 por 6.7 km totais
+                  Uber: R$ 10,83 por 5,0 km totais
                 </h3>
                 <p className="text-xs text-[#71867f] mb-4">
-                  O GoOrNo analisa o tempo e a distância em milissegundos e colore o card em verde para você aceitar com confiança.
+                  1,0 km busca + 4,0 km viagem (15 min totais). Ganho calculado de R$ 2,17/km e projeção de R$ 162,45/h. O GoOrNo aprova em verde para aceitar com lucro real.
                 </p>
                 <div className="bg-[#173a34]/5 rounded-2xl overflow-hidden aspect-[9/14] flex items-center justify-center p-2">
                   <img
                     src="/telas/UberBoa.jpeg"
-                    alt="Chamada Uber Boa com GoOrNo"
+                    alt="Chamada Uber Boa: R$ 10,83 por 5,0 km (R$ 2,17/km)"
                     className="w-full h-full object-contain rounded-xl"
                     loading="lazy"
                   />
                 </div>
               </div>
               <div className="mt-4 pt-3 border-t border-[#f5f7f2] flex items-center justify-between">
-                <span className="text-xs font-semibold text-emerald-700">🟢 Ótimo Rendimento</span>
+                <span className="text-xs font-semibold text-emerald-700">🟢 R$ 2,17/km · Aceitar</span>
                 {onOpenSimulator && (
                   <button
                     onClick={onOpenSimulator}
-                    className="text-xs font-bold text-[#173a34] hover:underline"
+                    className="text-xs font-bold text-[#173a34] hover:underline cursor-pointer"
                   >
                     Ver detalhes →
                   </button>
@@ -411,29 +508,29 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     <AlertTriangle className="w-3.5 h-3.5" />
                     VIAGEM RUIM (CARD VERMELHO)
                   </span>
-                  <span className="text-xs font-bold text-rose-700">R$ 1,23/km</span>
+                  <span className="text-xs font-bold text-rose-700">R$ 1,25/km</span>
                 </div>
                 <h3 className="text-base font-extrabold text-[#173a34] mb-1">
-                  Uber: R$ 13,85 por 11.2 km totais
+                  Uber: R$ 11,25 por 9,0 km totais
                 </h3>
                 <p className="text-xs text-[#71867f] mb-4">
-                  O GoOrNo desconta combustível e manutenção e alerta em vermelho para você não pagar para trabalhar!
+                  4,4 km busca + 4,6 km viagem (23 min totais). Paga apenas R$ 1,25/km (abaixo do custo do veículo). O GoOrNo avisa em vermelho para você não pagar para trabalhar!
                 </p>
                 <div className="bg-[#173a34]/5 rounded-2xl overflow-hidden aspect-[9/14] flex items-center justify-center p-2">
                   <img
                     src="/telas/UberRuim.jpeg"
-                    alt="Chamada Uber Ruim com alerta do GoOrNo"
+                    alt="Chamada Uber Ruim: R$ 11,25 por 9,0 km (R$ 1,25/km)"
                     className="w-full h-full object-contain rounded-xl"
                     loading="lazy"
                   />
                 </div>
               </div>
               <div className="mt-4 pt-3 border-t border-[#f5f7f2] flex items-center justify-between">
-                <span className="text-xs font-semibold text-rose-700">🔴 Prejuízo Estimado</span>
+                <span className="text-xs font-semibold text-rose-700">🔴 R$ 1,25/km · Recusar</span>
                 {onOpenSimulator && (
                   <button
                     onClick={onOpenSimulator}
-                    className="text-xs font-bold text-[#173a34] hover:underline"
+                    className="text-xs font-bold text-[#173a34] hover:underline cursor-pointer"
                   >
                     Ver detalhes →
                   </button>
@@ -518,7 +615,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 onClick={onOpenSimulator}
                 className="inline-flex items-center gap-3 bg-[#173a34] hover:bg-[#122e29] text-[#d9f56a] font-bold text-sm sm:text-base px-8 py-4 rounded-2xl shadow-md transition cursor-pointer"
               >
-                <span>📸 Abrir Galeria Completa com Todas as 22 Telas</span>
+                <span>📸 Abrir Galeria Completa com Todas as 21 Telas Reais</span>
                 <ArrowRight className="w-5 h-5 text-[#d9f56a]" />
               </button>
             ) : (
@@ -526,7 +623,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 href="#simulator"
                 className="inline-flex items-center gap-3 bg-[#173a34] hover:bg-[#122e29] text-[#d9f56a] font-bold text-sm sm:text-base px-8 py-4 rounded-2xl shadow-md transition cursor-pointer"
               >
-                <span>📸 Abrir Galeria Completa com Todas as 22 Telas</span>
+                <span>📸 Abrir Galeria Completa com Todas as 21 Telas Reais</span>
                 <ArrowRight className="w-5 h-5 text-[#d9f56a]" />
               </a>
             )}
@@ -560,10 +657,6 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               {
                 q: 'Se eu trocar de aparelho ou formatar, perco meu acesso?',
                 a: 'Não! Sua licença fica vinculada ao seu número de WhatsApp. Pelo próprio aplicativo você pode transferir sua assinatura para seu novo celular.'
-              },
-              {
-                q: 'Tenho um cupom de cortesia. Como resgatar?',
-                a: 'Basta abrir o GoOrNo, ir na aba Plano Pro, digitar seu cupom no campo "Tem um Cupom / Voucher?" e clicar em Resgatar. Seu acesso será liberado na hora.'
               }
             ].map((faq, idx) => (
               <div
@@ -614,23 +707,24 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             {onOpenAdmin && (
               <button
                 onClick={onOpenAdmin}
-                className="text-[#71867f] hover:text-[#d9f56a] transition"
+                className="text-[#71867f] hover:text-[#d9f56a] transition cursor-pointer"
               >
                 Acesso Administrativo
               </button>
             )}
-            <a
-              href="https://wa.me/5511999998888?text=Olá!%20Gostaria%20de%20tirar%20uma%20dúvida%20sobre%20o%20GoOrNo."
-              target="_blank"
-              rel="noreferrer"
-              className="text-[#d9f56a] hover:underline flex items-center gap-1 font-semibold"
+            <button
+              onClick={() => setIsContactOpen(true)}
+              className="text-[#d9f56a] hover:underline flex items-center gap-1.5 font-semibold cursor-pointer"
             >
-              Suporte WhatsApp
-              <ExternalLink className="w-3 h-3" />
-            </a>
+              <Mail className="w-3.5 h-3.5" />
+              <span>Fale Conosco (Caixa Postal)</span>
+            </button>
           </div>
         </div>
       </footer>
+
+      {/* MODAL DE CAIXA POSTAL / FALE CONOSCO */}
+      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </div>
   );
 }

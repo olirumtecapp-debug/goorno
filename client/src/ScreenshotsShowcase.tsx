@@ -34,23 +34,23 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   {
     id: 'uber-boa',
     filename: 'UberBoa.jpeg',
-    title: 'Uber: Chamada Lucrativa (R$ 3,35/km)',
+    title: 'Uber: Chamada Lucrativa (R$ 2,17/km)',
     category: 'uber_99',
     categoryLabel: 'Uber & 99 na Prática',
     badge: '🟢 VIAGEM BOA',
     badgeType: 'green',
-    summary: 'Card flutuante GoOrNo em VERDE alertando que a corrida paga R$ 22,46 para 6.7 km totais.',
+    summary: 'Card flutuante GoOrNo em VERDE alertando que a corrida paga R$ 10,83 para 5,0 km totais (1,0 km busca + 4,0 km viagem em 15 min - R$ 162,45/h).',
     highlightText: 'Em menos de 1 segundo você sabe que essa corrida coloca dinheiro no bolso com excelente ganho por km e por hora.'
   },
   {
     id: 'uber-ruim',
     filename: 'UberRuim.jpeg',
-    title: 'Uber: Chamada com Prejuízo (R$ 1,23/km)',
+    title: 'Uber: Chamada com Prejuízo (R$ 1,25/km)',
     category: 'uber_99',
     categoryLabel: 'Uber & 99 na Prática',
     badge: '🔴 VIAGEM RUIM',
     badgeType: 'red',
-    summary: 'Card flutuante GoOrNo em VERMELHO indicando valor baixo por km (R$ 13,85 por 11.2 km).',
+    summary: 'Card flutuante GoOrNo em VERMELHO indicando valor baixo por km (R$ 11,25 por 9,0 km totais - 4,4 km busca + 4,6 km viagem em 23 min - R$ 56,25/h).',
     highlightText: 'Evita que o motorista pague para trabalhar! O GoOrNo calcula custo de gasolina + desgaste e avisa na hora.'
   },
   {
@@ -267,17 +267,6 @@ export const SCREENSHOTS: ScreenshotItem[] = [
     badgeType: 'green',
     summary: 'Basta digitar o WhatsApp com DDD para liberar 7 dias completos com todas as funções desbloqueadas.',
     highlightText: 'Teste na rua, compare seus ganhos e veja se o GoOrNo se paga no primeiro dia de trabalho.'
-  },
-  {
-    id: 'plano-vitalicio-ajustado',
-    filename: 'TelaCORRIGIRquebradelinha.jpeg',
-    title: 'Planos Sem Mensalidade: Vitalício por R$ 39,90',
-    category: 'safety',
-    categoryLabel: 'Segurança & Auditoria',
-    badge: '💎 VERSÃO 3.3.4 AJUSTADA',
-    badgeType: 'green',
-    summary: 'Tela de assinatura com o selo "RECOMENDADO" e títulos perfeitamente alinhados na versão 3.3.4.',
-    highlightText: 'Pague uma única vez e use para sempre! Sem assinaturas mensais recorrentes ou cobranças automáticas no cartão.'
   }
 ];
 
@@ -333,7 +322,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               <h1 className="font-black text-lg text-white tracking-tight flex items-center gap-2">
                 Galeria Real do GoOrNo
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#d9f56a] text-[#173a34] uppercase">
-                  22 Telas Oficiais
+                  21 Telas Oficiais
                 </span>
               </h1>
               <p className="text-[11px] text-[#dce5dc]/70 hidden sm:block">
@@ -393,7 +382,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   <Maximize2 className="w-4 h-4 text-emerald-400/60 group-hover:text-emerald-300 transition" />
                 </div>
                 <p className="text-xs text-emerald-100/90 leading-relaxed">
-                  R$ 22,46 por 6.7 km (~R$ 3,35/km). O GoOrNo aprova na hora e mostra seu ganho projetado.
+                  R$ 10,83 por 5,0 km (R$ 2,17/km · R$ 162,45/h). O GoOrNo aprova na hora com card verde destacando alta rentabilidade.
                 </p>
                 <div className="mt-3 text-[11px] font-bold text-emerald-300 underline">
                   Toque para ver a tela do UberBoa →
@@ -415,7 +404,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   <Maximize2 className="w-4 h-4 text-rose-400/60 group-hover:text-rose-300 transition" />
                 </div>
                 <p className="text-xs text-rose-100/90 leading-relaxed">
-                  R$ 13,85 por 11.2 km (~R$ 1,23/km). O GoOrNo avisa que dá prejuízo considerando combustível.
+                  R$ 11,25 por 9,0 km (R$ 1,25/km · R$ 56,25/h). O GoOrNo avisa em vermelho que a busca longa (4,4 km) gera prejuízo real.
                 </p>
                 <div className="mt-3 text-[11px] font-bold text-rose-300 underline">
                   Toque para ver a tela do UberRuim →
@@ -426,15 +415,15 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
         </div>
       </section>
 
-      {/* FILTROS DE CATEGORIA */}
+      {/* FILTROS DE CATEGORIA - SEM BARRA DE ROLAGEM, TOTALMENTE RESPONSIVO */}
       <section className="px-4 max-w-6xl mx-auto mb-6">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           {[
-            { key: 'all', label: 'Todas as Telas (22)', icon: Sparkles },
+            { key: 'all', label: 'Todas as Telas (21)', icon: Sparkles },
             { key: 'uber_99', label: '🚗 Uber & 99 na Prática (7)', icon: Car },
             { key: 'streetview', label: '📍 Notificação & Street View (3)', icon: MapPin },
             { key: 'config', label: '⚙️ Metas & Calculadora (5)', icon: Sliders },
-            { key: 'safety', label: '🛡️ Segurança & Auditoria (7)', icon: ShieldCheck }
+            { key: 'safety', label: '🛡️ Segurança & Auditoria (6)', icon: ShieldCheck }
           ].map((cat) => {
             const Icon = cat.icon;
             const isSelected = activeCategory === cat.key;
@@ -442,7 +431,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               <button
                 key={cat.key}
                 onClick={() => setActiveCategory(cat.key)}
-                className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
                   isSelected
                     ? 'bg-[#173a34] text-[#d9f56a] shadow-sm'
                     : 'bg-white border border-[#dce5dc] text-[#71867f] hover:text-[#173a34] hover:bg-[#edf2eb]'

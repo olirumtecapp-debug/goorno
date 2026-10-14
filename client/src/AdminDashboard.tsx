@@ -30,7 +30,10 @@ import {
   TrendingUp,
   Gift,
   Share2,
-  ExternalLink
+  ExternalLink,
+  Mail,
+  MessageSquare,
+  Send
 } from 'lucide-react';
 
 interface LicenseRecord {
@@ -68,6 +71,17 @@ interface VoucherRecord {
   createdAt: string;
 }
 
+interface ContactMessage {
+  id: string;
+  name: string;
+  whatsapp: string;
+  category: 'duvida' | 'sugestao' | 'problema' | 'financeiro' | 'outro';
+  message: string;
+  createdAt: string;
+  status: 'unread' | 'read' | 'replied';
+  replyNotes?: string;
+}
+
 interface AdminStats {
   totalUsers: number;
   activePaid: number;
@@ -90,9 +104,11 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [licenses, setLicenses] = useState<LicenseRecord[]>([]);
   const [vouchers, setVouchers] = useState<VoucherRecord[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'trial' | 'expired' | 'fraud'>('all');
-  const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers' | 'mailbox'>('overview');
+  const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'replied'>('all');
   const [selectedUser, setSelectedUser] = useState<LicenseRecord | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
@@ -131,9 +147,10 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
     setLoading(true);
     setAuthError('');
     try {
-      const [resStats, resVouchers] = await Promise.all([
+      const [resStats, resVouchers, resContact] = await Promise.all([
         fetch(`/api/admin/stats-and-licenses?adminPassword=${encodeURIComponent(password)}`),
-        fetch(`/api/admin/vouchers?adminPassword=${encodeURIComponent(password)}`)
+        fetch(`/api/admin/vouchers?adminPassword=${encodeURIComponent(password)}`),
+        fetch(`/api/contact?adminPassword=${encodeURIComponent(password)}`)
       ]);
 
       if (resStats.status === 401) {
@@ -152,6 +169,11 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
           const vData = await resVouchers.json();
           setVouchers(vData.vouchers || []);
         }
+
+        if (resContact.ok) {
+          const cData = await resContact.json();
+          setMessages(cData.messages || []);
+        }
       } else {
         setAuthError('Erro ao carregar dados do servidor.');
       }
@@ -159,6 +181,39 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
       setAuthError('Falha na conexão com o servidor.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateMessageStatus = async (id: string, status: 'unread' | 'read' | 'replied') => {
+    try {
+      const res = await fetch(`/api/contact/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminPassword, status })
+      });
+      if (res.ok) {
+        setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)));
+        setActionFeedback('Status da mensagem atualizado!');
+        setTimeout(() => setActionFeedback(null), 3000);
+      }
+    } catch (e: any) {
+      setActionFeedback(`Erro ao atualizar mensagem: ${e.message}`);
+    }
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    if (!window.confirm('Deseja realmente remover esta mensagem da Caixa Postal?')) return;
+    try {
+      const res = await fetch(`/api/contact/${id}?adminPassword=${encodeURIComponent(adminPassword)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setMessages((prev) => prev.filter((m) => m.id !== id));
+        setActionFeedback('Mensagem removida com sucesso!');
+        setTimeout(() => setActionFeedback(null), 3000);
+      }
+    } catch (e: any) {
+      setActionFeedback(`Erro ao remover mensagem: ${e.message}`);
     }
   };
 
@@ -445,6 +500,23 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
             >
               <Ticket className="w-4 h-4" />
               <span>Cupons & Vouchers ({vouchers.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('mailbox')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer relative ${
+                activeTab === 'mailbox'
+                  ? 'bg-[#173a34] text-[#d9f56a] shadow-xs'
+                  : 'bg-white border border-[#dce5dc] text-[#173a34] hover:bg-[#f2f7f0]'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              <span>Caixa Postal ({messages.length})</span>
+              {messages.filter((m) => m.status === 'unread').length > 0 && (
+                <span className="bg-amber-400 text-[#173a34] text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1">
+                  {messages.filter((m) => m.status === 'unread').length}
+                </span>
+              )}
             </button>
           </div>
 
@@ -1072,6 +1144,228 @@ ${window.location.origin}
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ABA: CAIXA POSTAL (FALE CONOSCO) */}
+        {activeTab === 'mailbox' && (
+          <div className="space-y-6">
+            {/* CABEÇALHO DA CAIXA POSTAL & FILTROS */}
+            <div className="bg-white border border-[#dce5dc] p-5 rounded-2xl shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="font-bold text-base text-[#173a34] flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-[#2d7d54]" />
+                    <span>Caixa Postal dos Motoristas (Fale Conosco)</span>
+                  </h3>
+                  <p className="text-xs text-[#71867f] mt-0.5">
+                    Mensagens, dúvidas, sugestões e pedidos de ajuda enviados diretamente pelo site ou aplicativo.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#71867f]">
+                    Total: {messages.length} ({messages.filter((m) => m.status === 'unread').length} não lidas)
+                  </span>
+                </div>
+              </div>
+
+              {/* FILTROS E BUSCA */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-[#f2f7f0]">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-[#71867f] absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por nome, telefone ou mensagem..."
+                    className="w-full pl-9 pr-3 py-1.5 bg-[#f8faf7] border border-[#dce5dc] rounded-xl text-xs text-[#173a34] focus:outline-none focus:border-[#173a34]"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {(['all', 'unread', 'read', 'replied'] as const).map((st) => {
+                    const label =
+                      st === 'all'
+                        ? 'Todas'
+                        : st === 'unread'
+                        ? 'Não Lidas'
+                        : st === 'read'
+                        ? 'Lidas'
+                        : 'Respondidas';
+                    const count =
+                      st === 'all' ? messages.length : messages.filter((m) => m.status === st).length;
+                    return (
+                      <button
+                        key={st}
+                        onClick={() => setMessageFilter(st)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                          messageFilter === st
+                            ? 'bg-[#173a34] text-[#d9f56a]'
+                            : 'bg-[#f8faf7] text-[#71867f] hover:bg-[#edf2eb]'
+                        }`}
+                      >
+                        {label} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* LISTAGEM DE MENSAGENS */}
+            <div className="space-y-3">
+              {messages
+                .filter((msg) => {
+                  if (messageFilter !== 'all' && msg.status !== messageFilter) return false;
+                  if (!searchTerm.trim()) return true;
+                  const term = searchTerm.toLowerCase();
+                  return (
+                    msg.name.toLowerCase().includes(term) ||
+                    msg.whatsapp.toLowerCase().includes(term) ||
+                    msg.message.toLowerCase().includes(term) ||
+                    msg.category.toLowerCase().includes(term)
+                  );
+                })
+                .map((msg) => {
+                  const cleanPhone = msg.whatsapp.replace(/\D/g, '');
+                  const waNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+                  const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(
+                    `Olá ${msg.name}! Aqui é do suporte GoOrNo sobre sua mensagem enviada no Fale Conosco.`
+                  )}`;
+
+                  const catLabels: Record<string, { label: string; color: string }> = {
+                    duvida: { label: 'Dúvida Geral', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+                    sugestao: { label: 'Sugestão / Melhoria', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+                    problema: { label: 'Problema / Erro', color: 'bg-rose-100 text-rose-800 border-rose-200' },
+                    financeiro: { label: 'Assinatura / PIX', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+                    outro: { label: 'Outro', color: 'bg-slate-100 text-slate-800 border-slate-200' }
+                  };
+                  const catInfo = catLabels[msg.category] || catLabels.outro;
+
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`bg-white border rounded-2xl p-5 shadow-xs transition ${
+                        msg.status === 'unread'
+                          ? 'border-amber-300 ring-2 ring-amber-100 bg-amber-50/20'
+                          : 'border-[#dce5dc]'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <span className="font-bold text-sm text-[#173a34]">{msg.name}</span>
+                          <a
+                            href={waLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-mono text-xs text-[#2d7d54] bg-[#2d7d54]/10 hover:bg-[#2d7d54]/20 px-2 py-0.5 rounded-lg flex items-center gap-1 transition"
+                            title="Conversar no WhatsApp"
+                          >
+                            <span>{msg.whatsapp}</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${catInfo.color}`}
+                          >
+                            {catInfo.label}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs text-[#71867f]">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{new Date(msg.createdAt).toLocaleString('pt-BR')}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase ${
+                              msg.status === 'unread'
+                                ? 'bg-amber-100 text-amber-800'
+                                : msg.status === 'replied'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {msg.status === 'unread'
+                              ? 'Não Lida'
+                              : msg.status === 'replied'
+                              ? 'Respondida'
+                              : 'Lida'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* CONTEÚDO DA MENSAGEM */}
+                      <div className="bg-[#f8faf7] p-3.5 rounded-xl border border-[#dce5dc]/70 text-xs sm:text-sm text-[#173a34] whitespace-pre-wrap leading-relaxed mb-4">
+                        {msg.message}
+                      </div>
+
+                      {/* BARRA DE AÇÕES */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f2f7f0]">
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={waLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => {
+                              if (msg.status === 'unread') {
+                                handleUpdateMessageStatus(msg.id, 'replied');
+                              }
+                            }}
+                            className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-2xs"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Responder no WhatsApp</span>
+                          </a>
+
+                          {msg.status !== 'read' && (
+                            <button
+                              onClick={() => handleUpdateMessageStatus(msg.id, 'read')}
+                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-xl transition cursor-pointer"
+                            >
+                              Marcar como Lida
+                            </button>
+                          )}
+
+                          {msg.status !== 'replied' && (
+                            <button
+                              onClick={() => handleUpdateMessageStatus(msg.id, 'replied')}
+                              className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-medium rounded-xl transition cursor-pointer"
+                            >
+                              Marcar como Respondida
+                            </button>
+                          )}
+
+                          {msg.status !== 'unread' && (
+                            <button
+                              onClick={() => handleUpdateMessageStatus(msg.id, 'unread')}
+                              className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium rounded-xl transition cursor-pointer"
+                            >
+                              Marcar Não Lida
+                            </button>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => handleDeleteMessage(msg.id)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                          title="Remover mensagem"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+              {messages.length === 0 && (
+                <div className="bg-white border border-[#dce5dc] rounded-2xl p-12 text-center text-[#71867f]">
+                  <Mail className="w-8 h-8 mx-auto mb-2 text-[#71867f]/50" />
+                  <p className="font-bold text-sm text-[#173a34]">Nenhuma mensagem recebida ainda.</p>
+                  <p className="text-xs mt-1">
+                    Quando os motoristas enviarem dúvidas ou sugestões pelo Fale Conosco, elas aparecerão aqui.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
