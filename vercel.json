@@ -2,6 +2,23 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
+  "redirects": [
+    {
+      "source": "/GoOrNo.apk",
+      "destination": "https://github.com/olirumtecapp-debug/goorno/raw/main/client/public/GoOrNo.apk",
+      "permanent": false
+    },
+    {
+      "source": "/GoOrNo-v3.3.3.apk",
+      "destination": "https://github.com/olirumtecapp-debug/goorno/raw/main/client/public/GoOrNo.apk",
+      "permanent": false
+    },
+    {
+      "source": "/download/apk",
+      "destination": "https://github.com/olirumtecapp-debug/goorno/raw/main/client/public/GoOrNo.apk",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
