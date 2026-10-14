@@ -28,7 +28,9 @@ import {
   ArrowUpRight,
   ShieldCheck,
   TrendingUp,
-  Gift
+  Gift,
+  Share2,
+  ExternalLink
 } from 'lucide-react';
 
 interface LicenseRecord {
