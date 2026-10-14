@@ -313,7 +313,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             <img
               src="/logo-goorno-clean.png"
               alt="GoOrNo"
-              className="w-10 h-10 rounded-xl bg-white/10 p-1 object-contain"
+              className="w-10 h-10 rounded-xl bg-white p-1 object-contain shadow-xs"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/logo-goorno.png';
               }}

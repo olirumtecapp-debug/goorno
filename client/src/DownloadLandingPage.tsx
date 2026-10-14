@@ -45,11 +45,11 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
       <header className="sticky top-0 z-50 bg-[#173a34] border-b border-[#122e29] shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-[#234e45] to-[#122e29] border border-[#d9f56a]/40 shadow-md p-1.5 flex items-center justify-center">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white border border-[#d9f56a] shadow-md p-1.5 flex items-center justify-center">
               <img
                 src="/logo-goorno-clean.png"
                 alt="GoOrNo Copiloto Oficial"
-                className="w-full h-full object-contain filter drop-shadow-sm"
+                className="w-full h-full object-contain filter drop-shadow-xs"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/logo-goorno.png';
                 }}
@@ -106,11 +106,11 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
           <div className="flex flex-col items-center justify-center mb-6">
             <div className="relative group cursor-pointer" onClick={handleDownloadApk}>
               <div className="absolute -inset-1.5 bg-gradient-to-r from-[#d9f56a] via-emerald-400 to-[#d9f56a] rounded-[32px] blur-md opacity-40 group-hover:opacity-75 transition duration-500"></div>
-              <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-[#173a34] border-2 border-[#d9f56a] p-3 shadow-2xl flex items-center justify-center">
+              <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-white border-2 border-[#d9f56a] p-3 shadow-2xl flex items-center justify-center">
                 <img
                   src="/logo-goorno-clean.png"
                   alt="GoOrNo Copiloto"
-                  className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/logo-goorno.png';
                   }}
@@ -692,7 +692,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             <img
               src="/logo-goorno-clean.png"
               alt="GoOrNo"
-              className="w-8 h-8 rounded-lg bg-white/10 p-0.5"
+              className="w-8 h-8 rounded-lg bg-white p-1 object-contain shadow-xs"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/logo-goorno.png';
               }}
