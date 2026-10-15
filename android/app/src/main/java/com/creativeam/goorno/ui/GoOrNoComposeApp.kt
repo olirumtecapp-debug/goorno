@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -30,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -541,6 +543,14 @@ fun GoOrNoComposeApp(
                                 )
                             }
                         }
+                    }
+
+                    // Suas Faixas (Resumo dos Valores de Cada Faixa)
+                    item {
+                        SuasFaixasMatrixCard(
+                            config = config,
+                            onAdjustClick = { currentScreen = GoOrNoScreen.FINANCIAL_TARGETS }
+                        )
                     }
 
                     // Última Oferta Real Analisada (com Botões 1-Toque Street View Origem e Destino)
@@ -1107,6 +1117,12 @@ fun GoOrNoComposeApp(
                 // TELA 4: CONFIGURAÇÃO DAS METAS FINANCEIRAS E SEMÁFORO
                 // =====================================================
                 GoOrNoScreen.FINANCIAL_TARGETS -> {
+                    item {
+                        SuasFaixasMatrixCard(
+                            config = config,
+                            onAdjustClick = {}
+                        )
+                    }
                     item {
                         var grossKm by remember(config.targetGrossPerKm) {
                             mutableStateOf(config.targetGrossPerKm.toString())
@@ -3569,6 +3585,237 @@ private fun MetricBox(modifier: Modifier = Modifier, label: String, value: Strin
         ) {
             Text(text = label, fontSize = 10.sp, color = MutedText, fontWeight = FontWeight.Bold)
             Text(text = value, fontSize = 13.5.sp, color = PetrolDarkText, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+fun SuasFaixasMatrixCard(
+    config: DriverFinancialConfig,
+    onAdjustClick: () -> Unit
+) {
+    val yellowRatio = config.yellowToleranceRatio.coerceIn(0.5, 0.95)
+    val kmMinYellow = config.targetGrossPerKm * yellowRatio
+    val kmMinGreen = config.targetGrossPerKm
+    val hrMinYellow = config.targetGrossPerHour * yellowRatio
+    val hrMinGreen = config.targetGrossPerHour
+    val ratingMinYellow = config.minAcceptablePassengerRating
+    val ratingMinGreen = config.targetGoodPassengerRating
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, CleanCardBorder),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Suas Faixas",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 17.sp,
+                        color = PetrolHeader
+                    )
+                    Text(
+                        text = "Confira os valores de cada faixa do semáforo.",
+                        fontSize = 11.5.sp,
+                        color = MutedText
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, PetrolHeader.copy(alpha = 0.3f)),
+                    color = SoftSurfaceVariant,
+                    modifier = Modifier.clickable { onAdjustClick() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Tune,
+                            contentDescription = null,
+                            tint = PetrolHeader,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "Ajustar",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PetrolHeader
+                        )
+                    }
+                }
+            }
+
+            // Tabela / Matriz de Faixas (FAIXA | Ruim | Atenção | Aceitar)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF8FAFC))
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
+            ) {
+                // Header da Tabela
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF1F5F9))
+                        .padding(vertical = 8.dp, horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "FAIXA",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF64748B),
+                        modifier = Modifier.weight(1.2f)
+                    )
+                    Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                        Box(modifier = Modifier.size(7.dp).background(TrafficRed, CircleShape))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Ruim", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficRed)
+                    }
+                    Row(modifier = Modifier.weight(1.1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                        Box(modifier = Modifier.size(7.dp).background(TrafficYellow, CircleShape))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Atenção", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficYellow)
+                    }
+                    Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                        Box(modifier = Modifier.size(7.dp).background(TrafficGreen, CircleShape))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Aceitar", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficGreen)
+                    }
+                }
+
+                HorizontalDivider(color = Color(0xFFE2E8F0))
+
+                // Linha 1: R$/km
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 9.dp, horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1.2f)) {
+                        Text("R$/km", fontSize = 11.5.sp, fontWeight = FontWeight.Black, color = PetrolDarkText)
+                        Text("por km", fontSize = 9.5.sp, color = MutedText)
+                    }
+                    Text(
+                        text = "< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinYellow)}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinGreen)}",
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1.1f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "≥ ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinGreen)}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TrafficGreen,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                HorizontalDivider(color = Color(0xFFF1F5F9))
+
+                // Linha 2: R$/hora
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 9.dp, horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1.2f)) {
+                        Text("R$/hora", fontSize = 11.5.sp, fontWeight = FontWeight.Black, color = PetrolDarkText)
+                        Text("por hora", fontSize = 9.5.sp, color = MutedText)
+                    }
+                    Text(
+                        text = "< ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinYellow)}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinGreen)}",
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1.1f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "≥ ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinGreen)}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TrafficGreen,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                HorizontalDivider(color = Color(0xFFF1F5F9))
+
+                // Linha 3: Nota passageiro
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 9.dp, horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1.2f)) {
+                        Text("Nota", fontSize = 11.5.sp, fontWeight = FontWeight.Black, color = PetrolDarkText)
+                        Text("passageiro", fontSize = 9.5.sp, color = MutedText)
+                    }
+                    Text(
+                        text = "< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinYellow)}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinGreen)}",
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1.1f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "≥ ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinGreen)}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TrafficGreen,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }

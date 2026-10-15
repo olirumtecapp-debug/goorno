@@ -124,22 +124,22 @@ enum class PassengerRatingVerdict(val label: String, val emoji: String, val hexC
  * Formato visual da janelinha flutuante quando toca corrida.
  */
 enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
+    FULL_CARD(
+        title = "Janela Moderna 4 Pilares + Balão Veredito (Recomendado)",
+        subtitle = "Balão de Veredito (Aceitar/Atenção/Recusar) + Pilares R$/km, R$/h, Lucro e Nota com barras verticais coloridas"
+    ),
     SEMAFORO_COMPACT(
-        title = "Bolinha Semáforo Compacta (Recomendado)",
-        subtitle = "Mostra a bolinha (🟢/🟡/🔴) + Valor, KM/Tempo Total, R$/km, R$/h e Nota do Passageiro"
+        title = "Janela Moderna Compacta (Oficial)",
+        subtitle = "Card escuro translúcido com balão de veredito e métricas essenciais"
     ),
     MINI_BALL(
         title = "Só Bolinha Semáforo + R$/km (Ultra Discreto)",
         subtitle = "Pílula mínima com a bolinha colorida, valor, KM/Tempo Total, R$/km, R$/h e Nota ★"
-    ),
-    FULL_CARD(
-        title = "Card Completo Detalhado",
-        subtitle = "Mostra faixa completa do semáforo, Nota do Passageiro colorida, KM/Tempo Total, R$/km e R$/h"
     );
 
     companion object {
         fun fromName(name: String?): OverlayDisplayStyle {
-            return entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: SEMAFORO_COMPACT
+            return entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: FULL_CARD
         }
     }
 }
@@ -170,8 +170,8 @@ data class DriverFinancialConfig(
     val minConfidenceThreshold: Double = 0.65,
     val overlayOpacityPercent: Int = 92,
     val overlayAutoMinimizeSec: Int = 7,
-    val overlayDisplayStyle: String = OverlayDisplayStyle.SEMAFORO_COMPACT.name,
-    val showProfitOnOverlay: Boolean = false,
+    val overlayDisplayStyle: String = OverlayDisplayStyle.FULL_CARD.name,
+    val showProfitOnOverlay: Boolean = true,
     val showCostOnOverlay: Boolean = false,
     val riskAlertEnabled: Boolean = true,
     val forceRedOnRiskArea: Boolean = true,
