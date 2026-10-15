@@ -332,24 +332,24 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
     setTimeout(() => setCopiedVoucher(null), 2500);
   };
 
-  // TELA DE LOGIN CLEAN NO ESTILO MEUAUTÔNOMO
+  // TELA DE LOGIN CLEAN NO ESTILO REDESIGN (SPACE GROTESK + DM SANS + INK & LIME)
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#f5f7f2] text-[#173a34] flex items-center justify-center p-4 sm:p-6 font-sans">
-        <div className="w-full max-w-md bg-white border border-[#dce5dc] rounded-[28px] p-8 shadow-[0_20px_60px_rgba(23,58,52,0.08)]">
-          <div className="text-center mb-6">
-            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-[#173a34] text-[#d9f56a] shadow-xs">
+      <div className="min-h-screen bg-[#f3f5ed] text-[#071d19] flex items-center justify-center p-4 sm:p-6 font-dm selection:bg-[#d9ff4f] selection:text-[#071d19]">
+        <div className="w-full max-w-md bg-white border border-[rgba(7,29,25,0.12)] rounded-[28px] p-8 sm:p-10 shadow-[0_20px_50px_rgba(7,29,25,0.06)]">
+          <div className="text-center mb-7">
+            <div className="mx-auto mb-3.5 grid h-14 w-14 place-items-center rounded-2xl bg-[#071d19] text-[#d9ff4f] shadow-xs">
               <Lock className="h-6 w-6" />
             </div>
-            <h1 className="text-2xl font-bold text-[#173a34]">Painel Administrativo</h1>
-            <p className="mt-1 text-xs text-[#71867f]">
-              Área de controle de motoristas, cupons de cortesia e combate à fraude
+            <h1 className="font-space text-2xl font-bold text-[#071d19] tracking-tight">Painel Administrativo</h1>
+            <p className="mt-1.5 text-xs text-[#7a8982]">
+              Controle de motoristas, cupons de cortesia e combate à fraude
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-[#173a34] uppercase tracking-wider mb-2">
+              <label className="block text-[11px] font-space font-bold text-[#071d19] uppercase tracking-wider mb-2">
                 Senha Master
               </label>
               <input
@@ -357,7 +357,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                 value={inputPassword}
                 onChange={(e) => setInputPassword(e.target.value)}
                 placeholder="Digite a senha administrativa..."
-                className="w-full bg-[#f8faf7] border border-[#dce5dc] focus:border-[#173a34] rounded-xl px-4 py-3 text-[#173a34] placeholder-[#71867f]/60 focus:outline-none transition"
+                className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] focus:border-[#071d19] rounded-xl px-4 py-3 text-sm text-[#071d19] placeholder-[#7a8982]/60 focus:outline-none transition"
                 required
               />
             </div>
@@ -372,7 +372,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#173a34] hover:bg-[#122e29] text-[#d9f56a] font-bold py-3 px-4 rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-[#071d19] hover:bg-[#0d302a] text-[#d9ff4f] font-space font-bold py-3.5 px-4 rounded-xl shadow-xs transition hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : 'Acessar Painel Master'}
             </button>
@@ -400,22 +400,22 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
   });
 
   return (
-    <div className="min-h-screen bg-[#f5f7f2] text-[#173a34] flex flex-col font-sans">
-      {/* HEADER LIMPO E ELEGANTE NO ESTILO MEUAUTÔNOMO */}
-      <header className="border-b border-[#dce5dc] bg-white sticky top-0 z-40 shadow-2xs">
+    <div className="min-h-screen bg-[#f3f5ed] text-[#071d19] flex flex-col font-dm selection:bg-[#d9ff4f] selection:text-[#071d19]">
+      {/* HEADER FIXO SUPERIOR NO ESTILO REDESIGN GOORNO */}
+      <header className="border-b border-white/10 bg-[#071d19] sticky top-0 z-40 text-white shadow-xs">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#173a34] flex items-center justify-center font-black text-[#d9f56a] text-sm shadow-xs">
+            <div className="h-10 w-10 rounded-xl bg-[#d9ff4f] flex items-center justify-center font-space font-black text-[#071d19] text-sm shadow-xs">
               GO
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-base text-[#173a34] tracking-tight">GoOrNo Master</span>
-                <span className="rounded-full bg-[#173a34] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#d9f56a]">
+                <span className="font-space font-bold text-base text-white tracking-tight">GoOrNo Master</span>
+                <span className="rounded-full bg-[#d9ff4f] px-2.5 py-0.5 text-[10px] font-space font-bold uppercase tracking-wider text-[#071d19]">
                   Admin Master
                 </span>
               </div>
-              <p className="text-[11px] text-[#71867f]">Painel de Gestão e Cupons de Cortesia</p>
+              <p className="text-[11px] text-[#c2d0ca]">Painel de Gestão e Cupons de Cortesia</p>
             </div>
           </div>
 
@@ -423,7 +423,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
             <button
               onClick={() => loadData(adminPassword)}
               disabled={loading}
-              className="p-2 border border-[#dce5dc] bg-white hover:bg-[#f2f7f0] text-[#173a34] rounded-xl transition shadow-2xs cursor-pointer"
+              className="p-2 border border-white/15 bg-white/10 hover:bg-white/20 text-white rounded-xl transition shadow-xs cursor-pointer"
               title="Atualizar Dados"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -432,16 +432,16 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
             {onBackToApp && (
               <button
                 onClick={onBackToApp}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#dce5dc] bg-white hover:bg-[#f2f7f0] text-xs font-semibold text-[#173a34] transition shadow-2xs cursor-pointer"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-xs font-space font-bold text-white transition shadow-xs cursor-pointer"
               >
                 <span>Ver App</span>
-                <ArrowUpRight className="h-3 w-3 text-[#71867f]" />
+                <ArrowUpRight className="h-3 w-3 text-[#d9ff4f]" />
               </button>
             )}
 
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-xs font-semibold text-red-700 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-500/30 bg-red-500/20 hover:bg-red-500/30 text-xs font-space font-bold text-red-200 transition cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sair</span>
@@ -463,15 +463,15 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
           </div>
         )}
 
-        {/* NAVEGAÇÃO ENTRE ABAS */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#dce5dc] pb-4">
-          <div className="flex items-center gap-2 overflow-x-auto">
+        {/* NAVEGAÇÃO ENTRE ABAS NO ESTILO REDESIGN */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[rgba(7,29,25,0.12)] pb-4">
+          <div className="flex items-center gap-1.5 p-1.5 bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl shadow-xs overflow-x-auto">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
                 activeTab === 'overview'
-                  ? 'bg-[#173a34] text-[#d9f56a] shadow-xs'
-                  : 'bg-white border border-[#dce5dc] text-[#173a34] hover:bg-[#f2f7f0]'
+                  ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
+                  : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
               }`}
             >
               <TrendingUp className="w-4 h-4" />
@@ -480,10 +480,10 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
 
             <button
               onClick={() => setActiveTab('drivers')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
                 activeTab === 'drivers'
-                  ? 'bg-[#173a34] text-[#d9f56a] shadow-xs'
-                  : 'bg-white border border-[#dce5dc] text-[#173a34] hover:bg-[#f2f7f0]'
+                  ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
+                  : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
               }`}
             >
               <Users className="w-4 h-4" />
@@ -492,10 +492,10 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
 
             <button
               onClick={() => setActiveTab('vouchers')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
                 activeTab === 'vouchers'
-                  ? 'bg-[#173a34] text-[#d9f56a] shadow-xs'
-                  : 'bg-white border border-[#dce5dc] text-[#173a34] hover:bg-[#f2f7f0]'
+                  ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
+                  : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
               }`}
             >
               <Ticket className="w-4 h-4" />
@@ -504,24 +504,24 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
 
             <button
               onClick={() => setActiveTab('mailbox')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer relative ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 relative ${
                 activeTab === 'mailbox'
-                  ? 'bg-[#173a34] text-[#d9f56a] shadow-xs'
-                  : 'bg-white border border-[#dce5dc] text-[#173a34] hover:bg-[#f2f7f0]'
+                  ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
+                  : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
               }`}
             >
               <Mail className="w-4 h-4" />
               <span>Caixa Postal ({messages.length})</span>
               {messages.filter((m) => m.status === 'unread').length > 0 && (
-                <span className="bg-amber-400 text-[#173a34] text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1">
+                <span className="bg-[#d9ff4f] text-[#071d19] text-[10px] font-space font-black px-1.5 py-0.5 rounded-full ml-1">
                   {messages.filter((m) => m.status === 'unread').length}
                 </span>
               )}
             </button>
           </div>
 
-          <div className="text-xs text-[#71867f]">
-            Status: <span className="font-bold text-[#2d7d54]">Online & Sincronizado</span>
+          <div className="text-xs text-[#7a8982] font-dm">
+            Status: <span className="font-space font-bold text-[#6b8900]">● Online & Sincronizado</span>
           </div>
         </div>
 
@@ -530,86 +530,86 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
         {/* ========================================================================= */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            {/* GRID DE CARDS CLEAN */}
+            {/* GRID DE CARDS NO ESTILO REDESIGN */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
               {/* Card 1: MRR */}
-              <div className="col-span-2 sm:col-span-1 bg-white border border-[#dce5dc] rounded-2xl p-4 shadow-xs">
-                <div className="flex items-center justify-between text-[#2d7d54] mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#71867f]">MRR Estimado</span>
+              <div className="col-span-2 sm:col-span-1 bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
+                <div className="flex items-center justify-between text-[#6b8900] mb-1">
+                  <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">MRR Estimado</span>
                   <DollarSign className="w-4 h-4" />
                 </div>
-                <div className="text-2xl font-black text-[#173a34]">
+                <div className="text-2xl font-space font-bold text-[#071d19]">
                   R$ {stats?.estimatedMonthlyRevenue.toFixed(2).replace('.', ',') || '0,00'}
                 </div>
-                <p className="text-[11px] text-[#71867f] mt-1">Faturamento mensal recorrente</p>
+                <p className="text-[11px] text-[#7a8982] mt-1">Faturamento recorrente</p>
               </div>
 
               {/* Card 2: Total Motoristas */}
-              <div className="bg-white border border-[#dce5dc] rounded-2xl p-4 shadow-xs">
-                <div className="flex items-center justify-between text-[#173a34] mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#71867f]">Motoristas</span>
-                  <Users className="w-4 h-4 text-[#71867f]" />
+              <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
+                <div className="flex items-center justify-between text-[#071d19] mb-1">
+                  <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">Motoristas</span>
+                  <Users className="w-4 h-4 text-[#7a8982]" />
                 </div>
-                <div className="text-2xl font-black text-[#173a34]">{stats?.totalUsers || 0}</div>
-                <p className="text-[11px] text-[#71867f] mt-1">Total cadastrados</p>
+                <div className="text-2xl font-space font-bold text-[#071d19]">{stats?.totalUsers || 0}</div>
+                <p className="text-[11px] text-[#7a8982] mt-1">Total cadastrados</p>
               </div>
 
               {/* Card 3: Pagantes Ativos */}
-              <div className="bg-white border border-[#dce5dc] rounded-2xl p-4 shadow-xs">
-                <div className="flex items-center justify-between text-[#2d7d54] mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#71867f]">Pagantes</span>
+              <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
+                <div className="flex items-center justify-between text-[#6b8900] mb-1">
+                  <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">Pagantes</span>
                   <CheckCircle className="w-4 h-4" />
                 </div>
-                <div className="text-2xl font-black text-[#2d7d54]">{stats?.activePaid || 0}</div>
-                <p className="text-[11px] text-[#71867f] mt-1">Mensal ou vitalício</p>
+                <div className="text-2xl font-space font-bold text-[#6b8900]">{stats?.activePaid || 0}</div>
+                <p className="text-[11px] text-[#7a8982] mt-1">Mensal ou vitalício</p>
               </div>
 
               {/* Card 4: Em Teste */}
-              <div className="bg-white border border-[#dce5dc] rounded-2xl p-4 shadow-xs">
+              <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
                 <div className="flex items-center justify-between text-[#0284c7] mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#71867f]">Em Teste</span>
+                  <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">Em Teste</span>
                   <Clock className="w-4 h-4" />
                 </div>
-                <div className="text-2xl font-black text-[#0284c7]">{stats?.inTrial || 0}</div>
-                <p className="text-[11px] text-[#71867f] mt-1">Período de 7 dias grátis</p>
+                <div className="text-2xl font-space font-bold text-[#0284c7]">{stats?.inTrial || 0}</div>
+                <p className="text-[11px] text-[#7a8982] mt-1">Período de 7 dias grátis</p>
               </div>
 
               {/* Card 5: Vencidas */}
-              <div className="bg-white border border-[#dce5dc] rounded-2xl p-4 shadow-xs">
+              <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
                 <div className="flex items-center justify-between text-[#b45309] mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#71867f]">Vencidas</span>
+                  <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">Vencidas</span>
                   <Calendar className="w-4 h-4" />
                 </div>
-                <div className="text-2xl font-black text-[#b45309]">{stats?.expired || 0}</div>
-                <p className="text-[11px] text-[#71867f] mt-1">Aguardando renovação</p>
+                <div className="text-2xl font-space font-bold text-[#b45309]">{stats?.expired || 0}</div>
+                <p className="text-[11px] text-[#7a8982] mt-1">Aguardando renovação</p>
               </div>
 
               {/* Card 6: Alertas Fraude */}
-              <div className="bg-white border border-red-200 rounded-2xl p-4 shadow-xs">
-                <div className="flex items-center justify-between text-red-600 mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#71867f]">Fraude</span>
+              <div className="bg-white border border-red-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+                <div className="flex items-center justify-between text-[#ff6e58] mb-1">
+                  <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">Fraude</span>
                   <ShieldAlert className="w-4 h-4" />
                 </div>
-                <div className="text-2xl font-black text-red-600">{stats?.fraudAlerts || 0}</div>
-                <p className="text-[11px] text-[#71867f] mt-1">Suspeitas detectadas</p>
+                <div className="text-2xl font-space font-bold text-[#ff6e58]">{stats?.fraudAlerts || 0}</div>
+                <p className="text-[11px] text-[#7a8982] mt-1">Suspeitas detectadas</p>
               </div>
             </div>
 
             {/* SEÇÃO: COMPARTILHAR LINK DE DOWNLOAD & MENSAGEM DO WHATSAPP */}
-            <div className="bg-white border-2 border-[#173a34] rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="bg-white border-2 border-[#071d19] rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#173a34] text-[#d9f56a] grid place-items-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#071d19] text-[#d9ff4f] grid place-items-center shrink-0">
                     <Share2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-base text-[#173a34] flex items-center gap-2">
+                    <h3 className="font-space font-bold text-base text-[#071d19] flex items-center gap-2">
                       Link Oficial de Download & Convite de Motoristas
-                      <span className="text-[10px] bg-[#d9f56a] text-[#173a34] font-bold px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] bg-[#d9ff4f] text-[#071d19] font-space font-bold px-2.5 py-0.5 rounded-full">
                         Compartilhar
                       </span>
                     </h3>
-                    <p className="text-xs text-[#71867f]">
+                    <p className="text-xs text-[#7a8982]">
                       Envie este link para motoristas em grupos do WhatsApp para eles baixarem o APK com total tranquilidade
                     </p>
                   </div>
@@ -622,7 +622,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                       setCopiedShareLink(true);
                       setTimeout(() => setCopiedShareLink(false), 2500);
                     }}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold bg-[#173a34] hover:bg-[#122e29] text-[#d9f56a] px-3.5 py-2 rounded-xl transition cursor-pointer shadow-xs"
+                    className="inline-flex items-center gap-1.5 text-xs font-space font-bold bg-[#071d19] hover:bg-[#0d302a] text-[#d9ff4f] px-3.5 py-2.5 rounded-xl transition cursor-pointer shadow-xs border-0"
                   >
                     {copiedShareLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     <span>{copiedShareLink ? 'Link Copiado!' : 'Copiar Link da Página'}</span>
@@ -632,7 +632,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                     href={window.location.origin}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#71867f] hover:text-[#173a34] px-2.5 py-2 rounded-xl border border-[#dce5dc] hover:bg-[#f8faf7] transition"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#7a8982] hover:text-[#071d19] px-2.5 py-2 rounded-xl border border-[rgba(7,29,25,0.12)] hover:bg-[#fbfcf7] transition"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>Ver Página</span>
@@ -641,9 +641,9 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
               </div>
 
               {/* MENSAGEM PRONTA FORMATADA PARA WHATSAPP */}
-              <div className="bg-[#f8faf7] border border-[#dce5dc] rounded-xl p-4 space-y-3">
+              <div className="bg-[#fbfcf7] border border-[rgba(7,29,25,0.12)] rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#173a34] uppercase tracking-wider">
+                  <span className="text-xs font-space font-bold text-[#071d19] uppercase tracking-wider">
                     💬 Mensagem Pronta de Apresentação (Explicando o APK e Segurança):
                   </span>
                   <button
@@ -653,14 +653,14 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                       setCopiedShareMsg(true);
                       setTimeout(() => setCopiedShareMsg(false), 2500);
                     }}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold bg-[#d9f56a] hover:bg-[#cbf052] text-[#173a34] px-3 py-1.5 rounded-lg transition cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs font-space font-bold bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] px-3.5 py-1.5 rounded-lg transition cursor-pointer border-0 shadow-2xs"
                   >
                     {copiedShareMsg ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedShareMsg ? 'Mensagem Copiada!' : 'Copiar Texto para WhatsApp'}</span>
                   </button>
                 </div>
 
-                <div className="text-xs text-[#173a34] font-mono whitespace-pre-wrap bg-white p-3.5 rounded-lg border border-[#dce5dc] max-h-48 overflow-y-auto leading-relaxed">
+                <div className="text-xs text-[#071d19] font-mono whitespace-pre-wrap bg-white p-3.5 rounded-lg border border-[rgba(7,29,25,0.12)] max-h-48 overflow-y-auto leading-relaxed">
 {`🚗 *GoOrNo — O Copiloto dos Motoristas de Aplicativo (Uber e 99)*
 
 Fala parceiro! Baixe o aplicativo oficial do GoOrNo e descubra na hora se a corrida compensa antes de aceitar:
@@ -683,7 +683,7 @@ ${window.location.origin}
                     )}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-3.5 py-1.5 rounded-lg transition"
+                    className="inline-flex items-center gap-1.5 text-xs font-space font-bold text-white bg-[#25D366] hover:bg-[#20ba5a] px-3.5 py-1.5 rounded-lg transition shadow-2xs"
                   >
                     <span>Abrir no WhatsApp Web</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -694,27 +694,27 @@ ${window.location.origin}
 
             {/* SEÇÃO DE DESTAQUE: REGRAS E STATUS RÁPIDO */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white border border-[#dce5dc] rounded-2xl p-5 shadow-xs space-y-3">
+              <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-5 shadow-xs space-y-3">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-[#2d7d54]" />
-                  <h3 className="font-bold text-sm text-[#173a34]">Sistema Anti-Fraude e Proteção de Licença</h3>
+                  <ShieldCheck className="w-5 h-5 text-[#6b8900]" />
+                  <h3 className="font-space font-bold text-sm text-[#071d19]">Sistema Anti-Fraude e Proteção de Licença</h3>
                 </div>
-                <p className="text-xs text-[#71867f] leading-relaxed">
+                <p className="text-xs text-[#7a8982] leading-relaxed">
                   Cada licença é vinculada exclusivamente ao ID do celular do motorista. O próprio motorista pode transferir para um novo aparelho até 2 vezes por mês. Tentativas adicionais disparam alerta automático para seu e-mail e são bloqueadas.
                 </p>
               </div>
 
-              <div className="bg-white border border-[#dce5dc] rounded-2xl p-5 shadow-xs space-y-3">
+              <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-5 shadow-xs space-y-3">
                 <div className="flex items-center gap-2">
                   <Gift className="w-5 h-5 text-[#8aa500]" />
-                  <h3 className="font-bold text-sm text-[#173a34]">Cupons de Cortesia e Campanhas</h3>
+                  <h3 className="font-space font-bold text-sm text-[#071d19]">Cupons de Cortesia e Campanhas</h3>
                 </div>
-                <p className="text-xs text-[#71867f] leading-relaxed">
+                <p className="text-xs text-[#7a8982] leading-relaxed">
                   Crie vouchers promocionais personalizados (ex: 7 dias de bônus, 30 dias ou cortesia vitalícia) para atrair novos motoristas em grupos de WhatsApp ou fechar parcerias.
                 </p>
                 <button
                   onClick={() => setActiveTab('vouchers')}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#173a34] bg-[#f7fbe8] hover:bg-[#edf7d7] border border-[#d9f56a] px-3 py-1.5 rounded-xl transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-space font-bold text-[#071d19] bg-[#d9ff4f] hover:bg-[#bfe72d] px-3.5 py-2 rounded-xl transition cursor-pointer border-0 shadow-2xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Criar Novo Cupom Agora</span>
@@ -730,15 +730,15 @@ ${window.location.origin}
         {activeTab === 'drivers' && (
           <div className="space-y-4">
             {/* BARRA DE FILTROS E BUSCA */}
-            <div className="bg-white border border-[#dce5dc] rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
               <div className="relative w-full md:w-80">
-                <Search className="w-4 h-4 absolute left-3.5 top-3 text-[#71867f]" />
+                <Search className="w-4 h-4 absolute left-3.5 top-3 text-[#7a8982]" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar por WhatsApp ou ID..."
-                  className="w-full pl-9 pr-4 py-2 bg-[#f8faf7] border border-[#dce5dc] rounded-xl text-xs text-[#173a34] placeholder-[#71867f]/70 focus:outline-none focus:border-[#173a34] transition"
+                  className="w-full pl-9 pr-4 py-2 bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl text-xs text-[#071d19] placeholder-[#7a8982]/70 focus:outline-none focus:border-[#071d19] transition"
                 />
               </div>
 
@@ -746,50 +746,50 @@ ${window.location.origin}
               <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
                     statusFilter === 'all'
-                      ? 'bg-[#173a34] text-[#d9f56a]'
-                      : 'bg-[#f8faf7] text-[#71867f] hover:bg-[#edf2eb]'
+                      ? 'bg-[#071d19] text-[#d9ff4f]'
+                      : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
                   }`}
                 >
                   Todos ({licenses.length})
                 </button>
                 <button
                   onClick={() => setStatusFilter('active')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
                     statusFilter === 'active'
-                      ? 'bg-[#2d7d54] text-white'
-                      : 'bg-[#f8faf7] text-[#71867f] hover:bg-[#edf2eb]'
+                      ? 'bg-[#6b8900] text-white'
+                      : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
                   }`}
                 >
                   Pagantes ({stats?.activePaid || 0})
                 </button>
                 <button
                   onClick={() => setStatusFilter('trial')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
                     statusFilter === 'trial'
                       ? 'bg-[#0284c7] text-white'
-                      : 'bg-[#f8faf7] text-[#71867f] hover:bg-[#edf2eb]'
+                      : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
                   }`}
                 >
                   Teste ({stats?.inTrial || 0})
                 </button>
                 <button
                   onClick={() => setStatusFilter('expired')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
                     statusFilter === 'expired'
                       ? 'bg-[#b45309] text-white'
-                      : 'bg-[#f8faf7] text-[#71867f] hover:bg-[#edf2eb]'
+                      : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
                   }`}
                 >
                   Vencidos ({stats?.expired || 0})
                 </button>
                 <button
                   onClick={() => setStatusFilter('fraud')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
                     statusFilter === 'fraud'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-[#f8faf7] text-[#71867f] hover:bg-[#edf2eb]'
+                      ? 'bg-[#ff6e58] text-white'
+                      : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
                   }`}
                 >
                   Fraude ({stats?.fraudAlerts || 0})
@@ -798,22 +798,22 @@ ${window.location.origin}
             </div>
 
             {/* TABELA DE MOTORISTAS */}
-            <div className="bg-white border border-[#dce5dc] rounded-2xl shadow-xs overflow-hidden">
+            <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl shadow-xs overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-[#173a34]">
-                  <thead className="bg-[#f8faf7] border-b border-[#dce5dc] text-[#71867f] uppercase font-bold text-[10px] tracking-wider">
+                <table className="w-full text-left text-xs text-[#071d19]">
+                  <thead className="bg-[#fbfcf7] border-b border-[rgba(7,29,25,0.1)] text-[#7a8982] uppercase font-space font-bold text-[10px] tracking-wider">
                     <tr>
-                      <th className="py-3 px-4">WhatsApp / ID</th>
-                      <th className="py-3 px-4">Status & Plano</th>
-                      <th className="py-3 px-4">Válido Até</th>
-                      <th className="py-3 px-4">Aparelho & Trocas</th>
-                      <th className="py-3 px-4 text-right">Ações em 1-Clique</th>
+                      <th className="py-3.5 px-4">WhatsApp / ID</th>
+                      <th className="py-3.5 px-4">Status & Plano</th>
+                      <th className="py-3.5 px-4">Válido Até</th>
+                      <th className="py-3.5 px-4">Aparelho & Trocas</th>
+                      <th className="py-3.5 px-4 text-right">Ações em 1-Clique</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#dce5dc]/60">
+                  <tbody className="divide-y divide-[rgba(7,29,25,0.06)]">
                     {filteredLicenses.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-[#71867f]">
+                        <td colSpan={5} className="py-8 text-center text-[#7a8982]">
                           Nenhum motorista encontrado com os filtros atuais.
                         </td>
                       </tr>
@@ -821,33 +821,33 @@ ${window.location.origin}
                       filteredLicenses.map((lic) => {
                         const isExpired = new Date(lic.validoAte || 0).getTime() < Date.now();
                         return (
-                          <tr key={lic.id} className="hover:bg-[#f8faf7] transition">
-                            <td className="py-3 px-4 font-mono font-semibold">
+                          <tr key={lic.id} className="hover:bg-[#fbfcf7] transition">
+                            <td className="py-3.5 px-4 font-mono font-semibold">
                               <div className="flex items-center gap-2">
                                 <span>{lic.whatsapp || lic.id}</span>
                                 {lic.fraudSuspicion && (
-                                  <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold">
+                                  <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-space font-bold">
                                     🚨 Suspeita
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[10px] text-[#71867f] font-sans block">
+                              <span className="text-[10px] text-[#7a8982] font-sans block">
                                 Desde {new Date(lic.createdAt).toLocaleDateString('pt-BR')}
                               </span>
                             </td>
 
-                            <td className="py-3 px-4">
+                            <td className="py-3.5 px-4">
                               <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-space font-bold text-[10px] uppercase ${
                                   lic.status === 'blocked'
                                     ? 'bg-red-100 text-red-800 border border-red-200'
                                     : lic.plano === 'vitalicio'
-                                    ? 'bg-[#173a34] text-[#d9f56a]'
+                                    ? 'bg-[#071d19] text-[#d9ff4f]'
                                     : lic.plano === 'mensal' && !isExpired
-                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    ? 'bg-[#dff4af] text-[#557000]'
                                     : lic.plano === 'trial' && !isExpired
                                     ? 'bg-sky-100 text-sky-800 border border-sky-200'
-                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : 'bg-[#ffe1d9] text-[#a34b3a]'
                                 }`}
                               >
                                 {lic.status === 'blocked'
@@ -862,7 +862,7 @@ ${window.location.origin}
                               </span>
                             </td>
 
-                            <td className="py-3 px-4 font-mono text-[11px]">
+                            <td className="py-3.5 px-4 font-mono text-[11px]">
                               {lic.validoAte
                                 ? lic.validoAte.startsWith('2099')
                                   ? 'Para Sempre (Vitalício)'
@@ -870,41 +870,41 @@ ${window.location.origin}
                                 : '--'}
                             </td>
 
-                            <td className="py-3 px-4 text-[11px]">
-                              <span className="block font-mono text-[10px] text-[#71867f]">
+                            <td className="py-3.5 px-4 text-[11px]">
+                              <span className="block font-mono text-[10px] text-[#7a8982]">
                                 {lic.deviceId ? lic.deviceId.slice(0, 18) + '...' : 'Sem vínculo'}
                               </span>
-                              <span className={`text-[10px] font-bold ${lic.deviceTransfersCount >= 2 ? 'text-amber-600' : 'text-[#71867f]'}`}>
+                              <span className={`text-[10px] font-bold ${lic.deviceTransfersCount >= 2 ? 'text-amber-600' : 'text-[#7a8982]'}`}>
                                 {lic.deviceTransfersCount} trocas no mês
                               </span>
                             </td>
 
-                            <td className="py-3 px-4 text-right">
+                            <td className="py-3.5 px-4 text-right">
                               <div className="flex items-center justify-end gap-1.5 flex-wrap">
                                 <button
                                   onClick={() => executeAction(lic.whatsapp, 'add_days', 7)}
-                                  className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-lg text-[11px] font-space font-bold transition cursor-pointer"
                                   title="Adicionar 7 dias de cortesia"
                                 >
                                   +7d
                                 </button>
                                 <button
                                   onClick={() => executeAction(lic.whatsapp, 'add_days', 30)}
-                                  className="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                  className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 rounded-lg text-[11px] font-space font-bold transition cursor-pointer"
                                   title="Renovar 30 dias"
                                 >
                                   +30d
                                 </button>
                                 <button
                                   onClick={() => executeAction(lic.whatsapp, 'set_lifetime')}
-                                  className="px-2 py-1 bg-[#173a34] text-[#d9f56a] hover:bg-[#122e29] rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                  className="px-2.5 py-1 bg-[#071d19] text-[#d9ff4f] hover:bg-[#0d302a] rounded-lg text-[11px] font-space font-bold transition cursor-pointer border-0"
                                   title="Conceder plano vitalício"
                                 >
                                   Vitalício
                                 </button>
                                 <button
                                   onClick={() => executeAction(lic.whatsapp, 'reset_device')}
-                                  className="px-2 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                  className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-[11px] font-space font-bold transition cursor-pointer"
                                   title="Desvincular aparelho e zerar trocas"
                                 >
                                   Resetar
@@ -912,7 +912,7 @@ ${window.location.origin}
                                 {lic.status === 'blocked' ? (
                                   <button
                                     onClick={() => executeAction(lic.whatsapp, 'unblock')}
-                                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-space font-bold transition cursor-pointer border-0"
                                     title="Desbloquear motorista"
                                   >
                                     Desbloquear
@@ -920,7 +920,7 @@ ${window.location.origin}
                                 ) : (
                                   <button
                                     onClick={() => executeAction(lic.whatsapp, 'block')}
-                                    className="px-2 py-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                    className="px-2.5 py-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg text-[11px] font-space font-bold transition cursor-pointer"
                                     title="Bloquear motorista"
                                   >
                                     Bloquear
@@ -942,19 +942,22 @@ ${window.location.origin}
         {/* ========================================================================= */}
         {/* ABA 3: GESTÃO DE VOUCHERS & CUPONS                                        */}
         {/* ========================================================================= */}
+        {/* ========================================================================= */}
+        {/* ABA 3: GESTÃO DE VOUCHERS & CUPONS                                        */}
+        {/* ========================================================================= */}
         {activeTab === 'vouchers' && (
           <div className="space-y-6">
             {/* CRIADOR DE NOVO VOUCHER */}
-            <div className="bg-white border border-[#dce5dc] rounded-2xl p-6 shadow-xs">
+            <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-6 shadow-xs">
               <div className="flex items-center gap-2 mb-4">
-                <Ticket className="w-5 h-5 text-[#173a34]" />
-                <h2 className="text-base font-bold text-[#173a34]">Criar Novo Cupom / Voucher de Cortesia</h2>
+                <Ticket className="w-5 h-5 text-[#071d19]" />
+                <h2 className="font-space text-base font-bold text-[#071d19]">Criar Novo Cupom / Voucher de Cortesia</h2>
               </div>
 
               <form onSubmit={handleCreateVoucher} className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 {/* Código do Cupom */}
                 <div className="md:col-span-3">
-                  <label className="block text-xs font-bold text-[#173a34] uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-space font-bold text-[#071d19] uppercase tracking-wider mb-1.5">
                     Código do Cupom *
                   </label>
                   <input
@@ -962,14 +965,14 @@ ${window.location.origin}
                     value={newVoucherCode}
                     onChange={(e) => setNewVoucherCode(e.target.value.toUpperCase().replace(/\s/g, ''))}
                     placeholder="Ex: BEMVINDO7"
-                    className="w-full bg-[#f8faf7] border border-[#dce5dc] rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-[#173a34] placeholder-[#71867f]/60 focus:outline-none focus:border-[#173a34] transition uppercase"
+                    className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-[#071d19] placeholder-[#7a8982]/60 focus:outline-none focus:border-[#071d19] transition uppercase"
                     required
                   />
                 </div>
 
                 {/* Descrição */}
                 <div className="md:col-span-4">
-                  <label className="block text-xs font-bold text-[#173a34] uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-space font-bold text-[#071d19] uppercase tracking-wider mb-1.5">
                     Descrição ou Parceria
                   </label>
                   <input
@@ -977,13 +980,13 @@ ${window.location.origin}
                     value={newVoucherDesc}
                     onChange={(e) => setNewVoucherDesc(e.target.value)}
                     placeholder="Ex: Grupo Uber Campinas / Cortesia"
-                    className="w-full bg-[#f8faf7] border border-[#dce5dc] rounded-xl px-3.5 py-2.5 text-xs text-[#173a34] placeholder-[#71867f]/60 focus:outline-none focus:border-[#173a34] transition"
+                    className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl px-3.5 py-2.5 text-xs text-[#071d19] placeholder-[#7a8982]/60 focus:outline-none focus:border-[#071d19] transition"
                   />
                 </div>
 
                 {/* Duração / Dias */}
                 <div className="md:col-span-3">
-                  <label className="block text-xs font-bold text-[#173a34] uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-space font-bold text-[#071d19] uppercase tracking-wider mb-1.5">
                     Duração
                   </label>
                   <div className="flex items-center gap-2">
@@ -998,7 +1001,7 @@ ${window.location.origin}
                           setNewVoucherDays(Number(e.target.value));
                         }
                       }}
-                      className="w-full bg-[#f8faf7] border border-[#dce5dc] rounded-xl px-3.5 py-2.5 text-xs text-[#173a34] focus:outline-none focus:border-[#173a34] transition cursor-pointer"
+                      className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl px-3.5 py-2.5 text-xs font-medium text-[#071d19] focus:outline-none focus:border-[#071d19] transition cursor-pointer"
                     >
                       <option value="7">7 Dias Grátis</option>
                       <option value="15">15 Dias Grátis</option>
@@ -1011,7 +1014,7 @@ ${window.location.origin}
 
                 {/* Limite de Usos */}
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-[#173a34] uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-space font-bold text-[#071d19] uppercase tracking-wider mb-1.5">
                     Limite de Usos
                   </label>
                   <input
@@ -1020,7 +1023,7 @@ ${window.location.origin}
                     value={newVoucherMaxUses}
                     onChange={(e) => setNewVoucherMaxUses(Number(e.target.value))}
                     placeholder="0 = Ilimitado"
-                    className="w-full bg-[#f8faf7] border border-[#dce5dc] rounded-xl px-3.5 py-2.5 text-xs text-[#173a34] placeholder-[#71867f]/60 focus:outline-none focus:border-[#173a34] transition"
+                    className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl px-3.5 py-2.5 text-xs text-[#071d19] placeholder-[#7a8982]/60 focus:outline-none focus:border-[#071d19] transition"
                   />
                 </div>
 
@@ -1028,7 +1031,7 @@ ${window.location.origin}
                   <button
                     type="submit"
                     disabled={voucherSubmitting || !newVoucherCode.trim()}
-                    className="bg-[#173a34] hover:bg-[#122e29] text-[#d9f56a] font-bold px-5 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2 text-xs cursor-pointer disabled:opacity-50"
+                    className="bg-[#071d19] hover:bg-[#0d302a] text-[#d9ff4f] font-space font-bold px-5 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2 text-xs cursor-pointer border-0 disabled:opacity-50"
                   >
                     {voucherSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                     <span>Criar e Liberar Cupom</span>
@@ -1038,30 +1041,30 @@ ${window.location.origin}
             </div>
 
             {/* LISTA DE VOUCHERS CRIADOS */}
-            <div className="bg-white border border-[#dce5dc] rounded-2xl shadow-xs overflow-hidden">
-              <div className="p-4 border-b border-[#dce5dc] flex items-center justify-between">
+            <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-[rgba(7,29,25,0.1)] flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-sm text-[#173a34]">Cupons Ativos e Histórico ({vouchers.length})</h3>
-                  <p className="text-xs text-[#71867f]">Motoristas podem resgatar esses códigos diretamente na aba "Plano Pro" do app</p>
+                  <h3 className="font-space font-bold text-sm text-[#071d19]">Cupons Ativos e Histórico ({vouchers.length})</h3>
+                  <p className="text-xs text-[#7a8982]">Motoristas podem resgatar esses códigos diretamente na aba "Plano Pro" do app</p>
                 </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-[#173a34]">
-                  <thead className="bg-[#f8faf7] border-b border-[#dce5dc] text-[#71867f] uppercase font-bold text-[10px] tracking-wider">
+                <table className="w-full text-left text-xs text-[#071d19]">
+                  <thead className="bg-[#fbfcf7] border-b border-[rgba(7,29,25,0.1)] text-[#7a8982] uppercase font-space font-bold text-[10px] tracking-wider">
                     <tr>
-                      <th className="py-3 px-4">Código do Cupom</th>
-                      <th className="py-3 px-4">Descrição</th>
-                      <th className="py-3 px-4">Duração</th>
-                      <th className="py-3 px-4">Utilizações</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Ações</th>
+                      <th className="py-3.5 px-4">Código do Cupom</th>
+                      <th className="py-3.5 px-4">Descrição</th>
+                      <th className="py-3.5 px-4">Duração</th>
+                      <th className="py-3.5 px-4">Utilizações</th>
+                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-4 text-right">Ações</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#dce5dc]/60">
+                  <tbody className="divide-y divide-[rgba(7,29,25,0.06)]">
                     {vouchers.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-[#71867f]">
+                        <td colSpan={6} className="py-8 text-center text-[#7a8982]">
                           Nenhum voucher criado ainda. Use o formulário acima para criar seu primeiro cupom!
                         </td>
                       </tr>
@@ -1069,15 +1072,15 @@ ${window.location.origin}
                       vouchers.map((v) => {
                         const isCopied = copiedVoucher === v.code;
                         return (
-                          <tr key={v.code} className="hover:bg-[#f8faf7] transition">
-                            <td className="py-3 px-4">
+                          <tr key={v.code} className="hover:bg-[#fbfcf7] transition">
+                            <td className="py-3.5 px-4">
                               <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-sm text-[#173a34] bg-[#f8faf7] px-2.5 py-1 rounded-lg border border-[#dce5dc]">
+                                <span className="font-mono font-bold text-sm text-[#071d19] bg-[#fbfcf7] px-2.5 py-1 rounded-lg border border-[rgba(7,29,25,0.14)]">
                                   {v.code}
                                 </span>
                                 <button
                                   onClick={() => handleCopyVoucher(v.code)}
-                                  className="p-1.5 rounded-lg border border-[#dce5dc] hover:bg-[#edf2eb] text-[#71867f] transition cursor-pointer"
+                                  className="p-1.5 rounded-lg border border-[rgba(7,29,25,0.12)] hover:bg-[#f3f5ed] text-[#7a8982] transition cursor-pointer"
                                   title="Copiar código"
                                 >
                                   {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1085,28 +1088,28 @@ ${window.location.origin}
                               </div>
                             </td>
 
-                            <td className="py-3 px-4 text-[11px] text-[#71867f]">
+                            <td className="py-3.5 px-4 text-[11px] text-[#7a8982]">
                               {v.description}
                             </td>
 
-                            <td className="py-3 px-4">
-                              <span className="font-bold text-xs text-[#173a34]">
+                            <td className="py-3.5 px-4">
+                              <span className="font-space font-bold text-xs text-[#071d19]">
                                 {v.isLifetime ? '👑 Vitalício' : `+${v.days} dias`}
                               </span>
                             </td>
 
-                            <td className="py-3 px-4 font-mono text-[11px]">
-                              <span className="font-bold text-[#173a34]">{v.usedCount}</span>
-                              <span className="text-[#71867f]">
+                            <td className="py-3.5 px-4 font-mono text-[11px]">
+                              <span className="font-bold text-[#071d19]">{v.usedCount}</span>
+                              <span className="text-[#7a8982]">
                                 {v.maxUses > 0 ? ` / ${v.maxUses} usos` : ' usos (ilimitado)'}
                               </span>
                             </td>
 
-                            <td className="py-3 px-4">
+                            <td className="py-3.5 px-4">
                               <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-space font-bold text-[10px] uppercase ${
                                   v.active
-                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    ? 'bg-[#dff4af] text-[#557000]'
                                     : 'bg-slate-100 text-slate-600 border border-slate-200'
                                 }`}
                               >
@@ -1114,11 +1117,11 @@ ${window.location.origin}
                               </span>
                             </td>
 
-                            <td className="py-3 px-4 text-right">
+                            <td className="py-3.5 px-4 text-right">
                               <div className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => handleToggleVoucher(v.code, v.active)}
-                                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold transition cursor-pointer ${
+                                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-space font-bold transition cursor-pointer ${
                                     v.active
                                       ? 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
                                       : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
@@ -1152,35 +1155,35 @@ ${window.location.origin}
         {activeTab === 'mailbox' && (
           <div className="space-y-6">
             {/* CABEÇALHO DA CAIXA POSTAL & FILTROS */}
-            <div className="bg-white border border-[#dce5dc] p-5 rounded-2xl shadow-xs space-y-4">
+            <div className="bg-white border border-[rgba(7,29,25,0.12)] p-5 rounded-2xl shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <h3 className="font-bold text-base text-[#173a34] flex items-center gap-2">
-                    <Mail className="w-5 h-5 text-[#2d7d54]" />
+                  <h3 className="font-space font-bold text-base text-[#071d19] flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-[#6b8900]" />
                     <span>Caixa Postal dos Motoristas (Fale Conosco)</span>
                   </h3>
-                  <p className="text-xs text-[#71867f] mt-0.5">
+                  <p className="text-xs text-[#7a8982] mt-0.5">
                     Mensagens, dúvidas, sugestões e pedidos de ajuda enviados diretamente pelo site ou aplicativo.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#71867f]">
+                  <span className="text-xs font-semibold text-[#7a8982]">
                     Total: {messages.length} ({messages.filter((m) => m.status === 'unread').length} não lidas)
                   </span>
                 </div>
               </div>
 
               {/* FILTROS E BUSCA */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-[#f2f7f0]">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 border-t border-[rgba(7,29,25,0.06)]">
                 <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-[#71867f] absolute left-3 top-2.5" />
+                  <Search className="w-4 h-4 text-[#7a8982] absolute left-3 top-2.5" />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar por nome, telefone ou mensagem..."
-                    className="w-full pl-9 pr-3 py-1.5 bg-[#f8faf7] border border-[#dce5dc] rounded-xl text-xs text-[#173a34] focus:outline-none focus:border-[#173a34]"
+                    className="w-full pl-9 pr-3 py-1.5 bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl text-xs text-[#071d19] focus:outline-none focus:border-[#071d19]"
                   />
                 </div>
 
@@ -1200,10 +1203,10 @@ ${window.location.origin}
                       <button
                         key={st}
                         onClick={() => setMessageFilter(st)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
                           messageFilter === st
-                            ? 'bg-[#173a34] text-[#d9f56a]'
-                            : 'bg-[#f8faf7] text-[#71867f] hover:bg-[#edf2eb]'
+                            ? 'bg-[#071d19] text-[#d9ff4f]'
+                            : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
                         }`}
                       >
                         {label} ({count})
@@ -1250,38 +1253,38 @@ ${window.location.origin}
                       className={`bg-white border rounded-2xl p-5 shadow-xs transition ${
                         msg.status === 'unread'
                           ? 'border-amber-300 ring-2 ring-amber-100 bg-amber-50/20'
-                          : 'border-[#dce5dc]'
+                          : 'border-[rgba(7,29,25,0.12)]'
                       }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          <span className="font-bold text-sm text-[#173a34]">{msg.name}</span>
+                          <span className="font-space font-bold text-sm text-[#071d19]">{msg.name}</span>
                           <a
                             href={waLink}
                             target="_blank"
                             rel="noreferrer"
-                            className="font-mono text-xs text-[#2d7d54] bg-[#2d7d54]/10 hover:bg-[#2d7d54]/20 px-2 py-0.5 rounded-lg flex items-center gap-1 transition"
+                            className="font-mono text-xs text-[#6b8900] bg-[#dff4af]/60 hover:bg-[#dff4af] px-2 py-0.5 rounded-lg flex items-center gap-1 transition font-bold"
                             title="Conversar no WhatsApp"
                           >
                             <span>{msg.whatsapp}</span>
                             <ExternalLink className="w-3 h-3" />
                           </a>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${catInfo.color}`}
+                            className={`text-[10px] font-space font-bold px-2 py-0.5 rounded-full border ${catInfo.color}`}
                           >
                             {catInfo.label}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs text-[#71867f]">
+                        <div className="flex items-center gap-2 text-xs text-[#7a8982]">
                           <Clock className="w-3.5 h-3.5" />
                           <span>{new Date(msg.createdAt).toLocaleString('pt-BR')}</span>
                           <span
-                            className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase ${
+                            className={`px-2 py-0.5 rounded-full font-space font-bold text-[10px] uppercase ${
                               msg.status === 'unread'
                                 ? 'bg-amber-100 text-amber-800'
                                 : msg.status === 'replied'
-                                ? 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-[#dff4af] text-[#557000]'
                                 : 'bg-slate-100 text-slate-700'
                             }`}
                           >
@@ -1295,12 +1298,12 @@ ${window.location.origin}
                       </div>
 
                       {/* CONTEÚDO DA MENSAGEM */}
-                      <div className="bg-[#f8faf7] p-3.5 rounded-xl border border-[#dce5dc]/70 text-xs sm:text-sm text-[#173a34] whitespace-pre-wrap leading-relaxed mb-4">
+                      <div className="bg-[#fbfcf7] p-3.5 rounded-xl border border-[rgba(7,29,25,0.08)] text-xs sm:text-sm text-[#071d19] whitespace-pre-wrap leading-relaxed mb-4">
                         {msg.message}
                       </div>
 
                       {/* BARRA DE AÇÕES */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f2f7f0]">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[rgba(7,29,25,0.06)]">
                         <div className="flex items-center gap-2">
                           <a
                             href={waLink}
@@ -1311,7 +1314,7 @@ ${window.location.origin}
                                 handleUpdateMessageStatus(msg.id, 'replied');
                               }
                             }}
-                            className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-2xs"
+                            className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-space font-bold px-3 py-1.5 rounded-xl transition shadow-2xs"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                             <span>Responder no WhatsApp</span>
@@ -1320,7 +1323,7 @@ ${window.location.origin}
                           {msg.status !== 'read' && (
                             <button
                               onClick={() => handleUpdateMessageStatus(msg.id, 'read')}
-                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-xl transition cursor-pointer"
+                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-space font-medium rounded-xl transition cursor-pointer border-0"
                             >
                               Marcar como Lida
                             </button>
@@ -1329,7 +1332,7 @@ ${window.location.origin}
                           {msg.status !== 'replied' && (
                             <button
                               onClick={() => handleUpdateMessageStatus(msg.id, 'replied')}
-                              className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-medium rounded-xl transition cursor-pointer"
+                              className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-space font-medium rounded-xl transition cursor-pointer border-0"
                             >
                               Marcar como Respondida
                             </button>
@@ -1338,7 +1341,7 @@ ${window.location.origin}
                           {msg.status !== 'unread' && (
                             <button
                               onClick={() => handleUpdateMessageStatus(msg.id, 'unread')}
-                              className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium rounded-xl transition cursor-pointer"
+                              className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-space font-medium rounded-xl transition cursor-pointer border-0"
                             >
                               Marcar Não Lida
                             </button>
@@ -1347,7 +1350,7 @@ ${window.location.origin}
 
                         <button
                           onClick={() => handleDeleteMessage(msg.id)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer border-0"
                           title="Remover mensagem"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1358,9 +1361,9 @@ ${window.location.origin}
                 })}
 
               {messages.length === 0 && (
-                <div className="bg-white border border-[#dce5dc] rounded-2xl p-12 text-center text-[#71867f]">
-                  <Mail className="w-8 h-8 mx-auto mb-2 text-[#71867f]/50" />
-                  <p className="font-bold text-sm text-[#173a34]">Nenhuma mensagem recebida ainda.</p>
+                <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-12 text-center text-[#7a8982]">
+                  <Mail className="w-8 h-8 mx-auto mb-2 text-[#7a8982]/50" />
+                  <p className="font-space font-bold text-sm text-[#071d19]">Nenhuma mensagem recebida ainda.</p>
                   <p className="text-xs mt-1">
                     Quando os motoristas enviarem dúvidas ou sugestões pelo Fale Conosco, elas aparecerão aqui.
                   </p>
