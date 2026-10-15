@@ -58,7 +58,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
   };
 
   const handleDownloadApk = () => {
-    // Redireciona diretamente para o link de download oficial do APK v3.3.4
+    // Redireciona diretamente para o link de download oficial do APK v3.3.5
     window.location.href = '/download/apk';
   };
 

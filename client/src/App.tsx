@@ -1173,12 +1173,12 @@ export function App() {
                     <div className="flex items-center gap-2">
                       <Smartphone className="w-4 h-4 text-[#B8D906]" />
                       <span className="text-xs font-black text-white">
-                        Instalar APK Android Nativo (v1.0.0)
+                        Instalar APK Android Nativo (v3.3.5)
                       </span>
                     </div>
                     <a
-                      href="/GoOrNo-v1.0.0.apk"
-                      download="GoOrNo-v1.0.0.apk"
+                      href="/download/apk"
+                      download="GoOrNo-v3.3.5.apk"
                       className="px-3 py-1.5 rounded-xl bg-[#97B304] text-[#04241E] text-xs font-black flex items-center gap-1"
                     >
                       <Download className="w-3.5 h-3.5" />
