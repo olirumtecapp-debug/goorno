@@ -22,6 +22,7 @@ import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.model.DriverFinancialConfig
 import com.creativeam.goorno.model.FinancialEvaluationResult
 import com.creativeam.goorno.model.OverlayDisplayStyle
+import com.creativeam.goorno.model.PassengerRatingVerdict
 import com.creativeam.goorno.model.TrafficLightVerdict
 import java.util.Locale
 import kotlin.math.abs
@@ -737,10 +738,21 @@ class FloatingOverlayPanel(private val context: Context) {
         addPillar("R$/Hora", hrVal, hrBarColor)
 
         // 3. Pilar: Lucro (%) ou Lucro R$
-        val netPercentVal = result.estimatedNetMarginPercent?.let {
-            String.format(Locale.forLanguageTag("pt-BR"), "%.0f%%", it)
-        } ?: (result.estimatedNetProfit?.let { String.format(Locale.forLanguageTag("pt-BR"), "R$%.0f", it) } ?: "--")
-        val (profitBarColor, _, _) = verdictPalette(result.netVerdict)
+        val price = offer.offeredPrice ?: 0.0
+        val netProfit = result.estimatedNetProfit
+        val netPercentVal = if (price > 0.0 && netProfit != null) {
+            val pct = (netProfit / price) * 100.0
+            String.format(Locale.forLanguageTag("pt-BR"), "%.0f%%", pct)
+        } else if (netProfit != null) {
+            String.format(Locale.forLanguageTag("pt-BR"), "R$%.0f", netProfit)
+        } else {
+            "--"
+        }
+        val profitBarColor = when {
+            netProfit == null -> "#64748B"
+            netProfit > 0.0 -> "#22C55E"
+            else -> "#EF4444"
+        }
         addPillar("Lucro", netPercentVal, profitBarColor)
 
         // 4. Pilar: Nota do Passageiro
