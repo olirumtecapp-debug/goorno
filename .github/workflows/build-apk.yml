@@ -37,11 +37,15 @@ jobs:
       - name: Prepare APK for Artifact
         run: |
           mkdir -p release-apk
-          cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo-v1.0.0.apk
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk release-apk/GoOrNo-v3.3.5.apk
+          else
+            cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo-v3.3.5.apk
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: GoOrNo-APK
-          path: release-apk/GoOrNo-v1.0.0.apk
+          name: GoOrNo-APK-v3.3.5
+          path: release-apk/GoOrNo-v3.3.5.apk
           retention-days: 30

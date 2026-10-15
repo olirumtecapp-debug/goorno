@@ -13,9 +13,18 @@ import {
   Eye,
   Sliders,
   Smartphone,
-  Lock
+  Lock,
+  Car,
+  MapPin,
+  ZoomIn,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Zap
 } from 'lucide-react';
 import { ContactModal } from './ContactModal';
+import { SCREENSHOTS, ScreenshotItem } from './ScreenshotsShowcase';
 
 interface DownloadLandingPageProps {
   onOpenSimulator?: () => void;
@@ -27,6 +36,26 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [heroMode, setHeroMode] = useState<'good' | 'bad'>('good');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
+
+  const filteredScreenshots = activeCategory === 'all'
+    ? SCREENSHOTS
+    : SCREENSHOTS.filter((s) => s.category === activeCategory);
+
+  const handleNextScreenshot = () => {
+    if (!selectedScreenshot) return;
+    const currentIndex = filteredScreenshots.findIndex((s) => s.id === selectedScreenshot.id);
+    const nextIndex = (currentIndex + 1) % filteredScreenshots.length;
+    setSelectedScreenshot(filteredScreenshots[nextIndex]);
+  };
+
+  const handlePrevScreenshot = () => {
+    if (!selectedScreenshot) return;
+    const currentIndex = filteredScreenshots.findIndex((s) => s.id === selectedScreenshot.id);
+    const prevIndex = (currentIndex - 1 + filteredScreenshots.length) % filteredScreenshots.length;
+    setSelectedScreenshot(filteredScreenshots[prevIndex]);
+  };
 
   const handleDownloadApk = () => {
     // Redireciona diretamente para o link de download oficial do APK v3.3.4
@@ -41,7 +70,13 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
     setIsMenuOpen(false);
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const headerOffset = 95;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({
+        top: Math.max(0, offsetPosition),
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -58,7 +93,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             }}
           />
           <span>
-            GoOrNo <small>v3.3.4</small>
+            GoOrNo <small>v3.3.5</small>
           </span>
         </a>
 
@@ -91,17 +126,6 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
           >
             Telas do app
           </a>
-          {onOpenSimulator && (
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                onOpenSimulator();
-              }}
-              className="bg-transparent border-0 text-[#c2d0ca] hover:text-[#d9ff4f] text-sm font-medium transition cursor-pointer text-left py-2 sm:py-0"
-            >
-              21 Telas Reais
-            </button>
-          )}
           <a
             href="#duvidas"
             onClick={(e) => {
@@ -166,7 +190,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <span className="trust-separator"></span>
               <span>Android 8+</span>
               <span className="trust-separator"></span>
-              <span>Versão oficial v3.3.4</span>
+              <span>Versão oficial v3.3.5</span>
             </div>
           </div>
 
@@ -368,12 +392,14 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
         {/* TELAS REAIS DO APLICATIVO */}
         <section className="screens-section section-shell" id="telas">
           <div className="section-intro center">
-            <div className="eyebrow">Telas reais do aplicativo</div>
+            <div className="eyebrow">Telas reais do aplicativo · 21 capturas oficiais</div>
             <h2>O que você vê é o que você usa.</h2>
             <p>
-              Interface simples, leitura ultra rápida e sem distração enquanto você dirige no trânsito.
+              Interface simples, leitura ultra rápida e sem distração no trânsito. Confira abaixo todas as 21 telas reais com Uber e 99.
             </p>
           </div>
+
+          {/* DESTAQUE PRINCIPAL: MOCKUP COMPARATIVO (CARD FLUTUANTE) */}
           <div className="screens-stage">
             <div className="screen-caption caption-left">
               <span>01</span>
@@ -382,17 +408,25 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             </div>
 
             <img
-              className="screen-image screen-back"
+              className="screen-image screen-back cursor-pointer"
               src="/assets/UberRuim.jpeg"
               alt="Tela do GoOrNo mostrando uma corrida ruim no trânsito"
+              onClick={() => {
+                const item = SCREENSHOTS.find((s) => s.id === 'uber-ruim');
+                if (item) setSelectedScreenshot(item);
+              }}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/UberRuim.jpeg';
               }}
             />
             <img
-              className="screen-image screen-front"
+              className="screen-image screen-front cursor-pointer"
               src="/assets/UberBoa.jpeg"
               alt="Tela do GoOrNo mostrando uma corrida boa aprovada em verde"
+              onClick={() => {
+                const item = SCREENSHOTS.find((s) => s.id === 'uber-boa');
+                if (item) setSelectedScreenshot(item);
+              }}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/UberBoa.jpeg';
               }}
@@ -405,18 +439,107 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             </div>
           </div>
 
-          {/* BOTÃO PARA ABRIR A GALERIA COMPLETA DE 21 TELAS */}
-          {onOpenSimulator && (
-            <div className="text-center mt-12">
-              <button
-                onClick={onOpenSimulator}
-                className="button button-ghost cursor-pointer inline-flex items-center gap-2 border border-[#071d19]/20 hover:border-[#071d19] shadow-xs"
-              >
-                <span>📸 Ver galeria completa com 21 chamadas reais (Uber e 99)</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+          {/* FILTROS DE CATEGORIA DAS 21 TELAS */}
+          <div className="mt-14 mb-8">
+            <div className="text-center mb-5">
+              <span className="font-space font-bold text-xs uppercase tracking-widest text-[#638076] bg-[#e6ebdf] px-3.5 py-1.5 rounded-full border border-[rgba(7,29,25,0.08)] inline-flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-[#799900]" />
+                Explore Todas as 21 Telas Oficiais por Categoria
+              </span>
             </div>
-          )}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {[
+                { key: 'all', label: 'Todas as Telas (21)', icon: Sparkles },
+                { key: 'uber_99', label: '🚗 Uber & 99 na Prática (7)', icon: Car },
+                { key: 'streetview', label: '📍 Notificação & Street View (3)', icon: MapPin },
+                { key: 'config', label: '⚙️ Metas & Calculadora (5)', icon: Sliders },
+                { key: 'safety', label: '🛡️ Segurança & Auditoria (6)', icon: ShieldCheck }
+              ].map((cat) => {
+                const Icon = cat.icon;
+                const isSelected = activeCategory === cat.key;
+                return (
+                  <button
+                    key={cat.key}
+                    onClick={() => setActiveCategory(cat.key)}
+                    className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer border ${
+                      isSelected
+                        ? 'bg-[#071d19] text-[#d9ff4f] border-[#071d19] shadow-xs'
+                        : 'bg-white border-[rgba(7,29,25,0.12)] text-[#556961] hover:text-[#071d19] hover:border-[#071d19]'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{cat.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* GRID COM OS CARDS DAS TELAS REAIS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {filteredScreenshots.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => setSelectedScreenshot(item)}
+                className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-200 cursor-pointer flex flex-col group hover:-translate-y-1"
+              >
+                {/* IMAGEM COM BADGE */}
+                <div className="relative aspect-[9/16] bg-[#fbfcf7] overflow-hidden flex items-center justify-center p-2.5 border-b border-[rgba(7,29,25,0.06)]">
+                  <img
+                    src={`/telas/${item.filename}`}
+                    alt={item.title}
+                    className="w-full h-full object-contain rounded-lg group-hover:scale-[1.02] transition-transform duration-300"
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/assets/logo-goorno-clean.png';
+                    }}
+                  />
+                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                    {item.badge && (
+                      <span
+                        className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs backdrop-blur-xs ${
+                          item.badgeType === 'green'
+                            ? 'bg-emerald-600 text-white'
+                            : item.badgeType === 'red'
+                            ? 'bg-rose-600 text-white'
+                            : item.badgeType === 'amber'
+                            ? 'bg-amber-600 text-white'
+                            : item.badgeType === 'purple'
+                            ? 'bg-purple-700 text-white'
+                            : 'bg-[#071d19] text-[#d9ff4f]'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                    <span className="w-7 h-7 rounded-full bg-[#071d19]/80 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                      <ZoomIn className="w-4 h-4" />
+                    </span>
+                  </div>
+                </div>
+
+                {/* CONTEÚDO DO CARD */}
+                <div className="p-4 flex-1 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-[#7a8982] uppercase tracking-wider block mb-1">
+                      {item.categoryLabel}
+                    </span>
+                    <h3 className="font-space font-bold text-sm text-[#071d19] leading-snug mb-2 group-hover:text-emerald-800 transition">
+                      {item.title}
+                    </h3>
+                    <p className="font-dm text-xs text-[#63756b] line-clamp-2 leading-relaxed">
+                      {item.summary}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-[rgba(7,29,25,0.06)] flex items-center justify-between text-xs font-bold text-[#071d19]">
+                    <span>Toque para ampliar</span>
+                    <ArrowRight className="w-4 h-4 text-[#7a8982] group-hover:translate-x-1 transition" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* SEÇÃO DE INSTALAÇÃO & APK */}
@@ -606,6 +729,110 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
         onClose={() => setIsContactOpen(false)}
         source="web"
       />
+
+      {/* LIGHTBOX MODAL PARA AMPLIAR TELAS REAIS */}
+      {selectedScreenshot && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
+          onClick={() => setSelectedScreenshot(null)}
+        >
+          <div
+            className="bg-[#071d19] text-white border border-white/15 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col md:flex-row shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedScreenshot(null)}
+              className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white grid place-items-center transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="md:w-1/2 bg-black/50 flex items-center justify-center p-4 relative min-h-[350px] md:min-h-[550px]">
+              <img
+                src={`/telas/${selectedScreenshot.filename}`}
+                alt={selectedScreenshot.title}
+                className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+              />
+              <button
+                onClick={handlePrevScreenshot}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white grid place-items-center transition cursor-pointer"
+                title="Imagem anterior"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleNextScreenshot}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white grid place-items-center transition cursor-pointer"
+                title="Próxima imagem"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto">
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-bold text-[#c2d0ca] uppercase tracking-wider font-dm">
+                    {selectedScreenshot.categoryLabel}
+                  </span>
+                  {selectedScreenshot.badge && (
+                    <span
+                      className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                        selectedScreenshot.badgeType === 'green'
+                          ? 'bg-emerald-600 text-white'
+                          : selectedScreenshot.badgeType === 'red'
+                          ? 'bg-rose-600 text-white'
+                          : selectedScreenshot.badgeType === 'amber'
+                          ? 'bg-amber-600 text-white'
+                          : selectedScreenshot.badgeType === 'purple'
+                          ? 'bg-purple-700 text-white'
+                          : 'bg-[#d9ff4f] text-[#071d19]'
+                      }`}
+                    >
+                      {selectedScreenshot.badge}
+                    </span>
+                  )}
+                </div>
+
+                <h2 className="font-space text-xl sm:text-2xl font-bold text-white leading-tight mb-3">
+                  {selectedScreenshot.title}
+                </h2>
+
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-4">
+                  <h4 className="text-xs font-bold text-[#d9ff4f] uppercase mb-1 font-space">
+                    O que esta tela mostra:
+                  </h4>
+                  <p className="text-sm text-[#c2d0ca] leading-relaxed font-dm">
+                    {selectedScreenshot.summary}
+                  </p>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <h4 className="text-xs font-bold text-white uppercase mb-1 flex items-center gap-1.5 font-space">
+                    <Sparkles className="w-3.5 h-3.5 text-[#d9ff4f]" />
+                    Como isso protege o seu bolso:
+                  </h4>
+                  <p className="text-xs sm:text-sm text-[#c2d0ca] leading-relaxed font-dm">
+                    {selectedScreenshot.highlightText}
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-6 mt-6 border-t border-white/10 flex items-center justify-between">
+                <span className="text-xs text-[#7a8982]">
+                  {selectedScreenshot.filename}
+                </span>
+                <button
+                  onClick={handleDownloadApk}
+                  className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-bold text-xs px-4 py-2.5 rounded-full transition shadow-xs cursor-pointer border-0"
+                >
+                  Baixar APK Oficial ↗
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

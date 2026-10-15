@@ -25,6 +25,27 @@
   margin: 0 auto;
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 100px;
+}
+
+#top,
+#como-funciona,
+#telas,
+#instalacao,
+#duvidas,
+#download,
+section[id],
+.split-section,
+.screens-section,
+.install-section,
+.faq-section,
+.feature-section,
+.proof-strip {
+  scroll-margin-top: 100px;
+}
+
 /* HEADER */
 .site-header {
   height: 76px;

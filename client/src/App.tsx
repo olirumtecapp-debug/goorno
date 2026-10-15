@@ -24,7 +24,16 @@ import {
   ChevronRight,
   Layers,
   Sparkles,
-  Check
+  Check,
+  Star,
+  Car,
+  Plus,
+  Minus,
+  Gauge,
+  Zap,
+  RotateCcw,
+  Info,
+  ArrowLeft
 } from 'lucide-react';
 
 export interface DriverConfig {
@@ -40,12 +49,17 @@ export interface DriverConfig {
   overlayDurationSec: number;
   autoStreetViewOnAccept: boolean;
   targetPlatforms: string[];
+  minPassengerRating?: number;
+  minTripPrice?: number;
+  minNetProfit?: number;
+  maxPickupKm?: number;
 }
 
 export interface RideRecord {
   id: string;
   timestamp: string;
   platform: 'UBER' | '99' | 'INDRIVE' | 'OUTRO';
+  category?: string;
   offeredPrice: number;
   receivedPrice: number | null;
   pickupKm: number;
@@ -62,6 +76,8 @@ export interface RideRecord {
   accepted: boolean;
   paymentStatus: 'PENDING' | 'MATCH' | 'UNDERPAID' | 'OVERPAID';
   notes?: string;
+  passengerRating?: number;
+  profitPercent?: number;
 }
 
 declare global {
@@ -109,6 +125,10 @@ const DEFAULT_CONFIG: DriverConfig = {
   overlayDurationSec: 10,
   autoStreetViewOnAccept: true,
   targetPlatforms: ['UBER', '99', 'INDRIVE'],
+  minPassengerRating: 4.75,
+  minTripPrice: 8.0,
+  minNetProfit: 5.0,
+  maxPickupKm: 3.5,
 };
 
 export function App() {
@@ -121,7 +141,15 @@ export function App() {
   });
 
   const [showSimulator, setShowSimulator] = useState<boolean>(() => {
-    return window.location.hash.includes('simulator');
+    return window.location.hash.includes('simulator') && !window.location.hash.includes('app');
+  });
+
+  const [showDriverApp, setShowDriverApp] = useState<boolean>(() => {
+    return (
+      window.location.hash.includes('app') ||
+      window.location.hash.includes('copiloto') ||
+      window.location.search.includes('app')
+    );
   });
 
   useEffect(() => {
@@ -131,7 +159,12 @@ export function App() {
         window.location.hash.includes('admin') ||
         window.location.search.includes('admin')
       );
-      setShowSimulator(window.location.hash.includes('simulator'));
+      setShowSimulator(window.location.hash.includes('simulator') && !window.location.hash.includes('app'));
+      setShowDriverApp(
+        window.location.hash.includes('app') ||
+        window.location.hash.includes('copiloto') ||
+        window.location.search.includes('app')
+      );
     };
     window.addEventListener('hashchange', handleNav);
     window.addEventListener('popstate', handleNav);
@@ -140,6 +173,12 @@ export function App() {
       window.removeEventListener('popstate', handleNav);
     };
   }, []);
+
+  useEffect(() => {
+    if (showDriverApp || isAdminView) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [showDriverApp, isAdminView]);
 
   const [activeTab, setActiveTab] = useState<'copilot' | 'overlay' | 'targets' | 'history'>('copilot');
   const [config, setConfig] = useState<DriverConfig>(DEFAULT_CONFIG);
@@ -271,9 +310,68 @@ export function App() {
     tripKm: number,
     durationMin: number,
     originAddress: string,
-    destinationAddress: string
+    destinationAddress: string,
+    forcedVerdict?: 'GREEN' | 'YELLOW' | 'RED',
+    paxRating: number = 4.96,
+    categoryName: string = 'UberX'
   ) => {
     const totalKm = Number((pickupKm + tripKm).toFixed(1));
+    const cost = Number((totalKm * costPerKm).toFixed(2));
+    const netProfit = Number((price - cost).toFixed(2));
+    const pricePerKm = Number((price / Math.max(totalKm, 0.1)).toFixed(2));
+    const pricePerHour = Number(((price / Math.max(durationMin, 1)) * 60).toFixed(1));
+
+    let verdict: 'GREEN' | 'YELLOW' | 'RED' = forcedVerdict || 'GREEN';
+    if (!forcedVerdict) {
+      if (pricePerKm >= config.greenPerKm && pricePerHour >= config.greenPerHour) {
+        verdict = 'GREEN';
+      } else if (pricePerKm >= config.yellowPerKm && pricePerHour >= config.yellowPerHour) {
+        verdict = 'YELLOW';
+      } else {
+        verdict = 'RED';
+      }
+    }
+
+    const localRide: RideRecord = {
+      id: 'ride-' + Date.now(),
+      timestamp: new Date().toISOString(),
+      platform,
+      category: categoryName,
+      offeredPrice: price,
+      receivedPrice: null,
+      pickupKm,
+      tripKm,
+      totalKm,
+      durationMin,
+      originAddress,
+      destinationAddress,
+      pricePerKm,
+      pricePerHour,
+      estimatedCost: cost,
+      netProfit,
+      verdict,
+      accepted: verdict !== 'RED',
+      paymentStatus: 'PENDING',
+      passengerRating: paxRating,
+    };
+
+    setRides((prev) => [localRide, ...prev]);
+    setShowFloatingPreview(true);
+    setFloatingCollapsed(false);
+
+    if (config.voiceEnabled && 'speechSynthesis' in window && !isNative) {
+      window.speechSynthesis.cancel();
+      const vText =
+        verdict === 'GREEN'
+          ? `Corrida ótima! Aceitar. ${pricePerKm.toFixed(2).replace('.', ',')} reais por quilômetro.`
+          : verdict === 'YELLOW'
+          ? `Atenção. Corrida média. ${pricePerKm.toFixed(2).replace('.', ',')} reais por quilômetro.`
+          : `Recusar! Prejuízo. Apenas ${pricePerKm.toFixed(2).replace('.', ',')} por quilômetro.`;
+      const utter = new SpeechSynthesisUtterance(vText);
+      utter.lang = 'pt-BR';
+      window.speechSynthesis.speak(utter);
+    }
+
     if (isNative && window.AndroidBridge) {
       window.AndroidBridge.previewOverlayCard(
         platform,
@@ -284,10 +382,8 @@ export function App() {
         destinationAddress
       );
     }
-    setShowFloatingPreview(true);
-    setFloatingCollapsed(false);
 
-    // Also save/evaluate via API
+    // Persist to backend if online
     fetch('/api/rides/evaluate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -299,28 +395,9 @@ export function App() {
         durationMin,
         originAddress,
         destinationAddress,
-        accepted: true,
+        accepted: verdict !== 'RED',
       }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.ride) {
-          setRides((prev) => [data.ride, ...prev]);
-          if (config.voiceEnabled && 'speechSynthesis' in window && !isNative) {
-            window.speechSynthesis.cancel();
-            const vText =
-              data.ride.verdict === 'GREEN'
-                ? `Boa chamada! ${data.ride.pricePerKm.toFixed(2).replace('.', ',')} reais por quilômetro.`
-                : data.ride.verdict === 'YELLOW'
-                ? `Atenção. ${data.ride.pricePerKm.toFixed(2).replace('.', ',')} por quilômetro.`
-                : `Corrida ruim! Apenas ${data.ride.pricePerKm.toFixed(2).replace('.', ',')} por quilômetro.`;
-            const utter = new SpeechSynthesisUtterance(vText);
-            utter.lang = 'pt-BR';
-            window.speechSynthesis.speak(utter);
-          }
-        }
-      })
-      .catch(() => {});
+    }).catch(() => {});
   };
 
   const handlePrintUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -388,6 +465,7 @@ export function App() {
     id: 'demo-1',
     timestamp: new Date().toISOString(),
     platform: 'UBER',
+    category: 'UberX',
     offeredPrice: 28.5,
     receivedPrice: null,
     pickupKm: 1.4,
@@ -403,34 +481,72 @@ export function App() {
     verdict: 'GREEN',
     accepted: true,
     paymentStatus: 'PENDING',
+    passengerRating: 4.96,
   };
 
   const getVerdictColors = (verdict: 'GREEN' | 'YELLOW' | 'RED') => {
     if (verdict === 'GREEN') {
       return {
-        bg: '#0E9F6E',
-        border: '#31C48D',
-        badge: '🟢 ACEITAR · ÓTIMA',
-        text: '#E3FCEF',
+        bg: '#16a34a',
+        border: '#4ade80',
+        badge: '✔ ACEITAR',
+        badgeFull: '✔ ACEITAR · ÓTIMA',
+        text: '#ffffff',
+        glow: 'rgba(22, 163, 74, 0.45)',
       };
     }
     if (verdict === 'YELLOW') {
       return {
-        bg: '#D97706',
-        border: '#FBBF24',
-        badge: '🟡 ATENÇÃO · MÉDIA',
-        text: '#FEF3C7',
+        bg: '#d97706',
+        border: '#fbbf24',
+        badge: '⚠ ATENÇÃO',
+        badgeFull: '⚠ ATENÇÃO · AVALIAR',
+        text: '#ffffff',
+        glow: 'rgba(217, 119, 6, 0.45)',
       };
     }
     return {
-      bg: '#DC2626',
-      border: '#F87171',
-      badge: '🔴 RECUSAR · PREJUÍZO',
-      text: '#FEE2E2',
+      bg: '#dc2626',
+      border: '#f87171',
+      badge: '✖ RECUSAR',
+      badgeFull: '✖ RECUSAR · PREJUÍZO',
+      text: '#ffffff',
+      glow: 'rgba(220, 38, 38, 0.45)',
     };
   };
 
   const vStyle = getVerdictColors(currentRide.verdict);
+
+  // Pillar 4 Health Indicators:
+  const kmIndicator: 'green' | 'yellow' | 'red' =
+    currentRide.pricePerKm >= config.greenPerKm
+      ? 'green'
+      : currentRide.pricePerKm >= config.yellowPerKm
+      ? 'yellow'
+      : 'red';
+
+  const hourIndicator: 'green' | 'yellow' | 'red' =
+    currentRide.pricePerHour >= config.greenPerHour
+      ? 'green'
+      : currentRide.pricePerHour >= config.yellowPerHour
+      ? 'yellow'
+      : 'red';
+
+  const profitPercent = Math.max(
+    0,
+    Math.min(100, Math.round(((currentRide.netProfit || 0) / Math.max(currentRide.offeredPrice, 1)) * 100))
+  );
+
+  const profitIndicator: 'green' | 'yellow' | 'red' =
+    profitPercent >= 65 ? 'green' : profitPercent >= 45 ? 'yellow' : 'red';
+
+  const paxRating = currentRide.passengerRating || 4.96;
+  const ratingIndicator: 'green' | 'yellow' | 'red' =
+    paxRating >= 4.85
+      ? 'green'
+      : paxRating >= (config.minPassengerRating || 4.75)
+      ? 'yellow'
+      : 'red';
 
   if (isAdminView) {
     return (
@@ -454,12 +570,12 @@ export function App() {
     );
   }
 
-  if (!isNative) {
+  if (!isNative && !showDriverApp) {
     return (
       <DownloadLandingPage
         onOpenSimulator={() => {
-          window.location.hash = 'simulator';
-          setShowSimulator(true);
+          window.location.hash = 'app';
+          setShowDriverApp(true);
         }}
         onOpenAdmin={() => {
           window.location.hash = 'admin';
@@ -546,125 +662,222 @@ export function App() {
           </div>
         </header>
 
-        {/* FLOATING OVERLAY WINDOW (JANELA FLUTUANTE REAL SOBRE A TELA COM TRANSPARÊNCIA) */}
+        {/* FLOATING OVERLAY WINDOW (JANELA FLUTUANTE REAL COM ERGONOMIA MODERNA DE 4 PILARES) */}
         {showFloatingPreview && (
           <div
-            className="fixed top-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[380px] transition-all duration-200"
+            className="fixed top-14 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-[400px] transition-all duration-200"
             style={{
               opacity: Math.max(0.25, Math.min(1, config.overlayOpacity / 100)),
             }}
           >
             {floatingCollapsed ? (
-              /* Pílula Flutuante Minimizada (estilo botão flutuante JetMax / GigU) */
-              <div className="flex items-center justify-between bg-[#073B32] border-2 border-[#97B304] rounded-full px-3.5 py-2 shadow-2xl">
+              /* Pílula Flutuante Minimizada */
+              <div
+                className="flex items-center justify-between bg-[#071f1a]/95 border-2 rounded-full px-3.5 py-2 shadow-2xl backdrop-blur-md"
+                style={{ borderColor: vStyle.border }}
+              >
                 <button
                   onClick={() => setFloatingCollapsed(false)}
-                  className="flex items-center gap-2 text-left"
+                  className="flex items-center gap-2 text-left flex-1 min-w-0"
                 >
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#B8D906] animate-pulse" />
-                  <span className="text-xs font-black tracking-wide text-white">
-                    {currentRide.platform} · R$ {currentRide.pricePerKm.toFixed(2)}/km · R${' '}
-                    {Math.round(currentRide.pricePerHour)}/h
+                  <span
+                    className="px-2.5 py-0.5 rounded-full text-[10px] font-black text-white shrink-0 shadow-sm"
+                    style={{ backgroundColor: vStyle.bg }}
+                  >
+                    {vStyle.badge}
+                  </span>
+                  <span className="text-xs font-black tracking-wide text-white truncate">
+                    {currentRide.category || currentRide.platform} · R$ {currentRide.pricePerKm.toFixed(2).replace('.', ',')}/km · R$ {Math.round(currentRide.pricePerHour)}/h
                   </span>
                 </button>
                 <button
                   onClick={() => setFloatingCollapsed(false)}
-                  className="text-[11px] font-bold text-[#B8D906] bg-[#04241E] px-2.5 py-0.5 rounded-full ml-2"
+                  className="text-[11px] font-bold text-[#071d19] bg-[#d9ff4f] hover:bg-white px-2.5 py-0.5 rounded-full ml-2 shrink-0 transition"
                 >
                   Abrir
                 </button>
               </div>
             ) : (
-              /* Card Semafórico Flutuante Completo (Abre por cima da Uber / 99) */
-              <div
-                className="rounded-2xl p-3.5 shadow-2xl border-2 text-white backdrop-blur-md"
-                style={{
-                  backgroundColor: '#062D26',
-                  borderColor: vStyle.border,
-                }}
-              >
-                {/* Top Strip: App + Semáforo + Transparência + Minimizar */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded-md bg-black/40 text-[11px] font-black tracking-wider text-white">
-                      {currentRide.platform}
+              /* Card Flutuante Completo com Balão de Veredito + 4 Pilares */
+              <div className="relative pt-2">
+                {/* Balão de Veredito (Speech Bubble Badge) no topo-esquerdo */}
+                <div className="relative mb-[-6px] ml-3 z-10 inline-flex items-center">
+                  <div
+                    className="px-3 py-1 rounded-full text-[11px] font-black tracking-wider text-white shadow-lg flex items-center gap-1.5"
+                    style={{
+                      backgroundColor: vStyle.bg,
+                      boxShadow: `0 4px 14px ${vStyle.glow}`,
+                    }}
+                  >
+                    {vStyle.badge}
+                  </div>
+                  {/* Ponta do balão apontando para o card */}
+                  <div
+                    className="absolute left-4 -bottom-1.5 w-0 h-0 border-x-4 border-x-transparent border-t-[6px]"
+                    style={{ borderTopColor: vStyle.bg }}
+                  />
+                </div>
+
+                {/* Card Principal */}
+                <div
+                  className="rounded-2xl p-3 shadow-2xl border-2 text-white backdrop-blur-md"
+                  style={{
+                    backgroundColor: '#071f1a',
+                    borderColor: vStyle.border,
+                  }}
+                >
+                  {/* Top Strip: Categoria · Tempo · Distância + Controles Rápidos */}
+                  <div className="flex items-center justify-between pb-2 border-b border-white/10 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <span className="px-2 py-0.5 rounded bg-black/60 text-[10px] font-black tracking-wider text-emerald-300 uppercase">
+                        {currentRide.category || currentRide.platform}
+                      </span>
+                      <span className="text-white/60">·</span>
+                      <span className="text-white font-semibold">{currentRide.durationMin} min</span>
+                      <span className="text-white/60">·</span>
+                      <span className="text-white font-semibold">{currentRide.totalKm} km</span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {/* Botão 360° */}
+                      <button
+                        onClick={() => openStreetView('Local de Embarque', currentRide.originAddress)}
+                        className="p-1 rounded-lg bg-black/40 hover:bg-black/70 text-[#d9ff4f] transition"
+                        title="Ver Street View 360° da Rua"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      {/* Minimizar */}
+                      <button
+                        onClick={() => setFloatingCollapsed(true)}
+                        className="px-2 py-0.5 rounded-lg bg-black/40 hover:bg-black/70 text-white/70 hover:text-white text-xs font-bold transition"
+                        title="Minimizar para Pílula"
+                      >
+                        –
+                      </button>
+                      {/* Fechar */}
+                      <button
+                        onClick={() => setShowFloatingPreview(false)}
+                        className="px-2 py-0.5 rounded-lg bg-black/40 hover:bg-black/70 text-white/70 hover:text-white text-xs font-bold transition"
+                        title="Fechar Janela"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4 PILARES DE DECISÃO INSTANTÂNEA */}
+                  <div className="grid grid-cols-4 gap-1.5 my-2.5">
+                    {/* Pilar 1: R$/km */}
+                    <div className="bg-black/45 rounded-xl p-2 flex flex-col items-center justify-center border border-white/10">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            kmIndicator === 'green'
+                              ? 'bg-emerald-400'
+                              : kmIndicator === 'yellow'
+                              ? 'bg-amber-400'
+                              : 'bg-red-400'
+                          }`}
+                        />
+                        <span className="text-[10px] font-bold text-white/70 uppercase tracking-tight">R$/km</span>
+                      </div>
+                      <div className="text-base font-black text-white leading-none">
+                        R$ {currentRide.pricePerKm.toFixed(2).replace('.', ',')}
+                      </div>
+                    </div>
+
+                    {/* Pilar 2: R$/Hora */}
+                    <div className="bg-black/45 rounded-xl p-2 flex flex-col items-center justify-center border border-white/10">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            hourIndicator === 'green'
+                              ? 'bg-emerald-400'
+                              : hourIndicator === 'yellow'
+                              ? 'bg-amber-400'
+                              : 'bg-red-400'
+                          }`}
+                        />
+                        <span className="text-[10px] font-bold text-white/70 uppercase tracking-tight">R$/Hora</span>
+                      </div>
+                      <div className="text-base font-black text-white leading-none">
+                        R$ {Math.round(currentRide.pricePerHour)}
+                      </div>
+                    </div>
+
+                    {/* Pilar 3: Lucro (%) */}
+                    <div className="bg-black/45 rounded-xl p-2 flex flex-col items-center justify-center border border-white/10">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            profitIndicator === 'green'
+                              ? 'bg-emerald-400'
+                              : profitIndicator === 'yellow'
+                              ? 'bg-amber-400'
+                              : 'bg-red-400'
+                          }`}
+                        />
+                        <span className="text-[10px] font-bold text-white/70 uppercase tracking-tight">Lucro (%)</span>
+                      </div>
+                      <div className="text-base font-black text-[#d9ff4f] leading-none">
+                        {profitPercent}%
+                      </div>
+                    </div>
+
+                    {/* Pilar 4: Nota Pax */}
+                    <div className="bg-black/45 rounded-xl p-2 flex flex-col items-center justify-center border border-white/10">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            ratingIndicator === 'green'
+                              ? 'bg-emerald-400'
+                              : ratingIndicator === 'yellow'
+                              ? 'bg-amber-400'
+                              : 'bg-red-400'
+                          }`}
+                        />
+                        <span className="text-[10px] font-bold text-white/70 uppercase tracking-tight">Nota Pax</span>
+                      </div>
+                      <div className="text-base font-black text-white leading-none flex items-center gap-0.5">
+                        <span>{paxRating.toFixed(2).replace('.', ',')}</span>
+                        <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Resumo da Corrida & Lucro Líquido */}
+                  <div className="flex items-center justify-between text-[11px] text-white/85 px-2 py-1.5 bg-black/30 rounded-lg mb-2 border border-white/5">
+                    <span>
+                      Oferta: <strong className="text-white">R$ {currentRide.offeredPrice.toFixed(2).replace('.', ',')}</strong>
                     </span>
-                    <span
-                      className="px-2.5 py-0.5 rounded-md text-[11px] font-black tracking-wide"
-                      style={{ backgroundColor: vStyle.bg, color: '#fff' }}
-                    >
-                      {vStyle.badge}
+                    <span className="text-white/40">|</span>
+                    <span>
+                      Lucro Líq: <strong className="text-[#d9ff4f]">R$ {currentRide.netProfit.toFixed(2).replace('.', ',')}</strong>
+                    </span>
+                    <span className="text-white/40">|</span>
+                    <span>
+                      Custo: <strong className="text-red-300">R$ {currentRide.estimatedCost.toFixed(2).replace('.', ',')}</strong>
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  {/* Botões 1-Toque Street View 360° */}
+                  <div className="grid grid-cols-2 gap-1.5">
                     <button
-                      onClick={() => setFloatingCollapsed(true)}
-                      className="text-[11px] font-bold px-2 py-0.5 rounded bg-black/30 text-white/80 hover:text-white"
-                      title="Minimizar para Pílula"
+                      onClick={() => openStreetView('Local de Embarque (Origem)', currentRide.originAddress)}
+                      className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-[#0e3b33] hover:bg-[#134d43] border border-[#d9ff4f]/30 text-[11px] font-bold text-white transition truncate"
                     >
-                      Minimizar
+                      <MapPin className="w-3.5 h-3.5 text-[#d9ff4f] shrink-0" />
+                      <span className="truncate">Ver Origem (360°)</span>
                     </button>
                     <button
-                      onClick={() => setShowFloatingPreview(false)}
-                      className="text-xs font-black px-2 py-0.5 rounded bg-black/30 text-white/70 hover:text-white"
+                      onClick={() => openStreetView('Local de Desembarque (Destino)', currentRide.destinationAddress)}
+                      className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-[#0e3b33] hover:bg-[#134d43] border border-[#d9ff4f]/30 text-[11px] font-bold text-white transition truncate"
                     >
-                      ✕
+                      <Navigation className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                      <span className="truncate">Ver Destino (360°)</span>
                     </button>
                   </div>
-                </div>
-
-                {/* Big 3 Numbers (R$/KM, R$/HORA, LUCRO LÍQUIDO) - Leitura em 1 segundo */}
-                <div className="grid grid-cols-3 gap-2 my-2 bg-black/35 rounded-xl p-2.5 border border-white/10">
-                  <div className="text-center">
-                    <div className="text-[10px] font-bold uppercase text-white/60">R$ / KM</div>
-                    <div className="text-lg font-black text-white leading-tight">
-                      R$ {currentRide.pricePerKm.toFixed(2)}
-                    </div>
-                  </div>
-                  <div className="text-center border-x border-white/10">
-                    <div className="text-[10px] font-bold uppercase text-white/60">R$ / HORA</div>
-                    <div className="text-lg font-black text-white leading-tight">
-                      R$ {Math.round(currentRide.pricePerHour)}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[10px] font-bold uppercase text-emerald-300/80">LUCRO LÍQ.</div>
-                    <div className="text-lg font-black text-[#B8D906] leading-tight">
-                      R$ {currentRide.netProfit.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Resumo da Chamada */}
-                <div className="flex items-center justify-between text-xs text-white/80 px-1 mb-2">
-                  <span>
-                    Oferta: <strong className="text-white">R$ {currentRide.offeredPrice.toFixed(2)}</strong>
-                  </span>
-                  <span>
-                    Distância: <strong className="text-white">{currentRide.totalKm} km</strong>
-                  </span>
-                  <span>
-                    Tempo: <strong className="text-white">{currentRide.durationMin} min</strong>
-                  </span>
-                </div>
-
-                {/* Botões 1-Toque Street View (Origem e Destino) direto na janela flutuante */}
-                <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-white/10">
-                  <button
-                    onClick={() => openStreetView('Local de Embarque (Origem)', currentRide.originAddress)}
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-[#0B463B] hover:bg-[#0F5C4E] border border-[#97B304]/40 text-[11px] font-bold text-white truncate"
-                  >
-                    <MapPin className="w-3.5 h-3.5 text-[#B8D906] shrink-0" />
-                    <span>Ver Origem (360°)</span>
-                  </button>
-                  <button
-                    onClick={() => openStreetView('Local de Desembarque (Destino)', currentRide.destinationAddress)}
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-[#0B463B] hover:bg-[#0F5C4E] border border-[#97B304]/40 text-[11px] font-bold text-white truncate"
-                  >
-                    <Navigation className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                    <span>Ver Destino (360°)</span>
-                  </button>
                 </div>
               </div>
             )}
@@ -1127,102 +1340,515 @@ export function App() {
           )}
 
           {/* ==========================================================
-              TAB 3: METAS DO SEMÁFORO & CUSTO DO CARRO (R$/KM E R$/H)
+              TAB 3: SEMÁFORO DE VALORES (ROTA-PRO STYLE CONFIG + MATRIZ)
              ========================================================== */}
           {activeTab === 'targets' && (
             <div className="space-y-4">
-              {/* Metas do Semáforo */}
-              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4 space-y-3.5">
-                <div>
-                  <span className="text-[11px] font-black uppercase tracking-wider text-[#B8D906]">
-                    Critérios do Seu Semáforo
+              {/* Header do Semáforo */}
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#d9ff4f]">
+                      Classificação por Cor
+                    </span>
+                    <h2 className="text-base font-black text-white flex items-center gap-2 mt-0.5">
+                      <Sliders className="w-4 h-4 text-[#d9ff4f]" />
+                      Semáforo de Valores
+                    </h2>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#04241E] border border-[#d9ff4f]/40 text-[11px] font-black text-[#d9ff4f]">
+                    v3.3.4
                   </span>
-                  <h2 className="text-base font-black text-white">
-                    Quanto Você Quer Ganhar por KM e Hora?
-                  </h2>
+                </div>
+                <p className="text-xs text-white/70 mt-1">
+                  Defina os limites de ganho por KM, Hora e Nota para colorir e avaliar as chamadas da Uber e 99 instantaneamente.
+                </p>
+              </div>
+
+              {/* SIMULAÇÃO RÁPIDA: 3 BOTÕES DE TESTE AO VIVO */}
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-3.5 space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5 text-[#d9ff4f]" />
+                  Testar Janela Flutuante ao Vivo (1-Toque)
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Botão 1: Corrida Boa */}
+                  <button
+                    onClick={() => {
+                      triggerFloatingDemo(
+                        'UBER',
+                        28.5,
+                        1.4,
+                        8.6,
+                        19,
+                        'Av. Paulista, 1578 - Bela Vista, São Paulo',
+                        'Rua Funchal, 418 - Vila Olímpia, São Paulo',
+                        'GREEN',
+                        4.96,
+                        'UberX'
+                      );
+                    }}
+                    className="p-2 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/60 text-center transition flex flex-col items-center justify-center gap-1"
+                  >
+                    <span className="text-xs font-black text-emerald-300">🟢 Aceitar</span>
+                    <span className="text-[10px] text-white/80 font-bold">R$ 2,85/km</span>
+                  </button>
+
+                  {/* Botão 2: Corrida Média */}
+                  <button
+                    onClick={() => {
+                      triggerFloatingDemo(
+                        '99',
+                        16.0,
+                        1.8,
+                        7.3,
+                        25,
+                        'Rua Augusta, 1200 - Consolação, São Paulo',
+                        'Av. Rebouças, 3000 - Pinheiros, São Paulo',
+                        'YELLOW',
+                        4.82,
+                        '99Pop'
+                      );
+                    }}
+                    className="p-2 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/60 text-center transition flex flex-col items-center justify-center gap-1"
+                  >
+                    <span className="text-xs font-black text-amber-300">🟡 Atenção</span>
+                    <span className="text-[10px] text-white/80 font-bold">R$ 1,76/km</span>
+                  </button>
+
+                  {/* Botão 3: Corrida Ruim */}
+                  <button
+                    onClick={() => {
+                      triggerFloatingDemo(
+                        'UBER',
+                        9.5,
+                        3.2,
+                        10.2,
+                        32,
+                        'Estrada do M Boi Mirim, 500 - Zona Sul',
+                        'Av. Interlagos, 2220 - São Paulo',
+                        'RED',
+                        4.65,
+                        'UberX'
+                      );
+                    }}
+                    className="p-2 rounded-xl bg-red-600/30 hover:bg-red-600/50 border border-red-500/60 text-center transition flex flex-col items-center justify-center gap-1"
+                  >
+                    <span className="text-xs font-black text-red-300">🔴 Recusar</span>
+                    <span className="text-[10px] text-white/80 font-bold">R$ 0,71/km</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* TABELA "SUAS FAIXAS" (MATRIZ SEMAFÓRICA ESTILO ROTAPRO) */}
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#d9ff4f]">
+                    Suas Faixas Configuradas
+                  </span>
+                  <span className="text-[10px] text-white/50">Matriz Semafórica</span>
                 </div>
 
-                {/* VERDE (ACEITAR) */}
-                <div className="p-3 rounded-xl bg-[#04241E] border border-emerald-500/40 space-y-2.5">
-                  <div className="text-xs font-black text-emerald-400">
-                    🟢 SINAL VERDE (Corrida Ótima - Aceitar)
+                <div className="overflow-hidden rounded-xl border border-white/10 bg-[#04241E]">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 text-[10px] uppercase font-black">
+                        <th className="py-2 px-2 text-left text-white/60">Métrica</th>
+                        <th className="py-2 px-1 text-center bg-red-500/20 text-red-300">🔴 Ruim</th>
+                        <th className="py-2 px-1 text-center bg-amber-500/20 text-amber-300">🟡 Atenção</th>
+                        <th className="py-2 px-1 text-center bg-emerald-500/20 text-emerald-300">🟢 Aceitar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 font-bold">
+                      {/* Linha 1: R$/km */}
+                      <tr>
+                        <td className="py-2.5 px-2 text-white/80">R$/km</td>
+                        <td className="py-2.5 px-1 text-center bg-red-500/10 text-red-200">
+                          &lt; R$ {config.yellowPerKm.toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="py-2.5 px-1 text-center bg-amber-500/10 text-amber-200">
+                          R$ {config.yellowPerKm.toFixed(2).replace('.', ',')} a {config.greenPerKm.toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="py-2.5 px-1 text-center bg-emerald-500/10 text-emerald-200">
+                          ≥ R$ {config.greenPerKm.toFixed(2).replace('.', ',')}
+                        </td>
+                      </tr>
+
+                      {/* Linha 2: R$/Hora */}
+                      <tr>
+                        <td className="py-2.5 px-2 text-white/80">R$/Hora</td>
+                        <td className="py-2.5 px-1 text-center bg-red-500/10 text-red-200">
+                          &lt; R$ {config.yellowPerHour}
+                        </td>
+                        <td className="py-2.5 px-1 text-center bg-amber-500/10 text-amber-200">
+                          R$ {config.yellowPerHour} a {config.greenPerHour}
+                        </td>
+                        <td className="py-2.5 px-1 text-center bg-emerald-500/10 text-emerald-200">
+                          ≥ R$ {config.greenPerHour}
+                        </td>
+                      </tr>
+
+                      {/* Linha 3: Nota Pax */}
+                      <tr>
+                        <td className="py-2.5 px-2 text-white/80">Nota Pax</td>
+                        <td className="py-2.5 px-1 text-center bg-red-500/10 text-red-200">
+                          &lt; {(config.minPassengerRating || 4.75).toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="py-2.5 px-1 text-center bg-amber-500/10 text-amber-200">
+                          {(config.minPassengerRating || 4.75).toFixed(2).replace('.', ',')} a 4,85
+                        </td>
+                        <td className="py-2.5 px-1 text-center bg-emerald-500/10 text-emerald-200">
+                          ≥ 4,85 ★
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* SLIDERS E STEPPERS TRI-ZONE (CLASSIFICAÇÃO POR COR) */}
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4 space-y-4">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#d9ff4f]">
+                    Ajuste Fino das Faixas
+                  </span>
+                  <h3 className="text-sm font-black text-white">Controles de Faixa Semafórica</h3>
+                </div>
+
+                {/* 1. Ganho por Km */}
+                <div className="p-3.5 rounded-xl bg-[#04241E] border border-white/10 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-white">Ganho por Km (R$/km)</span>
+                    <span className="text-xs font-bold text-white/80">
+                      🟡 Atenção: <strong className="text-amber-300">R$ {config.yellowPerKm.toFixed(2)}</strong> · 🟢 Aceitar: <strong className="text-emerald-300">R$ {config.greenPerKm.toFixed(2)}</strong>
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] text-white/70 block mb-1">Mínimo R$ / KM</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={config.greenPerKm}
-                        onChange={(e) =>
-                          saveNewConfig({ ...config, greenPerKm: Number(e.target.value) })
-                        }
-                        className="w-full bg-[#073B32] border border-white/15 rounded-lg px-3 py-2 text-sm font-black text-white"
-                      />
+
+                  {/* Segmented Color Track */}
+                  <div className="h-3 rounded-full flex overflow-hidden shadow-inner bg-black/40 border border-white/10">
+                    <div className="bg-red-500 h-full transition-all" style={{ width: '30%' }} title="Ruim" />
+                    <div className="bg-amber-400 h-full transition-all" style={{ width: '35%' }} title="Atenção" />
+                    <div className="bg-emerald-500 h-full transition-all" style={{ width: '35%' }} title="Aceitar" />
+                  </div>
+
+                  {/* Steppers +/- para motorista ajustar facilmente dirigindo ou parado */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    {/* Stepper Amarelo */}
+                    <div className="p-2 rounded-lg bg-[#073B32] border border-amber-500/30 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-amber-300">Atenção</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() =>
+                            saveNewConfig({
+                              ...config,
+                              yellowPerKm: Math.max(0.5, Number((config.yellowPerKm - 0.1).toFixed(2))),
+                            })
+                          }
+                          className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="text-xs font-black text-white px-1">
+                          R$ {config.yellowPerKm.toFixed(2)}
+                        </span>
+                        <button
+                          onClick={() =>
+                            saveNewConfig({
+                              ...config,
+                              yellowPerKm: Number((config.yellowPerKm + 0.1).toFixed(2)),
+                            })
+                          }
+                          className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-[11px] text-white/70 block mb-1">Mínimo R$ / Hora</label>
-                      <input
-                        type="number"
-                        step="1"
-                        value={config.greenPerHour}
-                        onChange={(e) =>
-                          saveNewConfig({ ...config, greenPerHour: Number(e.target.value) })
-                        }
-                        className="w-full bg-[#073B32] border border-white/15 rounded-lg px-3 py-2 text-sm font-black text-white"
-                      />
+
+                    {/* Stepper Verde */}
+                    <div className="p-2 rounded-lg bg-[#073B32] border border-emerald-500/30 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-emerald-300">Aceitar</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() =>
+                            saveNewConfig({
+                              ...config,
+                              greenPerKm: Math.max(config.yellowPerKm, Number((config.greenPerKm - 0.1).toFixed(2))),
+                            })
+                          }
+                          className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="text-xs font-black text-white px-1">
+                          R$ {config.greenPerKm.toFixed(2)}
+                        </span>
+                        <button
+                          onClick={() =>
+                            saveNewConfig({
+                              ...config,
+                              greenPerKm: Number((config.greenPerKm + 0.1).toFixed(2)),
+                            })
+                          }
+                          className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* AMARELO (ATENÇÃO) */}
-                <div className="p-3 rounded-xl bg-[#04241E] border border-amber-500/40 space-y-2.5">
-                  <div className="text-xs font-black text-amber-300">
-                    🟡 SINAL AMARELO (Corrida Média - Avaliar)
+                {/* 2. Ganho por Hora */}
+                <div className="p-3.5 rounded-xl bg-[#04241E] border border-white/10 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-white">Ganho por Hora (R$/h)</span>
+                    <span className="text-xs font-bold text-white/80">
+                      🟡 Atenção: <strong className="text-amber-300">R$ {config.yellowPerHour}</strong> · 🟢 Aceitar: <strong className="text-emerald-300">R$ {config.greenPerHour}</strong>
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] text-white/70 block mb-1">Mínimo R$ / KM</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={config.yellowPerKm}
-                        onChange={(e) =>
-                          saveNewConfig({ ...config, yellowPerKm: Number(e.target.value) })
-                        }
-                        className="w-full bg-[#073B32] border border-white/15 rounded-lg px-3 py-2 text-sm font-black text-white"
-                      />
+
+                  {/* Segmented Color Track */}
+                  <div className="h-3 rounded-full flex overflow-hidden shadow-inner bg-black/40 border border-white/10">
+                    <div className="bg-red-500 h-full transition-all" style={{ width: '30%' }} />
+                    <div className="bg-amber-400 h-full transition-all" style={{ width: '35%' }} />
+                    <div className="bg-emerald-500 h-full transition-all" style={{ width: '35%' }} />
+                  </div>
+
+                  {/* Steppers +/- */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="p-2 rounded-lg bg-[#073B32] border border-amber-500/30 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-amber-300">Atenção</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() =>
+                            saveNewConfig({
+                              ...config,
+                              yellowPerHour: Math.max(10, config.yellowPerHour - 1),
+                            })
+                          }
+                          className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="text-xs font-black text-white px-1">
+                          R$ {config.yellowPerHour}
+                        </span>
+                        <button
+                          onClick={() =>
+                            saveNewConfig({
+                              ...config,
+                              yellowPerHour: config.yellowPerHour + 1,
+                            })
+                          }
+                          className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-[11px] text-white/70 block mb-1">Mínimo R$ / Hora</label>
-                      <input
-                        type="number"
-                        step="1"
-                        value={config.yellowPerHour}
-                        onChange={(e) =>
-                          saveNewConfig({ ...config, yellowPerHour: Number(e.target.value) })
-                        }
-                        className="w-full bg-[#073B32] border border-white/15 rounded-lg px-3 py-2 text-sm font-black text-white"
-                      />
+
+                    <div className="p-2 rounded-lg bg-[#073B32] border border-emerald-500/30 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-emerald-300">Aceitar</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() =>
+                            saveNewConfig({
+                              ...config,
+                              greenPerHour: Math.max(config.yellowPerHour, config.greenPerHour - 1),
+                            })
+                          }
+                          className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="text-xs font-black text-white px-1">
+                          R$ {config.greenPerHour}
+                        </span>
+                        <button
+                          onClick={() =>
+                            saveNewConfig({
+                              ...config,
+                              greenPerHour: config.greenPerHour + 1,
+                            })
+                          }
+                          className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-[11px] text-red-300 pt-1">
-                    🔴 Abaixo de <strong>R$ {config.yellowPerKm.toFixed(2)}/km</strong> ou{' '}
-                    <strong>R$ {config.yellowPerHour}/h</strong> o card ficará <strong>VERMELHO (Recusar)</strong>.
+                </div>
+
+                {/* 3. Nota do Passageiro */}
+                <div className="p-3.5 rounded-xl bg-[#04241E] border border-white/10 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-white">Nota do Passageiro</span>
+                    <span className="text-xs font-bold text-white/80">
+                      Mínima: <strong className="text-amber-300">{(config.minPassengerRating || 4.75).toFixed(2)} ★</strong> · Ótima: <strong className="text-emerald-300">4,85 ★</strong>
+                    </span>
+                  </div>
+
+                  {/* Segmented Color Track */}
+                  <div className="h-3 rounded-full flex overflow-hidden shadow-inner bg-black/40 border border-white/10">
+                    <div className="bg-red-500 h-full transition-all" style={{ width: '25%' }} />
+                    <div className="bg-amber-400 h-full transition-all" style={{ width: '35%' }} />
+                    <div className="bg-emerald-500 h-full transition-all" style={{ width: '40%' }} />
+                  </div>
+
+                  {/* Stepper Nota */}
+                  <div className="p-2 rounded-lg bg-[#073B32] border border-white/10 flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-white/80">Nota Mínima Aceitável</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          saveNewConfig({
+                            ...config,
+                            minPassengerRating: Math.max(4.0, Number(((config.minPassengerRating || 4.75) - 0.05).toFixed(2))),
+                          })
+                        }
+                        className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="text-xs font-black text-white px-1">
+                        {(config.minPassengerRating || 4.75).toFixed(2).replace('.', ',')} ★
+                      </span>
+                      <button
+                        onClick={() =>
+                          saveNewConfig({
+                            ...config,
+                            minPassengerRating: Math.min(4.99, Number(((config.minPassengerRating || 4.75) + 0.05).toFixed(2))),
+                          })
+                        }
+                        className="w-6 h-6 rounded bg-black/40 hover:bg-black/70 text-white font-black flex items-center justify-center text-xs"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Custo por KM do Veículo */}
+              {/* CONDIÇÕES MÍNIMAS (CARDS DE SEGURANÇA) */}
+              <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4 space-y-3">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#d9ff4f]">
+                    Filtros de Proteção
+                  </span>
+                  <h3 className="text-sm font-black text-white">Condições Mínimas de Corrida</h3>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Valor Mínimo */}
+                  <div className="p-2.5 rounded-xl bg-[#04241E] border border-white/10 text-center flex flex-col justify-between">
+                    <span className="text-[10px] text-white/60 font-bold leading-tight">Valor Mín.</span>
+                    <div className="text-sm font-black text-white my-1">
+                      R$ {(config.minTripPrice || 8.0).toFixed(0)}
+                    </div>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() =>
+                          saveNewConfig({
+                            ...config,
+                            minTripPrice: Math.max(5, (config.minTripPrice || 8.0) - 1),
+                          })
+                        }
+                        className="w-5 h-5 rounded bg-black/40 text-white text-[11px] font-black"
+                      >
+                        -
+                      </button>
+                      <button
+                        onClick={() =>
+                          saveNewConfig({
+                            ...config,
+                            minTripPrice: (config.minTripPrice || 8.0) + 1,
+                          })
+                        }
+                        className="w-5 h-5 rounded bg-black/40 text-white text-[11px] font-black"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lucro Mínimo */}
+                  <div className="p-2.5 rounded-xl bg-[#04241E] border border-white/10 text-center flex flex-col justify-between">
+                    <span className="text-[10px] text-white/60 font-bold leading-tight">Lucro Mín.</span>
+                    <div className="text-sm font-black text-[#d9ff4f] my-1">
+                      R$ {(config.minNetProfit || 5.0).toFixed(0)}
+                    </div>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() =>
+                          saveNewConfig({
+                            ...config,
+                            minNetProfit: Math.max(2, (config.minNetProfit || 5.0) - 1),
+                          })
+                        }
+                        className="w-5 h-5 rounded bg-black/40 text-white text-[11px] font-black"
+                      >
+                        -
+                      </button>
+                      <button
+                        onClick={() =>
+                          saveNewConfig({
+                            ...config,
+                            minNetProfit: (config.minNetProfit || 5.0) + 1,
+                          })
+                        }
+                        className="w-5 h-5 rounded bg-black/40 text-white text-[11px] font-black"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Busca Máxima */}
+                  <div className="p-2.5 rounded-xl bg-[#04241E] border border-white/10 text-center flex flex-col justify-between">
+                    <span className="text-[10px] text-white/60 font-bold leading-tight">Busca Máx.</span>
+                    <div className="text-sm font-black text-white my-1">
+                      {(config.maxPickupKm || 3.5).toFixed(1)} km
+                    </div>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() =>
+                          saveNewConfig({
+                            ...config,
+                            maxPickupKm: Math.max(1, Number(((config.maxPickupKm || 3.5) - 0.5).toFixed(1))),
+                          })
+                        }
+                        className="w-5 h-5 rounded bg-black/40 text-white text-[11px] font-black"
+                      >
+                        -
+                      </button>
+                      <button
+                        onClick={() =>
+                          saveNewConfig({
+                            ...config,
+                            maxPickupKm: Number(((config.maxPickupKm || 3.5) + 0.5).toFixed(1)),
+                          })
+                        }
+                        className="w-5 h-5 rounded bg-black/40 text-white text-[11px] font-black"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CUSTO DO VEÍCULO (CÁLCULO REAL POR KM) */}
               <div className="rounded-2xl bg-[#073B32] border border-[#126152] p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] font-black uppercase tracking-wider text-[#B8D906]">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#d9ff4f]">
                       Cálculo de Lucro Líquido Real
                     </span>
                     <h3 className="text-sm font-black text-white">Custo do Seu Veículo</h3>
                   </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-[#04241E] border border-[#97B304]/50 text-xs font-black text-[#B8D906]">
+                  <span className="px-2.5 py-1 rounded-lg bg-[#04241E] border border-[#d9ff4f]/50 text-xs font-black text-[#d9ff4f]">
                     R$ {costPerKm.toFixed(2)} / km
                   </span>
                 </div>
@@ -1455,12 +2081,12 @@ export function App() {
           </div>
         )}
 
-        {/* BOTTOM NAVIGATION BAR (4 SIMPLE TABS LIKE GIGU / JETMAX) */}
+        {/* BOTTOM NAVIGATION BAR (4 TABS COM SEMÁFORO DE VALORES) */}
         <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#073B32] border-t border-[#126152] grid grid-cols-4 py-1.5 px-2 z-30">
           <button
             onClick={() => setActiveTab('copilot')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition ${
-              activeTab === 'copilot' ? 'text-[#B8D906] font-black' : 'text-white/60'
+              activeTab === 'copilot' ? 'text-[#d9ff4f] font-black' : 'text-white/60 hover:text-white'
             }`}
           >
             <Power className="w-5 h-5" />
@@ -1470,7 +2096,7 @@ export function App() {
           <button
             onClick={() => setActiveTab('overlay')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition ${
-              activeTab === 'overlay' ? 'text-[#B8D906] font-black' : 'text-white/60'
+              activeTab === 'overlay' ? 'text-[#d9ff4f] font-black' : 'text-white/60 hover:text-white'
             }`}
           >
             <Eye className="w-5 h-5" />
@@ -1480,17 +2106,17 @@ export function App() {
           <button
             onClick={() => setActiveTab('targets')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition ${
-              activeTab === 'targets' ? 'text-[#B8D906] font-black' : 'text-white/60'
+              activeTab === 'targets' ? 'text-[#d9ff4f] font-black' : 'text-white/60 hover:text-white'
             }`}
           >
             <Sliders className="w-5 h-5" />
-            <span className="text-[11px] mt-0.5">Metas R$/km</span>
+            <span className="text-[11px] mt-0.5 font-bold">Semáforo</span>
           </button>
 
           <button
             onClick={() => setActiveTab('history')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition ${
-              activeTab === 'history' ? 'text-[#B8D906] font-black' : 'text-white/60'
+              activeTab === 'history' ? 'text-[#d9ff4f] font-black' : 'text-white/60 hover:text-white'
             }`}
           >
             <History className="w-5 h-5" />

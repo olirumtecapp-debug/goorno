@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Car,
   MapPin,
@@ -278,6 +278,17 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedImage, setSelectedImage] = useState<ScreenshotItem | null>(null);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
+  }, []);
+
+  const handleBack = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
+    if (onBackToLanding) {
+      onBackToLanding();
+    }
+  };
+
   const filteredScreenshots = activeCategory === 'all'
     ? SCREENSHOTS
     : SCREENSHOTS.filter((s) => s.category === activeCategory);
@@ -305,46 +316,50 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f7f2] text-[#173a34] font-sans antialiased pb-20">
-      {/* HEADER */}
-      <header className="sticky top-0 z-40 bg-[#173a34] text-white border-b border-[#122e29] shadow-md">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-[#f3f5ed] text-[#071d19] font-dm pb-24">
+      {/* HEADER FIXO SUPERIOR HARMONIZADO */}
+      <header className="sticky top-0 z-40 bg-[#071d19] text-white border-b border-white/10 h-[76px] px-4 sm:px-8">
+        <div className="max-w-6xl mx-auto h-full flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src="/logo-goorno-clean.png"
-              alt="GoOrNo"
-              className="w-10 h-10 rounded-xl bg-white p-1 object-contain shadow-xs"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/logo-goorno.png';
+            <a
+              href="#top"
+              onClick={(e) => {
+                e.preventDefault();
+                handleBack();
               }}
-            />
-            <div>
-              <h1 className="font-black text-lg text-white tracking-tight flex items-center gap-2">
-                Galeria Real do GoOrNo
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#d9f56a] text-[#173a34] uppercase">
-                  21 Telas Oficiais
-                </span>
-              </h1>
-              <p className="text-[11px] text-[#dce5dc]/70 hidden sm:block">
-                Veja o aplicativo rodando exatamente como ele aparece no celular dos motoristas
-              </p>
-            </div>
+              className="flex items-center gap-2.5 text-white no-underline group cursor-pointer"
+            >
+              <img
+                src="/assets/logo-goorno-clean.png"
+                alt="GoOrNo"
+                className="w-10 h-10 rounded-xl bg-white p-1 object-contain shadow-xs group-hover:scale-105 transition"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo-goorno-clean.png';
+                }}
+              />
+              <span className="font-space font-bold text-lg text-white tracking-tight flex items-center gap-2">
+                GoOrNo
+                <small className="font-dm text-[10px] font-bold px-2 py-0.5 rounded bg-[#d9ff4f] text-[#071d19]">
+                  21 Telas Reais
+                </small>
+              </span>
+            </a>
           </div>
 
           <div className="flex items-center gap-3">
             {onBackToLanding && (
               <button
-                onClick={onBackToLanding}
-                className="text-xs font-semibold text-[#dce5dc] hover:text-[#d9f56a] px-3 py-1.5 rounded-lg transition cursor-pointer"
+                onClick={handleBack}
+                className="text-xs font-semibold text-[#c2d0ca] hover:text-[#d9ff4f] px-3.5 py-2 rounded-xl transition cursor-pointer border border-white/10 hover:border-white/30"
               >
-                ← Voltar para Download
+                ← Voltar para Início
               </button>
             )}
             <a
-              href="/GoOrNo.apk"
-              className="bg-[#d9f56a] hover:bg-[#cbf052] text-[#173a34] font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+              href="/download/apk"
+              className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-bold text-xs px-4 py-2.5 rounded-full transition flex items-center gap-1.5 shadow-xs no-underline"
             >
-              Baixar APK v3.3.4
+              Baixar APK v3.3.5 <span>↗</span>
             </a>
           </div>
         </div>
@@ -352,17 +367,17 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
 
       {/* HERO SECTION DE APRESENTAÇÃO */}
       <section className="pt-8 pb-6 px-4 max-w-6xl mx-auto">
-        <div className="bg-[#173a34] text-white rounded-3xl p-6 sm:p-8 shadow-md border border-[#122e29] relative overflow-hidden">
+        <div className="bg-[#071d19] text-white rounded-[28px] p-6 sm:p-8 shadow-md border border-white/10 relative overflow-hidden">
           <div className="relative z-10 max-w-3xl">
-            <div className="inline-flex items-center gap-1.5 bg-[#d9f56a]/15 text-[#d9f56a] px-3 py-1 rounded-full text-xs font-bold mb-3 border border-[#d9f56a]/30">
+            <div className="inline-flex items-center gap-1.5 bg-[#d9ff4f]/15 text-[#d9ff4f] px-3 py-1 rounded-full text-xs font-bold mb-3 border border-[#d9ff4f]/30">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Sem simulações falsas · Telas 100% reais de motoristas na rua</span>
+              <span>Sem simulações falsas · Telas 100% reais de motoristas no trânsito</span>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight mb-3">
-              Como o GoOrNo Funciona na Vida Real
-            </h2>
-            <p className="text-sm sm:text-base text-[#dce5dc]/90 leading-relaxed mb-6">
-              Confira abaixo capturas reais do GoOrNo em ação: leitura de chamadas da <strong>Uber</strong> e <strong>99</strong>, comparação de <strong>Viagem Boa vs Viagem Ruim</strong>, <strong>Street View da origem e destino</strong>, notificação na barra e configurações personalizadas de custos.
+            <h1 className="font-space text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
+              Como o GoOrNo Funciona na Prática
+            </h1>
+            <p className="font-dm text-sm sm:text-base text-[#c2d0ca] leading-relaxed mb-6">
+              Confira abaixo capturas reais do GoOrNo em ação: leitura de chamadas da <strong>Uber</strong> e <strong>99</strong>, comparação direta de <strong>Viagem Boa vs Viagem Ruim</strong>, <strong>Street View da origem e destino</strong>, notificação na barra e custos configuráveis.
             </p>
 
             {/* COMPARATIVO DESTAQUE: BOA VS RUIM */}
@@ -372,19 +387,19 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   const item = SCREENSHOTS.find((s) => s.id === 'uber-boa');
                   if (item) openLightbox(item);
                 }}
-                className="bg-emerald-950/60 border border-emerald-500/40 hover:border-emerald-400 p-4 rounded-2xl cursor-pointer transition group"
+                className="bg-[#dff4af]/15 border border-[#dff4af]/30 hover:border-[#dff4af] p-4 rounded-2xl cursor-pointer transition group"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-bold text-[#d9ff4f] flex items-center gap-1.5 font-space">
+                    <CheckCircle2 className="w-4 h-4 text-[#d9ff4f]" />
                     VIAGEM BOA (CARD VERDE)
                   </span>
-                  <Maximize2 className="w-4 h-4 text-emerald-400/60 group-hover:text-emerald-300 transition" />
+                  <Maximize2 className="w-4 h-4 text-[#d9ff4f]/60 group-hover:text-[#d9ff4f] transition" />
                 </div>
-                <p className="text-xs text-emerald-100/90 leading-relaxed">
+                <p className="text-xs text-white/90 leading-relaxed font-dm">
                   R$ 10,83 por 5,0 km (R$ 2,17/km · R$ 162,45/h). O GoOrNo aprova na hora com card verde destacando alta rentabilidade.
                 </p>
-                <div className="mt-3 text-[11px] font-bold text-emerald-300 underline">
+                <div className="mt-3 text-[11px] font-bold text-[#d9ff4f] underline">
                   Toque para ver a tela do UberBoa →
                 </div>
               </div>
@@ -394,19 +409,19 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   const item = SCREENSHOTS.find((s) => s.id === 'uber-ruim');
                   if (item) openLightbox(item);
                 }}
-                className="bg-rose-950/60 border border-rose-500/40 hover:border-rose-400 p-4 rounded-2xl cursor-pointer transition group"
+                className="bg-[#ffe1d9]/15 border border-[#ff6e58]/30 hover:border-[#ff6e58] p-4 rounded-2xl cursor-pointer transition group"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-black text-rose-300 flex items-center gap-1.5">
-                    <XCircle className="w-4 h-4 text-rose-400" />
+                  <span className="text-xs font-bold text-[#ff6e58] flex items-center gap-1.5 font-space">
+                    <XCircle className="w-4 h-4 text-[#ff6e58]" />
                     VIAGEM RUIM (CARD VERMELHO)
                   </span>
-                  <Maximize2 className="w-4 h-4 text-rose-400/60 group-hover:text-rose-300 transition" />
+                  <Maximize2 className="w-4 h-4 text-[#ff6e58]/60 group-hover:text-[#ff6e58] transition" />
                 </div>
-                <p className="text-xs text-rose-100/90 leading-relaxed">
+                <p className="text-xs text-white/90 leading-relaxed font-dm">
                   R$ 11,25 por 9,0 km (R$ 1,25/km · R$ 56,25/h). O GoOrNo avisa em vermelho que a busca longa (4,4 km) gera prejuízo real.
                 </p>
-                <div className="mt-3 text-[11px] font-bold text-rose-300 underline">
+                <div className="mt-3 text-[11px] font-bold text-[#ff6e58] underline">
                   Toque para ver a tela do UberRuim →
                 </div>
               </div>
@@ -415,8 +430,8 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
         </div>
       </section>
 
-      {/* FILTROS DE CATEGORIA - SEM BARRA DE ROLAGEM, TOTALMENTE RESPONSIVO */}
-      <section className="px-4 max-w-6xl mx-auto mb-6">
+      {/* FILTROS DE CATEGORIA */}
+      <section className="px-4 max-w-6xl mx-auto mb-8">
         <div className="flex flex-wrap items-center justify-center gap-2">
           {[
             { key: 'all', label: 'Todas as Telas (21)', icon: Sparkles },
@@ -431,10 +446,10 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               <button
                 key={cat.key}
                 onClick={() => setActiveCategory(cat.key)}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer border ${
                   isSelected
-                    ? 'bg-[#173a34] text-[#d9f56a] shadow-sm'
-                    : 'bg-white border border-[#dce5dc] text-[#71867f] hover:text-[#173a34] hover:bg-[#edf2eb]'
+                    ? 'bg-[#071d19] text-[#d9ff4f] border-[#071d19] shadow-xs'
+                    : 'bg-white border-[rgba(7,29,25,0.12)] text-[#556961] hover:text-[#071d19] hover:border-[#071d19]'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -452,24 +467,23 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             <div
               key={item.id}
               onClick={() => openLightbox(item)}
-              className="bg-white border border-[#dce5dc] rounded-2xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col group hover:-translate-y-1"
+              className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-200 cursor-pointer flex flex-col group hover:-translate-y-1"
             >
               {/* IMAGEM COM BADGE */}
-              <div className="relative aspect-[9/16] bg-[#173a34]/5 overflow-hidden flex items-center justify-center p-2">
+              <div className="relative aspect-[9/16] bg-[#fbfcf7] overflow-hidden flex items-center justify-center p-2.5 border-b border-[rgba(7,29,25,0.06)]">
                 <img
                   src={`/telas/${item.filename}`}
                   alt={item.title}
                   className="w-full h-full object-contain rounded-lg group-hover:scale-[1.02] transition-transform duration-300"
                   loading="lazy"
                   onError={(e) => {
-                    // Fallback se a imagem não carregar
-                    (e.target as HTMLImageElement).src = '/logo-goorno.png';
+                    (e.target as HTMLImageElement).src = '/assets/logo-goorno-clean.png';
                   }}
                 />
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
                   {item.badge && (
                     <span
-                      className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm backdrop-blur-sm ${
+                      className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs backdrop-blur-xs ${
                         item.badgeType === 'green'
                           ? 'bg-emerald-600 text-white'
                           : item.badgeType === 'red'
@@ -478,13 +492,13 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                           ? 'bg-amber-600 text-white'
                           : item.badgeType === 'purple'
                           ? 'bg-purple-700 text-white'
-                          : 'bg-[#173a34] text-[#d9f56a]'
+                          : 'bg-[#071d19] text-[#d9ff4f]'
                       }`}
                     >
                       {item.badge}
                     </span>
                   )}
-                  <span className="w-7 h-7 rounded-full bg-[#173a34]/80 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                  <span className="w-7 h-7 rounded-full bg-[#071d19]/80 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
                     <ZoomIn className="w-4 h-4" />
                   </span>
                 </div>
@@ -493,20 +507,20 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               {/* CONTEÚDO */}
               <div className="p-4 flex-1 flex flex-col justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-[#71867f] uppercase tracking-wider block mb-1">
+                  <span className="text-[10px] font-bold text-[#7a8982] uppercase tracking-wider block mb-1">
                     {item.categoryLabel}
                   </span>
-                  <h3 className="font-bold text-sm text-[#173a34] leading-snug mb-2 group-hover:text-emerald-800 transition">
+                  <h3 className="font-space font-bold text-sm text-[#071d19] leading-snug mb-2 group-hover:text-emerald-800 transition">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-[#71867f] line-clamp-2 leading-relaxed">
+                  <p className="font-dm text-xs text-[#63756b] line-clamp-2 leading-relaxed">
                     {item.summary}
                   </p>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-[#f5f7f2] flex items-center justify-between text-xs font-semibold text-[#173a34]">
+                <div className="mt-3 pt-3 border-t border-[rgba(7,29,25,0.06)] flex items-center justify-between text-xs font-bold text-[#071d19]">
                   <span>Toque para ampliar</span>
-                  <ChevronRight className="w-4 h-4 text-[#71867f] group-hover:translate-x-1 transition" />
+                  <ChevronRight className="w-4 h-4 text-[#7a8982] group-hover:translate-x-1 transition" />
                 </div>
               </div>
             </div>
@@ -517,11 +531,11 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
       {/* LIGHTBOX MODAL */}
       {selectedImage && (
         <div
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
           onClick={closeLightbox}
         >
           <div
-            className="bg-[#173a34] text-white border border-[#234e45] rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col md:flex-row shadow-2xl relative"
+            className="bg-[#071d19] text-white border border-white/15 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col md:flex-row shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* BOTÃO FECHAR */}
@@ -533,7 +547,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             </button>
 
             {/* ÁREA DA IMAGEM */}
-            <div className="md:w-1/2 bg-black/40 flex items-center justify-center p-4 relative min-h-[350px] md:min-h-[550px]">
+            <div className="md:w-1/2 bg-black/50 flex items-center justify-center p-4 relative min-h-[350px] md:min-h-[550px]">
               <img
                 src={`/telas/${selectedImage.filename}`}
                 alt={selectedImage.title}
@@ -561,7 +575,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto">
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-bold text-[#dce5dc]/70 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-[#c2d0ca] uppercase tracking-wider font-dm">
                     {selectedImage.categoryLabel}
                   </span>
                   {selectedImage.badge && (
@@ -575,7 +589,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                           ? 'bg-amber-600 text-white'
                           : selectedImage.badgeType === 'purple'
                           ? 'bg-purple-700 text-white'
-                          : 'bg-[#d9f56a] text-[#173a34]'
+                          : 'bg-[#d9ff4f] text-[#071d19]'
                       }`}
                     >
                       {selectedImage.badge}
@@ -583,39 +597,39 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   )}
                 </div>
 
-                <h2 className="text-xl sm:text-2xl font-black text-white leading-tight mb-3">
+                <h2 className="font-space text-xl sm:text-2xl font-bold text-white leading-tight mb-3">
                   {selectedImage.title}
                 </h2>
 
-                <div className="bg-[#122e29] border border-[#234e45] rounded-2xl p-4 mb-4">
-                  <h4 className="text-xs font-bold text-[#d9f56a] uppercase mb-1">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-4">
+                  <h4 className="text-xs font-bold text-[#d9ff4f] uppercase mb-1 font-space">
                     O que esta tela mostra:
                   </h4>
-                  <p className="text-sm text-[#dce5dc] leading-relaxed">
+                  <p className="text-sm text-[#c2d0ca] leading-relaxed font-dm">
                     {selectedImage.summary}
                   </p>
                 </div>
 
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                  <h4 className="text-xs font-bold text-white uppercase mb-1 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#d9f56a]" />
+                  <h4 className="text-xs font-bold text-white uppercase mb-1 flex items-center gap-1.5 font-space">
+                    <Sparkles className="w-3.5 h-3.5 text-[#d9ff4f]" />
                     Como isso protege o seu bolso:
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#dce5dc]/90 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#c2d0ca] leading-relaxed font-dm">
                     {selectedImage.highlightText}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-6 mt-6 border-t border-[#234e45] flex items-center justify-between">
-                <span className="text-xs text-[#71867f]">
-                  Arquivo: {selectedImage.filename}
+              <div className="pt-6 mt-6 border-t border-white/10 flex items-center justify-between">
+                <span className="text-xs text-[#7a8982]">
+                  {selectedImage.filename}
                 </span>
                 <a
-                  href="/GoOrNo.apk"
-                  className="bg-[#d9f56a] hover:bg-[#cbf052] text-[#173a34] font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-sm"
+                  href="/download/apk"
+                  className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-bold text-xs px-4 py-2.5 rounded-full transition shadow-xs no-underline"
                 >
-                  Baixar GoOrNo APK
+                  Baixar APK Oficial ↗
                 </a>
               </div>
             </div>

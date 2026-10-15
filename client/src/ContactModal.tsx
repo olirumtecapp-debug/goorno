@@ -5,9 +5,6 @@ import {
   X,
   CheckCircle2,
   AlertTriangle,
-  MessageSquare,
-  HelpCircle,
-  Sparkles,
   Phone,
   User
 } from 'lucide-react';
@@ -79,60 +76,61 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
       onClick={handleReset}
     >
       <div
-        className="bg-[#173a34] text-white border border-[#234e45] rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative"
+        className="bg-white text-[#071d19] border border-[rgba(7,29,25,0.12)] rounded-[28px] max-w-lg w-full overflow-hidden shadow-[0_24px_60px_rgba(7,29,25,0.18)] relative font-sans"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* HEADER */}
-        <div className="p-6 bg-[#122e29] border-b border-[#234e45] flex items-center justify-between">
+        {/* HEADER LIMPO E ELEGANTE */}
+        <div className="p-6 bg-[#fbfcf7] border-b border-[rgba(7,29,25,0.08)] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#d9f56a]/15 text-[#d9f56a] grid place-items-center">
-              <Mail className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-[#f3f5ed] border border-[rgba(7,29,25,0.08)] text-[#071d19] grid place-items-center">
+              <Mail className="w-5 h-5 text-[#071d19]" />
             </div>
             <div>
-              <h3 className="font-extrabold text-lg text-white tracking-tight flex items-center gap-2">
+              <h3 className="font-space font-bold text-lg text-[#071d19] tracking-tight flex items-center gap-2">
                 Fale Conosco
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#d9f56a] text-[#173a34]">
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#d9ff4f] text-[#071d19] border border-[rgba(7,29,25,0.08)]">
                   Caixa Postal
                 </span>
               </h3>
-              <p className="text-xs text-[#dce5dc]/70">
-                Canal oficial direto com nossa equipe de desenvolvimento
+              <p className="text-xs text-[#63756b]">
+                Canal oficial direto com nossa equipe de suporte e produto
               </p>
             </div>
           </div>
 
           <button
             onClick={handleReset}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-items-center transition cursor-pointer"
+            className="w-9 h-9 rounded-full bg-[#f3f5ed] hover:bg-[#e6ebdf] text-[#071d19] grid place-items-center transition cursor-pointer border border-[rgba(7,29,25,0.08)]"
+            aria-label="Fechar"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* BODY */}
-        <div className="p-6 sm:p-7">
+        {/* CORPO DO FORMULÁRIO */}
+        <div className="p-6 sm:p-7 bg-white">
           {successTicket ? (
             <div className="text-center py-6">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 grid place-items-center mx-auto mb-4 border border-emerald-500/30">
+              <div className="w-16 h-16 rounded-full bg-[#dff4af] text-[#557000] grid place-items-center mx-auto mb-4 border border-[#c4e680]">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h4 className="text-xl font-black text-white mb-2">
-                Mensagem Entregue na Caixa Postal!
+              <h4 className="font-space text-xl font-bold text-[#071d19] mb-2">
+                Mensagem Entregue com Sucesso!
               </h4>
-              <p className="text-xs text-[#dce5dc]/80 max-w-xs mx-auto leading-relaxed mb-4">
+              <p className="text-xs text-[#63756b] max-w-xs mx-auto leading-relaxed mb-4">
                 Sua solicitação foi registrada no nosso sistema com o protocolo{' '}
-                <span className="font-mono font-bold text-[#d9f56a]">
+                <span className="font-mono font-bold text-[#071d19] bg-[#f3f5ed] px-2 py-0.5 rounded border border-[rgba(7,29,25,0.1)]">
                   #{successTicket}
                 </span>
                 . Nossa equipe analisa todas as mensagens recebidas.
               </p>
               <button
                 onClick={handleReset}
-                className="bg-[#d9f56a] hover:bg-[#cbf052] text-[#173a34] font-bold text-xs px-6 py-2.5 rounded-xl transition cursor-pointer"
+                className="bg-[#071d19] hover:bg-[#0d302a] text-[#d9ff4f] font-space font-bold text-xs px-6 py-2.5 rounded-xl transition cursor-pointer shadow-xs"
               >
                 Fechar
               </button>
@@ -140,16 +138,16 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {errorMessage && (
-                <div className="p-3 bg-rose-950/60 border border-rose-500/40 rounded-xl text-rose-200 text-xs flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-[#dce5dc]/80 uppercase mb-1 flex items-center gap-1">
-                    <User className="w-3 h-3 text-[#d9f56a]" />
+                  <label className="block text-[11px] font-bold text-[#4e5d56] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-[#071d19]" />
                     Seu Nome (Opcional)
                   </label>
                   <input
@@ -157,13 +155,13 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ex: Carlos Motorista"
-                    className="w-full bg-[#122e29] border border-[#234e45] rounded-xl px-3.5 py-2 text-xs text-white placeholder-[#71867f] focus:outline-none focus:border-[#d9f56a]"
+                    className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl px-3.5 py-2.5 text-xs text-[#071d19] placeholder-[#9ca8a1] focus:outline-none focus:border-[#071d19] focus:ring-1 focus:ring-[#071d19] transition"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#dce5dc]/80 uppercase mb-1 flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-[#d9f56a]" />
+                  <label className="block text-[11px] font-bold text-[#4e5d56] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-[#071d19]" />
                     WhatsApp / Telefone (Opcional)
                   </label>
                   <input
@@ -171,13 +169,13 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                     value={contact}
                     onChange={(e) => setContact(e.target.value)}
                     placeholder="DDD + Número (ex: 11999998888)"
-                    className="w-full bg-[#122e29] border border-[#234e45] rounded-xl px-3.5 py-2 text-xs text-white placeholder-[#71867f] focus:outline-none focus:border-[#d9f56a]"
+                    className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl px-3.5 py-2.5 text-xs text-[#071d19] placeholder-[#9ca8a1] focus:outline-none focus:border-[#071d19] focus:ring-1 focus:ring-[#071d19] transition"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#dce5dc]/80 uppercase mb-1">
+                <label className="block text-[11px] font-bold text-[#4e5d56] uppercase tracking-wider mb-1.5">
                   Motivo do Contato
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -192,10 +190,10 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                       type="button"
                       key={cat.id}
                       onClick={() => setCategory(cat.id as any)}
-                      className={`text-xs py-1.5 px-3 rounded-lg font-bold transition text-center cursor-pointer border ${
+                      className={`text-xs py-2 px-3 rounded-xl font-bold transition text-center cursor-pointer border ${
                         category === cat.id
-                          ? 'bg-[#d9f56a] text-[#173a34] border-[#d9f56a]'
-                          : 'bg-[#122e29] text-[#dce5dc]/70 border-[#234e45] hover:text-white'
+                          ? 'bg-[#071d19] text-[#d9ff4f] border-[#071d19] shadow-xs'
+                          : 'bg-[#fbfcf7] text-[#556961] border-[rgba(7,29,25,0.12)] hover:border-[#071d19] hover:text-[#071d19]'
                       }`}
                     >
                       {cat.label}
@@ -205,7 +203,7 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#dce5dc]/80 uppercase mb-1">
+                <label className="block text-[11px] font-bold text-[#4e5d56] uppercase tracking-wider mb-1.5">
                   Assunto
                 </label>
                 <input
@@ -213,14 +211,14 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="Ex: Sugestão para o leitor de chamadas da 99"
-                  className="w-full bg-[#122e29] border border-[#234e45] rounded-xl px-3.5 py-2 text-xs text-white placeholder-[#71867f] focus:outline-none focus:border-[#d9f56a]"
+                  className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl px-3.5 py-2.5 text-xs text-[#071d19] placeholder-[#9ca8a1] focus:outline-none focus:border-[#071d19] focus:ring-1 focus:ring-[#071d19] transition"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#dce5dc]/80 uppercase mb-1 flex items-center justify-between">
+                <label className="block text-[11px] font-bold text-[#4e5d56] uppercase tracking-wider mb-1.5 flex items-center justify-between">
                   <span>Mensagem *</span>
-                  <span className="text-[10px] text-[#71867f] font-normal">
+                  <span className="text-[10px] text-[#7a8982] font-normal">
                     {message.length}/1000
                   </span>
                 </label>
@@ -229,9 +227,9 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                   maxLength={1000}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Conte com detalhes o que aconteceu ou deixe sua sugestão para nossa equipe..."
+                  placeholder="Conte com detalhes o que você precisa ou deixe sua sugestão para nossa equipe..."
                   required
-                  className="w-full bg-[#122e29] border border-[#234e45] rounded-xl p-3 text-xs text-white placeholder-[#71867f] focus:outline-none focus:border-[#d9f56a] resize-none"
+                  className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl p-3.5 text-xs text-[#071d19] placeholder-[#9ca8a1] focus:outline-none focus:border-[#071d19] focus:ring-1 focus:ring-[#071d19] resize-none transition"
                 />
               </div>
 
@@ -239,14 +237,14 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#dce5dc]/70 hover:text-white transition cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed] transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !message.trim()}
-                  className="bg-[#d9f56a] hover:bg-[#cbf052] disabled:opacity-50 text-[#173a34] font-black text-xs px-5 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer"
+                  className="bg-[#071d19] hover:bg-[#0d302a] disabled:opacity-50 text-[#d9ff4f] font-space font-bold text-xs px-6 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{isSubmitting ? 'Enviando...' : 'Enviar Mensagem'}</span>
