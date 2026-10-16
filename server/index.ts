@@ -896,7 +896,7 @@ app.get("/api/app-version", (_req, res) => {
     releaseDate: "2026-10-16",
     apkUrl: "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.7.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 55151840,
+    fileSizeBytes: 55205084,
     fileSizeFormatted: "52.6 MB",
     changelog: [
       "Card Clássico v3.3.4 (Tradicional) selecionável nas configurações de Janela com valor grande e botão Fechar.",
