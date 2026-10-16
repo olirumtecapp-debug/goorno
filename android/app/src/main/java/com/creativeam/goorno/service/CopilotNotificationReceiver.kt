@@ -287,14 +287,8 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val extraSuffix = if (extraParts.isEmpty()) "" else " · " + extraParts.joinToString(" · ")
                     val riskHeaderTag = if (hasRisk) " · ⚠️ RISCO" else ""
 
-                    val title = "$emoji $verdictLabel$riskHeaderTag · $priceStr ($distStr · $minStr) · $kmStr"
-                    val origLine = origAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
-                    val destLine = destAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
-                    val shortText = if (hasRisk && riskBadge.isNotBlank()) {
-                        "$riskBadge${if (ratingBadge.isNotBlank()) " · $ratingBadge" else ""} | 📍 $origLine ➔ 🏁 $destLine"
-                    } else {
-                        "$hrStr$extraSuffix | 📍 $origLine ➔ 🏁 $destLine"
-                    }
+                    val title = "$emoji $verdictLabel$riskHeaderTag · $priceStr · $kmStr · $hrStr"
+                    val shortText = "$distStr · $minStr | 📍 $origLine ➔ 🏁 $destLine"
                     val expandedText = buildString {
                         if (hasRisk && riskBadge.isNotBlank()) {
                             append("🚨 $riskBadge\n")
@@ -302,10 +296,10 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                         if (ratingBadge.isNotBlank()) {
                             append("Passageiro: $ratingBadge\n")
                         }
-                        append("$sourceApp · Total: $distStr · $minStr\n")
+                        append("$sourceApp · $priceStr ($distStr · $minStr)\n")
                         append("$kmStr · $hrStr$extraSuffix\n")
-                        append("📍 Origem: $origLine\n")
-                        append("🏁 Destino: $destLine")
+                        append("📍 $origLine\n")
+                        append("🏁 $destLine")
                     }
 
                     builder
@@ -353,7 +347,7 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                 } else {
                     builder
                         .setContentTitle("🟢 GoOrNo Ativo")
-                        .setContentText("Monitorando chamadas em segundo plano")
+                        .setContentText("Monitorando Uber & 99")
                 }
 
                 // Botão Desativar sempre presente na notificação superior

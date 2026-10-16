@@ -230,6 +230,9 @@ class FloatingOverlayPanel(private val context: Context) {
         ensureViewsCreated()
         attachWindowIfNeeded()
 
+        // Oculta o botão flutuante de atalho enquanto um card de oferta estiver na tela (evita sobreposição)
+        shortcutBubbleContainer?.visibility = View.GONE
+
         rootContainer?.alpha = currentOpacityPercent / 100f
         contentWrapper?.removeAllViews()
 
@@ -299,6 +302,9 @@ class FloatingOverlayPanel(private val context: Context) {
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
             isTransitioningBetweenOffers = false
             removeWindowViewOnly()
+            if (isMonitoringEnabled && showFloatingShortcutBubble) {
+                shortcutBubbleContainer?.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -349,7 +355,9 @@ class FloatingOverlayPanel(private val context: Context) {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(12), dp(9), dp(12), dp(9))
             background = roundedCardBg("#0A1916", badgeHex, 20f, 2)
-            minimumWidth = dp(310)
+            layoutParams = LinearLayout.LayoutParams(dp(270), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(8).toFloat()
             }
@@ -674,7 +682,9 @@ class FloatingOverlayPanel(private val context: Context) {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(9), dp(12), dp(10))
             background = roundedCardBg("#111F1A", verdictBgHex, 16f, 2)
-            minimumWidth = dp(310)
+            layoutParams = LinearLayout.LayoutParams(dp(270), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(10).toFloat()
             }
@@ -962,36 +972,18 @@ class FloatingOverlayPanel(private val context: Context) {
         val bubble = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            background = circleBg("#042F2E", "#10B981", 2)
+            background = roundedCardBg("#FFFFFF", "#10B981", 16f, 1)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(8).toFloat()
             }
+            setPadding(dp(4), dp(4), dp(4), dp(4))
 
-            val tvIcon = TextView(context).apply {
-                text = "GN"
-                setTextColor(Color.WHITE)
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-                setTypeface(typeface, Typeface.BOLD)
-                gravity = Gravity.CENTER
+            val logoIv = android.widget.ImageView(context).apply {
+                setImageResource(com.creativeam.goorno.R.drawable.logo_goorno)
+                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                layoutParams = LinearLayout.LayoutParams(dp(38), dp(38))
             }
-            addView(tvIcon)
-
-            val dotsRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER
-                setPadding(0, dp(1), 0, 0)
-            }
-            val dotColors = listOf("#10B981", "#F59E0B", "#EF4444")
-            for (c in dotColors) {
-                val dot = View(context).apply {
-                    background = circleBg(c, "#FFFFFF", 0)
-                    layoutParams = LinearLayout.LayoutParams(dp(4), dp(4)).apply {
-                        setMargins(dp(1), 0, dp(1), 0)
-                    }
-                }
-                dotsRow.addView(dot)
-            }
-            addView(dotsRow)
+            addView(logoIv)
 
             setOnTouchListener(createShortcutBubbleTouchListener())
         }
@@ -1133,8 +1125,8 @@ class FloatingOverlayPanel(private val context: Context) {
     private fun buildQuickSettingsModalView(): View {
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-            background = roundedCardBg("#0B1916", "#10B981", 20f, 2)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            background = roundedCardBg("#FFFFFF", "#CBD5E1", 20f, 1)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(16).toFloat()
             }
@@ -1158,13 +1150,13 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val tvTitle = TextView(context).apply {
             text = "GoOrNo • Atalhos Rápidos"
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#0F2F28"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             setTypeface(typeface, Typeface.BOLD)
         }
         val tvSub = TextView(context).apply {
             text = "● Monitorando Uber & 99"
-            setTextColor(Color.parseColor("#10B981"))
+            setTextColor(Color.parseColor("#059669"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTypeface(typeface, Typeface.BOLD)
         }
@@ -1174,12 +1166,12 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val btnClose = TextView(context).apply {
             text = "✕"
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#64748B"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setTypeface(typeface, Typeface.BOLD)
             gravity = Gravity.CENTER
             setPadding(dp(8), dp(4), dp(8), dp(4))
-            background = roundedBg("#1E293B", 12f)
+            background = roundedBg("#F1F5F9", 12f)
             setOnClickListener { dismissQuickSettingsModal() }
         }
         topRow.addView(btnClose)
@@ -1215,13 +1207,14 @@ class FloatingOverlayPanel(private val context: Context) {
                 sub: String,
                 borderHex: String,
                 bgHex: String,
+                subTextColor: String,
                 onClick: () -> Unit
             ): View {
                 return LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER
                     setPadding(dp(8), dp(10), dp(8), dp(10))
-                    background = roundedCardBg(bgHex, borderHex, 12f, 1)
+                    background = roundedCardBg(bgHex, borderHex, 14f, 1)
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
                         setMargins(dp(3), 0, dp(3), 0)
                     }
@@ -1236,7 +1229,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
                     val tvT = TextView(context).apply {
                         text = title
-                        setTextColor(Color.WHITE)
+                        setTextColor(Color.parseColor("#0F2F28"))
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                         setTypeface(typeface, Typeface.BOLD)
                         gravity = Gravity.CENTER
@@ -1246,8 +1239,9 @@ class FloatingOverlayPanel(private val context: Context) {
 
                     val tvS = TextView(context).apply {
                         text = sub
-                        setTextColor(Color.parseColor("#94A3B8"))
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f)
+                        setTextColor(Color.parseColor(subTextColor))
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                        setTypeface(typeface, Typeface.BOLD)
                         gravity = Gravity.CENTER
                     }
                     addView(tvS)
@@ -1255,14 +1249,14 @@ class FloatingOverlayPanel(private val context: Context) {
             }
 
             val kmStr = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", lastKnownConfig?.targetGrossPerKm ?: 2.0)
-            cardsRow.addView(createActionCard("🚦", "Semáforo", kmStr, "#10B981", "#052E26") {
+            cardsRow.addView(createActionCard("🚦", "Semáforo", kmStr, "#BBF7D0", "#F0FDF4", "#15803D") {
                 showSemaforoAdjusterView()
             })
-            cardsRow.addView(createActionCard("⏱️", "Metas", "Financeiro", "#0284C7", "#0C2333") {
+            cardsRow.addView(createActionCard("⏱️", "Metas", "Financeiro", "#BAE6FD", "#F0F9FF", "#0369A1") {
                 launchAppScreen("FINANCIAL_TARGETS")
                 dismissQuickSettingsModal()
             })
-            cardsRow.addView(createActionCard("🛡️", "Segurança", "Áreas Risco", "#E11D48", "#2E0F19") {
+            cardsRow.addView(createActionCard("🛡️", "Segurança", "Áreas Risco", "#FECDD3", "#FFF1F2", "#BE123C") {
                 launchAppScreen("SECURITY")
                 dismissQuickSettingsModal()
             })
@@ -1272,13 +1266,13 @@ class FloatingOverlayPanel(private val context: Context) {
                 return LinearLayout(context).apply {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = Gravity.CENTER_VERTICAL
-                    setPadding(dp(10), dp(8), dp(10), dp(8))
-                    background = roundedBg("#132722", 10f)
+                    setPadding(dp(12), dp(9), dp(12), dp(9))
+                    background = roundedCardBg("#F8FAFC", "#E2E8F0", 12f, 1)
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     ).apply {
-                        bottomMargin = dp(6)
+                        bottomMargin = dp(8)
                     }
                     setOnClickListener { onClick() }
 
@@ -1295,13 +1289,13 @@ class FloatingOverlayPanel(private val context: Context) {
                     }
                     val tvT = TextView(context).apply {
                         text = title
-                        setTextColor(Color.WHITE)
+                        setTextColor(Color.parseColor("#0F2F28"))
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
                         setTypeface(typeface, Typeface.BOLD)
                     }
                     val tvSub = TextView(context).apply {
                         text = subtitle
-                        setTextColor(Color.parseColor("#94A3B8"))
+                        setTextColor(Color.parseColor("#64748B"))
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
                     }
                     textCol.addView(tvT)
@@ -1310,7 +1304,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
                     val tvArrow = TextView(context).apply {
                         text = "›"
-                        setTextColor(Color.parseColor("#64748B"))
+                        setTextColor(Color.parseColor("#94A3B8"))
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
                         setTypeface(typeface, Typeface.BOLD)
                     }
@@ -1347,8 +1341,8 @@ class FloatingOverlayPanel(private val context: Context) {
 
             val tvH = TextView(context).apply {
                 text = "⚡ Ajuste Rápido do Semáforo"
-                setTextColor(Color.parseColor("#86EFAC"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                setTextColor(Color.parseColor("#0F2F28"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
                 setTypeface(typeface, Typeface.BOLD)
                 setPadding(0, 0, 0, dp(8))
             }
@@ -1362,8 +1356,8 @@ class FloatingOverlayPanel(private val context: Context) {
                 val row = LinearLayout(context).apply {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = Gravity.CENTER_VERTICAL
-                    setPadding(dp(8), dp(6), dp(8), dp(6))
-                    background = roundedBg("#132722", 8f)
+                    setPadding(dp(10), dp(8), dp(10), dp(8))
+                    background = roundedCardBg("#F8FAFC", "#E2E8F0", 10f, 1)
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
@@ -1374,7 +1368,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
                 val tvL = TextView(context).apply {
                     text = label
-                    setTextColor(Color.WHITE)
+                    setTextColor(Color.parseColor("#0F2F28"))
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                     setTypeface(typeface, Typeface.BOLD)
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -1383,31 +1377,31 @@ class FloatingOverlayPanel(private val context: Context) {
 
                 val tvVal = TextView(context).apply {
                     text = initialValueText
-                    setTextColor(Color.parseColor("#34D399"))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+                    setTextColor(Color.parseColor("#047857"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                     setTypeface(typeface, Typeface.BOLD)
-                    setPadding(dp(6), 0, dp(6), 0)
+                    setPadding(dp(8), 0, dp(8), 0)
                 }
 
                 val btnMinus = TextView(context).apply {
                     text = "−"
-                    setTextColor(Color.WHITE)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                    setTextColor(Color.parseColor("#0F2F28"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
                     setTypeface(typeface, Typeface.BOLD)
                     gravity = Gravity.CENTER
-                    setPadding(dp(10), dp(4), dp(10), dp(4))
-                    background = roundedBg("#1E3A34", 6f)
+                    setPadding(dp(12), dp(4), dp(12), dp(4))
+                    background = roundedBg("#E2E8F0", 6f)
                     setOnClickListener { tvVal.text = onMinus() }
                 }
 
                 val btnPlus = TextView(context).apply {
                     text = "+"
-                    setTextColor(Color.WHITE)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                    setTextColor(Color.parseColor("#0F2F28"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
                     setTypeface(typeface, Typeface.BOLD)
                     gravity = Gravity.CENTER
-                    setPadding(dp(10), dp(4), dp(10), dp(4))
-                    background = roundedBg("#1E3A34", 6f)
+                    setPadding(dp(12), dp(4), dp(12), dp(4))
+                    background = roundedBg("#E2E8F0", 6f)
                     setOnClickListener { tvVal.text = onPlus() }
                 }
 
@@ -1447,18 +1441,18 @@ class FloatingOverlayPanel(private val context: Context) {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    topMargin = dp(6)
+                    topMargin = dp(8)
                 }
             }
 
             val btnBack = TextView(context).apply {
                 text = "Voltar"
-                setTextColor(Color.WHITE)
+                setTextColor(Color.parseColor("#475569"))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                 setTypeface(typeface, Typeface.BOLD)
                 gravity = Gravity.CENTER
                 setPadding(dp(12), dp(8), dp(12), dp(8))
-                background = roundedBg("#1E293B", 8f)
+                background = roundedBg("#F1F5F9", 8f)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
                     marginEnd = dp(6)
                 }
@@ -1468,7 +1462,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
             val btnSave = TextView(context).apply {
                 text = "Salvar Semáforo"
-                setTextColor(Color.parseColor("#042F2E"))
+                setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                 setTypeface(typeface, Typeface.BOLD)
                 gravity = Gravity.CENTER

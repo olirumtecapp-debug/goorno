@@ -191,7 +191,7 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(5.dp)
                                     ) {
                                         Text(
-                                            text = "v3.3.5",
+                                            text = "v3.3.6",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.Black,
                                             fontSize = 9.sp,
@@ -256,18 +256,36 @@ fun GoOrNoComposeApp(
                         GoOrNoScreen.entries.forEach { screen ->
                             val selected = currentScreen == screen
                             Surface(
-                                color = if (selected) PetrolHeader else SoftSurfaceVariant,
-                                shape = RoundedCornerShape(22.dp),
+                                color = if (selected) PetrolHeader else PureWhiteSurface,
+                                shape = RoundedCornerShape(14.dp),
                                 border = BorderStroke(1.dp, if (selected) PetrolHeader else CleanCardBorder),
+                                shadowElevation = if (selected) 2.dp else 1.dp,
                                 modifier = Modifier.clickable { currentScreen = screen }
                             ) {
-                                Text(
-                                    text = "${screen.stepNumber}. ${screen.shortTab}",
-                                    color = if (selected) Color.White else PetrolDarkText,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                                ) {
+                                    Surface(
+                                        color = if (selected) Color.White.copy(alpha = 0.2f) else SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.padding(end = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = "${screen.stepNumber}",
+                                            color = if (selected) Color.White else PetrolHeader,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 11.sp,
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = screen.shortTab,
+                                        color = if (selected) Color.White else PetrolDarkText,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 12.sp
+                                    )
+                                }
                             }
                         }
                     }
@@ -318,39 +336,59 @@ fun GoOrNoComposeApp(
                     }
                 }
 
-                NavigationBar(
-                    containerColor = PureWhiteSurface,
-                    tonalElevation = 8.dp
+                Surface(
+                    color = PureWhiteSurface,
+                    shadowElevation = 8.dp,
+                    border = BorderStroke(1.dp, CleanCardBorder),
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    val quickTabs = listOf(
-                        Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
-                        Triple(GoOrNoScreen.DRIVER_SETUP, Icons.Default.Layers, "Janela"),
-                        Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
-                        Triple(GoOrNoScreen.SECURITY, Icons.Default.Security, "Segurança"),
-                        Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico")
-                    )
-                    quickTabs.forEach { (screen, icon, label) ->
-                        NavigationBarItem(
-                            selected = currentScreen == screen,
-                            onClick = { currentScreen = screen },
-                            icon = { Icon(icon, contentDescription = label) },
-                            label = {
-                                Text(
-                                    text = label,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color.White,
-                                selectedTextColor = PetrolHeader,
-                                indicatorColor = PetrolHeader,
-                                unselectedIconColor = MutedText,
-                                unselectedTextColor = MutedText
-                            )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val quickTabs = listOf(
+                            Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
+                            Triple(GoOrNoScreen.DRIVER_SETUP, Icons.Default.Layers, "Janela"),
+                            Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
+                            Triple(GoOrNoScreen.SECURITY, Icons.Default.Security, "Segurança"),
+                            Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico")
                         )
+                        quickTabs.forEach { (screen, icon, label) ->
+                            val selected = currentScreen == screen
+                            Surface(
+                                color = if (selected) PetrolHeader.copy(alpha = 0.10f) else Color.Transparent,
+                                shape = RoundedCornerShape(12.dp),
+                                border = if (selected) BorderStroke(1.dp, PetrolHeader.copy(alpha = 0.25f)) else null,
+                                modifier = Modifier
+                                    .clickable { currentScreen = screen }
+                                    .padding(vertical = 2.dp, horizontal = 4.dp)
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = label,
+                                        tint = if (selected) PetrolHeader else MutedText,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = label,
+                                        fontSize = 10.5.sp,
+                                        fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
+                                        color = if (selected) PetrolHeader else MutedText,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -4075,7 +4113,7 @@ fun SuasFaixasMatrixCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                     Text(
                         text = "Suas Faixas",
                         fontWeight = FontWeight.Black,
@@ -4091,24 +4129,25 @@ fun SuasFaixasMatrixCard(
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, PetrolHeader.copy(alpha = 0.3f)),
+                    border = BorderStroke(1.dp, CleanCardBorder),
                     color = SoftSurfaceVariant,
+                    shadowElevation = 1.dp,
                     modifier = Modifier.clickable { onAdjustClick() }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         Icon(
                             Icons.Default.Tune,
                             contentDescription = null,
                             tint = PetrolHeader,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Text(
                             text = "Ajustar",
-                            fontSize = 11.5.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = PetrolHeader
                         )

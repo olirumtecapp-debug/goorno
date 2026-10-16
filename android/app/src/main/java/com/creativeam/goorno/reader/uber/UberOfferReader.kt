@@ -141,9 +141,31 @@ object UberOfferReader {
             conflictNotes.add("Distância (${totalKmVal} km) inconsistente com tempo (${totalMinVal} min)")
         }
 
-        // Toda oferta real da Uber (seja chamada direta ou Radar de Viagens) possui obrigatoriamente preço (R$) e distância (km/m).
-        // Telas de mapa com saldo/dinâmico (ex: R$ 6,25 + "5 min" sem km) NÃO são ofertas e não devem disparar "DADOS INSUFICIENTES".
+        // Toda oferta real da Uber (seja chamada direta ou Radar de Viagens) possui obrigatoriamente:
+        // 1. Preço válido (R$)
+        // 2. Distância total maior que zero (> 0 km)
+        // 3. Gatilho explícito de corrida (Aceitar, Exclusivo, Radar, Viagem, Corrida, Categoria Uber, etc.)
+        // 4. Excluir leituras da própria interface do GoOrNo
+        val hasUberRideTrigger = cleanedLines.any { line ->
+            UBER_CATEGORIES.any { cat -> line.contains(cat, ignoreCase = true) } ||
+                line.contains("Aceitar", ignoreCase = true) ||
+                line.contains("Exclusivo", ignoreCase = true) ||
+                line.contains("Radar", ignoreCase = true) ||
+                line.contains("Viagem", ignoreCase = true) ||
+                line.contains("Corrida", ignoreCase = true) ||
+                line.contains("Embarque", ignoreCase = true) ||
+                line.contains("Desembarque", ignoreCase = true)
+        }
+
+        val isSelfReadingGoOrNo = cleanedLines.any { line ->
+            line.contains("GoOrNo", ignoreCase = true) ||
+                line.contains("R$/km", ignoreCase = true) ||
+                line.contains("R$/hora", ignoreCase = true) ||
+                line.contains("Suas Faixas", ignoreCase = true)
+        } && !cleanedLines.any { it.contains("Aceitar", ignoreCase = true) || it.contains("Exclusivo", ignoreCase = true) }
+
         val isOfferScreen = priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
+            hasUberRideTrigger && !isSelfReadingGoOrNo &&
             !BrazilianOfferParser.isNonRideAdOrService(cleanedLines)
 
         var confidence = 0.0

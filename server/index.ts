@@ -891,20 +891,21 @@ app.post("/api/redeem-voucher", async (req, res) => {
 // 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
 app.get("/api/app-version", (_req, res) => {
   res.json({
-    versionName: "3.3.5",
-    versionCode: 22,
-    releaseDate: "2026-10-15",
-    apkUrl: "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.5.apk",
+    versionName: "3.3.6",
+    versionCode: 26,
+    releaseDate: "2026-10-16",
+    apkUrl: "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.6.apk",
     directDownload: "/GoOrNo.apk",
     fileSizeBytes: 55151840,
     fileSizeFormatted: "52.6 MB",
     changelog: [
-      "Nova Janela Flutuante com 4 pilares: R$/km, R$/Hora, Lucro (%) e Nota do Passageiro.",
-      "Novo balão de veredito instantâneo: Aceitar, Atenção e Recusar.",
-      "Configuração Semáforo de Valores com faixas coloridas e limites ajustáveis.",
-      "Auditoria financeira precisa e conferência de repasse da Uber e 99.",
-      "Demonstração visual com 21 chamadas reais da Uber e 99 na rua.",
-      "Fale Conosco integrado (Caixa Postal) para dúvidas e sugestões dos motoristas."
+      "Layout clean padronizado com cartões, bordas suaves e tags em todo o app.",
+      "Novo botão flutuante de atalho branco com a logo oficial do GoOrNo.",
+      "Hub de atalhos rápidos com tema 100% clean e ajuste rápido de semáforo.",
+      "Ocultamento automático do botão flutuante durante a exibição do card de oferta.",
+      "Janela flutuante com largura compacta e centralizada de 270dp.",
+      "Filtro inteligente anti-leituras falsas e anti-loop na Uber e 99.",
+      "Bandeja de notificações compacta e limpa de linha única."
     ],
     mandatory: false,
   });
@@ -996,18 +997,18 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/GoOrNo-v3.3.3.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.6.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.6.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.6.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.5.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.5.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.5.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.4.apk"),
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.5.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.6.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");

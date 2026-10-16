@@ -1003,6 +1003,12 @@ object BrazilianOfferParser {
             return true
         }
 
+        // 4. Auto-leitura da própria interface do GoOrNo (quando não há botão de ação do app de mobilidade)
+        val isGoOrNoSelfText = (joined.contains("goorno") || joined.contains("r$/km") || joined.contains("r$/hora") || joined.contains("suas faixas")) && !hasRideAction
+        if (isGoOrNoSelfText) {
+            return true
+        }
+
         return false
     }
 }
