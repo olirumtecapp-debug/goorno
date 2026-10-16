@@ -179,7 +179,7 @@ fun GoOrNoComposeApp(
                             pInfo.versionCode
                         }
                     } catch (_: Exception) {
-                        32
+                        33
                     }
 
                     withContext(Dispatchers.Main) {
@@ -199,7 +199,7 @@ fun GoOrNoComposeApp(
                             updateInfoState = info
                             showUpdateDialog = true
                         } else if (manual) {
-                            Toast.makeText(context, "✅ Você já está na versão mais recente (v3.3.11)!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "✅ Você já está na versão mais recente (v3.3.12)!", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else if (manual) {
@@ -323,7 +323,7 @@ fun GoOrNoComposeApp(
                                         }
                                     ) {
                                         Text(
-                                            text = if (updateInfoState != null) "v3.3.11 • UPDATE!" else "v3.3.11",
+                                            text = if (updateInfoState != null) "v3.3.12 • UPDATE!" else "v3.3.12",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.Black,
                                             fontSize = 9.sp,
@@ -680,9 +680,9 @@ fun GoOrNoComposeApp(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    listOf(3, 5, 8, 10).forEach { sec ->
+                                    listOf(3, 4, 5, 6, 7).forEach { sec ->
                                         val selected = config.overlayAutoMinimizeSec == sec
                                         FilledTonalButton(
                                             onClick = {
@@ -698,12 +698,12 @@ fun GoOrNoComposeApp(
                                                 contentColor = if (selected) Color.White else PetrolDarkText
                                             ),
                                             shape = RoundedCornerShape(12.dp),
-                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+                                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(36.dp)
                                         ) {
-                                            Text("${sec}s", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                                            Text("${sec}s", fontSize = 11.5.sp, fontWeight = FontWeight.Black)
                                         }
                                     }
                                 }
@@ -727,6 +727,41 @@ fun GoOrNoComposeApp(
                                     subtitle = "Lê R$, km, minutos e endereços automaticamente",
                                     granted = hasAccessibilityPermission,
                                     onAction = onRequestAccessibilityPermission
+                                )
+
+                                val powerManager = context.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
+                                val isBatteryUnrestricted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                    powerManager?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+                                } else {
+                                    true
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+                                PermissionRowItem(
+                                    number = "3",
+                                    title = "Execução em 2º Plano (Sem Restrições do Google)",
+                                    subtitle = if (isBatteryUnrestricted)
+                                        "Bateria sem restrições. O Android nunca fechará o GoOrNo sozinho."
+                                    else
+                                        "Toque para desativar as restrições de bateria do Android e evitar que ele pare sozinho.",
+                                    granted = isBatteryUnrestricted,
+                                    onAction = {
+                                        try {
+                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                                val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                                    data = android.net.Uri.parse("package:${context.packageName}")
+                                                }
+                                                context.startActivity(intent)
+                                            }
+                                        } catch (_: Exception) {
+                                            try {
+                                                val fallback = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                                context.startActivity(fallback)
+                                            } catch (_: Exception) {
+                                                notifyUser("Abra Configurações do Celular > Apps > GoOrNo > Bateria > Sem Restrições.")
+                                            }
+                                        }
+                                    }
                                 )
                             }
                         }
@@ -1493,9 +1528,9 @@ fun GoOrNoComposeApp(
                                 )
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    listOf(3, 5, 8, 10).forEach { sec ->
+                                    listOf(3, 4, 5, 6, 7).forEach { sec ->
                                         val selected = autoMinSec == sec.toString()
                                         FilledTonalButton(
                                             onClick = {
@@ -1507,12 +1542,12 @@ fun GoOrNoComposeApp(
                                                 contentColor = if (selected) Color.White else PetrolDarkText
                                             ),
                                             shape = RoundedCornerShape(12.dp),
-                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+                                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(36.dp)
                                         ) {
-                                            Text("${sec}s", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                                            Text("${sec}s", fontSize = 11.5.sp, fontWeight = FontWeight.Black)
                                         }
                                     }
                                 }
@@ -1548,7 +1583,7 @@ fun GoOrNoComposeApp(
                                             showProfitOnOverlay = showProfitOnOverlay,
                                             showCostOnOverlay = showCostOnOverlay,
                                             overlayOpacityPercent = opacity.toInt().coerceIn(25, 100),
-                                            overlayAutoMinimizeSec = (autoMinSec.toIntOrNull() ?: 7).coerceIn(3, 60)
+                                            overlayAutoMinimizeSec = (autoMinSec.toIntOrNull() ?: 5).coerceIn(3, 7)
                                         )
                                         scope.launch {
                                             app.preferencesRepository.saveConfig(updated)
@@ -3850,7 +3885,7 @@ fun GoOrNoComposeApp(
                                         border = BorderStroke(1.dp, CleanCardBorder)
                                     ) {
                                         Text(
-                                            text = "Versão: v3.3.11 (Build 32)",
+                                            text = "Versão: v3.3.12 (Build 33)",
                                             fontSize = 11.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = PetrolDarkText,

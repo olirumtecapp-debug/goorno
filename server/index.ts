@@ -891,21 +891,21 @@ app.post("/api/redeem-voucher", async (req, res) => {
 // 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
 app.get("/api/app-version", (_req, res) => {
   res.json({
-    versionName: "3.3.11",
-    versionCode: 32,
+    versionName: "3.3.12",
+    versionCode: 33,
     releaseDate: "2026-10-16",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.11.apk",
-    directDownload: "/GoOrNo-v3.3.11.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.12.apk",
+    directDownload: "/GoOrNo-v3.3.12.apk",
     fileSizeBytes: 55225572,
     fileSizeFormatted: "52.7 MB",
     changelog: [
-      "Todas as janelas flutuantes ampliadas para 350dp eliminando qualquer quebra de linha em km, tempo, valores e texto de arrasto ('segure e arraste').",
-      "Semáforo compacto com linhas alinhadas e texto fluido em uma única linha.",
-      "Janela Clássica e Balão Moderno perfeitamente harmonizados e espaçosos.",
-      "Campos de notas do passageiro 100% visíveis sem corte de texto e botões ajustados.",
-      "Novo popup 'Ajustar Suas Faixas' interativo com ajuste de R$/km, R$/h e tolerância amarela com prévia ao vivo.",
-      "Confirmação de segurança antes de adicionar endereço como Área de Risco.",
-      "Card Clássico v3.3.4 (Tradicional) selecionável nas configurações de Janela com valor grande e botão Fechar."
+      "Tempo de Exibição estritamente respeitado pelo motorista (seleção precisa de 3s, 4s, 5s, 6s e 7s sem redução forçada).",
+      "Novo Balão Moderno 3 Pilares com layout limpo: apenas tempo e km (sem poluir com valor duplicado), 3 pilares R$/km, R$/h e Nota, e balão de veredito.",
+      "Semáforo Compacto e Mini Ball limpos sem valor (apenas km e min) evitando repetição com a tela da Uber/99.",
+      "Card Clássico v3.3.4 (Tradicional) mantido completo com valor e definido como Padrão Oficial.",
+      "Notificações na barra de status mantêm todas as informações completas com valor.",
+      "Permissão de Execução em 2º Plano sem restrições do Google (isenção de otimização de bateria) para o serviço não fechar sozinho.",
+      "Removido fechamento acidental ao tocar no card e removida lista negra que travava detecção."
     ],
     mandatory: false,
   });
@@ -997,11 +997,14 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.12.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.12.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.12.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.12.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.11.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.11.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.11.apk"),
@@ -1014,7 +1017,7 @@ app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.11.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.12.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");

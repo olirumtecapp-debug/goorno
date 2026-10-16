@@ -191,14 +191,6 @@ class FloatingOverlayPanel(private val context: Context) {
             val newKm = firstEval.totalConsideredDistanceKm ?: 0.0
             val newFingerprint = "${firstEval.offer.sourceApp.name}|${String.format(Locale.US, "%.2f", newPrice)}|${String.format(Locale.US, "%.1f", newKm)}"
 
-            val now = System.currentTimeMillis()
-            recentlyDismissedOfferTimestamps.entries.removeAll { now - it.value > 75_000L }
-
-            // Se esse mesmo chamado foi exibido ou fechado nos últimos 75 segundos, NÃO reabre na tela!
-            if (recentlyDismissedOfferTimestamps.containsKey(newFingerprint)) {
-                return@post
-            }
-
             // Proteção Anti-Flicker: se o card flutuante já está visível para a mesma corrida,
             // NÃO destrói nem recria as views (evita sumir o valor ou piscar a janela!)
             if (isCardCurrentlyVisible() && activeCardFingerprint == newFingerprint && offerQueue.isNotEmpty()) {
@@ -236,11 +228,7 @@ class FloatingOverlayPanel(private val context: Context) {
         rootContainer?.alpha = currentOpacityPercent / 100f
         contentWrapper?.removeAllViews()
 
-        remainingSeconds = if (totalInQueue > 1) {
-            displayDurationSec.coerceIn(3, 5)
-        } else {
-            displayDurationSec
-        }
+        remainingSeconds = displayDurationSec.coerceIn(3, 7)
 
         val builtView = when (displayStyle) {
             OverlayDisplayStyle.MINI_BALL -> buildMiniBallView(currentEval, oneBasedIndex, totalInQueue)
@@ -295,9 +283,6 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun hidePanel() {
         mainHandler.post {
-            if (activeCardFingerprint.isNotBlank()) {
-                recentlyDismissedOfferTimestamps[activeCardFingerprint] = System.currentTimeMillis()
-            }
             activeCardFingerprint = ""
             mainHandler.removeCallbacks(countdownRunnable)
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
@@ -416,7 +401,7 @@ class FloatingOverlayPanel(private val context: Context) {
             TrafficLightVerdict.GRAY_NEUTRAL -> "Avaliar"
         }
         val tvLine1 = TextView(context).apply {
-            text = "$seqTag${offer.sourceApp.displayName} · $priceStr • $verdictLabel ($distStr · $minStr)"
+            text = "$seqTag${offer.sourceApp.displayName} • $verdictLabel ($distStr · $minStr)"
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
@@ -530,7 +515,7 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val tvLine1 = TextView(context).apply {
-            text = "$seqTag$priceStr ($distStr · $minStr)"
+            text = "$seqTag${offer.sourceApp.displayName} ($distStr · $minStr)"
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
@@ -712,14 +697,13 @@ class FloatingOverlayPanel(private val context: Context) {
             String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it)
         } ?: "-- km"
         val minStr = result.totalConsideredDurationMin?.let { "$it min" } ?: "-- min"
-        val priceStr = offer.offeredPrice?.let { formatCurrency(it) } ?: ""
-        val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
-        val subtitleContent = buildString {
-            append(seqTag)
-            append(offer.sourceApp.displayName)
-            if (priceStr.isNotBlank()) append(" · $priceStr")
-            append(" · $minStr · $distStr")
+        val appName = when (offer.sourceApp) {
+            SourceApp.UBER_DRIVER -> "Uber"
+            SourceApp.NINETY_NINE_DRIVER -> "99"
+            else -> offer.sourceApp.displayName
         }
+        val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
+        val subtitleContent = "$seqTag$appName · $minStr · $distStr"
 
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -1809,10 +1793,11 @@ class FloatingOverlayPanel(private val context: Context) {
                                 .putInt("saved_x", lp.x)
                                 .putInt("saved_y", lp.y)
                                 .apply()
+                            return true
                         } else if (event.actionMasked == MotionEvent.ACTION_UP) {
-                            advanceToNextOfferOrFinish()
+                            v?.performClick()
                         }
-                        return true
+                        return false
                     }
                 }
                 return false
