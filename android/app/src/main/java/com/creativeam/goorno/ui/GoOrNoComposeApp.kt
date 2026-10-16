@@ -78,6 +78,8 @@ enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: St
 fun GoOrNoComposeApp(
     hasOverlayPermission: Boolean,
     hasAccessibilityPermission: Boolean,
+    initialRequestedScreen: String? = null,
+    onClearRequestedScreen: () -> Unit = {},
     onRequestOverlayPermission: () -> Unit,
     onRequestAccessibilityPermission: () -> Unit,
     onRequestOcrCapturePermission: () -> Unit,
@@ -99,6 +101,21 @@ fun GoOrNoComposeApp(
 
     var currentScreen by remember { mutableStateOf(GoOrNoScreen.HOME) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(initialRequestedScreen) {
+        if (!initialRequestedScreen.isNullOrBlank()) {
+            when (initialRequestedScreen) {
+                "DRIVER_SETUP", "JANELA", "ESTILO" -> currentScreen = GoOrNoScreen.DRIVER_SETUP
+                "FINANCIAL_TARGETS", "SEMAFORO", "METAS" -> currentScreen = GoOrNoScreen.FINANCIAL_TARGETS
+                "SECURITY", "SEGURANCA" -> currentScreen = GoOrNoScreen.SECURITY
+                "HISTORY", "HISTORICO" -> currentScreen = GoOrNoScreen.HISTORY
+                "VEHICLE_COSTS", "CUSTOS" -> currentScreen = GoOrNoScreen.VEHICLE_COSTS
+                "HOME", "INICIO" -> currentScreen = GoOrNoScreen.HOME
+                else -> {}
+            }
+            onClearRequestedScreen()
+        }
+    }
 
     val notifyUser: (String) -> Unit = { msg ->
         statusMessage = msg
@@ -553,6 +570,93 @@ fun GoOrNoComposeApp(
                         )
                     }
 
+                    // FERRAMENTAS — Grade Moderna de Acesso Rápido às Configurações
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = "FERRAMENTAS",
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Black,
+                                color = PetrolHeader
+                            )
+
+                            // Linha 1: Estilo do Cartão + Semáforo de Valores
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                ModernToolCard(
+                                    modifier = Modifier.weight(1f),
+                                    icon = "🎨",
+                                    title = "Estilo do Cartão",
+                                    subtitle = "Balão, pilares e visual",
+                                    badge = if (config.overlayBubblePosition == "BELOW") "Balão Abaixo" else "Balão Acima",
+                                    badgeColor = PetrolHeader,
+                                    onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
+                                )
+                                ModernToolCard(
+                                    modifier = Modifier.weight(1f),
+                                    icon = "🚦",
+                                    title = "Semáforo",
+                                    subtitle = "Ganhos e notas mínimas",
+                                    badge = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f/km", config.minGrossPerKm),
+                                    badgeColor = TrafficGreen,
+                                    onClick = { currentScreen = GoOrNoScreen.FINANCIAL_TARGETS }
+                                )
+                            }
+
+                            // Linha 2: Custo Operacional + Endereços de Risco
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                ModernToolCard(
+                                    modifier = Modifier.weight(1f),
+                                    icon = "⛽",
+                                    title = "Custo do Carro",
+                                    subtitle = "Consumo e combustível",
+                                    badge = String.format(Locale.forLanguageTag("pt-BR"), "%.1f km/L", config.fuelConsumptionKmPerLiter),
+                                    badgeColor = Color(0xFF0284C7),
+                                    onClick = { currentScreen = GoOrNoScreen.VEHICLE_COSTS }
+                                )
+                                ModernToolCard(
+                                    modifier = Modifier.weight(1f),
+                                    icon = "🛡️",
+                                    title = "Áreas de Risco",
+                                    subtitle = "Alerta de segurança",
+                                    badge = if (config.riskAlertEnabled) "Ativo" else "Desligado",
+                                    badgeColor = if (config.riskAlertEnabled) TrafficRed else MutedText,
+                                    onClick = { currentScreen = GoOrNoScreen.SECURITY }
+                                )
+                            }
+
+                            // Linha 3: Botão Flutuante de Atalho + Histórico
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                ModernToolCard(
+                                    modifier = Modifier.weight(1f),
+                                    icon = "🔘",
+                                    title = "Botão Flutuante",
+                                    subtitle = "Atalhos na borda da tela",
+                                    badge = if (config.showFloatingShortcutBubble) "Visível" else "Ocultado",
+                                    badgeColor = if (config.showFloatingShortcutBubble) TrafficGreen else MutedText,
+                                    onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
+                                )
+                                ModernToolCard(
+                                    modifier = Modifier.weight(1f),
+                                    icon = "📋",
+                                    title = "Histórico",
+                                    subtitle = "Corridas salvas e mapas",
+                                    badge = "${realHistory.size} salvas",
+                                    badgeColor = PetrolHeader,
+                                    onClick = { currentScreen = GoOrNoScreen.HISTORY }
+                                )
+                            }
+                        }
+                    }
+
                     // Última Oferta Real Analisada (com Botões 1-Toque Street View Origem e Destino)
                     item {
                         val latestEval = lastRealEvaluation
@@ -618,12 +722,21 @@ fun GoOrNoComposeApp(
                 // =====================================================
                 // TELA 2: FORMATO DA JANELA FLUTUANTE & MOTORISTA
                 // =====================================================
+                // =====================================================
+                // TELA 2: ESTILO DO CARTÃO & ATALHOS FLUTUANTES
+                // =====================================================
                 GoOrNoScreen.DRIVER_SETUP -> {
                     item {
                         var driverName by remember(config.driverName) { mutableStateOf(config.driverName) }
                         var vehicleModel by remember(config.vehicleModel) { mutableStateOf(config.vehicleModel) }
                         var selectedStyle by remember(config.overlayDisplayStyle) {
                             mutableStateOf(OverlayDisplayStyle.fromName(config.overlayDisplayStyle))
+                        }
+                        var bubblePosition by remember(config.overlayBubblePosition) {
+                            mutableStateOf(config.overlayBubblePosition)
+                        }
+                        var showShortcutBubble by remember(config.showFloatingShortcutBubble) {
+                            mutableStateOf(config.showFloatingShortcutBubble)
                         }
                         var showProfitOnOverlay by remember(config.showProfitOnOverlay) {
                             mutableStateOf(config.showProfitOnOverlay)
@@ -637,7 +750,214 @@ fun GoOrNoComposeApp(
                         var autoMinSec by remember(config.overlayAutoMinimizeSec) {
                             mutableStateOf(config.overlayAutoMinimizeSec.toString())
                         }
+                        var showLivePreviewModal by remember { mutableStateOf(false) }
+                        var previewVerdictState by remember { mutableStateOf("GREEN") }
                         var savedFlag by remember { mutableStateOf(false) }
+
+                        // Modal Interativo de Pré-visualização do Cartão (VISUALIZAR)
+                        if (showLivePreviewModal) {
+                            AlertDialog(
+                                onDismissRequest = { showLivePreviewModal = false },
+                                confirmButton = {
+                                    Button(
+                                        onClick = { showLivePreviewModal = false },
+                                        colors = ButtonDefaults.buttonColors(containerColor = PetrolHeader)
+                                    ) {
+                                        Text("Fechar Prévia", color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
+                                },
+                                title = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Prévia da Janela", fontWeight = FontWeight.Black, fontSize = 16.sp, color = PetrolHeader)
+                                        IconButton(onClick = { showLivePreviewModal = false }) {
+                                            Icon(Icons.Default.Close, contentDescription = null, tint = MutedText)
+                                        }
+                                    }
+                                },
+                                text = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "Selecione o veredito para ver como o card e o balão aparecem:",
+                                            fontSize = 12.sp,
+                                            color = MutedText
+                                        )
+
+                                        // Chips de seleção de veredito: Aceitar / Analisar / Recusar
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            listOf(
+                                                Triple("GREEN", "✓ Aceitar", TrafficGreen),
+                                                Triple("YELLOW", "● Analisar", TrafficYellow),
+                                                Triple("RED", "✕ Recusar", TrafficRed)
+                                            ).forEach { (key, label, color) ->
+                                                val isSel = previewVerdictState == key
+                                                Surface(
+                                                    color = if (isSel) color else SoftSurfaceVariant,
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    border = BorderStroke(1.dp, if (isSel) color else CleanCardBorder),
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clickable { previewVerdictState = key }
+                                                ) {
+                                                    Text(
+                                                        text = label,
+                                                        color = if (isSel) Color.White else PetrolDarkText,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 11.5.sp,
+                                                        textAlign = TextAlign.Center,
+                                                        modifier = Modifier.padding(vertical = 8.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        // Card Renderizado Fielmente
+                                        val vColor = when (previewVerdictState) {
+                                            "GREEN" -> Color(0xFF16A34A)
+                                            "YELLOW" -> Color(0xFFEAB308)
+                                            else -> Color(0xFFDC2626)
+                                        }
+                                        val vText = when (previewVerdictState) {
+                                            "GREEN" -> "✓  ACEITAR"
+                                            "YELLOW" -> "●  AVALIAR"
+                                            else -> "✕  RECUSAR"
+                                        }
+                                        val isAbove = bubblePosition != "BELOW"
+
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 8.dp)
+                                        ) {
+                                            if (isAbove) {
+                                                // Balão acima com ponta para baixo
+                                                Surface(
+                                                    color = vColor,
+                                                    shape = RoundedCornerShape(20.dp),
+                                                    shadowElevation = 6.dp
+                                                ) {
+                                                    Text(
+                                                        text = vText,
+                                                        color = if (previewVerdictState == "YELLOW") Color(0xFF0F172A) else Color.White,
+                                                        fontWeight = FontWeight.Black,
+                                                        fontSize = 12.sp,
+                                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                            }
+
+                                            // Card
+                                            Surface(
+                                                color = Color(0xFF111F1A),
+                                                shape = RoundedCornerShape(16.dp),
+                                                border = BorderStroke(1.5.dp, vColor),
+                                                shadowElevation = 8.dp,
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Column(modifier = Modifier.padding(12.dp)) {
+                                                    if (!isAbove) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .height(3.dp)
+                                                                .background(vColor, RoundedCornerShape(2.dp))
+                                                        )
+                                                        Spacer(modifier = Modifier.height(6.dp))
+                                                    }
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(
+                                                            text = "Uber · R$ 14,01 · 17 min · 6,3 km",
+                                                            color = Color(0xFFCBD5E1),
+                                                            fontSize = 11.5.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                        Text(
+                                                            text = "7s",
+                                                            color = Color(0xFF94A3B8),
+                                                            fontSize = 10.5.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        Column {
+                                                            Text("R$/Km", color = Color(0xFF94A3B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Box(modifier = Modifier.size(3.dp, 16.dp).background(vColor, RoundedCornerShape(2.dp)))
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text("2.22", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                                            }
+                                                        }
+                                                        Column {
+                                                            Text("R$/Hora", color = Color(0xFF94A3B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Box(modifier = Modifier.size(3.dp, 16.dp).background(vColor, RoundedCornerShape(2.dp)))
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text("49", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                                            }
+                                                        }
+                                                        Column {
+                                                            Text("Nota", color = Color(0xFF94A3B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Box(modifier = Modifier.size(3.dp, 16.dp).background(Color(0xFF22C55E), RoundedCornerShape(2.dp)))
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text("4.96", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                                            }
+                                                        }
+                                                    }
+                                                    if (isAbove) {
+                                                        Spacer(modifier = Modifier.height(8.dp))
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .height(3.dp)
+                                                                .background(vColor, RoundedCornerShape(2.dp))
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            if (!isAbove) {
+                                                // Balão abaixo com ponta para cima
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Surface(
+                                                    color = vColor,
+                                                    shape = RoundedCornerShape(20.dp),
+                                                    shadowElevation = 6.dp
+                                                ) {
+                                                    Text(
+                                                        text = vText,
+                                                        color = if (previewVerdictState == "YELLOW") Color(0xFF0F172A) else Color.White,
+                                                        fontWeight = FontWeight.Black,
+                                                        fontSize = 12.sp,
+                                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                        }
 
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
@@ -647,8 +967,42 @@ fun GoOrNoComposeApp(
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
+                                // Header com Botão VISUALIZAR (conforme solicitado e padrão moderno)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "ESTILO DO CARTÃO",
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 15.sp,
+                                            color = PetrolHeader
+                                        )
+                                        Text(
+                                            text = "Personalize o formato, balão de fala e atalhos na tela",
+                                            fontSize = 11.5.sp,
+                                            color = MutedText
+                                        )
+                                    }
+                                    FilledTonalButton(
+                                        onClick = { showLivePreviewModal = true },
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = PetrolHeader,
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(15.dp), tint = LimeBright)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("VISUALIZAR", fontSize = 11.5.sp, fontWeight = FontWeight.Black)
+                                    }
+                                }
+
                                 Surface(
                                     color = TrafficGreenSoft.copy(alpha = 0.55f),
                                     shape = RoundedCornerShape(12.dp),
@@ -662,7 +1016,7 @@ fun GoOrNoComposeApp(
                                             color = PetrolHeader
                                         )
                                         Text(
-                                            text = "Quando a janelinha abrir (ícone ⠿), você pode segurar e arrastar com o dedo para qualquer lugar da tela (meio, lateral ou embaixo) para nunca atrapalhar o botão de recusar/desistir de um chamado! O app grava a posição que você escolher.",
+                                            text = "Quando a janelinha abrir (ícone ⠿), segure e arraste com o dedo para onde preferir na tela. A posição escolhida fica salva automaticamente para não tampar botões da Uber ou 99.",
                                             fontSize = 11.5.sp,
                                             color = PetrolDarkText
                                         )
@@ -684,16 +1038,12 @@ fun GoOrNoComposeApp(
                                     }
                                 }
 
+                                // Seletor de Formato do Cartão
                                 Text(
-                                    text = "Escolha o Formato da Janelinha Flutuante",
+                                    text = "Formato do Cartão",
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 14.5.sp,
+                                    fontSize = 13.5.sp,
                                     color = PetrolHeader
-                                )
-                                Text(
-                                    text = "Quando aparecer mais de uma chamada na tela (ex: Solicitações da 99), o app mostra uma oferta, apaga, e mostra a próxima (sem nunca empilhar e sem botões de rua para não poluir a tela!).",
-                                    fontSize = 11.5.sp,
-                                    color = MutedText
                                 )
 
                                 OverlayDisplayStyle.entries.forEach { style ->
@@ -752,6 +1102,117 @@ fun GoOrNoComposeApp(
 
                                 HorizontalDivider(color = CleanCardBorder)
 
+                                // Posição do Balão / Corzinha (Acima do cartão vs Abaixo do cartão)
+                                Text(
+                                    text = "Posição do Aviso (Balão de Fala com Veredito)",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 13.5.sp,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = "Escolha onde o balão colorido de Aceitar / Analisar / Recusar deve ficar:",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(
+                                        Pair("ABOVE", "⬆️ Acima do cartão"),
+                                        Pair("BELOW", "⬇️ Abaixo do cartão")
+                                    ).forEach { (posKey, label) ->
+                                        val isSel = bubblePosition == posKey
+                                        Surface(
+                                            color = if (isSel) PetrolHeader else SoftSurfaceVariant,
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.dp, if (isSel) PetrolHeader else CleanCardBorder),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable {
+                                                    bubblePosition = posKey
+                                                    savedFlag = false
+                                                    val updated = config.copy(overlayBubblePosition = posKey)
+                                                    scope.launch {
+                                                        app.preferencesRepository.saveConfig(updated)
+                                                        app.overlayPanel.applyConfig(updated)
+                                                        notifyUser("Balão posicionado: $label")
+                                                    }
+                                                }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                RadioButton(
+                                                    selected = isSel,
+                                                    onClick = {
+                                                        bubblePosition = posKey
+                                                        savedFlag = false
+                                                        val updated = config.copy(overlayBubblePosition = posKey)
+                                                        scope.launch {
+                                                            app.preferencesRepository.saveConfig(updated)
+                                                            app.overlayPanel.applyConfig(updated)
+                                                            notifyUser("Balão posicionado: $label")
+                                                        }
+                                                    },
+                                                    colors = RadioButtonDefaults.colors(
+                                                        selectedColor = Color.White,
+                                                        unselectedColor = PetrolDarkText
+                                                    )
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = label,
+                                                    color = if (isSel) Color.White else PetrolDarkText,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 11.5.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                // Botão Flutuante de Atalho na Tela (com opção de ocultar se incomodar)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Botão Flutuante de Atalho na Tela",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = PetrolDarkText
+                                        )
+                                        Text(
+                                            text = "Bolinha permanente na borda da tela. Toque nela sobre a Uber/99 para abrir Semáforo, Metas e Ferramentas rapidamente.",
+                                            fontSize = 11.sp,
+                                            color = MutedText
+                                        )
+                                    }
+                                    Switch(
+                                        checked = showShortcutBubble,
+                                        onCheckedChange = { checked ->
+                                            showShortcutBubble = checked
+                                            savedFlag = false
+                                            val updated = config.copy(showFloatingShortcutBubble = checked)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                                notifyUser(if (checked) "Botão flutuante ativado na tela!" else "Botão flutuante ocultado!")
+                                            }
+                                        }
+                                    )
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
                                 Text(
                                     text = "Informações Extras na Janela e na Notificação (Opcional)",
                                     fontWeight = FontWeight.Black,
@@ -759,7 +1220,7 @@ fun GoOrNoComposeApp(
                                     color = PetrolHeader
                                 )
                                 Text(
-                                    text = "Por padrão, Lucro e Custo ficam ocultos na janela flutuante e na notificação da corrida para deixar a leitura bem limpa. Ative abaixo se quiser exibi-los:",
+                                    text = "Por padrão, Lucro e Custo ficam ocultos para deixar a leitura limpa. Ative abaixo se quiser exibi-los:",
                                     fontSize = 11.5.sp,
                                     color = MutedText
                                 )
@@ -850,12 +1311,6 @@ fun GoOrNoComposeApp(
                                     fontSize = 14.sp,
                                     color = PetrolHeader
                                 )
-                                Text(
-                                    text = "Ajuste a opacidade para enxergar o mapa da Uber e da 99 por baixo do card sem bloquear a visão.",
-                                    fontSize = 12.sp,
-                                    color = MutedText
-                                )
-
                                 Slider(
                                     value = opacity,
                                     onValueChange = {
@@ -930,6 +1385,8 @@ fun GoOrNoComposeApp(
                                             driverName = driverName.ifBlank { "Motorista" },
                                             vehicleModel = vehicleModel.ifBlank { "Veículo" },
                                             overlayDisplayStyle = selectedStyle.name,
+                                            overlayBubblePosition = bubblePosition,
+                                            showFloatingShortcutBubble = showShortcutBubble,
                                             showProfitOnOverlay = showProfitOnOverlay,
                                             showCostOnOverlay = showCostOnOverlay,
                                             overlayOpacityPercent = opacity.toInt().coerceIn(25, 100),
@@ -3823,3 +4280,62 @@ fun SuasFaixasMatrixCard(
 private fun openStreetViewExternal(context: Context, address: String) {
     StreetViewLauncher.openDirectStreetView(context, address)
 }
+
+@Composable
+private fun ModernToolCard(
+    modifier: Modifier = Modifier,
+    icon: String,
+    title: String,
+    subtitle: String,
+    badge: String,
+    badgeColor: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = PureWhiteSurface,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, CleanCardBorder),
+        shadowElevation = 1.5.dp,
+        modifier = modifier.clickable { onClick() }
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = icon, fontSize = 20.sp)
+                Surface(
+                    color = badgeColor.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = badge,
+                        color = badgeColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = title,
+                fontWeight = FontWeight.Black,
+                fontSize = 13.sp,
+                color = PetrolDarkText
+            )
+            Text(
+                text = subtitle,
+                fontSize = 11.sp,
+                color = MutedText,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+

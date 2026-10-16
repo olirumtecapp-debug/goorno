@@ -171,6 +171,8 @@ data class DriverFinancialConfig(
     val overlayOpacityPercent: Int = 92,
     val overlayAutoMinimizeSec: Int = 7,
     val overlayDisplayStyle: String = OverlayDisplayStyle.FULL_CARD.name,
+    val overlayBubblePosition: String = "ABOVE",
+    val showFloatingShortcutBubble: Boolean = true,
     val showProfitOnOverlay: Boolean = false,
     val showCostOnOverlay: Boolean = false,
     val riskAlertEnabled: Boolean = true,

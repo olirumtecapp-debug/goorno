@@ -44,6 +44,22 @@ class GoOrNoApplication : Application() {
                     }
                 }
             }
+            onUserRequestedHideShortcutBubble = {
+                appScope.launch {
+                    val current = preferencesRepository.getConfigOnce()
+                    preferencesRepository.saveConfig(current.copy(showFloatingShortcutBubble = false))
+                }
+            }
+            onUserUpdatedSemaforoQuickly = { minKm, minHr, minRating ->
+                appScope.launch {
+                    val current = preferencesRepository.getConfigOnce()
+                    preferencesRepository.saveConfig(current.copy(
+                        minGrossPerKm = minKm,
+                        minGrossPerHour = minHr,
+                        minPassengerRating = minRating
+                    ))
+                }
+            }
         }
 
         // Mantém todas as configurações do motorista sincronizadas continuamente em memória

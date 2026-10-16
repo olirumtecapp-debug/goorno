@@ -298,17 +298,44 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
+        // Se houver qualquer oferta com Preço e KM válidos extraídos via acessibilidade:
+        val usableAccessibilityOffers = parsedOffers.filter { offer ->
+            val km = offer.totalDistanceKmExplicit ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
+            (offer.offeredPrice ?: 0.0) > 0.0 && km > 0.0
+        }
+        if (usableAccessibilityOffers.isNotEmpty()) {
+            consecutiveScansWithoutOffers = 0
+            processAndShowOffers(usableAccessibilityOffers, normalizedTexts, now)
+            return
+        }
+
         // 2º Tentativa Automática (Leitura Visual Silenciosa via takeScreenshot + ML Kit OCR):
-        // CRÍTICO: Só dispara Leitura Visual/OCR se o app em foco for Uber/99 ou se houver janela/conteúdo de corrida!
-        // Se o motorista estiver no Instagram, WhatsApp, TikTok, etc., NUNCA gasta CPU/memória tirando screenshots,
-        // garantindo que o app não sofra OOM, não perca prioridade e responda instantaneamente ao voltar para a Uber/99!
-        if (effectiveApp != SourceApp.UNKNOWN || rideWindow != null) {
-            val appToScan = if (effectiveApp != SourceApp.UNKNOWN) effectiveApp else SourceApp.fromPackageName(rideWindow!!.first)
+        // Só bloqueia OCR se o aplicativo for expressamente rede social ou streaming de vídeo (Instagram, TikTok, YouTube)
+        // para não consumir memória desnecessária. Em todos os demais casos (Uber, 99, popups, launchers), roda normalmente!
+        val isBlockedApp = isSocialMediaApp(targetPkg) || isSocialMediaApp(eventPkg) || isSocialMediaApp(lastKnownForegroundPkg)
+        if (!isBlockedApp) {
+            val appToScan = if (effectiveApp != SourceApp.UNKNOWN) {
+                effectiveApp
+            } else if (rideWindow != null) {
+                SourceApp.fromPackageName(rideWindow.first)
+            } else {
+                SourceApp.NINETY_NINE_DRIVER
+            }
             triggerAutomaticAccessibilityOcrIfNeeded(appToScan, targetPkg, now)
         } else {
-            // Em apps de terceiros sem corrida na tela, libera qualquer semáforo pendente
             isTakingAutoScreenshot = false
         }
+    }
+
+    private fun isSocialMediaApp(pkg: String?): Boolean {
+        if (pkg.isNullOrBlank()) return false
+        val p = pkg.lowercase(Locale.ROOT)
+        return p.contains("instagram") ||
+            p.contains("zhiliaoapp") ||
+            p.contains("musically") ||
+            p.contains("tiktok") ||
+            p.contains("netflix") ||
+            p.contains("youtube")
     }
 
     private fun extractOffersForApp(

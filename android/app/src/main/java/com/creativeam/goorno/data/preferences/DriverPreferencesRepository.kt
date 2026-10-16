@@ -45,6 +45,8 @@ class DriverPreferencesRepository(private val context: Context) {
         val OVERLAY_OPACITY = intPreferencesKey("overlay_opacity")
         val OVERLAY_AUTO_MIN_SEC = intPreferencesKey("overlay_auto_min_sec")
         val OVERLAY_DISPLAY_STYLE = stringPreferencesKey("overlay_display_style")
+        val OVERLAY_BUBBLE_POSITION = stringPreferencesKey("overlay_bubble_position")
+        val SHOW_FLOATING_SHORTCUT_BUBBLE = booleanPreferencesKey("show_floating_shortcut_bubble")
         val SHOW_PROFIT_ON_OVERLAY = booleanPreferencesKey("show_profit_on_overlay")
         val SHOW_COST_ON_OVERLAY = booleanPreferencesKey("show_cost_on_overlay")
         val RISK_ALERT_ENABLED = booleanPreferencesKey("risk_alert_enabled")
@@ -82,6 +84,8 @@ class DriverPreferencesRepository(private val context: Context) {
             overlayOpacityPercent = prefs[Keys.OVERLAY_OPACITY] ?: 92,
             overlayAutoMinimizeSec = prefs[Keys.OVERLAY_AUTO_MIN_SEC] ?: 7,
             overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: "FULL_CARD",
+            overlayBubblePosition = prefs[Keys.OVERLAY_BUBBLE_POSITION] ?: "ABOVE",
+            showFloatingShortcutBubble = prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] ?: true,
             showProfitOnOverlay = prefs[Keys.SHOW_PROFIT_ON_OVERLAY] ?: false,
             showCostOnOverlay = prefs[Keys.SHOW_COST_ON_OVERLAY] ?: false,
             riskAlertEnabled = prefs[Keys.RISK_ALERT_ENABLED] ?: true,
@@ -122,6 +126,8 @@ class DriverPreferencesRepository(private val context: Context) {
             prefs[Keys.OVERLAY_OPACITY] = config.overlayOpacityPercent.coerceIn(25, 100)
             prefs[Keys.OVERLAY_AUTO_MIN_SEC] = config.overlayAutoMinimizeSec.coerceIn(3, 60)
             prefs[Keys.OVERLAY_DISPLAY_STYLE] = config.overlayDisplayStyle
+            prefs[Keys.OVERLAY_BUBBLE_POSITION] = config.overlayBubblePosition
+            prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] = config.showFloatingShortcutBubble
             prefs[Keys.SHOW_PROFIT_ON_OVERLAY] = config.showProfitOnOverlay
             prefs[Keys.SHOW_COST_ON_OVERLAY] = config.showCostOnOverlay
             prefs[Keys.RISK_ALERT_ENABLED] = config.riskAlertEnabled

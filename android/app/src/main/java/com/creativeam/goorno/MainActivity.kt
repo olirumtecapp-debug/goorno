@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
 
     private var hasOverlayPerm by mutableStateOf(false)
     private var hasAccessibilityPerm by mutableStateOf(false)
+    private var requestedScreen by mutableStateOf<String?>(null)
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -51,6 +52,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleIntent(intent)
         requestNotificationPermissionIfNeeded()
         refreshPermissionsState()
 
@@ -59,12 +61,27 @@ class MainActivity : ComponentActivity() {
                 GoOrNoComposeApp(
                     hasOverlayPermission = hasOverlayPerm,
                     hasAccessibilityPermission = hasAccessibilityPerm,
+                    initialRequestedScreen = requestedScreen,
+                    onClearRequestedScreen = { requestedScreen = null },
                     onRequestOverlayPermission = { openOverlayPermissionSettings() },
                     onRequestAccessibilityPermission = { openAccessibilitySettings() },
                     onRequestOcrCapturePermission = { requestOcrMediaProjection() },
                     onStopAllBackgroundServices = { stopAllBackgroundMonitoring() }
                 )
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        val screen = intent?.getStringExtra("OPEN_SCREEN")
+        if (!screen.isNullOrBlank()) {
+            requestedScreen = screen
         }
     }
 
