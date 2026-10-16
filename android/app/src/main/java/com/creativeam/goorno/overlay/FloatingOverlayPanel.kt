@@ -418,7 +418,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val tvLine1 = TextView(context).apply {
             text = "$seqTag${offer.sourceApp.displayName} · $priceStr • $verdictLabel ($distStr · $minStr)"
             setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.sp.value)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
             setSingleLine(true)
             ellipsize = android.text.TextUtils.TruncateAt.END
