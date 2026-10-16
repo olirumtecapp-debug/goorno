@@ -38,6 +38,18 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
   const [heroMode, setHeroMode] = useState<'good' | 'bad'>('good');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
+  const [appVersion, setAppVersion] = useState<string>('3.3.12');
+
+  useEffect(() => {
+    fetch('/api/app-version')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.versionName) {
+          setAppVersion(d.versionName);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const filteredScreenshots = activeCategory === 'all'
     ? SCREENSHOTS
@@ -93,7 +105,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             }}
           />
           <span>
-            GoOrNo <small>v3.3.7</small>
+            GoOrNo <small>v{appVersion}</small>
           </span>
         </a>
 
@@ -190,7 +202,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <span className="trust-separator"></span>
               <span>Android 8+</span>
               <span className="trust-separator"></span>
-              <span>Versão oficial v3.3.7</span>
+              <span>Versão oficial v{appVersion}</span>
             </div>
           </div>
 
@@ -660,6 +672,21 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               </summary>
               <p>
                 Qualquer smartphone Android com versão 8.0 ou superior (Samsung, Motorola, Xiaomi, Realme, etc.). Basta conceder a permissão de sobreposição de tela e leitor de acessibilidade.
+              </p>
+            </details>
+
+            <details
+              open={openFaq === 5}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleFaq(5);
+              }}
+            >
+              <summary>
+                Como funciona o pagamento? A liberação do plano é automática? <span>{openFaq === 5 ? '−' : '+'}</span>
+              </summary>
+              <p>
+                Sim, 100% automático e imediato! Ao pagar via PIX (seja da assinatura mensal de R$ 9,90 ou do plano Vitalício de R$ 39,90), o gateway bancário do Asaas confirma o recebimento em poucos segundos e o aplicativo libera o seu acesso na mesma hora, sem precisar enviar comprovante ou aguardar aprovação manual.
               </p>
             </details>
           </div>
