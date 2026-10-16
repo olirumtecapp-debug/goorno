@@ -891,19 +891,19 @@ app.post("/api/redeem-voucher", async (req, res) => {
 // 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
 app.get("/api/app-version", (_req, res) => {
   res.json({
-    versionName: "3.3.7",
-    versionCode: 27,
+    versionName: "3.3.8",
+    versionCode: 29,
     releaseDate: "2026-10-16",
-    apkUrl: "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.7.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 55205084,
-    fileSizeFormatted: "52.6 MB",
+    fileSizeBytes: 55225564,
+    fileSizeFormatted: "52.7 MB",
     changelog: [
+      "Novo popup 'Ajustar Suas Faixas' interativo com ajuste de R$/km, R$/h e tolerância amarela com prévia ao vivo.",
+      "Cores da Nota do Passageiro harmonizadas, alinhadas e com botões de ajuste direto (-0,05 e +0,05).",
+      "Confirmação de segurança antes de adicionar endereço como Área de Risco, prevenindo toques acidentais.",
       "Card Clássico v3.3.4 (Tradicional) selecionável nas configurações de Janela com valor grande e botão Fechar.",
-      "Verificação automática e integrada de atualizações direto no app (Auto-Update).",
-      "Card tradicional fiel com pílulas emolduradas de R$/km, R$/h, avaliação do passageiro e alerta de risco.",
-      "Botão de verificação manual de atualizações na tela de Troca de Aparelho & Backup.",
-      "Otimizações de performance, estabilidade e layout padronizado."
+      "Verificação automática e integrada de atualizações direto no app (Auto-Update)."
     ],
     mandatory: false,
   });
@@ -995,21 +995,21 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.8.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.8.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.8.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.7.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.7.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.7.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.6.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.6.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.6.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.7.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.8.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");

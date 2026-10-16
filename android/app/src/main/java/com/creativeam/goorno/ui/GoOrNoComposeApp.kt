@@ -178,7 +178,7 @@ fun GoOrNoComposeApp(
                             pInfo.versionCode
                         }
                     } catch (_: Exception) {
-                        27
+                        29
                     }
 
                     withContext(Dispatchers.Main) {
@@ -198,7 +198,7 @@ fun GoOrNoComposeApp(
                             updateInfoState = info
                             showUpdateDialog = true
                         } else if (manual) {
-                            Toast.makeText(context, "✅ Você já está na versão mais recente (v3.3.7)!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "✅ Você já está na versão mais recente (v3.3.8)!", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else if (manual) {
@@ -322,7 +322,7 @@ fun GoOrNoComposeApp(
                                         }
                                     ) {
                                         Text(
-                                            text = if (updateInfoState != null) "v3.3.7 • UPDATE!" else "v3.3.7",
+                                            text = if (updateInfoState != null) "v3.3.8 • UPDATE!" else "v3.3.8",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.Black,
                                             fontSize = 9.sp,
@@ -3805,7 +3805,7 @@ fun GoOrNoComposeApp(
                                         border = BorderStroke(1.dp, CleanCardBorder)
                                     ) {
                                         Text(
-                                            text = "Versão: v3.3.7 (Build 27)",
+                                            text = "Versão: v3.3.8 (Build 29)",
                                             fontSize = 11.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = PetrolDarkText,
