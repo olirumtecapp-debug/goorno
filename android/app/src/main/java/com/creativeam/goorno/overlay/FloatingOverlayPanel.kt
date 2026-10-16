@@ -23,6 +23,7 @@ import com.creativeam.goorno.model.DriverFinancialConfig
 import com.creativeam.goorno.model.FinancialEvaluationResult
 import com.creativeam.goorno.model.OverlayDisplayStyle
 import com.creativeam.goorno.model.PassengerRatingVerdict
+import com.creativeam.goorno.model.SourceApp
 import com.creativeam.goorno.model.TrafficLightVerdict
 import java.util.Locale
 import kotlin.math.abs
