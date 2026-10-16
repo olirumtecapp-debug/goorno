@@ -60,6 +60,7 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * Informações de versão remota para verificação automática de atualizações.
@@ -125,6 +126,18 @@ fun GoOrNoComposeApp(
     var updateInfoState by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var isCheckingUpdates by remember { mutableStateOf(false) }
+
+    var showAdjustFaixasDialog by remember { mutableStateOf(false) }
+    var pendingRiskAddressToConfirm by remember { mutableStateOf<String?>(null) }
+
+    val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
+        val cleanTerm = RiskAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
+        if (cleanTerm.length >= 3) {
+            pendingRiskAddressToConfirm = cleanTerm
+        } else {
+            notifyUser("Endereço muito curto para cadastrar como risco.")
+        }
+    }
 
     val checkForUpdates: (Boolean) -> Unit = { manual ->
         isCheckingUpdates = true
@@ -721,7 +734,7 @@ fun GoOrNoComposeApp(
                     item {
                         SuasFaixasMatrixCard(
                             config = config,
-                            onAdjustClick = { currentScreen = GoOrNoScreen.FINANCIAL_TARGETS }
+                            onAdjustClick = { showAdjustFaixasDialog = true }
                         )
                     }
 
@@ -842,19 +855,7 @@ fun GoOrNoComposeApp(
                                         entity = latestDbOffer,
                                         config = config,
                                         onOpenStreetView = { addr -> openStreetViewExternal(context, addr) },
-                                        onMarkAddressAsRisk = { rawAddr ->
-                                            val cleanTerm = RiskAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
-                                            if (cleanTerm.length >= 3) {
-                                                val currentList = RiskAreaEvaluator.parseCustomZonesList(config.customRiskZones)
-                                                val updatedList = (currentList + cleanTerm).distinct()
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(
-                                                        config.copy(customRiskZones = updatedList.joinToString(", "))
-                                                    )
-                                                    notifyUser("⚠️ '$cleanTerm' marcado como Área de Risco!")
-                                                }
-                                            }
-                                        },
+                                        onMarkAddressAsRisk = promptMarkAddressAsRisk,
                                         onUpdateReceivedPrice = { newVal ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(latestDbOffer.id, newVal)
@@ -1732,7 +1733,7 @@ fun GoOrNoComposeApp(
                     item {
                         SuasFaixasMatrixCard(
                             config = config,
-                            onAdjustClick = {}
+                            onAdjustClick = { showAdjustFaixasDialog = true }
                         )
                     }
                     item {
@@ -1924,49 +1925,263 @@ fun GoOrNoComposeApp(
                                     color = MutedText
                                 )
 
-                                // Legenda visual das 3 cores da nota do passageiro
+                                // Legenda visual harmônica e alinhada das 3 cores da nota do passageiro (Altura igual e sem quebra feia)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
+                                    // Card Verde
                                     Surface(
                                         color = TrafficGreen,
-                                        shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.weight(1f)
+                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(68.dp)
                                     ) {
-                                        Text(
-                                            text = "🟢 >= ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.targetGoodPassengerRating)}\nBoa",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 11.sp,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                                        )
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(horizontal = 6.dp, vertical = 8.dp),
+                                            verticalArrangement = Arrangement.SpaceBetween,
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(7.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color.White)
+                                                )
+                                                Text(
+                                                    text = "BOA",
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                            Text(
+                                                text = ">= ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.targetGoodPassengerRating)}",
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp
+                                            )
+                                        }
                                     }
+
+                                    // Card Amarelo
                                     Surface(
                                         color = TrafficYellow,
-                                        shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.weight(1f)
+                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(68.dp)
                                     ) {
-                                        Text(
-                                            text = "🟡 ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.minAcceptablePassengerRating)} a ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", (config.targetGoodPassengerRating - 0.01).coerceAtLeast(config.minAcceptablePassengerRating))}\nMédia",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 11.sp,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                                        )
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(horizontal = 6.dp, vertical = 8.dp),
+                                            verticalArrangement = Arrangement.SpaceBetween,
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(7.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color.White)
+                                                )
+                                                Text(
+                                                    text = "MÉDIA",
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                            Text(
+                                                text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.minAcceptablePassengerRating)} – ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", (config.targetGoodPassengerRating - 0.01).coerceAtLeast(config.minAcceptablePassengerRating))}",
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 11.sp,
+                                                maxLines = 1
+                                            )
+                                        }
                                     }
+
+                                    // Card Vermelho
                                     Surface(
                                         color = TrafficRed,
-                                        shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.weight(1f)
+                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(68.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(horizontal = 6.dp, vertical = 8.dp),
+                                            verticalArrangement = Arrangement.SpaceBetween,
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(7.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color.White)
+                                                )
+                                                Text(
+                                                    text = "RUIM",
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                            Text(
+                                                text = "< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.minAcceptablePassengerRating)}",
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Controles de Ajuste das Notas (diretamente abaixo das cores)
+                                Surface(
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(14.dp),
+                                    border = BorderStroke(1.dp, CleanCardBorder),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
                                         Text(
-                                            text = "🔴 < ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.minAcceptablePassengerRating)}\nRuim",
-                                            color = Color.White,
+                                            text = "Configurar Valores das Notas (toque no + ou - para regular):",
+                                            fontSize = 12.sp,
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 11.sp,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                                            color = PetrolHeader
                                         )
+
+                                        // Linha Nota Boa
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(TrafficGreen))
+                                                Text("Nota Boa (>=):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText)
+                                            }
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                FilledTonalButton(
+                                                    onClick = {
+                                                        val updatedGood = ((config.targetGoodPassengerRating - 0.05) * 100).roundToInt() / 100.0
+                                                        val valid = updatedGood.coerceIn(config.minAcceptablePassengerRating + 0.05, 5.0)
+                                                        goodRatingText = String.format(Locale.US, "%.2f", valid)
+                                                        scope.launch {
+                                                            app.preferencesRepository.saveConfig(config.copy(targetGoodPassengerRating = valid))
+                                                            notifyUser("Nota Boa ajustada para ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", valid)}!")
+                                                        }
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(30.dp)
+                                                ) {
+                                                    Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                                }
+                                                OutlinedTextField(
+                                                    value = goodRatingText,
+                                                    onValueChange = { goodRatingText = it.replace(",", "."); savedRatingFlag = false },
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier.width(72.dp).height(46.dp),
+                                                    singleLine = true
+                                                )
+                                                FilledTonalButton(
+                                                    onClick = {
+                                                        val updatedGood = ((config.targetGoodPassengerRating + 0.05) * 100).roundToInt() / 100.0
+                                                        val valid = updatedGood.coerceIn(4.0, 5.0)
+                                                        goodRatingText = String.format(Locale.US, "%.2f", valid)
+                                                        scope.launch {
+                                                            app.preferencesRepository.saveConfig(config.copy(targetGoodPassengerRating = valid))
+                                                            notifyUser("Nota Boa ajustada para ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", valid)}!")
+                                                        }
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(30.dp)
+                                                ) {
+                                                    Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                                }
+                                            }
+                                        }
+
+                                        HorizontalDivider(color = CleanCardBorder)
+
+                                        // Linha Nota Mínima
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(TrafficYellow))
+                                                Text("Nota Mínima (>=):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText)
+                                            }
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                FilledTonalButton(
+                                                    onClick = {
+                                                        val updatedMin = ((config.minAcceptablePassengerRating - 0.05) * 100).roundToInt() / 100.0
+                                                        val valid = updatedMin.coerceIn(3.0, config.targetGoodPassengerRating - 0.05)
+                                                        minRatingText = String.format(Locale.US, "%.2f", valid)
+                                                        scope.launch {
+                                                            app.preferencesRepository.saveConfig(config.copy(minAcceptablePassengerRating = valid))
+                                                            notifyUser("Nota Mínima ajustada para ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", valid)}!")
+                                                        }
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(30.dp)
+                                                ) {
+                                                    Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                                }
+                                                OutlinedTextField(
+                                                    value = minRatingText,
+                                                    onValueChange = { minRatingText = it.replace(",", "."); savedRatingFlag = false },
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier.width(72.dp).height(46.dp),
+                                                    singleLine = true
+                                                )
+                                                FilledTonalButton(
+                                                    onClick = {
+                                                        val updatedMin = ((config.minAcceptablePassengerRating + 0.05) * 100).roundToInt() / 100.0
+                                                        val valid = updatedMin.coerceIn(3.0, config.targetGoodPassengerRating - 0.05)
+                                                        minRatingText = String.format(Locale.US, "%.2f", valid)
+                                                        scope.launch {
+                                                            app.preferencesRepository.saveConfig(config.copy(minAcceptablePassengerRating = valid))
+                                                            notifyUser("Nota Mínima ajustada para ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", valid)}!")
+                                                        }
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(30.dp)
+                                                ) {
+                                                    Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 
@@ -2042,30 +2257,6 @@ fun GoOrNoComposeApp(
                                             }
                                         )
                                     }
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = goodRatingText,
-                                        onValueChange = { goodRatingText = it.replace(",", "."); savedRatingFlag = false },
-                                        label = { Text("🟢 Nota Boa (>=)") },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.weight(1f),
-                                        singleLine = true
-                                    )
-                                    OutlinedTextField(
-                                        value = minRatingText,
-                                        onValueChange = { minRatingText = it.replace(",", "."); savedRatingFlag = false },
-                                        label = { Text("🟡 Mín. Aceitável") },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.weight(1f),
-                                        singleLine = true
-                                    )
                                 }
 
                                 Button(
@@ -2511,19 +2702,7 @@ fun GoOrNoComposeApp(
                                         entity = item,
                                         config = config,
                                         onOpenStreetView = { addr -> openStreetViewExternal(context, addr) },
-                                        onMarkAddressAsRisk = { rawAddr ->
-                                            val cleanTerm = RiskAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
-                                            if (cleanTerm.length >= 3) {
-                                                val currentList = RiskAreaEvaluator.parseCustomZonesList(config.customRiskZones)
-                                                val updatedList = (currentList + cleanTerm).distinct()
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(
-                                                        config.copy(customRiskZones = updatedList.joinToString(", "))
-                                                    )
-                                                    notifyUser("⚠️ '$cleanTerm' marcado como Área de Risco!")
-                                                }
-                                            }
-                                        },
+                                        onMarkAddressAsRisk = promptMarkAddressAsRisk,
                                         onUpdateReceivedPrice = { valPaid ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(item.id, valPaid)
@@ -3815,6 +3994,351 @@ fun GoOrNoComposeApp(
                             fontSize = 12.5.sp
                         )
                     }
+                }
+            }
+        )
+    }
+
+    // -------------------------------------------------------------
+    // DIALOG 1: AJUSTAR FAIXAS DO SEMÁFORO (POPUP INTERATIVO)
+    // -------------------------------------------------------------
+    if (showAdjustFaixasDialog) {
+        var tempKm by remember(config.targetGrossPerKm) { mutableStateOf(config.targetGrossPerKm) }
+        var tempHr by remember(config.targetGrossPerHour) { mutableStateOf(config.targetGrossPerHour) }
+        var tempRatio by remember(config.yellowToleranceRatio) { mutableStateOf(config.yellowToleranceRatio) }
+
+        val ratio = tempRatio.coerceIn(0.5, 0.95)
+        val kmYellow = tempKm * ratio
+        val hrYellow = tempHr * ratio
+
+        AlertDialog(
+            onDismissRequest = { showAdjustFaixasDialog = false },
+            shape = RoundedCornerShape(22.dp),
+            containerColor = PureWhiteSurface,
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("🚦", fontSize = 22.sp)
+                    Column {
+                        Text(
+                            text = "Ajustar Faixas do Semáforo",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 17.sp,
+                            color = PetrolDarkText
+                        )
+                        Text(
+                            text = "Defina suas metas e tolerância para classificar as viagens",
+                            fontSize = 11.sp,
+                            color = MutedText
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 1. Meta R$/km
+                    Surface(
+                        color = SoftSurfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, CleanCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "Meta R$/km (Mínimo Verde):",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PetrolHeader
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                FilledTonalButton(
+                                    onClick = { tempKm = ((tempKm - 0.10) * 100).roundToInt() / 100.0.coerceAtLeast(0.50) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("-0,10", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                }
+                                Text(
+                                    text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", tempKm),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = TrafficGreen
+                                )
+                                FilledTonalButton(
+                                    onClick = { tempKm = ((tempKm + 0.10) * 100).roundToInt() / 100.0.coerceAtMost(15.0) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("+0,10", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Meta R$/hora
+                    Surface(
+                        color = SoftSurfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, CleanCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "Meta R$/hora (Mínimo Verde):",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PetrolHeader
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                FilledTonalButton(
+                                    onClick = { tempHr = (tempHr - 5.0).coerceAtLeast(10.0) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("-5,00", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                }
+                                Text(
+                                    text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", tempHr),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = TrafficGreen
+                                )
+                                FilledTonalButton(
+                                    onClick = { tempHr = (tempHr + 5.0).coerceAtMost(250.0) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("+5,00", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. Tolerância Amarela (%)
+                    Surface(
+                        color = SoftSurfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, CleanCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Tolerância Amarela (Avaliar):",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = "${(ratio * 100).toInt()}% da meta",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = TrafficYellow
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                listOf(0.70, 0.75, 0.80, 0.85, 0.90).forEach { preset ->
+                                    val isSelected = kotlin.math.abs(tempRatio - preset) < 0.02
+                                    Surface(
+                                        color = if (isSelected) TrafficYellow else Color.White,
+                                        border = BorderStroke(1.dp, if (isSelected) TrafficYellow else CleanCardBorder),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { tempRatio = preset }
+                                    ) {
+                                        Text(
+                                            text = "${(preset * 100).toInt()}%",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSelected) Color.White else PetrolDarkText,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.padding(vertical = 5.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 4. Pré-visualização ao vivo das faixas
+                    Text(
+                        text = "Resultado das Faixas:",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Black,
+                        color = PetrolHeader
+                    )
+                    Surface(
+                        color = PureWhiteSurface,
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, CleanCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Critério", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MutedText, modifier = Modifier.weight(1.2f))
+                                Text("🔴 Ruim", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficRed, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                                Text("🟡 Atenção", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficYellow, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center)
+                                Text("🟢 Aceitar", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficGreen, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+                            }
+                            HorizontalDivider(color = CleanCardBorder)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("R$/km", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText, modifier = Modifier.weight(1.2f))
+                                Text("< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmYellow)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                                Text("${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", tempKm)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center)
+                                Text(">= ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", tempKm)}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficGreen, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("R$/hora", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText, modifier = Modifier.weight(1.2f))
+                                Text("< ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrYellow)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                                Text("${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", tempHr)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center)
+                                Text(">= ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", tempHr)}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficGreen, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val updated = config.copy(
+                            targetGrossPerKm = tempKm,
+                            targetGrossPerHour = tempHr,
+                            yellowToleranceRatio = tempRatio
+                        )
+                        scope.launch {
+                            app.preferencesRepository.saveConfig(updated)
+                            app.overlayPanel.applyConfig(updated)
+                            notifyUser("Faixas do Semáforo atualizadas com sucesso!")
+                        }
+                        showAdjustFaixasDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TrafficGreen, contentColor = Color.White),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Salvar Faixas", fontWeight = FontWeight.Black, fontSize = 13.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showAdjustFaixasDialog = false },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cancelar", color = MutedText, fontWeight = FontWeight.Medium, fontSize = 12.5.sp)
+                }
+            }
+        )
+    }
+
+    // -------------------------------------------------------------
+    // DIALOG 2: CONFIRMAÇÃO DE CADASTRO DE ÁREA DE RISCO
+    // -------------------------------------------------------------
+    if (pendingRiskAddressToConfirm != null) {
+        val targetZone = pendingRiskAddressToConfirm!!
+        AlertDialog(
+            onDismissRequest = { pendingRiskAddressToConfirm = null },
+            shape = RoundedCornerShape(22.dp),
+            containerColor = PureWhiteSurface,
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("⚠️", fontSize = 22.sp)
+                    Text(
+                        text = "Cadastrar Área de Risco?",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 17.sp,
+                        color = PetrolDarkText
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Deseja realmente marcar este local como Área de Risco no GoOrNo?",
+                        fontSize = 12.5.sp,
+                        color = PetrolDarkText
+                    )
+                    Surface(
+                        color = Color(0xFFFEF2F2),
+                        border = BorderStroke(1.dp, TrafficRed),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "🚨 $targetZone",
+                            color = TrafficRed,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+                    Text(
+                        text = "Quando uma nova corrida for chamada para esta região, o copiloto exibirá um alerta vermelho em destaque na tela.",
+                        fontSize = 11.5.sp,
+                        color = MutedText
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val currentList = RiskAreaEvaluator.parseCustomZonesList(config.customRiskZones)
+                        val updatedList = (currentList + targetZone).distinct()
+                        scope.launch {
+                            app.preferencesRepository.saveConfig(
+                                config.copy(customRiskZones = updatedList.joinToString(", "))
+                            )
+                            notifyUser("⚠️ '$targetZone' cadastrado como Área de Risco!")
+                        }
+                        pendingRiskAddressToConfirm = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = TrafficRed,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Sim, Cadastrar Área de Risco", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { pendingRiskAddressToConfirm = null },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cancelar", color = MutedText, fontWeight = FontWeight.Medium, fontSize = 12.5.sp)
                 }
             }
         )
