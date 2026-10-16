@@ -52,9 +52,29 @@ import com.creativeam.goorno.util.GeocodedPlace
 import com.creativeam.goorno.util.PlaceSearchHelper
 import com.creativeam.goorno.util.StreetViewLauncher
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+/**
+ * Informações de versão remota para verificação automática de atualizações.
+ */
+data class AppUpdateInfo(
+    val versionName: String,
+    val versionCode: Int,
+    val releaseDate: String,
+    val apkUrl: String,
+    val directDownload: String,
+    val fileSizeBytes: Long,
+    val fileSizeFormatted: String,
+    val changelog: List<String>,
+    val mandatory: Boolean
+)
 
 /**
  * Telas Oficiais do GoOrNo v3.1.0 — Interface Clean, Clara e Moderna.
@@ -101,6 +121,96 @@ fun GoOrNoComposeApp(
 
     var currentScreen by remember { mutableStateOf(GoOrNoScreen.HOME) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
+
+    var updateInfoState by remember { mutableStateOf<AppUpdateInfo?>(null) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var isCheckingUpdates by remember { mutableStateOf(false) }
+
+    val checkForUpdates: (Boolean) -> Unit = { manual ->
+        isCheckingUpdates = true
+        scope.launch(Dispatchers.IO) {
+            try {
+                val conn = (URL("https://goorno-app.vercel.app/api/app-version").openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 4000
+                    readTimeout = 4000
+                    requestMethod = "GET"
+                    setRequestProperty("Accept", "application/json")
+                }
+                if (conn.responseCode == 200) {
+                    val body = conn.inputStream.bufferedReader().use { it.readText() }
+                    val json = JSONObject(body)
+                    val rCode = json.optInt("versionCode", 0)
+                    val rName = json.optString("versionName", "")
+                    val rDate = json.optString("releaseDate", "")
+                    val rUrl = json.optString("apkUrl", "https://goorno-app.vercel.app/GoOrNo.apk")
+                    val rDirect = json.optString("directDownload", "/GoOrNo.apk")
+                    val rBytes = json.optLong("fileSizeBytes", 0L)
+                    val rSizeFormatted = json.optString("fileSizeFormatted", "")
+                    val rMandatory = json.optBoolean("mandatory", false)
+                    val changelogList = mutableListOf<String>()
+                    val clArray = json.optJSONArray("changelog")
+                    if (clArray != null) {
+                        for (i in 0 until clArray.length()) {
+                            changelogList.add(clArray.optString(i))
+                        }
+                    }
+
+                    val currentVersionCode = try {
+                        val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                            pInfo.longVersionCode.toInt()
+                        } else {
+                            @Suppress("DEPRECATION")
+                            pInfo.versionCode
+                        }
+                    } catch (_: Exception) {
+                        27
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        isCheckingUpdates = false
+                        if (rCode > currentVersionCode) {
+                            val info = AppUpdateInfo(
+                                versionName = rName,
+                                versionCode = rCode,
+                                releaseDate = rDate,
+                                apkUrl = rUrl,
+                                directDownload = rDirect,
+                                fileSizeBytes = rBytes,
+                                fileSizeFormatted = rSizeFormatted,
+                                changelog = changelogList,
+                                mandatory = rMandatory
+                            )
+                            updateInfoState = info
+                            showUpdateDialog = true
+                        } else if (manual) {
+                            Toast.makeText(context, "✅ Você já está na versão mais recente (v3.3.7)!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else if (manual) {
+                    withContext(Dispatchers.Main) {
+                        isCheckingUpdates = false
+                        Toast.makeText(context, "Não foi possível verificar no momento (código ${conn.responseCode}).", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                if (manual) {
+                    withContext(Dispatchers.Main) {
+                        isCheckingUpdates = false
+                        Toast.makeText(context, "Falha de conexão ao verificar atualizações: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        isCheckingUpdates = false
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        checkForUpdates(false)
+    }
 
     LaunchedEffect(initialRequestedScreen) {
         if (!initialRequestedScreen.isNullOrBlank()) {
@@ -187,11 +297,18 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(5.dp)
                                 ) {
                                     Surface(
-                                        color = LimeBright,
-                                        shape = RoundedCornerShape(5.dp)
+                                        color = if (updateInfoState != null) TrafficYellow else LimeBright,
+                                        shape = RoundedCornerShape(5.dp),
+                                        modifier = Modifier.clickable {
+                                            if (updateInfoState != null) {
+                                                showUpdateDialog = true
+                                            } else {
+                                                checkForUpdates(true)
+                                            }
+                                        }
                                     ) {
                                         Text(
-                                            text = "v3.3.6",
+                                            text = if (updateInfoState != null) "v3.3.7 • UPDATE!" else "v3.3.7",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.Black,
                                             fontSize = 9.sp,
@@ -3487,6 +3604,54 @@ fun GoOrNoComposeApp(
                                 HorizontalDivider(color = CleanCardBorder)
 
                                 Text(
+                                    text = "Atualizações do Aplicativo (GoOrNo Auto-Update)",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 14.sp,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = "O GoOrNo verifica atualizações automaticamente ao iniciar. Se houver uma nova versão oficial, um aviso surge na tela e você atualiza em 1 clique.",
+                                    fontSize = 12.sp,
+                                    color = MutedText
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        color = SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, CleanCardBorder)
+                                    ) {
+                                        Text(
+                                            text = "Versão: v3.3.7 (Build 27)",
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PetrolDarkText,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                    Button(
+                                        onClick = { checkForUpdates(true) },
+                                        enabled = !isCheckingUpdates,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = PetrolHeader,
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isCheckingUpdates) "Verificando..." else "Verificar Atualização",
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                Text(
                                     text = "Política de Privacidade e Transparência (Seção 9)",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 14.sp,
@@ -3515,6 +3680,144 @@ fun GoOrNoComposeApp(
                 }
             }
         }
+    }
+
+    if (showUpdateDialog && updateInfoState != null) {
+        val info = updateInfoState!!
+        AlertDialog(
+            onDismissRequest = {
+                if (!info.mandatory) {
+                    showUpdateDialog = false
+                }
+            },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = PureWhiteSurface,
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "🚀",
+                        fontSize = 24.sp
+                    )
+                    Column {
+                        Text(
+                            text = "Nova Atualização Disponível!",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 17.sp,
+                            color = PetrolDarkText
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(top = 2.dp)
+                        ) {
+                            Surface(
+                                color = TrafficGreenSoft,
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = "v${info.versionName} (Build ${info.versionCode})",
+                                    color = TrafficGreen,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                            if (info.fileSizeFormatted.isNotBlank()) {
+                                Text(
+                                    text = info.fileSizeFormatted,
+                                    fontSize = 11.sp,
+                                    color = MutedText
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "O GoOrNo detectou uma nova versão oficial pronta para instalação com as seguintes melhorias:",
+                        fontSize = 12.5.sp,
+                        color = PetrolDarkText
+                    )
+                    Surface(
+                        color = SoftSurfaceVariant,
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, CleanCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            if (info.changelog.isNotEmpty()) {
+                                info.changelog.forEach { item ->
+                                    Row(
+                                        verticalAlignment = Alignment.Top,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text("✓", color = TrafficGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        Text(item, fontSize = 11.5.sp, color = PetrolDarkText)
+                                    }
+                                }
+                            } else {
+                                Text("• Melhorias de desempenho e estabilidade.", fontSize = 11.5.sp, color = PetrolDarkText)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val downloadUrl = if (info.apkUrl.isNotBlank()) info.apkUrl else "https://goorno-app.vercel.app/GoOrNo.apk"
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Erro ao abrir link de download: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                        showUpdateDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = TrafficGreen,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Baixar e Atualizar Agora",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp
+                    )
+                }
+            },
+            dismissButton = {
+                if (!info.mandatory) {
+                    TextButton(
+                        onClick = { showUpdateDialog = false },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Lembrar Mais Tarde",
+                            color = MutedText,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 12.5.sp
+                        )
+                    }
+                }
+            }
+        )
     }
 }
 

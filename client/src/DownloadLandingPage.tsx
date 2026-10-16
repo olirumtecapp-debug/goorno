@@ -58,7 +58,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
   };
 
   const handleDownloadApk = () => {
-    // Redireciona diretamente para o link de download oficial do APK v3.3.6
+    // Redireciona diretamente para o link de download oficial do APK v3.3.7
     window.location.href = '/download/apk';
   };
 
@@ -93,7 +93,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             }}
           />
           <span>
-            GoOrNo <small>v3.3.6</small>
+            GoOrNo <small>v3.3.7</small>
           </span>
         </a>
 
@@ -190,7 +190,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <span className="trust-separator"></span>
               <span>Android 8+</span>
               <span className="trust-separator"></span>
-              <span>Versão oficial v3.3.6</span>
+              <span>Versão oficial v3.3.7</span>
             </div>
           </div>
 

@@ -128,6 +128,10 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
         title = "Janela Moderna 3 Pilares + Balão Veredito (Recomendado)",
         subtitle = "Balão de Veredito (Aceitar/Avaliar/Recusar) + Pilares R$/km, R$/h e Nota com barras verticais coloridas"
     ),
+    CLASSIC_V334(
+        title = "Card Clássico v3.3.4 (Tradicional)",
+        subtitle = "Formato tradicional com valor grande, pílulas emolduradas de R$/km e R$/h, nota e botão Fechar"
+    ),
     SEMAFORO_COMPACT(
         title = "Janela Semáforo Compacta",
         subtitle = "Pílula horizontal com bolinha semáforo, valor, distância, tempo e métricas essenciais"
