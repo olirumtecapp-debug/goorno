@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
@@ -178,7 +179,7 @@ fun GoOrNoComposeApp(
                             pInfo.versionCode
                         }
                     } catch (_: Exception) {
-                        29
+                        30
                     }
 
                     withContext(Dispatchers.Main) {
@@ -198,7 +199,7 @@ fun GoOrNoComposeApp(
                             updateInfoState = info
                             showUpdateDialog = true
                         } else if (manual) {
-                            Toast.makeText(context, "✅ Você já está na versão mais recente (v3.3.8)!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "✅ Você já está na versão mais recente (v3.3.9)!", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else if (manual) {
@@ -322,7 +323,7 @@ fun GoOrNoComposeApp(
                                         }
                                     ) {
                                         Text(
-                                            text = if (updateInfoState != null) "v3.3.8 • UPDATE!" else "v3.3.8",
+                                            text = if (updateInfoState != null) "v3.3.9 • UPDATE!" else "v3.3.9",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.Black,
                                             fontSize = 9.sp,
@@ -2085,7 +2086,7 @@ fun GoOrNoComposeApp(
                                                 Text("Nota Boa (>=):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText)
                                             }
                                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                FilledTonalButton(
+                                                Surface(
                                                     onClick = {
                                                         val updatedGood = ((config.targetGoodPassengerRating - 0.05) * 100).roundToInt() / 100.0
                                                         val valid = updatedGood.coerceIn(config.minAcceptablePassengerRating + 0.05, 5.0)
@@ -2096,20 +2097,39 @@ fun GoOrNoComposeApp(
                                                         }
                                                     },
                                                     shape = RoundedCornerShape(8.dp),
-                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                                    modifier = Modifier.height(30.dp)
+                                                    color = Color(0xFFF3E8FF),
+                                                    border = BorderStroke(1.dp, Color(0xFFE9D5FF)),
+                                                    modifier = Modifier.height(34.dp)
                                                 ) {
-                                                    Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 9.dp)) {
+                                                        Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87))
+                                                    }
                                                 }
-                                                OutlinedTextField(
-                                                    value = goodRatingText,
-                                                    onValueChange = { goodRatingText = it.replace(",", "."); savedRatingFlag = false },
-                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+
+                                                Surface(
                                                     shape = RoundedCornerShape(8.dp),
-                                                    modifier = Modifier.width(72.dp).height(46.dp),
-                                                    singleLine = true
-                                                )
-                                                FilledTonalButton(
+                                                    border = BorderStroke(1.dp, CleanCardBorder),
+                                                    color = PureWhiteSurface,
+                                                    modifier = Modifier.width(58.dp).height(34.dp)
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                                        BasicTextField(
+                                                            value = goodRatingText,
+                                                            onValueChange = { goodRatingText = it.replace(",", "."); savedRatingFlag = false },
+                                                            textStyle = LocalTextStyle.current.copy(
+                                                                fontSize = 13.5.sp,
+                                                                fontWeight = FontWeight.Black,
+                                                                color = PetrolDarkText,
+                                                                textAlign = TextAlign.Center
+                                                            ),
+                                                            singleLine = true,
+                                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                Surface(
                                                     onClick = {
                                                         val updatedGood = ((config.targetGoodPassengerRating + 0.05) * 100).roundToInt() / 100.0
                                                         val valid = updatedGood.coerceIn(4.0, 5.0)
@@ -2120,10 +2140,13 @@ fun GoOrNoComposeApp(
                                                         }
                                                     },
                                                     shape = RoundedCornerShape(8.dp),
-                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                                    modifier = Modifier.height(30.dp)
+                                                    color = Color(0xFFF3E8FF),
+                                                    border = BorderStroke(1.dp, Color(0xFFE9D5FF)),
+                                                    modifier = Modifier.height(34.dp)
                                                 ) {
-                                                    Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 9.dp)) {
+                                                        Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87))
+                                                    }
                                                 }
                                             }
                                         }
@@ -2141,7 +2164,7 @@ fun GoOrNoComposeApp(
                                                 Text("Nota Mínima (>=):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText)
                                             }
                                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                FilledTonalButton(
+                                                Surface(
                                                     onClick = {
                                                         val updatedMin = ((config.minAcceptablePassengerRating - 0.05) * 100).roundToInt() / 100.0
                                                         val valid = updatedMin.coerceIn(3.0, config.targetGoodPassengerRating - 0.05)
@@ -2152,20 +2175,39 @@ fun GoOrNoComposeApp(
                                                         }
                                                     },
                                                     shape = RoundedCornerShape(8.dp),
-                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                                    modifier = Modifier.height(30.dp)
+                                                    color = Color(0xFFF3E8FF),
+                                                    border = BorderStroke(1.dp, Color(0xFFE9D5FF)),
+                                                    modifier = Modifier.height(34.dp)
                                                 ) {
-                                                    Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 9.dp)) {
+                                                        Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87))
+                                                    }
                                                 }
-                                                OutlinedTextField(
-                                                    value = minRatingText,
-                                                    onValueChange = { minRatingText = it.replace(",", "."); savedRatingFlag = false },
-                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+
+                                                Surface(
                                                     shape = RoundedCornerShape(8.dp),
-                                                    modifier = Modifier.width(72.dp).height(46.dp),
-                                                    singleLine = true
-                                                )
-                                                FilledTonalButton(
+                                                    border = BorderStroke(1.dp, CleanCardBorder),
+                                                    color = PureWhiteSurface,
+                                                    modifier = Modifier.width(58.dp).height(34.dp)
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                                        BasicTextField(
+                                                            value = minRatingText,
+                                                            onValueChange = { minRatingText = it.replace(",", "."); savedRatingFlag = false },
+                                                            textStyle = LocalTextStyle.current.copy(
+                                                                fontSize = 13.5.sp,
+                                                                fontWeight = FontWeight.Black,
+                                                                color = PetrolDarkText,
+                                                                textAlign = TextAlign.Center
+                                                            ),
+                                                            singleLine = true,
+                                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                Surface(
                                                     onClick = {
                                                         val updatedMin = ((config.minAcceptablePassengerRating + 0.05) * 100).roundToInt() / 100.0
                                                         val valid = updatedMin.coerceIn(3.0, config.targetGoodPassengerRating - 0.05)
@@ -2176,10 +2218,13 @@ fun GoOrNoComposeApp(
                                                         }
                                                     },
                                                     shape = RoundedCornerShape(8.dp),
-                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                                    modifier = Modifier.height(30.dp)
+                                                    color = Color(0xFFF3E8FF),
+                                                    border = BorderStroke(1.dp, Color(0xFFE9D5FF)),
+                                                    modifier = Modifier.height(34.dp)
                                                 ) {
-                                                    Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 9.dp)) {
+                                                        Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87))
+                                                    }
                                                 }
                                             }
                                         }
@@ -3805,7 +3850,7 @@ fun GoOrNoComposeApp(
                                         border = BorderStroke(1.dp, CleanCardBorder)
                                     ) {
                                         Text(
-                                            text = "Versão: v3.3.8 (Build 29)",
+                                            text = "Versão: v3.3.9 (Build 30)",
                                             fontSize = 11.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = PetrolDarkText,
