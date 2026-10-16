@@ -891,20 +891,21 @@ app.post("/api/redeem-voucher", async (req, res) => {
 // 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
 app.get("/api/app-version", (_req, res) => {
   res.json({
-    versionName: "3.3.10",
-    versionCode: 31,
+    versionName: "3.3.11",
+    versionCode: 32,
     releaseDate: "2026-10-16",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.10.apk",
-    directDownload: "/GoOrNo-v3.3.10.apk",
-    fileSizeBytes: 55225564,
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.11.apk",
+    directDownload: "/GoOrNo-v3.3.11.apk",
+    fileSizeBytes: 55225572,
     fileSizeFormatted: "52.7 MB",
     changelog: [
-      "Janela Clássica com largura ampliada (315dp) evitando quebra de linha de km e tempo de viagem.",
-      "Correção visual: campos de notas do passageiro 100% visíveis sem corte de texto e botões ajustados.",
+      "Todas as janelas flutuantes ampliadas para 350dp eliminando qualquer quebra de linha em km, tempo, valores e texto de arrasto ('segure e arraste').",
+      "Semáforo compacto com linhas alinhadas e texto fluido em uma única linha.",
+      "Janela Clássica e Balão Moderno perfeitamente harmonizados e espaçosos.",
+      "Campos de notas do passageiro 100% visíveis sem corte de texto e botões ajustados.",
       "Novo popup 'Ajustar Suas Faixas' interativo com ajuste de R$/km, R$/h e tolerância amarela com prévia ao vivo.",
-      "Confirmação de segurança antes de adicionar endereço como Área de Risco, prevenindo toques acidentais.",
-      "Card Clássico v3.3.4 (Tradicional) selecionável nas configurações de Janela com valor grande e botão Fechar.",
-      "Verificação automática e integrada de atualizações direto no app (Auto-Update)."
+      "Confirmação de segurança antes de adicionar endereço como Área de Risco.",
+      "Card Clássico v3.3.4 (Tradicional) selecionável nas configurações de Janela com valor grande e botão Fechar."
     ],
     mandatory: false,
   });
@@ -996,11 +997,14 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.11.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.11.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.11.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.10.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.10.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.10.apk"),
@@ -1010,7 +1014,7 @@ app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.10.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.11.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");

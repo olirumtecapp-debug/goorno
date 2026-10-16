@@ -38,16 +38,16 @@ jobs:
         run: |
           mkdir -p release-apk
           if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            cp android/app/build/outputs/apk/release/app-release.apk release-apk/GoOrNo-v3.3.10.apk
+            cp android/app/build/outputs/apk/release/app-release.apk release-apk/GoOrNo-v3.3.11.apk
             cp android/app/build/outputs/apk/release/app-release.apk release-apk/GoOrNo.apk
           else
-            cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo-v3.3.10.apk
+            cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo-v3.3.11.apk
             cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo.apk
           fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: GoOrNo-APK-v3.3.10
+          name: GoOrNo-APK-v3.3.11
           path: release-apk/*
           retention-days: 30

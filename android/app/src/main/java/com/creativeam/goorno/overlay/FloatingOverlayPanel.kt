@@ -356,7 +356,7 @@ class FloatingOverlayPanel(private val context: Context) {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(12), dp(9), dp(12), dp(9))
             background = roundedCardBg("#0A1916", badgeHex, 20f, 2)
-            layoutParams = LinearLayout.LayoutParams(dp(270), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(350), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -416,11 +416,12 @@ class FloatingOverlayPanel(private val context: Context) {
             TrafficLightVerdict.GRAY_NEUTRAL -> "Avaliar"
         }
         val tvLine1 = TextView(context).apply {
-            text = "$seqTag${offer.sourceApp.displayName} · $priceStr  •  $verdictLabel ($distStr · $minStr)"
+            text = "$seqTag${offer.sourceApp.displayName} · $priceStr • $verdictLabel ($distStr · $minStr)"
             setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.sp.value)
             setTypeface(typeface, Typeface.BOLD)
-            maxLines = 2
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
 
         val riskTag = if (result.hasRiskAlert) " • ⚠️ Risco" else ""
@@ -431,12 +432,13 @@ class FloatingOverlayPanel(private val context: Context) {
             else -> "#FCA5A5"
         }
         val tvLine2 = TextView(context).apply {
-            val ratingPart = if (ratingStr.isNotBlank()) "  •  $ratingStr" else ""
-            text = "$grossKmStr  •  $grossHrStr$ratingPart$riskTag$optionalSuffix"
+            val ratingPart = if (ratingStr.isNotBlank()) " • $ratingStr" else ""
+            text = "$grossKmStr • $grossHrStr$ratingPart$riskTag$optionalSuffix"
             setTextColor(Color.parseColor(line2Color))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTypeface(typeface, Typeface.BOLD)
-            maxLines = 2
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
 
         textCol.addView(tvLine1)
@@ -683,7 +685,7 @@ class FloatingOverlayPanel(private val context: Context) {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(9), dp(12), dp(10))
             background = roundedCardBg("#111F1A", verdictBgHex, 16f, 2)
-            layoutParams = LinearLayout.LayoutParams(dp(270), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(350), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -735,6 +737,8 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextColor(Color.parseColor("#CBD5E1"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
         topRow.addView(tvSubtitle)
@@ -943,7 +947,7 @@ class FloatingOverlayPanel(private val context: Context) {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(9), dp(12), dp(9))
             background = roundedCardBg("#FFFFFF", badgeHex, 18f, 2)
-            layoutParams = LinearLayout.LayoutParams(dp(315), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(350), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -963,10 +967,12 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val seqLabel = if (totalCount > 1) " · [$index/$totalCount]" else ""
         val tvTitle = TextView(context).apply {
-            text = "⠿ ${offer.sourceApp.displayName}$seqLabel (segure p/ mover)"
+            text = "⠿ ${offer.sourceApp.displayName}$seqLabel (segure e arraste)"
             setTextColor(Color.parseColor("#0F2F28"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
@@ -975,7 +981,7 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextColor(Color.parseColor("#0F2F28"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(8), dp(3), dp(8), dp(3))
+            setPadding(dp(6), dp(3), dp(6), dp(3))
             background = roundedBg("#E2E8F0", 10f)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -991,7 +997,7 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(10), dp(4), dp(10), dp(4))
+            setPadding(dp(8), dp(4), dp(8), dp(4))
             background = roundedBg("#DC2626", 12f)
             setOnClickListener { dismissCurrentOfferCardByUser() }
         }
@@ -1092,6 +1098,7 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextColor(kmTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
             setPadding(dp(7), dp(3), dp(7), dp(3))
             background = roundedCardBg(kmSoftBgHex, kmBadgeHex, 7f, 1)
             layoutParams = LinearLayout.LayoutParams(
@@ -1115,6 +1122,7 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextColor(hrTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
             setPadding(dp(7), dp(3), dp(7), dp(3))
             background = roundedCardBg(hrSoftBgHex, hrBadgeHex, 7f, 1)
         }
