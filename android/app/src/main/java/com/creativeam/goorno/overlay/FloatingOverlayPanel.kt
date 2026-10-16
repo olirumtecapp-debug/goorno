@@ -1193,7 +1193,10 @@ class FloatingOverlayPanel(private val context: Context) {
             )
         }
 
-        fun showHubView() {
+        lateinit var showHubView: () -> Unit
+        lateinit var showSemaforoAdjusterView: () -> Unit
+
+        showHubView = {
             contentContainer.removeAllViews()
 
             val cardsRow = LinearLayout(context).apply {
@@ -1251,7 +1254,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 }
             }
 
-            val kmStr = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", lastKnownConfig?.minGrossPerKm ?: 2.0)
+            val kmStr = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", lastKnownConfig?.targetGrossPerKm ?: 2.0)
             cardsRow.addView(createActionCard("🚦", "Semáforo", kmStr, "#10B981", "#052E26") {
                 showSemaforoAdjusterView()
             })
@@ -1334,7 +1337,7 @@ class FloatingOverlayPanel(private val context: Context) {
             })
         }
 
-        fun showSemaforoAdjusterView() {
+        showSemaforoAdjusterView = {
             contentContainer.removeAllViews()
 
             val editorLayout = LinearLayout(context).apply {
@@ -1351,9 +1354,9 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             editorLayout.addView(tvH)
 
-            var curKm = lastKnownConfig?.minGrossPerKm ?: 2.0
-            var curHr = lastKnownConfig?.minGrossPerHour ?: 45.0
-            var curRating = lastKnownConfig?.minPassengerRating ?: 4.80
+            var curKm = lastKnownConfig?.targetGrossPerKm ?: 2.0
+            var curHr = lastKnownConfig?.targetGrossPerHour ?: 40.0
+            var curRating = lastKnownConfig?.targetGoodPassengerRating ?: 4.85
 
             fun createStepperRow(label: String, initialValueText: String, onMinus: () -> String, onPlus: () -> String): View {
                 val row = LinearLayout(context).apply {

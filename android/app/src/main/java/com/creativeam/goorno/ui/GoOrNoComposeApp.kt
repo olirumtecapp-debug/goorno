@@ -599,7 +599,7 @@ fun GoOrNoComposeApp(
                                     icon = "🚦",
                                     title = "Semáforo",
                                     subtitle = "Ganhos e notas mínimas",
-                                    badge = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f/km", config.minGrossPerKm),
+                                    badge = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f/km", config.targetGrossPerKm),
                                     badgeColor = TrafficGreen,
                                     onClick = { currentScreen = GoOrNoScreen.FINANCIAL_TARGETS }
                                 )

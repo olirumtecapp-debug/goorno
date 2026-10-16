@@ -54,9 +54,9 @@ class GoOrNoApplication : Application() {
                 appScope.launch {
                     val current = preferencesRepository.getConfigOnce()
                     preferencesRepository.saveConfig(current.copy(
-                        minGrossPerKm = minKm,
-                        minGrossPerHour = minHr,
-                        minPassengerRating = minRating
+                        targetGrossPerKm = minKm,
+                        targetGrossPerHour = minHr,
+                        targetGoodPassengerRating = minRating
                     ))
                 }
             }
