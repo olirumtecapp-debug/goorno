@@ -287,6 +287,9 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val extraSuffix = if (extraParts.isEmpty()) "" else " · " + extraParts.joinToString(" · ")
                     val riskHeaderTag = if (hasRisk) " · ⚠️ RISCO" else ""
 
+                    val origLine = origAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
+                    val destLine = destAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
+
                     val title = "$emoji $verdictLabel$riskHeaderTag · $priceStr · $kmStr · $hrStr"
                     val shortText = "$distStr · $minStr | 📍 $origLine ➔ 🏁 $destLine"
                     val expandedText = buildString {
