@@ -205,7 +205,7 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val channel = NotificationChannel(
                         CHANNEL_ID,
                         "GoOrNo — Copiloto Ativo",
-                        NotificationManager.IMPORTANCE_DEFAULT
+                        NotificationManager.IMPORTANCE_HIGH
                     ).apply {
                         setSound(null, null)
                         enableVibration(false)
@@ -240,7 +240,9 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
                     .setOngoing(true)
                     .setSilent(true)
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                    .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
                     .setContentIntent(openPendingIntent)
 
                 val hasRide = prefs.getBoolean("has_ride", false)

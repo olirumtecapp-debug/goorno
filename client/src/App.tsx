@@ -1357,7 +1357,7 @@ export function App() {
                     </h2>
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-[#04241E] border border-[#d9ff4f]/40 text-[11px] font-black text-[#d9ff4f]">
-                    v3.3.4
+                    v3.3.5
                   </span>
                 </div>
                 <p className="text-xs text-white/70 mt-1">

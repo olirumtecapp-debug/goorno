@@ -280,6 +280,12 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
+    fun clearRecentlyDismissed() {
+        mainHandler.post {
+            recentlyDismissedOfferTimestamps.clear()
+        }
+    }
+
     private fun attachWindowIfNeeded() {
         if (!isAdded && rootContainer != null && layoutParams != null) {
             try {
@@ -360,19 +366,28 @@ class FloatingOverlayPanel(private val context: Context) {
         val textCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
+                0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                1f
             ).apply {
-                marginEnd = dp(10)
+                marginEnd = dp(8)
             }
         }
 
         val riskTitleTag = if (result.hasRiskAlert) " · ⚠️ ÁREA DE RISCO" else ""
+        val verdictLabel = when (result.verdict) {
+            TrafficLightVerdict.GREEN -> "Aceitar"
+            TrafficLightVerdict.YELLOW -> "Avaliar"
+            TrafficLightVerdict.RED -> "Recusar"
+            TrafficLightVerdict.GRAY_NEUTRAL -> "Avaliar"
+        }
         val tvLine1 = TextView(context).apply {
-            text = "$seqTag$priceStr  •  ${result.verdict.label} ($distStr · $minStr)$riskTitleTag"
+            text = "$seqTag$priceStr  •  $verdictLabel ($distStr · $minStr)$riskTitleTag"
             setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
             setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
 
         val ratingSegment = if (!result.passengerRatingBadge.isNullOrBlank()) {
@@ -392,6 +407,8 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextColor(Color.parseColor(line2Color))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
 
         textCol.addView(tvLine1)
@@ -425,6 +442,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
     // =========================================================================
     // FORMATO 2: SÓ BOLINHA SEMÁFORO + TOTAL KM/TEMPO + R$/KM (Ultra Discreto)
+    // Perfeitamente alinhado em linha única, sem quebras e sem sobreposição
     // =========================================================================
     @SuppressLint("ClickableViewAccessibility")
     private fun buildMiniBallView(
@@ -438,8 +456,8 @@ class FloatingOverlayPanel(private val context: Context) {
         val miniPill = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(6), dp(8), dp(6))
-            background = roundedCardBg("#0A1916", badgeHex, 24f, 2)
+            setPadding(dp(10), dp(5), dp(8), dp(5))
+            background = roundedCardBg("#0D1D18", badgeHex, 20f, 2)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(8).toFloat()
             }
@@ -450,17 +468,38 @@ class FloatingOverlayPanel(private val context: Context) {
             text = "⠿"
             setTextColor(Color.parseColor("#94A3B8"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-            setPadding(0, 0, dp(5), 0)
+            setPadding(0, 0, dp(6), 0)
         }
         miniPill.addView(dragHandle)
 
         val ball = View(context).apply {
             background = circleBg(badgeHex, "#FFFFFF", 2)
-            layoutParams = LinearLayout.LayoutParams(dp(20), dp(20)).apply {
-                marginEnd = dp(8)
+            layoutParams = LinearLayout.LayoutParams(dp(16), dp(16)).apply {
+                marginEnd = dp(6)
             }
         }
         miniPill.addView(ball)
+
+        val verdictLabel = when (result.verdict) {
+            TrafficLightVerdict.GREEN -> "Aceitar"
+            TrafficLightVerdict.YELLOW -> "Avaliar"
+            TrafficLightVerdict.RED -> "Recusar"
+            TrafficLightVerdict.GRAY_NEUTRAL -> "Avaliar"
+        }
+
+        val tvVerdictBadge = TextView(context).apply {
+            text = verdictLabel
+            setTextColor(Color.parseColor(badgeHex))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = dp(6)
+            }
+        }
+        miniPill.addView(tvVerdictBadge)
 
         val priceStr = offer.offeredPrice?.let { formatCurrency(it) } ?: "R$ --"
         val distStr = result.totalConsideredDistanceKm?.let {
@@ -468,22 +507,19 @@ class FloatingOverlayPanel(private val context: Context) {
         } ?: "--km"
         val minStr = result.totalConsideredDurationMin?.let { "${it}m" } ?: "--m"
         val grossKmStr = result.grossPerKm?.let { formatCurrency(it) + "/km" } ?: "--/km"
-        val grossHrStr = result.grossPerHour?.let {
-            String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", it)
-        } ?: "--/h"
-        val optionalSuffix = buildOptionalProfitAndCostSuffix(result)
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
-        val riskMiniTag = if (result.hasRiskAlert) "⚠️ RISCO · " else ""
         val ratingMiniTag = if (result.passengerRating != null) {
             val rStr = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", result.passengerRating)
-            "${result.passengerRatingVerdict.emoji}★$rStr · "
+            " · ★$rStr"
         } else ""
 
         val tvCompact = TextView(context).apply {
-            text = "$seqTag$priceStr ($distStr · $minStr)  •  ${result.verdict.label}  •  $grossKmStr · $grossHrStr$optionalSuffix$riskMiniTag$ratingMiniTag"
-            setTextColor(if (result.hasRiskAlert) Color.parseColor("#FDE047") else Color.WHITE)
+            text = "$seqTag$priceStr ($distStr · $minStr)  |  $grossKmStr$ratingMiniTag"
+            setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
             setPadding(0, 0, dp(8), 0)
         }
         miniPill.addView(tvCompact)
@@ -492,10 +528,12 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val btnClose = TextView(context).apply {
             text = "✕"
-            setTextColor(Color.parseColor("#FCA5A5"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(6), dp(2), dp(4), dp(2))
+            gravity = Gravity.CENTER
+            setPadding(dp(7), dp(3), dp(7), dp(3))
+            background = roundedBg("#DC2626", 12f)
             setOnClickListener { dismissCurrentOfferCardByUser() }
         }
         miniPill.addView(btnClose)
@@ -527,7 +565,7 @@ class FloatingOverlayPanel(private val context: Context) {
         // Cores de veredito de alto contraste para o Balão Superior (Speech Bubble)
         val (verdictText, verdictBgHex, verdictTextColor) = when (result.verdict) {
             TrafficLightVerdict.GREEN -> Triple("✓  ACEITAR", "#16A34A", Color.WHITE)
-            TrafficLightVerdict.YELLOW -> Triple("⚠  ATENÇÃO", "#EAB308", Color.parseColor("#0F172A"))
+            TrafficLightVerdict.YELLOW -> Triple("●  AVALIAR", "#EAB308", Color.parseColor("#0F172A"))
             TrafficLightVerdict.RED -> Triple("✕  RECUSAR", "#DC2626", Color.WHITE)
             TrafficLightVerdict.GRAY_NEUTRAL -> Triple("●  AVALIAR", "#475569", Color.WHITE)
         }
@@ -737,25 +775,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val (hrBarColor, _, _) = verdictPalette(result.hourVerdict)
         addPillar("R$/Hora", hrVal, hrBarColor)
 
-        // 3. Pilar: Lucro (%) ou Lucro R$
-        val price = offer.offeredPrice ?: 0.0
-        val netProfit = result.estimatedNetProfit
-        val netPercentVal = if (price > 0.0 && netProfit != null) {
-            val pct = (netProfit / price) * 100.0
-            String.format(Locale.forLanguageTag("pt-BR"), "%.0f%%", pct)
-        } else if (netProfit != null) {
-            String.format(Locale.forLanguageTag("pt-BR"), "R$%.0f", netProfit)
-        } else {
-            "--"
-        }
-        val profitBarColor = when {
-            netProfit == null -> "#64748B"
-            netProfit > 0.0 -> "#22C55E"
-            else -> "#EF4444"
-        }
-        addPillar("Lucro", netPercentVal, profitBarColor)
-
-        // 4. Pilar: Nota do Passageiro
+        // 3. Pilar: Nota do Passageiro
         val ratingVal = result.passengerRating?.let {
             String.format(Locale.forLanguageTag("pt-BR"), "%.2f", it)
         } ?: "--"
@@ -766,6 +786,37 @@ class FloatingOverlayPanel(private val context: Context) {
             PassengerRatingVerdict.UNKNOWN -> "#94A3B8"
         }
         addPillar("Nota", ratingVal, ratingBarColor)
+
+        // 4. Pilar Opcional: Lucro (apenas se o motorista ativar nas configurações)
+        if (showProfitOnOverlay) {
+            val price = offer.offeredPrice ?: 0.0
+            val netProfit = result.estimatedNetProfit
+            val netPercentVal = if (price > 0.0 && netProfit != null) {
+                val pct = (netProfit / price) * 100.0
+                String.format(Locale.forLanguageTag("pt-BR"), "%.0f%%", pct)
+            } else if (netProfit != null) {
+                String.format(Locale.forLanguageTag("pt-BR"), "R$%.0f", netProfit)
+            } else {
+                "--"
+            }
+            val profitBarColor = when {
+                netProfit == null -> "#64748B"
+                netProfit > 0.0 -> "#22C55E"
+                else -> "#EF4444"
+            }
+            addPillar("Lucro", netPercentVal, profitBarColor)
+        }
+
+        // 5. Pilar Opcional: Custo (apenas se o motorista ativar nas configurações)
+        if (showCostOnOverlay) {
+            val totalCost = result.estimatedTotalCost
+            val costVal = if (totalCost != null) {
+                String.format(Locale.forLanguageTag("pt-BR"), "R$ %.1f", totalCost)
+            } else {
+                "--"
+            }
+            addPillar("Custo", costVal, "#94A3B8")
+        }
 
         card.addView(pillarsRow)
 

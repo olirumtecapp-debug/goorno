@@ -125,16 +125,16 @@ enum class PassengerRatingVerdict(val label: String, val emoji: String, val hexC
  */
 enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
     FULL_CARD(
-        title = "Janela Moderna 4 Pilares + Balão Veredito (Recomendado)",
-        subtitle = "Balão de Veredito (Aceitar/Atenção/Recusar) + Pilares R$/km, R$/h, Lucro e Nota com barras verticais coloridas"
+        title = "Janela Moderna 3 Pilares + Balão Veredito (Recomendado)",
+        subtitle = "Balão de Veredito (Aceitar/Avaliar/Recusar) + Pilares R$/km, R$/h e Nota com barras verticais coloridas"
     ),
     SEMAFORO_COMPACT(
-        title = "Janela Moderna Compacta (Oficial)",
-        subtitle = "Card escuro translúcido com balão de veredito e métricas essenciais"
+        title = "Janela Semáforo Compacta",
+        subtitle = "Pílula horizontal com bolinha semáforo, valor, distância, tempo e métricas essenciais"
     ),
     MINI_BALL(
         title = "Só Bolinha Semáforo + R$/km (Ultra Discreto)",
-        subtitle = "Pílula mínima com a bolinha colorida, valor, KM/Tempo Total, R$/km, R$/h e Nota ★"
+        subtitle = "Pílula mínima alinhada com bolinha colorida, valor, distância e R$/km"
     );
 
     companion object {
@@ -171,7 +171,7 @@ data class DriverFinancialConfig(
     val overlayOpacityPercent: Int = 92,
     val overlayAutoMinimizeSec: Int = 7,
     val overlayDisplayStyle: String = OverlayDisplayStyle.FULL_CARD.name,
-    val showProfitOnOverlay: Boolean = true,
+    val showProfitOnOverlay: Boolean = false,
     val showCostOnOverlay: Boolean = false,
     val riskAlertEnabled: Boolean = true,
     val forceRedOnRiskArea: Boolean = true,

@@ -81,7 +81,7 @@ class DriverPreferencesRepository(private val context: Context) {
             minConfidenceThreshold = prefs[Keys.MIN_CONFIDENCE] ?: 0.65,
             overlayOpacityPercent = prefs[Keys.OVERLAY_OPACITY] ?: 92,
             overlayAutoMinimizeSec = prefs[Keys.OVERLAY_AUTO_MIN_SEC] ?: 7,
-            overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: "SEMAFORO_COMPACT",
+            overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: "FULL_CARD",
             showProfitOnOverlay = prefs[Keys.SHOW_PROFIT_ON_OVERLAY] ?: false,
             showCostOnOverlay = prefs[Keys.SHOW_COST_ON_OVERLAY] ?: false,
             riskAlertEnabled = prefs[Keys.RISK_ALERT_ENABLED] ?: true,

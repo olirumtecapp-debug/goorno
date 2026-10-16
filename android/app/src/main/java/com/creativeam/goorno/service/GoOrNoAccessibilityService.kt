@@ -1,6 +1,7 @@
 package com.creativeam.goorno.service
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.Build
@@ -70,6 +71,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        try {
+            val info = serviceInfo ?: AccessibilityServiceInfo()
+            info.flags = info.flags or
+                AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
+                AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+                AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+            serviceInfo = info
+        } catch (_: Throwable) {
+        }
+
         RuntimeDiagnosticsBus.setAccessibilityConnected(true)
         val app = applicationContext as? GoOrNoApplication
 
@@ -100,6 +111,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         startActivePollingLoop()
     }
 
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_BACKGROUND || level >= TRIM_MEMORY_RUNNING_CRITICAL) {
+            shownOfferTimestamps.clear()
+            isTakingAutoScreenshot = false
+            System.gc()
+        }
+    }
+
     private fun startActivePollingLoop() {
         pollingJob?.cancel()
         pollingJob = serviceScope.launch {
@@ -111,7 +131,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     ) {
                         scanCurrentScreen(eventPkg = null, forceThrottleBypass = true)
                     }
-                } catch (_: Exception) {
+                } catch (_: Throwable) {
                 }
                 delay(900L)
             }
@@ -131,13 +151,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             !evtPkg.contains("inputmethod", ignoreCase = true) &&
             !evtPkg.contains("keyboard", ignoreCase = true)
         ) {
-            // Se o motorista abriu um app terceiro (ex: WhatsApp) que não é Uber nem 99,
-            // limpamos o histórico de exibição para que ao voltar para a 99/Uber o card flutuante reabra na hora!
-            if (SourceApp.fromPackageName(evtPkg) == SourceApp.UNKNOWN &&
-                SourceApp.fromPackageName(lastKnownForegroundPkg) != SourceApp.UNKNOWN
-            ) {
+            val wasKnownRide = SourceApp.fromPackageName(lastKnownForegroundPkg) != SourceApp.UNKNOWN
+            val isNowKnownRide = SourceApp.fromPackageName(evtPkg) != SourceApp.UNKNOWN
+
+            // Se o motorista trocou de app (ex: abriu Instagram/WhatsApp ou voltou de lá para a 99/Uber),
+            // limpamos imediatamente o histórico de repetição para reabrir chamadas instantaneamente!
+            if (evtPkg != lastKnownForegroundPkg && (wasKnownRide || isNowKnownRide)) {
                 shownOfferTimestamps.clear()
                 lastScreenContextMode = ""
+                consecutiveScansWithoutOffers = 0
+                app?.overlayPanel?.clearRecentlyDismissed()
             }
             lastKnownForegroundPkg = evtPkg
         }
@@ -276,10 +299,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         // 2º Tentativa Automática (Leitura Visual Silenciosa via takeScreenshot + ML Kit OCR):
-        // Sempre executada quando não estamos dentro do próprio GoOrNo!
-        // Assim, mesmo no Radar de Viagens da Uber ou após alternar com o WhatsApp, o leitor lê a imagem real da tela!
-        val fallbackApp = if (effectiveApp != SourceApp.UNKNOWN) effectiveApp else SourceApp.NINETY_NINE_DRIVER
-        triggerAutomaticAccessibilityOcrIfNeeded(fallbackApp, targetPkg, now)
+        // CRÍTICO: Só dispara Leitura Visual/OCR se o app em foco for Uber/99 ou se houver janela/conteúdo de corrida!
+        // Se o motorista estiver no Instagram, WhatsApp, TikTok, etc., NUNCA gasta CPU/memória tirando screenshots,
+        // garantindo que o app não sofra OOM, não perca prioridade e responda instantaneamente ao voltar para a Uber/99!
+        if (effectiveApp != SourceApp.UNKNOWN || rideWindow != null) {
+            val appToScan = if (effectiveApp != SourceApp.UNKNOWN) effectiveApp else SourceApp.fromPackageName(rideWindow!!.first)
+            triggerAutomaticAccessibilityOcrIfNeeded(appToScan, targetPkg, now)
+        } else {
+            // Em apps de terceiros sem corrida na tela, libera qualquer semáforo pendente
+            isTakingAutoScreenshot = false
+        }
     }
 
     private fun extractOffersForApp(
