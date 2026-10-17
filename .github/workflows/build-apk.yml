@@ -42,21 +42,21 @@ jobs:
         run: |
           mkdir -p release-apk
           if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            cp android/app/build/outputs/apk/release/app-release.apk release-apk/GoOrNo-v3.3.15.apk
+            cp android/app/build/outputs/apk/release/app-release.apk release-apk/GoOrNo-v3.3.16.apk
             cp android/app/build/outputs/apk/release/app-release.apk release-apk/GoOrNo.apk
-            cp android/app/build/outputs/apk/release/app-release.apk GoOrNo-v3.3.15.apk
+            cp android/app/build/outputs/apk/release/app-release.apk GoOrNo-v3.3.16.apk
             cp android/app/build/outputs/apk/release/app-release.apk GoOrNo.apk
           else
-            cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo-v3.3.15.apk
+            cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo-v3.3.16.apk
             cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo.apk
-            cp android/app/build/outputs/apk/debug/app-debug.apk GoOrNo-v3.3.15.apk
+            cp android/app/build/outputs/apk/debug/app-debug.apk GoOrNo-v3.3.16.apk
             cp android/app/build/outputs/apk/debug/app-debug.apk GoOrNo.apk
           fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: GoOrNo-APK-v3.3.15
+          name: GoOrNo-APK-v3.3.16
           path: release-apk/*
           retention-days: 30
 
@@ -64,6 +64,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add GoOrNo-v3.3.15.apk GoOrNo.apk
-          git commit -m "chore(release): publish GoOrNo-v3.3.15.apk [skip ci]" || echo "No changes to commit"
+          git add GoOrNo-v3.3.16.apk GoOrNo.apk
+          git commit -m "chore(release): publish GoOrNo-v3.3.16.apk [skip ci]" || echo "No changes to commit"
           git push origin main || echo "Push skipped"

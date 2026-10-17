@@ -959,19 +959,19 @@ app.post("/api/redeem-voucher", async (req, res) => {
 // 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
 app.get("/api/app-version", (_req, res) => {
   res.json({
-    versionName: "3.3.15",
-    versionCode: 36,
+    versionName: "3.3.16",
+    versionCode: 37,
     releaseDate: "2026-10-17",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.15.apk",
-    directDownload: "/GoOrNo-v3.3.15.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.16.apk",
+    directDownload: "/GoOrNo-v3.3.16.apk",
     fileSizeBytes: 55238020,
     fileSizeFormatted: "52.6 MB",
     changelog: [
-      "Redesign Completo dos Planos & Assinatura: layout alinhado, badges elegantes em soft emerald e tipografia premium.",
-      "Correção crítica: eliminação total do looping de notificações em segundo plano.",
-      "Identificação Segura: Proteção de conta com PIN de 4 dígitos e recuperação instantânea por Placa/Palavra Secreta.",
-      "Sincronização 100% em Nuvem: Todas as configurações e custos restaurados automaticamente ao trocar de aparelho.",
-      "Tempo de Exibição estritamente respeitado pelo motorista (3s, 4s, 5s, 6s e 7s sem redução forçada)."
+      "Cards Flutuantes de Alta Visibilidade: Números gigantes (28sp bold) nos 3 pilares idênticos ao padrão do mercado.",
+      "Barras Verticais Luminosas (4dp x 26dp) em verde esmeralda (#00C853), âmbar e vermelho para leitura instantânea ao dirigir.",
+      "Balão de Veredito Moderno: '✓ ACEITAR' e '✕ RECUSAR' com contraste absoluto e ponta indicadora de fala.",
+      "Janelas Compacta e Ultra Compacta Otimizadas: Métricas em 15.5sp bold sem corte de texto ou reticências (zero quebra de linha).",
+      "Novo padrão visual padrão configurado para Janela Moderna 3 Pilares + Balão de Veredito."
     ],
     mandatory: false,
   });
@@ -1063,11 +1063,14 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.16.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.16.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.16.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.16.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.15.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.15.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.15.apk"),
