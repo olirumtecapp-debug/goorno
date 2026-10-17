@@ -144,22 +144,22 @@ object LicenseManager {
 
     suspend fun checkOrActivateOnline(
         context: Context,
-        whatsappInput: String,
+        whatsapp: String,
         action: String = "check",
-        pinInput: String? = null,
-        recoverySecretInput: String? = null
+        pin: String? = null,
+        recoverySecret: String? = null
     ): Result<LicenseState> = withContext(Dispatchers.IO) {
-        val phone = cleanPhone(whatsappInput)
+        val phone = cleanPhone(whatsapp)
         if (phone.length < 10) {
             return@withContext Result.failure(IllegalArgumentException("Informe o WhatsApp com DDD e pelo menos 10 dígitos."))
         }
 
         saveWhatsApp(context, phone)
-        val pin = (pinInput ?: getSavedPin(context)).trim()
-        val recovery = (recoverySecretInput ?: getSavedRecovery(context)).trim()
+        val effectivePin = (pin ?: getSavedPin(context)).trim()
+        val effectiveRecovery = (recoverySecret ?: getSavedRecovery(context)).trim()
 
-        if (pin.isNotBlank()) savePin(context, pin)
-        if (recovery.isNotBlank()) saveRecovery(context, recovery)
+        if (effectivePin.isNotBlank()) savePin(context, effectivePin)
+        if (effectiveRecovery.isNotBlank()) saveRecovery(context, effectiveRecovery)
 
         val deviceId = getDeviceId(context)
         val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"

@@ -200,20 +200,8 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
 
                 editor.apply()
 
+                createNotificationChannel(context)
                 val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val channel = NotificationChannel(
-                        CHANNEL_ID,
-                        "GoOrNo — Copiloto Ativo",
-                        NotificationManager.IMPORTANCE_HIGH
-                    ).apply {
-                        setSound(null, null)
-                        enableVibration(false)
-                        setShowBadge(true)
-                        description = "Exibe o ícone do GoOrNo ao lado do relógio e status"
-                    }
-                    nm.createNotificationChannel(channel)
-                }
 
                 val openIntent = Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -364,6 +352,23 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                 val notification = builder.build()
                 nm.notify(STATUS_NOTIFICATION_ID, notification)
             } catch (_: Exception) {
+            }
+        }
+
+        private fun createNotificationChannel(context: Context) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val channel = NotificationChannel(
+                    CHANNEL_ID,
+                    "GoOrNo — Copiloto Ativo",
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    setSound(null, null)
+                    enableVibration(false)
+                    setShowBadge(true)
+                    description = "Exibe o ícone do GoOrNo ao lado do relógio e status"
+                }
+                nm.createNotificationChannel(channel)
             }
         }
 
