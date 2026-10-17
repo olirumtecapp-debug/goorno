@@ -28,7 +28,26 @@ data class PixChargeData(
     val value: Double,
     val dueDate: String,
     val qrCodeBase64: String,
-    val copyPastePix: String
+    val copyPastePix: String,
+    val plan: String = "mensal",
+    val promoApplied: Boolean = false,
+    val renewalPrice: Double = 7.99,
+    val periodDays: Int = 30
+)
+
+data class SubscriptionPlanItem(
+    val id: String,
+    val name: String,
+    val periodDays: Int,
+    val normalPrice: Double,
+    val promoPrice: Double,
+    val renewalPrice: Double,
+    val monthlyEquivalentNormal: Double,
+    val monthlyEquivalentPromo: Double,
+    val savingsPromoVsMonthlyNormal: Double,
+    val highlightBadge: String? = null,
+    val description: String,
+    val isPromoApplied: Boolean = true
 )
 
 object LicenseManager {
@@ -216,16 +235,119 @@ object LicenseManager {
 
             val data = PixChargeData(
                 paymentId = pix.optString("paymentId"),
-                value = pix.optDouble("value", 9.90),
+                value = pix.optDouble("value", 3.99),
                 dueDate = pix.optString("dueDate", ""),
                 qrCodeBase64 = pix.optString("encodedImage", ""),
-                copyPastePix = pix.optString("payload", "")
+                copyPastePix = pix.optString("payload", ""),
+                plan = pix.optString("plan", plan),
+                promoApplied = pix.optBoolean("promoApplied", false),
+                renewalPrice = pix.optDouble("renewalPrice", 7.99),
+                periodDays = pix.optInt("periodDays", 30)
             )
 
             Result.success(data)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    suspend fun fetchSubscriptionPlans(phone: String? = null): Result<Pair<Boolean, List<SubscriptionPlanItem>>> = withContext(Dispatchers.IO) {
+        try {
+            val q = if (!phone.isNullOrBlank()) "?phone=${cleanPhone(phone)}" else ""
+            val url = URL("$API_BASE_URL/subscription/plans$q")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 8000
+                readTimeout = 8000
+            }
+            if (conn.responseCode in 200..299) {
+                val body = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                val json = JSONObject(body)
+                val eligible = json.optBoolean("isUserEligibleForPromo", true)
+                val arr = json.optJSONArray("plans")
+                val list = mutableListOf<SubscriptionPlanItem>()
+                if (arr != null) {
+                    for (i in 0 until arr.length()) {
+                        val item = arr.getJSONObject(i)
+                        list.add(
+                            SubscriptionPlanItem(
+                                id = item.optString("id"),
+                                name = item.optString("name"),
+                                periodDays = item.optInt("periodDays", 30),
+                                normalPrice = item.optDouble("normalPrice", 7.99),
+                                promoPrice = item.optDouble("promoPrice", 3.99),
+                                renewalPrice = item.optDouble("renewalPrice", 7.99),
+                                monthlyEquivalentNormal = item.optDouble("monthlyEquivalentNormal", 7.99),
+                                monthlyEquivalentPromo = item.optDouble("monthlyEquivalentPromo", 3.99),
+                                savingsPromoVsMonthlyNormal = item.optDouble("savingsPromoVsMonthlyNormal", 0.0),
+                                highlightBadge = item.optString("highlightBadge").takeIf { it.isNotBlank() },
+                                description = item.optString("description", ""),
+                                isPromoApplied = item.optBoolean("isPromoApplied", true)
+                            )
+                        )
+                    }
+                }
+                Result.success(Pair(eligible, list))
+            } else {
+                Result.success(Pair(true, getFallbackPlans()))
+            }
+        } catch (_: Exception) {
+            Result.success(Pair(true, getFallbackPlans()))
+        }
+    }
+
+    fun getFallbackPlans(): List<SubscriptionPlanItem> {
+        return listOf(
+            SubscriptionPlanItem(
+                id = "mensal",
+                name = "Plano Mensal",
+                periodDays = 30,
+                normalPrice = 7.99,
+                promoPrice = 3.99,
+                renewalPrice = 7.99,
+                monthlyEquivalentNormal = 7.99,
+                monthlyEquivalentPromo = 3.99,
+                savingsPromoVsMonthlyNormal = 4.00,
+                description = "Acesso completo por 30 dias. Renovação por R$ 7,99/mês."
+            ),
+            SubscriptionPlanItem(
+                id = "trimestral",
+                name = "Plano Trimestral",
+                periodDays = 90,
+                normalPrice = 21.90,
+                promoPrice = 18.90,
+                renewalPrice = 21.90,
+                monthlyEquivalentNormal = 7.30,
+                monthlyEquivalentPromo = 6.30,
+                savingsPromoVsMonthlyNormal = 5.07,
+                description = "Acesso por 3 meses (90 dias). Renovação por R$ 21,90 a cada 3 meses."
+            ),
+            SubscriptionPlanItem(
+                id = "semestral",
+                name = "Plano Semestral",
+                periodDays = 180,
+                normalPrice = 41.90,
+                promoPrice = 34.90,
+                renewalPrice = 41.90,
+                monthlyEquivalentNormal = 6.98,
+                monthlyEquivalentPromo = 5.81,
+                savingsPromoVsMonthlyNormal = 13.04,
+                description = "Acesso por 6 meses (180 dias). Renovação por R$ 41,90 a cada 6 meses."
+            ),
+            SubscriptionPlanItem(
+                id = "anual",
+                name = "Plano Anual",
+                periodDays = 365,
+                normalPrice = 79.90,
+                promoPrice = 59.90,
+                renewalPrice = 79.90,
+                monthlyEquivalentNormal = 6.66,
+                monthlyEquivalentPromo = 4.99,
+                savingsPromoVsMonthlyNormal = 35.98,
+                highlightBadge = "MAIS ECONÔMICO",
+                description = "Acesso por 1 ano (365 dias). Menos de R$ 5,00/mês. Renovação por R$ 79,90/ano."
+            )
+        )
     }
 
     suspend fun verifyPaymentOnline(

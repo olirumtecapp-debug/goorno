@@ -360,12 +360,32 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     disablePendingIntent
                 )
 
-                nm.notify(STATUS_NOTIFICATION_ID, builder.build())
+                val notification = builder.build()
+                nm.notify(STATUS_NOTIFICATION_ID, notification)
+                try {
+                    GoOrNoForegroundKeepAliveService.start(context)
+                } catch (_: Throwable) {}
             } catch (_: Exception) {
             }
         }
 
+        fun buildActiveNotification(context: Context): android.app.Notification {
+            showActiveNotification(context)
+            val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_goorno)
+                .setContentTitle("🟢 GoOrNo Ativo")
+                .setContentText("Monitorando Uber e 99")
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            return builder.build()
+        }
+
         fun cancelActiveNotification(context: Context) {
+            try {
+                GoOrNoForegroundKeepAliveService.stop(context)
+            } catch (_: Throwable) {}
             try {
                 val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 nm.cancel(STATUS_NOTIFICATION_ID)

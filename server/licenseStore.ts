@@ -1,3 +1,90 @@
+
+export const PROMO_CONFIG = {
+  campaignActive: process.env.PROMO_ACTIVE !== "false",
+  campaignName: "Promoção de Lançamento GoOrNo",
+  startDate: process.env.PROMO_START_DATE || "2026-10-17T00:00:00.000Z",
+  endDate: process.env.PROMO_END_DATE || "2026-11-17T23:59:59.000Z", // 30 dias de campanha
+  durationDays: 30,
+};
+
+export type ValidPlanId = "mensal" | "trimestral" | "semestral" | "anual";
+
+export interface SubscriptionPlanInfo {
+  id: ValidPlanId;
+  name: string;
+  periodDays: number;
+  periodMonths: number;
+  normalPrice: number;
+  promoPrice: number;
+  renewalPrice: number;
+  monthlyEquivalentNormal: number;
+  monthlyEquivalentPromo: number;
+  savingsPromoVsMonthlyNormal: number;
+  savingsNormalVsMonthlyNormal: number;
+  highlightBadge?: string;
+  description: string;
+}
+
+export const OFFICIAL_PLANS: SubscriptionPlanInfo[] = [
+  {
+    id: "mensal",
+    name: "Plano Mensal",
+    periodDays: 30,
+    periodMonths: 1,
+    normalPrice: 7.99,
+    promoPrice: 3.99,
+    renewalPrice: 7.99,
+    monthlyEquivalentNormal: 7.99,
+    monthlyEquivalentPromo: 3.99,
+    savingsPromoVsMonthlyNormal: 4.00,
+    savingsNormalVsMonthlyNormal: 0.00,
+    description: "Acesso completo por 30 dias. Renovação por R$ 7,99/mês.",
+  },
+  {
+    id: "trimestral",
+    name: "Plano Trimestral",
+    periodDays: 90,
+    periodMonths: 3,
+    normalPrice: 21.90,
+    promoPrice: 18.90,
+    renewalPrice: 21.90,
+    monthlyEquivalentNormal: 7.30,
+    monthlyEquivalentPromo: 6.30,
+    savingsPromoVsMonthlyNormal: 5.07,
+    savingsNormalVsMonthlyNormal: 2.07,
+    description: "Acesso por 3 meses (90 dias). Renovação por R$ 21,90 a cada 3 meses.",
+  },
+  {
+    id: "semestral",
+    name: "Plano Semestral",
+    periodDays: 180,
+    periodMonths: 6,
+    normalPrice: 41.90,
+    promoPrice: 34.90,
+    renewalPrice: 41.90,
+    monthlyEquivalentNormal: 6.98,
+    monthlyEquivalentPromo: 5.81,
+    savingsPromoVsMonthlyNormal: 13.04,
+    savingsNormalVsMonthlyNormal: 6.04,
+    description: "Acesso por 6 meses (180 dias). Renovação por R$ 41,90 a cada 6 meses.",
+  },
+  {
+    id: "anual",
+    name: "Plano Anual",
+    periodDays: 365,
+    periodMonths: 12,
+    normalPrice: 79.90,
+    promoPrice: 59.90,
+    renewalPrice: 79.90,
+    monthlyEquivalentNormal: 6.66,
+    monthlyEquivalentPromo: 4.99,
+    savingsPromoVsMonthlyNormal: 35.98,
+    savingsNormalVsMonthlyNormal: 15.98,
+    highlightBadge: "MAIS ECONÔMICO",
+    description: "Acesso por 1 ano (365 dias). Menos de R$ 5,00/mês. Renovação por R$ 79,90/ano.",
+  },
+];
+
 import fs from "fs";
 import path from "path";
 
@@ -36,7 +123,11 @@ export interface LicenseRecord {
   deviceId: string;
   deviceModel?: string;
   status: "trial" | "active" | "expired" | "blocked";
-  plano: "trial" | "mensal" | "vitalicio" | "cortesia";
+  plano: "trial" | "mensal" | "trimestral" | "semestral" | "anual" | "vitalicio" | "cortesia";
+  firstPurchasePromoApplied?: boolean;
+  nextRenewalPrice?: number;
+  nextRenewalPeriodDays?: number;
+  paymentsHistory?: Array<{ paymentId: string; amount: number; plan: string; date: string; promoApplied: boolean }>;
   trialEndsAt: string;
   validoAte: string;
   createdAt: string;
@@ -187,7 +278,7 @@ export async function listAllLicenses(): Promise<LicenseRecord[]> {
 export interface CheckLicenseResult {
   allowed: boolean;
   status: "trial" | "active" | "expired" | "blocked";
-  plano: "trial" | "mensal" | "vitalicio" | "cortesia";
+  plano: "trial" | "mensal" | "trimestral" | "semestral" | "anual" | "vitalicio" | "cortesia";
   trialDaysRemaining: number;
   validoAte: string;
   message: string;
@@ -397,26 +488,89 @@ export async function checkOrActivateLicense(params: {
   };
 }
 
+
+export async function isUserEligibleForPromo(phone: string): Promise<boolean> {
+  const digits = cleanPhone(phone);
+  if (!digits) return false;
+
+  const now = Date.now();
+  const start = new Date(PROMO_CONFIG.startDate).getTime();
+  const end = new Date(PROMO_CONFIG.endDate).getTime();
+
+  if (now < start || now > end) {
+    return false; // Fora do período de 30 dias da campanha
+  }
+
+  const record = await getLicense(digits);
+  if (!record) return true; // Novo usuário é 100% elegível na primeira contratação
+
+  if (record.firstPurchasePromoApplied) return false;
+  if (record.paymentsHistory && record.paymentsHistory.length > 0) return false;
+  if (record.plano !== "trial") return false;
+
+  return true;
+}
+
 export async function applyPayment(params: {
   phone: string;
   amount: number;
   paymentId: string;
+  planId?: ValidPlanId;
 }): Promise<LicenseRecord> {
   const phone = cleanPhone(params.phone);
   let record = await getLicense(phone);
   const now = new Date();
 
-  const isLifetime = params.amount >= 35; // e.g. R$ 39,90
-  const isMonthly = !isLifetime; // e.g. R$ 9,90
+  // Preservação histórica obrigatória: quem já comprou vitalício continua vitalício
+  const isHistoricalLifetime = record && record.plano === "vitalicio";
+
+  let detectedPlan: ValidPlanId = "mensal";
+  let addedDays = 30;
+  let renewalPrice = 7.99;
+
+  const amt = Number(params.amount);
+  if (params.planId && OFFICIAL_PLANS.some((p) => p.id === params.planId)) {
+    detectedPlan = params.planId;
+    const pInfo = OFFICIAL_PLANS.find((p) => p.id === params.planId)!;
+    addedDays = pInfo.periodDays;
+    renewalPrice = pInfo.renewalPrice;
+  } else if (amt >= 55) {
+    detectedPlan = "anual";
+    addedDays = 365;
+    renewalPrice = 79.90;
+  } else if (amt >= 30) {
+    detectedPlan = "semestral";
+    addedDays = 180;
+    renewalPrice = 41.90;
+  } else if (amt >= 15) {
+    detectedPlan = "trimestral";
+    addedDays = 90;
+    renewalPrice = 21.90;
+  } else {
+    detectedPlan = "mensal";
+    addedDays = 30;
+    renewalPrice = 7.99;
+  }
 
   let currentValidMs = record && record.validoAte ? new Date(record.validoAte).getTime() : 0;
   if (currentValidMs < now.getTime()) {
     currentValidMs = now.getTime();
   }
 
-  const newValidDate = isLifetime
+  const newValidDate = isHistoricalLifetime
     ? new Date("2099-12-31T23:59:59.000Z")
-    : new Date(currentValidMs + 30 * 24 * 60 * 60 * 1000);
+    : new Date(currentValidMs + addedDays * 24 * 60 * 60 * 1000);
+
+  const planInfo = OFFICIAL_PLANS.find((p) => p.id === detectedPlan);
+  const wasPromo = planInfo ? amt < planInfo.normalPrice : false;
+
+  const paymentRecord = {
+    paymentId: params.paymentId,
+    amount: amt,
+    plan: isHistoricalLifetime ? "vitalicio" : detectedPlan,
+    date: now.toISOString(),
+    promoApplied: wasPromo,
+  };
 
   if (!record) {
     record = {
@@ -424,7 +578,7 @@ export async function applyPayment(params: {
       whatsapp: formatPhoneBr(phone),
       deviceId: "",
       status: "active",
-      plano: isLifetime ? "vitalicio" : "mensal",
+      plano: detectedPlan,
       trialEndsAt: now.toISOString(),
       validoAte: newValidDate.toISOString(),
       createdAt: now.toISOString(),
@@ -432,14 +586,24 @@ export async function applyPayment(params: {
       deviceTransfersCount: 0,
       transfers: [],
       fraudSuspicion: false,
-      notes: `Pagamento aprovado Asaas ${params.paymentId} (R$ ${params.amount.toFixed(2)})`,
+      firstPurchasePromoApplied: wasPromo,
+      nextRenewalPrice: renewalPrice,
+      nextRenewalPeriodDays: addedDays,
+      paymentsHistory: [paymentRecord],
+      notes: `Pagamento Asaas ${params.paymentId} (R$ ${amt.toFixed(2)} - ${detectedPlan})`,
     };
   } else {
     record.status = "active";
-    record.plano = isLifetime ? "vitalicio" : "mensal";
+    if (!isHistoricalLifetime) {
+      record.plano = detectedPlan;
+    }
     record.validoAte = newValidDate.toISOString();
     record.lastSeenAt = now.toISOString();
-    record.notes = `${record.notes || ""}\nPagamento Asaas ${params.paymentId} (R$ ${params.amount.toFixed(2)}) em ${now.toISOString()}`.trim();
+    record.firstPurchasePromoApplied = record.firstPurchasePromoApplied || wasPromo;
+    record.nextRenewalPrice = renewalPrice;
+    record.nextRenewalPeriodDays = addedDays;
+    record.paymentsHistory = [...(record.paymentsHistory || []), paymentRecord];
+    record.notes = `${record.notes || ""}\nPagamento Asaas ${params.paymentId} (R$ ${amt.toFixed(2)} - ${record.plano}) em ${now.toISOString()}`.trim();
   }
 
   await saveLicense(record);

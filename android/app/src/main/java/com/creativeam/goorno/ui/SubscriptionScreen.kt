@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.creativeam.goorno.data.license.LicenseManager
@@ -38,7 +39,9 @@ fun SubscriptionScreenCard(
 
     var licenseState by remember { mutableStateOf(LicenseManager.getCachedLicenseState(context)) }
     var whatsappInput by remember { mutableStateOf(LicenseManager.getSavedWhatsApp(context)) }
-    var selectedPlan by remember { mutableStateOf("mensal") } // "mensal" ou "vitalicio"
+    var selectedPlan by remember { mutableStateOf("anual") }
+    var plansList by remember { mutableStateOf(LicenseManager.getFallbackPlans()) }
+    var isEligibleForPromo by remember { mutableStateOf(true) }
     var pixData by remember { mutableStateOf<PixChargeData?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var isVerifying by remember { mutableStateOf(false) }
@@ -55,6 +58,13 @@ fun SubscriptionScreenCard(
                 res.onSuccess { state ->
                     licenseState = state
                 }
+            }
+        }
+        scope.launch {
+            val pRes = LicenseManager.fetchSubscriptionPlans(saved)
+            pRes.onSuccess { (eligible, list) ->
+                isEligibleForPromo = eligible
+                if (list.isNotEmpty()) plansList = list
             }
         }
     }
@@ -280,7 +290,7 @@ fun SubscriptionScreenCard(
             }
         }
 
-        // 3. Plan Selection & PIX Generation
+        // 3. Plan Selection & PIX Generation (4 Planos Oficiais & Promoção de Lançamento)
         Card(
             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -291,130 +301,207 @@ fun SubscriptionScreenCard(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "Escolha seu Plano Pro",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = PetrolHeader
-                )
-
-                // Option 1: Monthly Plan
-                Surface(
-                    color = if (selectedPlan == "mensal") SoftSurfaceVariant else PureWhiteSurface,
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(
-                        if (selectedPlan == "mensal") 2.dp else 1.dp,
-                        if (selectedPlan == "mensal") PetrolHeader else CleanCardBorder
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { selectedPlan = "mensal" }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = selectedPlan == "mensal",
-                            onClick = { selectedPlan = "mensal" }
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Planos Oficiais GoOrNo",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = PetrolHeader
+                    )
+                    if (isEligibleForPromo) {
+                        Surface(
+                            color = LimeBright,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
                             Text(
-                                text = "Plano Mensal Pro",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = PetrolHeader,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Acesso completo por 30 dias",
-                                fontSize = 11.5.sp,
-                                color = MutedText,
-                                maxLines = 1,
-                                softWrap = false
+                                text = "PROMOÇÃO DE LANÇAMENTO",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                color = PetrolDarkText,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "R$ 9,90",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 16.sp,
-                            color = TrafficGreen,
-                            maxLines = 1,
-                            softWrap = false
-                        )
                     }
                 }
 
-                // Option 2: Lifetime Plan
-                Surface(
-                    color = if (selectedPlan == "vitalicio") SoftSurfaceVariant else PureWhiteSurface,
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(
-                        if (selectedPlan == "vitalicio") 2.dp else 1.dp,
-                        if (selectedPlan == "vitalicio") PetrolHeader else CleanCardBorder
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { selectedPlan = "vitalicio" }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                Text(
+                    text = if (isEligibleForPromo)
+                        "Desconto especial de 1ª contratação válido por 30 dias. Escolha o melhor período:"
+                    else
+                        "Escolha o período ideal para o seu copiloto de corridas lucrativas:",
+                    fontSize = 12.sp,
+                    color = MutedText
+                )
+
+                // 4 Plan Cards
+                plansList.forEach { plan ->
+                    val isSelected = selectedPlan == plan.id
+                    val effectivePrice = if (plan.isPromoApplied) plan.promoPrice else plan.normalPrice
+                    val monthlyEq = if (plan.isPromoApplied) plan.monthlyEquivalentPromo else plan.monthlyEquivalentNormal
+
+                    Surface(
+                        color = if (isSelected) SoftSurfaceVariant else PureWhiteSurface,
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(
+                            if (isSelected) 2.dp else 1.dp,
+                            if (isSelected) PetrolHeader else CleanCardBorder
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedPlan = plan.id }
                     ) {
-                        RadioButton(
-                            selected = selectedPlan == "vitalicio",
-                            onClick = { selectedPlan = "vitalicio" }
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = { selectedPlan = plan.id }
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = plan.name,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = PetrolHeader
+                                        )
+                                        if (plan.highlightBadge != null) {
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Surface(
+                                                color = LimeBright,
+                                                shape = RoundedCornerShape(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = plan.highlightBadge,
+                                                    fontSize = 8.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = PetrolDarkText,
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = plan.description,
+                                        fontSize = 11.sp,
+                                        color = MutedText,
+                                        lineHeight = 15.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(horizontalAlignment = Alignment.End) {
+                                    if (plan.isPromoApplied && plan.promoPrice < plan.normalPrice) {
+                                        Text(
+                                            text = "R$ " + String.format(java.util.Locale.forLanguageTag("pt-BR"), "%.2f", plan.normalPrice),
+                                            fontSize = 11.sp,
+                                            color = MutedText,
+                                            textDecoration = TextDecoration.LineThrough
+                                        )
+                                    }
+                                    Text(
+                                        text = "R$ " + String.format(java.util.Locale.forLanguageTag("pt-BR"), "%.2f", effectivePrice),
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 16.sp,
+                                        color = if (plan.isPromoApplied) TrafficGreen else PetrolHeader
+                                    )
+                                    if (plan.periodDays > 30) {
+                                        Text(
+                                            text = "(R$ " + String.format(java.util.Locale.forLanguageTag("pt-BR"), "%.2f", monthlyEq) + "/mês)",
+                                            fontSize = 10.sp,
+                                            color = MutedText
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (plan.isPromoApplied && plan.savingsPromoVsMonthlyNormal > 0) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Surface(
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Savings,
+                                            contentDescription = null,
+                                            tint = TrafficGreen,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Economia de R$ " + String.format(java.util.Locale.forLanguageTag("pt-BR"), "%.2f", plan.savingsPromoVsMonthlyNormal) + " em comparação ao plano mensal normal",
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = TrafficGreen
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Summary of Selected Plan before generation
+                val activePlanObj = plansList.find { it.id == selectedPlan } ?: plansList.first()
+                val activePayPrice = if (activePlanObj.isPromoApplied) activePlanObj.promoPrice else activePlanObj.normalPrice
+
+                Surface(
+                    color = SoftSurfaceVariant,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, CleanCardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Resumo da Contratação:",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = PetrolHeader
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Valor a pagar agora:", fontSize = 11.5.sp, color = MutedText)
                             Text(
-                                text = "Plano Vitalício",
+                                "R$ " + String.format(java.util.Locale.forLanguageTag("pt-BR"), "%.2f", activePayPrice),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = PetrolHeader,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Pague uma única vez para sempre",
-                                fontSize = 11.5.sp,
-                                color = MutedText,
-                                maxLines = 1,
-                                softWrap = false
+                                fontSize = 12.sp,
+                                color = TrafficGreen
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column(
-                            horizontalAlignment = Alignment.End,
-                            verticalArrangement = Arrangement.Center
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Surface(
-                                color = LimeBright,
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Text(
-                                    text = "RECOMENDADO",
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = PetrolDarkText,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(3.dp))
+                            Text("Duração do período:", fontSize = 11.5.sp, color = MutedText)
+                            Text("${activePlanObj.periodDays} dias", fontWeight = FontWeight.SemiBold, fontSize = 11.5.sp, color = PetrolDarkText)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Próxima renovação:", fontSize = 11.5.sp, color = MutedText)
                             Text(
-                                text = "R$ 39,90",
-                                fontWeight = FontWeight.Black,
-                                fontSize = 16.sp,
-                                color = PetrolHeader,
-                                maxLines = 1,
-                                softWrap = false
+                                "R$ " + String.format(java.util.Locale.forLanguageTag("pt-BR"), "%.2f", activePlanObj.renewalPrice) + " (a cada ${activePlanObj.periodDays} dias)",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp,
+                                color = PetrolDarkText
                             )
                         }
                     }
@@ -447,7 +534,7 @@ fun SubscriptionScreenCard(
                     Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (selectedPlan == "vitalicio") "Gerar PIX Vitalício (R$ 39,90)" else "Gerar PIX Mensal (R$ 9,90)",
+                        text = "Gerar PIX - R$ " + String.format(java.util.Locale.forLanguageTag("pt-BR"), "%.2f", activePayPrice),
                         fontWeight = FontWeight.Black,
                         fontSize = 13.sp
                     )

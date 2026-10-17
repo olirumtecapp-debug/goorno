@@ -82,6 +82,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         RuntimeDiagnosticsBus.setAccessibilityConnected(true)
+        try {
+            GoOrNoForegroundKeepAliveService.start(this)
+        } catch (_: Throwable) {}
         val app = applicationContext as? GoOrNoApplication
 
         app?.overlayPanel?.onOfferCardClosed = {
@@ -120,12 +123,34 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
     }
 
+    
+    private fun isHeavyMediaOrSocialApp(pkg: String?): Boolean {
+        if (pkg.isNullOrBlank()) return false
+        val p = pkg.lowercase(Locale.ROOT)
+        return p.contains("instagram") ||
+            p.contains("spotify") ||
+            p.contains("youtube") ||
+            p.contains("netflix") ||
+            p.contains("tiktok") ||
+            p.contains("facebook") ||
+            p.contains("zhiliaoapp") ||
+            p.contains("musically")
+    }
+
     private fun startActivePollingLoop() {
         pollingJob?.cancel()
         pollingJob = serviceScope.launch {
             while (isActive) {
                 try {
                     val app = applicationContext as? GoOrNoApplication
+                    val isHeavyAppInFront = isHeavyMediaOrSocialApp(lastKnownForegroundPkg)
+                    if (isHeavyAppInFront) {
+                        // Motorista está no Spotify ou Instagram: suspende escaneamento ativo para poupar RAM e CPU
+                        System.gc()
+                        delay(2000L)
+                        continue
+                    }
+
                     if (app?.overlayPanel?.isCopilotMonitoringEnabled() == true &&
                         app.overlayPanel.isCardCurrentlyVisible() == false
                     ) {

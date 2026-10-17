@@ -11,6 +11,10 @@ import {
   DriverUser,
 } from "./store.js";
 import {
+  OFFICIAL_PLANS,
+  PROMO_CONFIG,
+  isUserEligibleForPromo,
+  type ValidPlanId,
   checkOrActivateLicense,
   getLicense,
   saveLicense,
@@ -563,6 +567,41 @@ app.post("/api/license/check-or-activate", async (req, res) => {
 });
 
 // 2. Create Asaas PIX Charge for Subscription
+
+// 1.1 Public Plans and Launch Promotion Route
+app.get("/api/subscription/plans", async (req, res) => {
+  try {
+    const phone = req.query.phone ? String(req.query.phone) : "";
+    let isEligible = true;
+    let existingLicense = null;
+
+    if (phone) {
+      isEligible = await isUserEligibleForPromo(phone);
+      existingLicense = await getLicense(phone);
+    } else {
+      const now = Date.now();
+      const start = new Date(PROMO_CONFIG.startDate).getTime();
+      const end = new Date(PROMO_CONFIG.endDate).getTime();
+      isEligible = now >= start && now <= end;
+    }
+
+    res.json({
+      ok: true,
+      campaign: PROMO_CONFIG,
+      isUserEligibleForPromo: isEligible,
+      plans: OFFICIAL_PLANS.map((plan: any) => ({
+        ...plan,
+        currentPrice: isEligible ? plan.promoPrice : plan.normalPrice,
+        isPromoApplied: isEligible,
+      })),
+      userPlan: existingLicense?.plano || "trial",
+      userStatus: existingLicense?.status || "trial",
+    });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || "Erro ao listar planos." });
+  }
+});
+
 app.post("/api/license/create-pix", async (req, res) => {
   try {
     const { whatsapp, plan = "mensal" } = req.body || {};
@@ -570,9 +609,13 @@ app.post("/api/license/create-pix", async (req, res) => {
       return res.status(400).json({ error: "Informe o WhatsApp do motorista." });
     }
 
+    const validPlan: ValidPlanId = ["mensal", "trimestral", "semestral", "anual"].includes(plan)
+      ? plan
+      : "mensal";
+
     const pixData = await createPixCharge({
       whatsapp: String(whatsapp),
-      plan: plan === "vitalicio" ? "vitalicio" : "mensal",
+      plan: validPlan,
     });
 
     res.json({ ok: true, pix: pixData });
@@ -891,11 +934,11 @@ app.post("/api/redeem-voucher", async (req, res) => {
 // 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
 app.get("/api/app-version", (_req, res) => {
   res.json({
-    versionName: "3.3.12",
-    versionCode: 33,
+    versionName: "3.3.13",
+    versionCode: 34,
     releaseDate: "2026-10-16",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.12.apk",
-    directDownload: "/GoOrNo-v3.3.12.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.13.apk",
+    directDownload: "/GoOrNo-v3.3.13.apk",
     fileSizeBytes: 55225572,
     fileSizeFormatted: "52.7 MB",
     changelog: [
@@ -997,14 +1040,14 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.12.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.12.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.12.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.12.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.13.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.13.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.13.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.11.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.11.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.11.apk"),
@@ -1017,7 +1060,7 @@ app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.12.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.12.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.13.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");

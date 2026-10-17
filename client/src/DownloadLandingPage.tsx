@@ -686,7 +686,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 Como funciona o pagamento? A liberação do plano é automática? <span>{openFaq === 5 ? '−' : '+'}</span>
               </summary>
               <p>
-                Sim, 100% automático e imediato! Ao pagar via PIX (seja da assinatura mensal de R$ 9,90 ou do plano Vitalício de R$ 39,90), o gateway bancário do Asaas confirma o recebimento em poucos segundos e o aplicativo libera o seu acesso na mesma hora, sem precisar enviar comprovante ou aguardar aprovação manual.
+                Sim, 100% automático e imediato! Ao pagar via PIX qualquer um dos planos oficiais (Mensal, Trimestral, Semestral ou Anual), o gateway bancário do Asaas confirma o recebimento em poucos segundos e o aplicativo libera o seu acesso na mesma hora, sem precisar enviar comprovante ou aguardar aprovação manual. Durante a promoção de lançamento, você garante desconto exclusivo na primeira contratação!
               </p>
             </details>
           </div>

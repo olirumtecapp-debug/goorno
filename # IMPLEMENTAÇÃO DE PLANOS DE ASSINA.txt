@@ -1,0 +1,172 @@
+# IMPLEMENTAÇÃO DE PLANOS DE ASSINATURA E PROMOÇÃO DE LANÇAMENTO
+
+## 1. Objetivo
+
+Analise o projeto atual e implemente um sistema de planos de assinatura com preços promocionais de lançamento.
+
+**IMPORTANTE:** trabalhe no projeto existente. Não crie um protótipo separado, não recrie o aplicativo do zero e não remova funcionalidades que já estejam funcionando.
+
+Antes de alterar qualquer arquivo, identifique a arquitetura, as tecnologias utilizadas, o sistema de pagamentos existente, a estrutura de assinaturas e os mecanismos atuais de autenticação e controle de acesso.
+
+Implemente as mudanças de ponta a ponta, respeitando a arquitetura existente.
+
+## 2. Planos e preços oficiais
+
+O aplicativo deverá oferecer exclusivamente estes quatro planos:
+
+### Plano Mensal
+- Preço normal: R$ 7,99 por mês.
+- Preço promocional: R$ 3,99 no primeiro mês para usuários elegíveis à promoção.
+- Depois do primeiro mês promocional, a renovação será de R$ 7,99 por mês.
+- Informar claramente o preço de renovação antes da confirmação da contratação.
+
+### Plano Trimestral
+- Preço normal: R$ 21,90 por período de três meses.
+- Preço promocional de lançamento: R$ 18,90 no primeiro período de três meses.
+- Após o período promocional, a renovação será de R$ 21,90 a cada três meses.
+
+### Plano Semestral
+- Preço normal: R$ 41,90 por período de seis meses.
+- Preço promocional de lançamento: R$ 34,90 no primeiro período de seis meses.
+- Após o período promocional, a renovação será de R$ 41,90 a cada seis meses.
+
+### Plano Anual
+- Preço normal: R$ 79,90 por período de doze meses.
+- Preço promocional de lançamento: R$ 59,90 no primeiro período de doze meses.
+- Após o período promocional, a renovação será de R$ 79,90 por ano.
+
+Todos os valores devem ser apresentados em reais brasileiros (R$), com formatação monetária brasileira.
+
+## 3. Regras da promoção de lançamento
+
+Implementar uma campanha promocional com as seguintes regras:
+
+- A promoção terá duração de 30 dias a partir da data de ativação da campanha.
+- A data inicial e a data final deverão ser configuráveis, sem datas fixas desnecessárias espalhadas pelo código.
+- A promoção será aplicada somente aos usuários elegíveis e durante a primeira contratação do plano.
+- Não permitir que o mesmo usuário obtenha repetidamente o desconto de primeira contratação por meio de cancelamentos, novas contas vinculadas ao mesmo cadastro ou novas tentativas de compra, na medida em que a arquitetura de autenticação e pagamentos permita essa verificação.
+- Ao encerrar a campanha, exibir automaticamente os preços normais para novas contratações.
+- Preservar as condições promocionais já confirmadas para usuários que contrataram durante a campanha, de acordo com as regras do respectivo pagamento e da plataforma.
+- Não criar temporizadores falsos, mensagens de escassez fictícias ou contagens regressivas que não correspondam à data real de encerramento.
+- Caso não exista infraestrutura para controlar a campanha com segurança, documentar essa limitação e implementar uma solução compatível com a arquitetura atual.
+
+## 4. Tela de planos e experiência do usuário
+
+Criar ou atualizar a tela de assinatura para apresentar os quatro planos em cartões modernos, organizados e fáceis de comparar.
+
+A apresentação deverá incluir:
+
+- Nome do plano.
+- Preço normal.
+- Preço promocional em destaque enquanto a campanha estiver ativa e o usuário for elegível.
+- Preço equivalente por mês, quando aplicável.
+- Duração do período contratado.
+- Economia calculada corretamente em comparação com o pagamento mensal pelo preço normal.
+- Informações claras sobre renovação automática, quando aplicável.
+- Botão para contratar cada plano.
+- Identificação visual discreta da promoção de lançamento.
+- Destaque para o plano anual como opção de economia, sem esconder os outros planos.
+- Estados de carregamento, falha de pagamento, compra pendente, compra confirmada e assinatura ativa.
+
+Ao selecionar um plano, mostrar um resumo da contratação com o valor cobrado agora, a duração, o preço da próxima renovação e a periodicidade de cobrança, antes da confirmação final.
+
+Não afirmar que uma compra foi concluída antes da confirmação real do provedor de pagamentos ou da loja de aplicativos.
+
+## 5. Exclusão completa do plano vitalício
+
+O plano vitalício não fará parte da estratégia comercial.
+
+Remova-o de todas as áreas pertinentes do projeto, incluindo:
+
+- Tela de planos.
+- Telas de pagamento e contratação.
+- Listagens de planos e configurações comerciais.
+- Menus, botões, banners e textos promocionais.
+- Dados iniciais de demonstração e configurações padrão.
+- Regras de negócio e opções de contratação.
+- Documentação e testes que ainda o apresentem como um plano disponível.
+
+Não remova registros históricos necessários para preservar assinaturas antigas, transações ou a integridade do banco de dados. Se o plano vitalício já existir em produção, verifique os dados e preserve os compromissos já assumidos com clientes, sem permitir novas contratações desse plano.
+
+## 6. Integração com pagamentos
+
+Primeiro, identifique o provedor de pagamento atualmente utilizado pelo projeto e mantenha-o, quando possível.
+
+Se a arquitetura usar Google Play Billing, Apple In-App Purchase, Stripe, Mercado Pago ou outro provedor, respeite as regras, os recursos e as limitações da plataforma encontrada.
+
+Não invente APIs, credenciais, identificadores de produtos ou integrações que não existam.
+
+Se os preços precisarem ser configurados no painel de uma loja ou provedor externo, documente exatamente quais produtos, períodos, valores e ofertas devem ser cadastrados.
+
+Garantir que:
+- A confirmação da compra seja validada de forma confiável.
+- O acesso pago seja liberado somente após uma confirmação válida.
+- Cancelamentos, expiração, falhas de renovação e reembolsos sejam tratados conforme os recursos disponíveis.
+- Webhooks, quando utilizados, validem os eventos e evitem processamento duplicado.
+- Nenhuma chave secreta ou credencial de pagamento seja exposta no código do cliente.
+- A interface não seja a única responsável por determinar se um usuário pagou.
+- Os identificadores e preços dos produtos estejam consistentes com a configuração real do provedor.
+
+Se a integração de pagamentos ainda não existir, não simule pagamentos reais nem marque assinaturas como pagas. Implemente as partes que podem ser concluídas com segurança e documente o que depende da configuração externa.
+
+## 7. Persistência e controle de acesso
+
+O sistema deverá registrar e recuperar corretamente, conforme a arquitetura existente:
+
+- Plano contratado.
+- Identificador da transação ou assinatura no provedor.
+- Data da contratação.
+- Início e fim do período pago.
+- Situação da assinatura.
+- Condição promocional aplicada.
+- Valor e periodicidade da próxima renovação, quando aplicáveis.
+- Histórico de mudanças de estado relevantes.
+
+A assinatura e seus benefícios deverão continuar corretos após atualização do aplicativo, novo login, reinicialização do dispositivo ou acesso por outro dispositivo, dentro das capacidades da arquitetura existente.
+
+Evitar duplicação de pagamentos, múltiplas ativações para uma mesma transação e perda do acesso já adquirido.
+
+## 8. Testes obrigatórios
+
+Execute testes automatizados e manuais, conforme as ferramentas disponíveis no projeto, verificando pelo menos:
+
+1. Exibição correta dos quatro planos.
+2. Ausência de novas opções de plano vitalício.
+3. Formatação monetária brasileira.
+4. Preços promocionais durante a campanha.
+5. Preços normais após o fim da campanha.
+6. Elegibilidade para a promoção de primeira contratação.
+7. Preço correto da renovação após cada período promocional.
+8. Cálculo correto das economias apresentadas.
+9. Tratamento de pagamentos aprovados, pendentes e recusados.
+10. Persistência e recuperação da assinatura.
+11. Tratamento de cancelamentos, expirações e reembolsos, quando suportados.
+12. Proteção contra ativação indevida de benefícios sem pagamento confirmado.
+13. Compatibilidade com as funcionalidades que já existiam antes da alteração.
+
+Corrija os erros encontrados e execute novamente os testes relevantes.
+
+## 9. Regras de execução
+
+- Preserve funcionalidades existentes que não façam parte dessa mudança.
+- Não substitua funcionalidades reais por telas estáticas ou dados simulados.
+- Não apague dados de produção para simplificar a implementação.
+- Não exponha informações sensíveis.
+- Não declare que uma integração está concluída se ela ainda depender de configurações externas.
+- Não faça alterações destrutivas no banco de dados sem um plano de migração compatível.
+- Mantenha o código organizado, com validações, tratamento de erros e documentação das configurações necessárias.
+
+## 10. Entrega final
+
+Ao terminar, apresente um relatório com:
+
+1. Arquivos modificados e principais alterações.
+2. Planos e preços efetivamente implementados.
+3. Regras promocionais implementadas.
+4. Integrações de pagamento verificadas e seu estado real.
+5. Testes executados e resultados.
+6. Problemas corrigidos.
+7. Configurações externas ainda necessárias.
+8. Passos objetivos para validar a funcionalidade em homologação antes de publicar a nova versão.
+
+**Critério de conclusão:** a mudança só poderá ser considerada concluída depois de inspecionar o projeto real, implementar as alterações compatíveis com sua arquitetura, executar os testes possíveis e informar honestamente quaisquer pendências.

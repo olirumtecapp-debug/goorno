@@ -1,4 +1,4 @@
-import { cleanPhone, formatPhoneBr } from "./licenseStore.js";
+import { cleanPhone, formatPhoneBr, OFFICIAL_PLANS, isUserEligibleForPromo, ValidPlanId } from "./licenseStore.js";
 
 const ASAAS_BASE_URL = "https://api.asaas.com/v3";
 
@@ -63,17 +63,18 @@ export interface CreatePixResult {
 
 export async function createPixCharge(params: {
   whatsapp: string;
-  plan: "mensal" | "vitalicio";
-}): Promise<CreatePixResult> {
+  plan: ValidPlanId;
+}): Promise<CreatePixResult & { plan: ValidPlanId; promoApplied: boolean; renewalPrice: number; periodDays: number }> {
   const digits = cleanPhone(params.whatsapp);
   const apiKey = getApiKey();
   const customerId = await findOrCreateAsaasCustomer(digits);
 
-  const isLifetime = params.plan === "vitalicio";
-  const value = isLifetime ? 39.90 : 9.90;
-  const description = isLifetime
-    ? "GoOrNo Copiloto - Licença Vitalícia"
-    : "GoOrNo Copiloto - Mensalidade Pro (30 dias)";
+  const planInfo = OFFICIAL_PLANS.find((p) => p.id === params.plan) || OFFICIAL_PLANS[0];
+  const eligible = await isUserEligibleForPromo(digits);
+
+  const value = eligible ? planInfo.promoPrice : planInfo.normalPrice;
+  const promoApplied = eligible;
+  const description = `GoOrNo Copiloto - ${planInfo.name} (${planInfo.periodDays} dias)${promoApplied ? ' - Promoção de Lançamento' : ''}`;
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -120,9 +121,13 @@ export async function createPixCharge(params: {
     paymentId: paymentId,
     value: value,
     dueDate: dueDate,
-    encodedImage: qrData.encodedImage, // Base64
-    payload: qrData.payload, // Copia e Cola
+    encodedImage: qrData.encodedImage,
+    payload: qrData.payload,
     expirationDate: qrData.expirationDate,
+    plan: planInfo.id,
+    promoApplied: promoApplied,
+    renewalPrice: planInfo.renewalPrice,
+    periodDays: planInfo.periodDays,
   };
 }
 

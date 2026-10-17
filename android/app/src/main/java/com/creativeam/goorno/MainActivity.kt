@@ -22,6 +22,7 @@ import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.ocr.OcrScreenCaptureService
 import com.creativeam.goorno.service.CopilotNotificationReceiver
 import com.creativeam.goorno.service.GoOrNoAccessibilityService
+import com.creativeam.goorno.service.GoOrNoForegroundKeepAliveService
 import com.creativeam.goorno.ui.GoOrNoComposeApp
 import com.creativeam.goorno.ui.theme.GoOrNoTheme
 
@@ -35,6 +36,12 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { _ ->
         refreshPermissionsState()
+        try {
+            val app = applicationContext as? GoOrNoApplication
+            if (hasAccessibilityPerm && app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
+                GoOrNoForegroundKeepAliveService.start(this)
+            }
+        } catch (_: Throwable) {}
     }
 
     private val mediaProjectionLauncher = registerForActivityResult(
@@ -184,6 +191,7 @@ class MainActivity : ComponentActivity() {
 
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
             nm.cancelAll()
+            GoOrNoForegroundKeepAliveService.stop(this)
 
             val stopOcrIntent = Intent(this, OcrScreenCaptureService::class.java).apply {
                 action = OcrScreenCaptureService.ACTION_STOP_OCR
