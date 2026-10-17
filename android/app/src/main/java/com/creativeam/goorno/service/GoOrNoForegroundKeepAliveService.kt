@@ -47,17 +47,15 @@ class GoOrNoForegroundKeepAliveService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Se o monitoramento continuar ativado pelo motorista, reinicia o serviço preventivamente
-        val app = applicationContext as? GoOrNoApplication
-        if (app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
-            start(applicationContext)
-        }
+        isRunning = false
     }
 
     companion object {
+        @Volatile
         private var isRunning = false
 
         fun start(context: Context) {
+            if (isRunning) return
             try {
                 val intent = Intent(context, GoOrNoForegroundKeepAliveService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

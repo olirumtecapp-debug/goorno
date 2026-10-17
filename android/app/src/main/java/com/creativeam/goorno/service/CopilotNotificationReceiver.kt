@@ -240,7 +240,8 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
                     .setOngoing(true)
                     .setSilent(true)
-                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setOnlyAlertOnce(true)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
                     .setCategory(NotificationCompat.CATEGORY_SERVICE)
                     .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
                     .setContentIntent(openPendingIntent)
@@ -362,23 +363,31 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
 
                 val notification = builder.build()
                 nm.notify(STATUS_NOTIFICATION_ID, notification)
-                try {
-                    GoOrNoForegroundKeepAliveService.start(context)
-                } catch (_: Throwable) {}
             } catch (_: Exception) {
             }
         }
 
         fun buildActiveNotification(context: Context): android.app.Notification {
-            showActiveNotification(context)
+            createNotificationChannel(context)
+            val openIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            val openPendingIntent = PendingIntent.getActivity(
+                context,
+                100,
+                openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
             val builder = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_goorno)
                 .setContentTitle("🟢 GoOrNo Ativo")
                 .setContentText("Monitorando Uber e 99")
                 .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setSilent(true)
+                .setOnlyAlertOnce(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
-                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+                .setContentIntent(openPendingIntent)
             return builder.build()
         }
 

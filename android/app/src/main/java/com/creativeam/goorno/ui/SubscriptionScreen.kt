@@ -24,6 +24,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.creativeam.goorno.data.license.LicenseManager
 import com.creativeam.goorno.data.license.LicenseState
 import com.creativeam.goorno.data.license.PixChargeData
@@ -39,6 +42,13 @@ fun SubscriptionScreenCard(
 
     var licenseState by remember { mutableStateOf(LicenseManager.getCachedLicenseState(context)) }
     var whatsappInput by remember { mutableStateOf(LicenseManager.getSavedWhatsApp(context)) }
+    var pinInput by remember { mutableStateOf(LicenseManager.getSavedPin(context)) }
+    var recoverySecretInput by remember { mutableStateOf(LicenseManager.getSavedRecovery(context)) }
+    var showForgotPinDialog by remember { mutableStateOf(false) }
+    var forgotRecoveryInput by remember { mutableStateOf("") }
+    var forgotNewPinInput by remember { mutableStateOf("") }
+    var forgotLoading by remember { mutableStateOf(false) }
+
     var selectedPlan by remember { mutableStateOf("anual") }
     var plansList by remember { mutableStateOf(LicenseManager.getFallbackPlans()) }
     var isEligibleForPromo by remember { mutableStateOf(true) }
@@ -52,9 +62,11 @@ fun SubscriptionScreenCard(
     // Silently refresh status on open if whatsapp was previously saved
     LaunchedEffect(Unit) {
         val saved = LicenseManager.getSavedWhatsApp(context)
+        val savedPin = LicenseManager.getSavedPin(context)
+        val savedRecovery = LicenseManager.getSavedRecovery(context)
         if (saved.isNotBlank()) {
             scope.launch {
-                val res = LicenseManager.checkOrActivateOnline(context, saved, "check")
+                val res = LicenseManager.checkOrActivateOnline(context, saved, "check", pin = savedPin, recoverySecret = savedRecovery)
                 res.onSuccess { state ->
                     licenseState = state
                 }
@@ -214,7 +226,7 @@ fun SubscriptionScreenCard(
                     color = PetrolHeader
                 )
                 Text(
-                    text = "Sua licença, pagamentos e configurações (custos do veículo, metas e áreas de risco) ficam vinculados ao seu WhatsApp. Ao trocar de celular ou reinstalar o GoOrNo, tudo é restaurado automaticamente na nuvem sem precisar de senhas ou códigos.",
+                    text = "Sua licença, pagamentos e configurações (custos do veículo, metas e áreas de risco) ficam vinculados ao seu WhatsApp. Defina um PIN de 4 dígitos para proteger seu acesso ao trocar de celular.",
                     fontSize = 12.sp,
                     color = MutedText
                 )
@@ -234,6 +246,81 @@ fun SubscriptionScreenCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    OutlinedTextField(
+                        value = pinInput,
+                        onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) pinInput = it },
+                        label = { Text("PIN (4 dígitos)") },
+                        placeholder = { Text("Ex: 1234") },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = PetrolHeader) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    OutlinedTextField(
+                        value = recoverySecretInput,
+                        onValueChange = { recoverySecretInput = it.uppercase() },
+                        label = { Text("Placa ou Palavra") },
+                        placeholder = { Text("Ex: BRA2E19") },
+                        leadingIcon = { Icon(Icons.Default.Key, contentDescription = null, tint = PetrolHeader) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1.2f)
+                    )
+                }
+
+                Text(
+                    text = "🔒 O PIN de 4 dígitos protege sua conta. A placa ou palavra secreta serve para recuperar o PIN se você esquecer (sem códigos por SMS).",
+                    fontSize = 11.sp,
+                    color = MutedText
+                )
+
+                if (licenseState.requiresPin || licenseState.pinInvalid) {
+                    Surface(
+                        color = TrafficRedSoft,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Lock, contentDescription = null, tint = TrafficRed, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (licenseState.pinInvalid) "PIN incorreto!" else "PIN obrigatório!",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = TrafficRed
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Este WhatsApp já possui um PIN cadastrado. Digite seu PIN de 4 dígitos para autorizar o acesso.",
+                                fontSize = 11.5.sp,
+                                color = TrafficRed
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Esqueci meu PIN (Recuperar pela Placa / Palavra Secreta)",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PetrolHeader,
+                                textDecoration = TextDecoration.Underline,
+                                modifier = Modifier.clickable {
+                                    forgotRecoveryInput = ""
+                                    forgotNewPinInput = ""
+                                    showForgotPinDialog = true
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Button(
                         onClick = {
                             if (whatsappInput.length < 10) {
@@ -242,7 +329,13 @@ fun SubscriptionScreenCard(
                             }
                             isLoading = true
                             scope.launch {
-                                val res = LicenseManager.checkOrActivateOnline(context, whatsappInput, "check")
+                                val res = LicenseManager.checkOrActivateOnline(
+                                    context = context,
+                                    whatsapp = whatsappInput,
+                                    action = "check",
+                                    pin = pinInput,
+                                    recoverySecret = recoverySecretInput
+                                )
                                 isLoading = false
                                 res.onSuccess { state ->
                                     licenseState = state
@@ -269,7 +362,13 @@ fun SubscriptionScreenCard(
                             onClick = {
                                 isLoading = true
                                 scope.launch {
-                                    val res = LicenseManager.checkOrActivateOnline(context, whatsappInput, "transfer")
+                                    val res = LicenseManager.checkOrActivateOnline(
+                                        context = context,
+                                        whatsapp = whatsappInput,
+                                        action = "transfer",
+                                        pin = pinInput,
+                                        recoverySecret = recoverySecretInput
+                                    )
                                     isLoading = false
                                     res.onSuccess { state ->
                                         licenseState = state
@@ -780,5 +879,105 @@ fun SubscriptionScreenCard(
                 )
             }
         }
+    }
+
+    if (showForgotPinDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!forgotLoading) showForgotPinDialog = false },
+            title = {
+                Text(
+                    text = "Recuperar PIN de Acesso",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = PetrolHeader
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Digite a Placa do Veículo ou Palavra Secreta cadastrada no seu WhatsApp ($whatsappInput) e defina um novo PIN de 4 dígitos:",
+                        fontSize = 12.sp,
+                        color = MutedText
+                    )
+                    OutlinedTextField(
+                        value = forgotRecoveryInput,
+                        onValueChange = { forgotRecoveryInput = it.uppercase() },
+                        label = { Text("Placa ou Palavra Secreta") },
+                        placeholder = { Text("Ex: BRA2E19") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = forgotNewPinInput,
+                        onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) forgotNewPinInput = it },
+                        label = { Text("Novo PIN (4 dígitos)") },
+                        placeholder = { Text("Ex: 1234") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (forgotRecoveryInput.isBlank()) {
+                            onNotify("Informe sua Placa ou Palavra Secreta cadastrada.")
+                            return@Button
+                        }
+                        if (forgotNewPinInput.length != 4) {
+                            onNotify("O novo PIN deve conter exatamente 4 dígitos.")
+                            return@Button
+                        }
+                        forgotLoading = true
+                        scope.launch {
+                            val res = LicenseManager.recoverPinOnline(
+                                context = context,
+                                whatsapp = whatsappInput,
+                                recoverySecret = forgotRecoveryInput,
+                                newPin = forgotNewPinInput
+                            )
+                            forgotLoading = false
+                            res.onSuccess { msg ->
+                                pinInput = forgotNewPinInput
+                                showForgotPinDialog = false
+                                onNotify(msg)
+                                // Re-verify with updated PIN
+                                val cRes = LicenseManager.checkOrActivateOnline(
+                                    context = context,
+                                    whatsapp = whatsappInput,
+                                    action = "check",
+                                    pin = forgotNewPinInput,
+                                    recoverySecret = forgotRecoveryInput
+                                )
+                                cRes.onSuccess { state -> licenseState = state }
+                            }.onFailure { err ->
+                                onNotify(err.message ?: "Falha ao recuperar PIN.")
+                            }
+                        }
+                    },
+                    enabled = !forgotLoading,
+                    colors = ButtonDefaults.buttonColors(containerColor = PetrolHeader),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    if (forgotLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                    } else {
+                        Text("Redefinir PIN", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showForgotPinDialog = false },
+                    enabled = !forgotLoading
+                ) {
+                    Text("Cancelar", color = MutedText)
+                }
+            }
+        )
     }
 }

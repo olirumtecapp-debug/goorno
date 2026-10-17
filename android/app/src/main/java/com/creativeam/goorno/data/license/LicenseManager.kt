@@ -19,6 +19,9 @@ data class LicenseState(
     val validoAte: String = "",
     val message: String = "",
     val deviceMismatch: Boolean = false,
+    val requiresPin: Boolean = false,
+    val pinInvalid: Boolean = false,
+    val hasPinSet: Boolean = false,
     val fraudAlert: Boolean = false,
     val whatsapp: String = ""
 )
@@ -63,6 +66,9 @@ object LicenseManager {
 
     private const val API_BASE_URL = "https://goorno-app.vercel.app/api"
 
+    private const val KEY_SAVED_PIN = "saved_pin"
+    private const val KEY_SAVED_RECOVERY = "saved_recovery"
+
     fun getDeviceId(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         var id = prefs.getString(KEY_DEVICE_ID, null)
@@ -90,6 +96,22 @@ object LicenseManager {
     fun saveWhatsApp(context: Context, phone: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_WHATSAPP, cleanPhone(phone)).apply()
+    }
+
+    fun getSavedPin(context: Context): String {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_SAVED_PIN, "") ?: ""
+    }
+
+    fun savePin(context: Context, pin: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(KEY_SAVED_PIN, pin.trim()).apply()
+    }
+
+    fun getSavedRecovery(context: Context): String {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_SAVED_RECOVERY, "") ?: ""
+    }
+
+    fun saveRecovery(context: Context, secret: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(KEY_SAVED_RECOVERY, secret.trim().uppercase()).apply()
     }
 
     fun cleanPhone(phone: String): String {
@@ -123,7 +145,9 @@ object LicenseManager {
     suspend fun checkOrActivateOnline(
         context: Context,
         whatsappInput: String,
-        action: String = "check"
+        action: String = "check",
+        pinInput: String? = null,
+        recoverySecretInput: String? = null
     ): Result<LicenseState> = withContext(Dispatchers.IO) {
         val phone = cleanPhone(whatsappInput)
         if (phone.length < 10) {
@@ -131,6 +155,12 @@ object LicenseManager {
         }
 
         saveWhatsApp(context, phone)
+        val pin = (pinInput ?: getSavedPin(context)).trim()
+        val recovery = (recoverySecretInput ?: getSavedRecovery(context)).trim()
+
+        if (pin.isNotBlank()) savePin(context, pin)
+        if (recovery.isNotBlank()) saveRecovery(context, recovery)
+
         val deviceId = getDeviceId(context)
         val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"
 
@@ -149,6 +179,8 @@ object LicenseManager {
                 put("deviceId", deviceId)
                 put("deviceModel", deviceModel)
                 put("action", action)
+                if (pin.isNotBlank()) put("pin", pin)
+                if (recovery.isNotBlank()) put("recoverySecret", recovery)
             }
 
             OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(reqBody.toString()) }
@@ -165,6 +197,9 @@ object LicenseManager {
             val validUntil = json.optString("validoAte", "")
             val message = json.optString("message", "")
             val deviceMismatch = json.optBoolean("deviceMismatch", false)
+            val requiresPin = json.optBoolean("requiresPin", false)
+            val pinInvalid = json.optBoolean("pinInvalid", false)
+            val hasPinSet = json.optBoolean("hasPinSet", false)
             val fraudAlert = json.optBoolean("fraudAlert", false)
 
             // Cache state
@@ -185,18 +220,23 @@ object LicenseManager {
                 validoAte = validUntil,
                 message = message,
                 deviceMismatch = deviceMismatch,
+                requiresPin = requiresPin,
+                pinInvalid = pinInvalid,
+                hasPinSet = hasPinSet,
                 fraudAlert = fraudAlert,
                 whatsapp = phone
             )
 
             // Restauração Automática das Configurações do Motorista na Nuvem (se existirem)
-            try {
-                val restoreRes = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, phone)
-                restoreRes.onSuccess { (restoredCfg, _) ->
-                    com.creativeam.goorno.data.preferences.DriverPreferencesRepository(context).saveConfig(restoredCfg)
+            if (allowed) {
+                try {
+                    val restoreRes = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, phone)
+                    restoreRes.onSuccess { (restoredCfg, _) ->
+                        com.creativeam.goorno.data.preferences.DriverPreferencesRepository(context).saveConfig(restoredCfg)
+                    }
+                } catch (_: Exception) {
+                    // Silencioso se não houver backup prévio ou se estiver offline
                 }
-            } catch (_: Exception) {
-                // Silencioso se não houver backup prévio ou se estiver offline
             }
 
             Result.success(state)
@@ -204,6 +244,66 @@ object LicenseManager {
             // Em caso de falha de conexão, usa cache se existir
             val cached = getCachedLicenseState(context)
             Result.success(cached.copy(message = "Offline: usando status salvo no aparelho."))
+        }
+    }
+
+    /**
+     * Redefine o PIN de 4 dígitos sem código aleatório, validando a Palavra-chave ou Placa do motorista.
+     */
+    suspend fun recoverPinOnline(
+        context: Context,
+        whatsappInput: String,
+        recoverySecretInput: String,
+        newPinInput: String
+    ): Result<String> = withContext(Dispatchers.IO) {
+        val phone = cleanPhone(whatsappInput)
+        if (phone.length < 10) {
+            return@withContext Result.failure(IllegalArgumentException("Informe o WhatsApp com DDD."))
+        }
+        val secret = recoverySecretInput.trim().toUpperCase()
+        if (secret.length < 3) {
+            return@withContext Result.failure(IllegalArgumentException("Informe sua Palavra-chave ou Placa cadastrada."))
+        }
+        val pin = newPinInput.trim()
+        if (pin.length != 4 || !pin.all { it.isDigit() }) {
+            return@withContext Result.failure(IllegalArgumentException("O novo PIN deve conter exatamente 4 números."))
+        }
+
+        try {
+            val url = URL("$API_BASE_URL/license/recover-pin")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 8000
+                readTimeout = 8000
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+            }
+
+            val reqBody = JSONObject().apply {
+                put("whatsapp", phone)
+                put("recoverySecret", secret)
+                put("newPin", pin)
+            }
+
+            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(reqBody.toString()) }
+
+            val code = conn.responseCode
+            val responseStream = if (code in 200..299) conn.inputStream else conn.errorStream
+            val respText = responseStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+
+            val json = JSONObject(respText)
+            val ok = json.optBoolean("ok", false)
+            val msg = json.optString("message", json.optString("error", "Erro ao redefinir PIN."))
+
+            if (ok) {
+                savePin(context, pin)
+                saveRecovery(context, secret)
+                Result.success(msg)
+            } else {
+                Result.failure(RuntimeException(msg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 

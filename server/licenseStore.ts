@@ -124,6 +124,8 @@ export interface LicenseRecord {
   deviceModel?: string;
   status: "trial" | "active" | "expired" | "blocked";
   plano: "trial" | "mensal" | "trimestral" | "semestral" | "anual" | "vitalicio" | "cortesia";
+  pin?: string;
+  recoverySecret?: string;
   firstPurchasePromoApplied?: boolean;
   nextRenewalPrice?: number;
   nextRenewalPeriodDays?: number;
@@ -283,6 +285,9 @@ export interface CheckLicenseResult {
   validoAte: string;
   message: string;
   deviceMismatch?: boolean;
+  requiresPin?: boolean;
+  pinInvalid?: boolean;
+  hasPinSet?: boolean;
   fraudAlert?: boolean;
   license?: LicenseRecord;
 }
@@ -293,6 +298,8 @@ export async function checkOrActivateLicense(params: {
   deviceModel?: string;
   action?: "check" | "transfer";
   clientIp?: string;
+  pin?: string;
+  recoverySecret?: string;
 }): Promise<CheckLicenseResult> {
   const phone = cleanPhone(params.whatsapp);
   if (phone.length < 10) {
@@ -319,6 +326,8 @@ export async function checkOrActivateLicense(params: {
       deviceModel: params.deviceModel || "Android Device",
       status: "trial",
       plano: "trial",
+      pin: params.pin ? params.pin.trim() : undefined,
+      recoverySecret: params.recoverySecret ? params.recoverySecret.trim().toUpperCase() : undefined,
       trialEndsAt: trialEnds.toISOString(),
       validoAte: trialEnds.toISOString(),
       createdAt: now.toISOString(),
@@ -335,6 +344,7 @@ export async function checkOrActivateLicense(params: {
       trialDaysRemaining: 7,
       validoAte: trialEnds.toISOString(),
       message: "Bem-vindo ao GoOrNo! Seu período de teste de 7 dias grátis foi ativado.",
+      hasPinSet: Boolean(record.pin),
       license: record,
     };
   }
@@ -342,6 +352,19 @@ export async function checkOrActivateLicense(params: {
   // Update last seen & device model
   record.lastSeenAt = now.toISOString();
   if (params.deviceModel) record.deviceModel = params.deviceModel;
+
+  // Device Lock & PIN Verification
+  const isSameDevice = !record.deviceId || record.deviceId === params.deviceId;
+
+  // Se estiver no aparelho já autorizado, permite salvar ou atualizar PIN se fornecido
+  if (isSameDevice) {
+    if (params.pin && (!record.pin || params.action === "transfer")) {
+      record.pin = params.pin.trim();
+    }
+    if (params.recoverySecret && (!record.recoverySecret || params.action === "transfer")) {
+      record.recoverySecret = params.recoverySecret.trim().toUpperCase();
+    }
+  }
 
   // Check if blocked
   if (record.status === "blocked") {
@@ -353,14 +376,48 @@ export async function checkOrActivateLicense(params: {
       validoAte: record.validoAte,
       message: "Esta licença foi bloqueada pela administração do sistema.",
       fraudAlert: record.fraudSuspicion,
+      hasPinSet: Boolean(record.pin),
       license: record,
     };
   }
 
-  // Device Lock Verification
-  const isSameDevice = !record.deviceId || record.deviceId === params.deviceId;
   if (!isSameDevice) {
-    if (params.action === "transfer") {
+    // Se a conta já possui PIN cadastrado, exige verificação
+    if (record.pin) {
+      const incomingPin = (params.pin || "").trim();
+      if (!incomingPin) {
+        return {
+          allowed: false,
+          status: record.status,
+          plano: record.plano,
+          trialDaysRemaining: 0,
+          validoAte: record.validoAte,
+          message: "Este WhatsApp está vinculado a outro aparelho. Digite seu PIN de 4 dígitos para transferir.",
+          deviceMismatch: true,
+          requiresPin: true,
+          hasPinSet: true,
+          license: record,
+        };
+      }
+      if (incomingPin !== record.pin) {
+        return {
+          allowed: false,
+          status: record.status,
+          plano: record.plano,
+          trialDaysRemaining: 0,
+          validoAte: record.validoAte,
+          message: "PIN de 4 dígitos incorreto! Tente novamente ou use 'Esqueci meu PIN'.",
+          deviceMismatch: true,
+          requiresPin: true,
+          pinInvalid: true,
+          hasPinSet: true,
+          license: record,
+        };
+      }
+    }
+
+    // Se o usuário confirmou a transferência (ou validou o PIN correto)
+    if (params.action === "transfer" || (record.pin && params.pin && params.pin.trim() === record.pin)) {
       // Calculate transfers in the last 30 days
       const thirtyDaysAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
       const recentTransfers = (record.transfers || []).filter(
@@ -382,6 +439,7 @@ export async function checkOrActivateLicense(params: {
           message: "Limite de trocas de aparelho atingido (máx. 2 por mês). Suspeita de compartilhamento detectada. Contate o suporte.",
           deviceMismatch: true,
           fraudAlert: true,
+          hasPinSet: Boolean(record.pin),
           license: record,
         };
       }
@@ -396,6 +454,8 @@ export async function checkOrActivateLicense(params: {
       record.transfers = [...(record.transfers || []), transferEntry];
       record.deviceTransfersCount = record.transfers.length;
       record.deviceId = params.deviceId;
+      if (params.pin && !record.pin) record.pin = params.pin.trim();
+      if (params.recoverySecret && !record.recoverySecret) record.recoverySecret = params.recoverySecret.trim().toUpperCase();
       await saveLicense(record);
     } else {
       // Prompt user to confirm transfer
@@ -407,6 +467,8 @@ export async function checkOrActivateLicense(params: {
         validoAte: record.validoAte,
         message: "Este WhatsApp está vinculado a outro aparelho. Deseja transferir sua licença para este aparelho?",
         deviceMismatch: true,
+        requiresPin: Boolean(record.pin),
+        hasPinSet: Boolean(record.pin),
         license: record,
       };
     }
@@ -820,3 +882,45 @@ export async function redeemVoucher(params: {
 
   return { ok: true, message: msg, license: record, voucher };
 }
+
+/**
+ * Recuperação de PIN de 4 dígitos sem código aleatório.
+ * O motorista valida com a palavra-chave ou placa que ele mesmo cadastrou.
+ */
+export async function recoverPin(params: {
+  whatsapp: string;
+  recoverySecret: string;
+  newPin: string;
+}): Promise<{ ok: boolean; message: string }> {
+  const phone = cleanPhone(params.whatsapp);
+  if (phone.length < 10) {
+    return { ok: false, message: "WhatsApp inválido (informe DDD + número)." };
+  }
+  const cleanPin = (params.newPin || "").trim();
+  if (cleanPin.length !== 4 || !/^\d{4}$/.test(cleanPin)) {
+    return { ok: false, message: "O novo PIN deve conter exatamente 4 números." };
+  }
+  const record = await getLicense(phone);
+  if (!record) {
+    return { ok: false, message: "Nenhum cadastro encontrado para este WhatsApp." };
+  }
+  const inputSecret = (params.recoverySecret || "").trim().toUpperCase();
+  const storedSecret = (record.recoverySecret || "").trim().toUpperCase();
+
+  if (!storedSecret) {
+    // Se o usuário ainda não possuía palavra-chave cadastrada, salva o PIN e define a palavra-chave agora
+    record.pin = cleanPin;
+    record.recoverySecret = inputSecret;
+    await saveLicense(record);
+    return { ok: true, message: "PIN e palavra-chave cadastrados com sucesso!" };
+  }
+
+  if (inputSecret !== storedSecret) {
+    return { ok: false, message: "Palavra-chave ou placa incorreta. Verifique os dados digitados." };
+  }
+
+  record.pin = cleanPin;
+  await saveLicense(record);
+  return { ok: true, message: "PIN de 4 dígitos redefinido com sucesso! Você já pode autorizar seu aparelho." };
+}
+

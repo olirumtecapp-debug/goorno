@@ -29,6 +29,7 @@ import {
   deleteVoucher,
   redeemVoucher,
   VoucherRecord,
+  recoverPin,
 } from "./licenseStore.js";
 import { createPixCharge, verifyPaymentStatus } from "./asaas.js";
 import { sendFraudAlertEmail } from "./fraudAlert.js";
@@ -528,7 +529,7 @@ function checkAdminAuth(req: express.Request): boolean {
 // 1. Check or Activate Driver License (App Startup & Background Sync)
 app.post("/api/license/check-or-activate", async (req, res) => {
   try {
-    const { whatsapp, deviceId, deviceModel, action = "check" } = req.body || {};
+    const { whatsapp, deviceId, deviceModel, action = "check", pin, recoverySecret } = req.body || {};
     const clientIp = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "");
 
     if (!whatsapp || !deviceId) {
@@ -544,6 +545,8 @@ app.post("/api/license/check-or-activate", async (req, res) => {
       deviceModel: deviceModel ? String(deviceModel) : undefined,
       action: action as "check" | "transfer",
       clientIp,
+      pin: pin ? String(pin).trim() : undefined,
+      recoverySecret: recoverySecret ? String(recoverySecret).trim().toUpperCase() : undefined,
     });
 
     // Se houve alerta de fraude por trocas excessivas, dispara email imediatamente
@@ -563,6 +566,28 @@ app.post("/api/license/check-or-activate", async (req, res) => {
   } catch (err: any) {
     console.error("[license] Erro em check-or-activate:", err);
     res.status(500).json({ allowed: false, message: err?.message || "Erro interno ao validar licença." });
+  }
+});
+
+// 1.1 Redefinição de PIN / Recuperação de Senha (Sem código aleatório!)
+app.post("/api/license/recover-pin", async (req, res) => {
+  try {
+    const { whatsapp, recoverySecret, newPin } = req.body || {};
+    if (!whatsapp || !recoverySecret || !newPin) {
+      return res.status(400).json({ ok: false, error: "WhatsApp, Palavra-chave/Placa e Novo PIN são obrigatórios." });
+    }
+    const result = await recoverPin({
+      whatsapp: String(whatsapp),
+      recoverySecret: String(recoverySecret),
+      newPin: String(newPin),
+    });
+    if (!result.ok) {
+      return res.status(400).json({ ok: false, error: result.message });
+    }
+    res.json({ ok: true, message: result.message });
+  } catch (err: any) {
+    console.error("[license] Erro em recover-pin:", err);
+    res.status(500).json({ ok: false, error: err?.message || "Erro interno ao redefinir PIN." });
   }
 });
 
@@ -934,21 +959,20 @@ app.post("/api/redeem-voucher", async (req, res) => {
 // 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
 app.get("/api/app-version", (_req, res) => {
   res.json({
-    versionName: "3.3.13",
-    versionCode: 34,
-    releaseDate: "2026-10-16",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.13.apk",
-    directDownload: "/GoOrNo-v3.3.13.apk",
+    versionName: "3.3.14",
+    versionCode: 35,
+    releaseDate: "2026-10-17",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.14.apk",
+    directDownload: "/GoOrNo-v3.3.14.apk",
     fileSizeBytes: 55225572,
     fileSizeFormatted: "52.7 MB",
     changelog: [
-      "Tempo de Exibição estritamente respeitado pelo motorista (seleção precisa de 3s, 4s, 5s, 6s e 7s sem redução forçada).",
-      "Novo Balão Moderno 3 Pilares com layout limpo: apenas tempo e km (sem poluir com valor duplicado), 3 pilares R$/km, R$/h e Nota, e balão de veredito.",
-      "Semáforo Compacto e Mini Ball limpos sem valor (apenas km e min) evitando repetição com a tela da Uber/99.",
-      "Card Clássico v3.3.4 (Tradicional) mantido completo com valor e definido como Padrão Oficial.",
-      "Notificações na barra de status mantêm todas as informações completas com valor.",
-      "Permissão de Execução em 2º Plano sem restrições do Google (isenção de otimização de bateria) para o serviço não fechar sozinho.",
-      "Removido fechamento acidental ao tocar no card e removida lista negra que travava detecção."
+      "Correção crítica: eliminação total do looping de notificações em segundo plano.",
+      "Identificação Segura: Proteção de conta com PIN de 4 dígitos e recuperação por Placa/Palavra Secreta.",
+      "Sincronização 100% em Nuvem: Todas as configurações e custos restaurados automaticamente ao trocar de aparelho.",
+      "Tempo de Exibição estritamente respeitado pelo motorista (3s, 4s, 5s, 6s e 7s sem redução forçada).",
+      "Novo Balão Moderno 3 Pilares e Semáforo Compacto limpo (sem duplicar valor na tela).",
+      "Permissão de Execução em 2º Plano otimizada para estabilidade contínua."
     ],
     mandatory: false,
   });
@@ -1040,11 +1064,14 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.14.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.14.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.14.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.13.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.13.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.13.apk"),
@@ -1060,7 +1087,7 @@ app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.13.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.14.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");
