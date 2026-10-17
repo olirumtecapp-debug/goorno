@@ -1,5 +1,7 @@
 package com.creativeam.goorno.data.cloud
 
+import android.content.Context
+import com.creativeam.goorno.data.license.LicenseManager
 import com.creativeam.goorno.data.local.RideOfferEntity
 import com.creativeam.goorno.model.DriverFinancialConfig
 import kotlinx.coroutines.Dispatchers
@@ -11,9 +13,10 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Gerenciador de Backup Consentido na Nuvem e Exportação/Importação Local para Troca de Aparelho.
- * Respeita estritamente a Seção 9: só envia dados quando o motorista habilita expressamente
- * o consentimento e informa seu Código de Recuperação.
+ * Gerenciador de Sincronização Automática na Nuvem e Backup/Restauração para Troca de Aparelho.
+ * O ID do motorista é seu número de WhatsApp.
+ * Ao alterar metas, custos ou áreas de risco, os dados sincronizam automaticamente na nuvem.
+ * Ao trocar de celular ou reinstalar o GoOrNo, basta validar o WhatsApp que todo o perfil é restaurado.
  */
 object CloudSyncManager {
 
@@ -243,4 +246,39 @@ object CloudSyncManager {
             Result.failure(e)
         }
     }
+
+    /**
+     * Sincronização Automática na Nuvem Vinculada ao WhatsApp do Motorista.
+     * Salva as configurações de veículo, metas de ganho e áreas de risco sem exigir senhas ou códigos manuais.
+     */
+    suspend fun autoSyncSettings(
+        context: Context,
+        config: DriverFinancialConfig,
+        offers: List<RideOfferEntity> = emptyList()
+    ): Result<String> = withContext(Dispatchers.IO) {
+        val phone = LicenseManager.getSavedWhatsApp(context).ifBlank {
+            LicenseManager.cleanPhone(config.driverRecoveryCode)
+        }
+        if (phone.length < 10) {
+            return@withContext Result.failure(IllegalArgumentException("Cadastre seu WhatsApp para ativar a sincronização na nuvem."))
+        }
+        uploadBackupByDriverCode(phone, config, offers)
+    }
+
+    /**
+     * Restauração Automática da Nuvem Vinculada ao WhatsApp.
+     * Ao trocar de celular ou reinstalar o aplicativo, basta validar o WhatsApp que as configurações
+     * (consumo do carro, combustível, metas R$/km e áreas de risco) são restauradas imediatamente.
+     */
+    suspend fun autoRestoreSettings(
+        context: Context,
+        whatsappInput: String? = null
+    ): Result<Pair<DriverFinancialConfig, List<RideOfferEntity>>> = withContext(Dispatchers.IO) {
+        val phone = (whatsappInput ?: LicenseManager.getSavedWhatsApp(context)).let { LicenseManager.cleanPhone(it) }
+        if (phone.length < 10) {
+            return@withContext Result.failure(IllegalArgumentException("WhatsApp não cadastrado ou inválido."))
+        }
+        restoreBackupByDriverCode(phone)
+    }
 }
+

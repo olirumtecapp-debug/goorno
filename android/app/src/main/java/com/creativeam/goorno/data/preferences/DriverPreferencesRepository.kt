@@ -139,5 +139,19 @@ class DriverPreferencesRepository(private val context: Context) {
             prefs[Keys.CLOUD_BACKUP_CONSENT] = config.cloudBackupConsent
             prefs[Keys.DRIVER_RECOVERY_CODE] = config.driverRecoveryCode.trim()
         }
+
+        // Sincronização automática e transparente na nuvem vinculada ao WhatsApp do motorista
+        try {
+            val phone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
+            if (phone.length >= 10) {
+                com.creativeam.goorno.data.cloud.CloudSyncManager.uploadBackupByDriverCode(
+                    driverCode = phone,
+                    config = config,
+                    offers = emptyList()
+                )
+            }
+        } catch (_: Exception) {
+            // Silencioso se offline, garante que a persistência local nunca falhe
+        }
     }
 }

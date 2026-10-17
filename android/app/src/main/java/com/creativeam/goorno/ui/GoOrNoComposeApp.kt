@@ -125,6 +125,27 @@ fun GoOrNoComposeApp(
     var currentScreen by remember { mutableStateOf(GoOrNoScreen.HOME) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
+    val currentAppVersionName = remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "3.3.13"
+        } catch (_: Exception) {
+            "3.3.13"
+        }
+    }
+    val currentAppVersionCode = remember {
+        try {
+            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                pInfo.longVersionCode.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                pInfo.versionCode
+            }
+        } catch (_: Exception) {
+            34
+        }
+    }
+
     var updateInfoState by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var isCheckingUpdates by remember { mutableStateOf(false) }
@@ -170,21 +191,9 @@ fun GoOrNoComposeApp(
                         }
                     }
 
-                    val currentVersionCode = try {
-                        val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                            pInfo.longVersionCode.toInt()
-                        } else {
-                            @Suppress("DEPRECATION")
-                            pInfo.versionCode
-                        }
-                    } catch (_: Exception) {
-                        33
-                    }
-
                     withContext(Dispatchers.Main) {
                         isCheckingUpdates = false
-                        if (rCode > currentVersionCode) {
+                        if (rCode > currentAppVersionCode) {
                             val info = AppUpdateInfo(
                                 versionName = rName,
                                 versionCode = rCode,
@@ -199,7 +208,7 @@ fun GoOrNoComposeApp(
                             updateInfoState = info
                             showUpdateDialog = true
                         } else if (manual) {
-                            Toast.makeText(context, "✅ Você já está na versão mais recente (v3.3.12)!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "✅ Você já está na versão mais recente (v$currentAppVersionName)!", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else if (manual) {
@@ -323,7 +332,7 @@ fun GoOrNoComposeApp(
                                         }
                                     ) {
                                         Text(
-                                            text = if (updateInfoState != null) "v3.3.12 • UPDATE!" else "v3.3.12",
+                                            text = if (updateInfoState != null) "v$currentAppVersionName • UPDATE!" else "v$currentAppVersionName",
                                             color = PetrolDarkText,
                                             fontWeight = FontWeight.Black,
                                             fontSize = 9.sp,
@@ -3704,16 +3713,110 @@ fun GoOrNoComposeApp(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = "Troca de Aparelho — Backup & Recuperação na Nuvem",
+                                    text = "Sincronização em Nuvem GoOrNo (100% Automática via WhatsApp)",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 15.sp,
                                     color = PetrolHeader
                                 )
+                                val savedWhatsApp = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
+                                if (savedWhatsApp.isNotBlank()) {
+                                    Surface(
+                                        color = TrafficGreenSoft,
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text("☁️", fontSize = 18.sp)
+                                            Column {
+                                                Text(
+                                                    text = "Vinculado ao WhatsApp: $savedWhatsApp",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                    color = TrafficGreen
+                                                )
+                                                Text(
+                                                    text = "Seus custos, metas e áreas de risco sincronizam automaticamente.",
+                                                    fontSize = 11.sp,
+                                                    color = PetrolDarkText
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Surface(
+                                        color = SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "💡 Valide seu WhatsApp na aba 'Assinatura' para ativar o backup automático sem precisar digitar senhas ou códigos.",
+                                            fontSize = 11.5.sp,
+                                            color = MutedText,
+                                            modifier = Modifier.padding(10.dp)
+                                        )
+                                    }
+                                }
+
                                 Text(
-                                    text = "Se você trocar de celular, basta informar seu Código de Motorista abaixo para salvar ou restaurar todas as suas metas, custos do veículo e histórico de corridas.",
+                                    text = "Se você trocar de celular ou reinstalar o aplicativo, basta validar seu WhatsApp ou clicar em 'Restaurar da Nuvem' abaixo para recuperar seus custos, metas e histórico no mesmo instante.",
                                     fontSize = 12.sp,
                                     color = MutedText
                                 )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                val res = com.creativeam.goorno.data.cloud.CloudSyncManager.autoSyncSettings(
+                                                    context = context,
+                                                    config = config,
+                                                    offers = realHistory
+                                                )
+                                                notifyUser(res.getOrElse { "Erro: ${it.message}" })
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = PetrolHeader,
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Sincronizar Agora", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                                    }
+
+                                    FilledTonalButton(
+                                        onClick = {
+                                            scope.launch {
+                                                val res = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context)
+                                                res.onSuccess { (restoredCfg, restoredOffers) ->
+                                                    app.preferencesRepository.saveConfig(restoredCfg)
+                                                    if (restoredOffers.isNotEmpty()) {
+                                                        app.database.rideOfferDao().insertAll(restoredOffers)
+                                                    }
+                                                    notifyUser("Sucesso! Configurações restauradas da nuvem para este celular!")
+                                                }.onFailure {
+                                                    notifyUser("Erro ao restaurar: ${it.message}")
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = SoftSurfaceVariant,
+                                            contentColor = PetrolHeader
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Restaurar da Nuvem", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                                    }
+                                }
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(
@@ -3728,77 +3831,10 @@ fun GoOrNoComposeApp(
                                         }
                                     )
                                     Text(
-                                        text = "Autorizo sincronizar minhas configurações e histórico na nuvem com meu código",
-                                        fontSize = 12.sp,
+                                        text = "Backup automático contínuo em segundo plano ativo",
+                                        fontSize = 11.5.sp,
                                         color = PetrolDarkText
                                     )
-                                }
-
-                                OutlinedTextField(
-                                    value = recoveryCode,
-                                    onValueChange = { recoveryCode = it },
-                                    label = { Text("Seu Código de Motorista (ex: motorista2026 ou placa)") },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
-                                )
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Button(
-                                        onClick = {
-                                            if (!consentChecked) {
-                                                notifyUser("Marque a caixa de autorização acima antes de enviar para a nuvem.")
-                                                return@Button
-                                            }
-                                            scope.launch {
-                                                val savedCfg = config.copy(
-                                                    driverRecoveryCode = recoveryCode.trim(),
-                                                    cloudBackupConsent = true
-                                                )
-                                                app.preferencesRepository.saveConfig(savedCfg)
-                                                val res = CloudSyncManager.uploadBackupByDriverCode(
-                                                    driverCode = recoveryCode,
-                                                    config = savedCfg,
-                                                    offers = realHistory
-                                                )
-                                                notifyUser(res.getOrElse { "Erro: ${it.message}" })
-                                            }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = PetrolHeader,
-                                            contentColor = Color.White
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("Salvar na Nuvem", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                                    }
-
-                                    FilledTonalButton(
-                                        onClick = {
-                                            scope.launch {
-                                                val res = CloudSyncManager.restoreBackupByDriverCode(recoveryCode)
-                                                res.onSuccess { (restoredCfg, restoredOffers) ->
-                                                    app.preferencesRepository.saveConfig(restoredCfg)
-                                                    app.database.rideOfferDao().insertAll(restoredOffers)
-                                                    notifyUser("Sucesso! Configurações e ${restoredOffers.size} corridas restauradas para este aparelho!")
-                                                }.onFailure {
-                                                    notifyUser("Erro ao restaurar: ${it.message}")
-                                                }
-                                            }
-                                        },
-                                        colors = ButtonDefaults.filledTonalButtonColors(
-                                            containerColor = SoftSurfaceVariant,
-                                            contentColor = PetrolHeader
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("Restaurar Dados", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                                    }
                                 }
 
                                 HorizontalDivider(color = CleanCardBorder)
@@ -3885,7 +3921,7 @@ fun GoOrNoComposeApp(
                                         border = BorderStroke(1.dp, CleanCardBorder)
                                     ) {
                                         Text(
-                                            text = "Versão: v3.3.12 (Build 33)",
+                                            text = "Versão: v$currentAppVersionName (Build $currentAppVersionCode)",
                                             fontSize = 11.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = PetrolDarkText,

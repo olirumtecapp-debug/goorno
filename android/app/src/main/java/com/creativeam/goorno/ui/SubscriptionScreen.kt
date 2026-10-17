@@ -214,7 +214,7 @@ fun SubscriptionScreenCard(
                     color = PetrolHeader
                 )
                 Text(
-                    text = "Sua licença e pagamentos ficam vinculados ao seu WhatsApp para você nunca perder seu acesso.",
+                    text = "Sua licença, pagamentos e configurações (custos do veículo, metas e áreas de risco) ficam vinculados ao seu WhatsApp. Ao trocar de celular ou reinstalar o GoOrNo, tudo é restaurado automaticamente na nuvem sem precisar de senhas ou códigos.",
                     fontSize = 12.sp,
                     color = MutedText
                 )
