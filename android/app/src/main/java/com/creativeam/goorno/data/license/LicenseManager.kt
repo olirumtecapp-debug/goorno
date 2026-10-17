@@ -179,8 +179,8 @@ object LicenseManager {
                 put("deviceId", deviceId)
                 put("deviceModel", deviceModel)
                 put("action", action)
-                if (pin.isNotBlank()) put("pin", pin)
-                if (recovery.isNotBlank()) put("recoverySecret", recovery)
+                if (effectivePin.isNotBlank()) put("pin", effectivePin)
+                if (effectiveRecovery.isNotBlank()) put("recoverySecret", effectiveRecovery)
             }
 
             OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(reqBody.toString()) }
@@ -252,19 +252,19 @@ object LicenseManager {
      */
     suspend fun recoverPinOnline(
         context: Context,
-        whatsappInput: String,
-        recoverySecretInput: String,
-        newPinInput: String
+        whatsapp: String,
+        recoverySecret: String,
+        newPin: String
     ): Result<String> = withContext(Dispatchers.IO) {
-        val phone = cleanPhone(whatsappInput)
+        val phone = cleanPhone(whatsapp)
         if (phone.length < 10) {
             return@withContext Result.failure(IllegalArgumentException("Informe o WhatsApp com DDD."))
         }
-        val secret = recoverySecretInput.trim().toUpperCase()
+        val secret = recoverySecret.trim().uppercase()
         if (secret.length < 3) {
             return@withContext Result.failure(IllegalArgumentException("Informe sua Palavra-chave ou Placa cadastrada."))
         }
-        val pin = newPinInput.trim()
+        val pin = newPin.trim()
         if (pin.length != 4 || !pin.all { it.isDigit() }) {
             return@withContext Result.failure(IllegalArgumentException("O novo PIN deve conter exatamente 4 números."))
         }
