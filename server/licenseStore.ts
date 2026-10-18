@@ -90,8 +90,8 @@ import path from "path";
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "expedicao-brasil";
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
-const COL_LICENSES = "goorno_licencas";
-const COL_VOUCHERS = "goorno_vouchers";
+const COL_LICENSES = "goorno_vault_snapshots";
+const COL_VOUCHERS = "goorno_vault_snapshots";
 
 const IS_VERCEL = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 const DATA_DIR = IS_VERCEL ? "/tmp" : path.resolve(process.cwd(), ".data");
@@ -192,7 +192,7 @@ export async function getLicense(phone: string): Promise<LicenseRecord | null> {
   if (!id) return null;
 
   try {
-    const res = await fetch(firestoreUrl(COL_LICENSES, `tel_${id}`));
+    const res = await fetch(firestoreUrl(COL_LICENSES, `lic_tel_${id}`));
     if (res.ok) {
       const json: any = await res.json();
       const raw = json?.fields?.payload?.stringValue;
@@ -231,7 +231,7 @@ export async function saveLicense(license: LicenseRecord): Promise<boolean> {
         updatedAt: { stringValue: new Date().toISOString() },
       },
     };
-    const res = await fetch(firestoreUrl(COL_LICENSES, `tel_${id}`), {
+    const res = await fetch(firestoreUrl(COL_LICENSES, `lic_tel_${id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -244,7 +244,6 @@ export async function saveLicense(license: LicenseRecord): Promise<boolean> {
 }
 
 export async function listAllLicenses(): Promise<LicenseRecord[]> {
-  const list: LicenseRecord[] = [];
   const mapById = new Map<string, LicenseRecord>();
 
   try {
@@ -253,11 +252,41 @@ export async function listAllLicenses(): Promise<LicenseRecord[]> {
       const json: any = await res.json();
       const docs = json.documents || [];
       for (const d of docs) {
+        if (!d.name) continue;
         const raw = d.fields?.payload?.stringValue;
-        if (raw) {
+        if (!raw) continue;
+
+        if (d.name.includes("/lic_tel_")) {
           try {
             const parsed: LicenseRecord = JSON.parse(raw);
             mapById.set(parsed.id, parsed);
+          } catch {}
+        } else if (d.name.includes("/slot_day_")) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed.users)) {
+              for (const u of parsed.users) {
+                const phoneClean = cleanPhone(u.phone || u.id);
+                if (phoneClean && !mapById.has(phoneClean)) {
+                  mapById.set(phoneClean, {
+                    id: phoneClean,
+                    whatsapp: formatPhoneBr(u.phone || phoneClean),
+                    deviceId: u.id || "device_app",
+                    deviceModel: u.name || "Motorista GoOrNo",
+                    status: (u.status === "active" ? "active" : "trial") as any,
+                    plano: (u.plan === "vip" || u.plan === "vitalicio" ? "vitalicio" : "trial") as any,
+                    trialEndsAt: u.trialEndsAt || new Date(Date.now() + 7 * 86400000).toISOString(),
+                    validoAte: u.trialEndsAt || new Date(Date.now() + 30 * 86400000).toISOString(),
+                    createdAt: u.createdAt || new Date().toISOString(),
+                    lastSeenAt: u.lastActiveAt || u.createdAt || new Date().toISOString(),
+                    deviceTransfersCount: 0,
+                    transfers: [],
+                    fraudSuspicion: false,
+                    notes: u.name ? `Motorista: ${u.name}` : undefined,
+                  });
+                }
+              }
+            }
           } catch {}
         }
       }
@@ -774,6 +803,7 @@ export async function listAllVouchers(): Promise<VoucherRecord[]> {
       const json: any = await res.json();
       const docs = json.documents || [];
       for (const d of docs) {
+        if (!d.name || !d.name.includes("/vouch_")) continue;
         const raw = d.fields?.payload?.stringValue;
         if (raw) {
           try {
