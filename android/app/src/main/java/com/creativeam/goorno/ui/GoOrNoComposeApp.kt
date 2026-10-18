@@ -420,7 +420,7 @@ fun GoOrNoComposeApp(
                                 .fillMaxWidth()
                                 .background(PureWhiteSurface)
                                 .clickable { currentScreen = GoOrNoScreen.SETTINGS }
-                                .padding(horizontal = 14.dp, vertical = 9.dp),
+                                .padding(start = 54.dp, end = 14.dp, top = 10.dp, bottom = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
@@ -442,7 +442,9 @@ fun GoOrNoComposeApp(
                                 text = "Voltar para Ajustes",
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = PetrolHeader
+                                color = PetrolHeader,
+                                maxLines = 1,
+                                softWrap = false
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Surface(
@@ -656,46 +658,33 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Surface(
-                                            color = when {
-                                                !config.copilotMonitoringEnabled -> TrafficRedSoft
-                                                isCopilotActive -> TrafficGreenSoft
-                                                else -> TrafficYellowSoft
-                                            },
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) {
-                                            Text(
-                                                text = when {
-                                                    !config.copilotMonitoringEnabled -> "🔴 COPILOTO DESATIVADO (FORA DE USO)"
-                                                    isCopilotActive -> "🟢 COPILOTO ATIVO E PRONTO"
-                                                    else -> "🟡 FALTA ATIVAR PERMISSÃO ABAIXO"
-                                                },
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 11.5.sp,
-                                                color = when {
-                                                    !config.copilotMonitoringEnabled -> TrafficRed
-                                                    isCopilotActive -> TrafficGreen
-                                                    else -> TrafficYellow
-                                                },
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(6.dp))
+                                    Surface(
+                                        color = when {
+                                            !config.copilotMonitoringEnabled -> TrafficRedSoft
+                                            isCopilotActive -> TrafficGreenSoft
+                                            else -> TrafficYellowSoft
+                                        },
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
                                         Text(
                                             text = when {
-                                                !config.copilotMonitoringEnabled ->
-                                                    "O GoOrNo está desligado e a barrinha do topo foi ocultada. Toque em 'Ligar Copiloto' abaixo quando for rodar."
-                                                isCopilotActive ->
-                                                    "A janelinha abre SOZINHA ao tocar chamada ou abrir ofertas na Uber/99 e some após ${config.overlayAutoMinimizeSec}s."
-                                                else ->
-                                                    "Ative os 2 botões abaixo para o GoOrNo ler as ofertas da Uber e da 99 automaticamente."
+                                                !config.copilotMonitoringEnabled -> "🔴 DESATIVADO"
+                                                isCopilotActive -> "🟢 COPILOTO ATIVO"
+                                                else -> "🟡 PENDENTE"
                                             },
-                                            fontSize = 12.sp,
-                                            color = MutedText
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 11.sp,
+                                            color = when {
+                                                !config.copilotMonitoringEnabled -> TrafficRed
+                                                isCopilotActive -> TrafficGreen
+                                                else -> TrafficYellow
+                                            },
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.width(10.dp))
+
                                     // Botão Ligar / Desligar Copiloto (ou Ativar permissão se faltar)
                                     Button(
                                         onClick = {
@@ -729,8 +718,9 @@ fun GoOrNoComposeApp(
                                             },
                                             contentColor = Color.White
                                         ),
-                                        shape = RoundedCornerShape(14.dp),
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                        modifier = Modifier.height(34.dp)
                                     ) {
                                         Icon(
                                             imageVector = if (config.copilotMonitoringEnabled && isPermsReady)
@@ -739,9 +729,9 @@ fun GoOrNoComposeApp(
                                                 Icons.Default.PlayArrow,
                                             contentDescription = null,
                                             tint = Color.White,
-                                            modifier = Modifier.size(17.dp)
+                                            modifier = Modifier.size(15.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Spacer(modifier = Modifier.width(5.dp))
                                         Text(
                                             text = when {
                                                 !isPermsReady -> "Ativar"
@@ -749,10 +739,28 @@ fun GoOrNoComposeApp(
                                                 else -> "Ligar Copiloto"
                                             },
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 12.sp
+                                            fontSize = 11.5.sp,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = when {
+                                        !config.copilotMonitoringEnabled ->
+                                            "O GoOrNo está desligado e a barrinha do topo foi ocultada. Toque em 'Ligar Copiloto' quando for rodar."
+                                        isCopilotActive ->
+                                            "A janelinha abre SOZINHA ao tocar chamada ou abrir ofertas na Uber/99 e some após ${config.overlayAutoMinimizeSec}s."
+                                        else ->
+                                            "Ative os botões abaixo para o GoOrNo ler as ofertas da Uber e da 99 automaticamente."
+                                    },
+                                    fontSize = 12.sp,
+                                    color = MutedText,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
 
                                 Spacer(modifier = Modifier.height(14.dp))
                                 // Seletor Moderno de Pílulas do Tempo da Janelinha na Tela
@@ -1399,11 +1407,14 @@ fun GoOrNoComposeApp(
                                                                         horizontalArrangement = Arrangement.SpaceBetween,
                                                                         verticalAlignment = Alignment.CenterVertically
                                                                     ) {
-                                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                        Row(
+                                                                            verticalAlignment = Alignment.CenterVertically,
+                                                                            modifier = Modifier.weight(1f, fill = false)
+                                                                        ) {
                                                                             Text(
                                                                                 text = "R$ 14,01",
                                                                                 color = Color(0xFF073B32),
-                                                                                fontSize = 22.sp,
+                                                                                fontSize = 19.sp,
                                                                                 fontWeight = FontWeight.Black
                                                                             )
                                                                             Spacer(modifier = Modifier.width(6.dp))
@@ -1414,7 +1425,7 @@ fun GoOrNoComposeApp(
                                                                                 Text(
                                                                                     text = previewVerdictState,
                                                                                     color = vTextColor,
-                                                                                    fontSize = 10.5.sp,
+                                                                                    fontSize = 10.sp,
                                                                                     fontWeight = FontWeight.Black,
                                                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                                                 )
@@ -1423,8 +1434,10 @@ fun GoOrNoComposeApp(
                                                                         Text(
                                                                             text = "6,3 km · 17 min",
                                                                             color = Color(0xFF334155),
-                                                                            fontSize = 11.5.sp,
-                                                                            fontWeight = FontWeight.Bold
+                                                                            fontSize = 11.sp,
+                                                                            fontWeight = FontWeight.Bold,
+                                                                            maxLines = 1,
+                                                                            softWrap = false
                                                                         )
                                                                     }
 
@@ -1437,39 +1450,51 @@ fun GoOrNoComposeApp(
                                                                         Surface(
                                                                             color = Color(0xFFDCFCE7),
                                                                             shape = RoundedCornerShape(8.dp),
-                                                                            border = BorderStroke(1.dp, vColor)
+                                                                            border = BorderStroke(1.dp, vColor),
+                                                                            modifier = Modifier.weight(1f)
                                                                         ) {
                                                                             Text(
                                                                                 text = "R$ 2,22/km",
                                                                                 color = Color(0xFF166534),
-                                                                                fontSize = 12.sp,
+                                                                                fontSize = 11.sp,
                                                                                 fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                                                textAlign = TextAlign.Center,
+                                                                                maxLines = 1,
+                                                                                softWrap = false,
+                                                                                modifier = Modifier.padding(vertical = 5.dp)
                                                                             )
                                                                         }
                                                                         Surface(
                                                                             color = Color(0xFFDCFCE7),
                                                                             shape = RoundedCornerShape(8.dp),
-                                                                            border = BorderStroke(1.dp, vColor)
+                                                                            border = BorderStroke(1.dp, vColor),
+                                                                            modifier = Modifier.weight(1f)
                                                                         ) {
                                                                             Text(
                                                                                 text = "R$ 49/h",
                                                                                 color = Color(0xFF166534),
-                                                                                fontSize = 12.sp,
+                                                                                fontSize = 11.sp,
                                                                                 fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                                                textAlign = TextAlign.Center,
+                                                                                maxLines = 1,
+                                                                                softWrap = false,
+                                                                                modifier = Modifier.padding(vertical = 5.dp)
                                                                             )
                                                                         }
                                                                         Surface(
                                                                             color = Color(0xFF16A34A),
-                                                                            shape = RoundedCornerShape(8.dp)
+                                                                            shape = RoundedCornerShape(8.dp),
+                                                                            modifier = Modifier.weight(1f)
                                                                         ) {
                                                                             Text(
                                                                                 text = "★ 4.96",
                                                                                 color = Color.White,
-                                                                                fontSize = 12.sp,
+                                                                                fontSize = 11.sp,
                                                                                 fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                                                textAlign = TextAlign.Center,
+                                                                                maxLines = 1,
+                                                                                softWrap = false,
+                                                                                modifier = Modifier.padding(vertical = 5.dp)
                                                                             )
                                                                         }
                                                                     }
@@ -1537,11 +1562,14 @@ fun GoOrNoComposeApp(
                                                                         horizontalArrangement = Arrangement.SpaceBetween,
                                                                         verticalAlignment = Alignment.CenterVertically
                                                                     ) {
-                                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                        Row(
+                                                                            verticalAlignment = Alignment.CenterVertically,
+                                                                            modifier = Modifier.weight(1f, fill = false)
+                                                                        ) {
                                                                             Text(
                                                                                 text = "R$ 14,01",
                                                                                 color = Color.White,
-                                                                                fontSize = 22.sp,
+                                                                                fontSize = 19.sp,
                                                                                 fontWeight = FontWeight.Black
                                                                             )
                                                                             Spacer(modifier = Modifier.width(6.dp))
@@ -1552,7 +1580,7 @@ fun GoOrNoComposeApp(
                                                                                 Text(
                                                                                     text = previewVerdictState,
                                                                                     color = vTextColor,
-                                                                                    fontSize = 10.5.sp,
+                                                                                    fontSize = 10.sp,
                                                                                     fontWeight = FontWeight.Black,
                                                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                                                 )
@@ -1561,8 +1589,10 @@ fun GoOrNoComposeApp(
                                                                         Text(
                                                                             text = "6,3 km · 17 min",
                                                                             color = Color(0xFFCBD5E1),
-                                                                            fontSize = 11.5.sp,
-                                                                            fontWeight = FontWeight.Bold
+                                                                            fontSize = 11.sp,
+                                                                            fontWeight = FontWeight.Bold,
+                                                                            maxLines = 1,
+                                                                            softWrap = false
                                                                         )
                                                                     }
 
@@ -1575,39 +1605,51 @@ fun GoOrNoComposeApp(
                                                                         Surface(
                                                                             color = Color(0xFF0D1F19),
                                                                             shape = RoundedCornerShape(8.dp),
-                                                                            border = BorderStroke(1.dp, vColor)
+                                                                            border = BorderStroke(1.dp, vColor),
+                                                                            modifier = Modifier.weight(1f)
                                                                         ) {
                                                                             Text(
                                                                                 text = "R$ 2,22/km",
                                                                                 color = Color(0xFF4ADE80),
-                                                                                fontSize = 12.sp,
+                                                                                fontSize = 11.sp,
                                                                                 fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                                                textAlign = TextAlign.Center,
+                                                                                maxLines = 1,
+                                                                                softWrap = false,
+                                                                                modifier = Modifier.padding(vertical = 5.dp)
                                                                             )
                                                                         }
                                                                         Surface(
                                                                             color = Color(0xFF0D1F19),
                                                                             shape = RoundedCornerShape(8.dp),
-                                                                            border = BorderStroke(1.dp, vColor)
+                                                                            border = BorderStroke(1.dp, vColor),
+                                                                            modifier = Modifier.weight(1f)
                                                                         ) {
                                                                             Text(
                                                                                 text = "R$ 49/h",
                                                                                 color = Color(0xFF4ADE80),
-                                                                                fontSize = 12.sp,
+                                                                                fontSize = 11.sp,
                                                                                 fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                                                textAlign = TextAlign.Center,
+                                                                                maxLines = 1,
+                                                                                softWrap = false,
+                                                                                modifier = Modifier.padding(vertical = 5.dp)
                                                                             )
                                                                         }
                                                                         Surface(
                                                                             color = Color(0xFF16A34A),
-                                                                            shape = RoundedCornerShape(8.dp)
+                                                                            shape = RoundedCornerShape(8.dp),
+                                                                            modifier = Modifier.weight(1f)
                                                                         ) {
                                                                             Text(
                                                                                 text = "★ 4.96",
                                                                                 color = Color.White,
-                                                                                fontSize = 12.sp,
+                                                                                fontSize = 11.sp,
                                                                                 fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                                                textAlign = TextAlign.Center,
+                                                                                maxLines = 1,
+                                                                                softWrap = false,
+                                                                                modifier = Modifier.padding(vertical = 5.dp)
                                                                             )
                                                                         }
                                                                     }
@@ -1849,14 +1891,14 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(
-                                        Pair("ABOVE", "⬆️ Acima do cartão"),
-                                        Pair("BELOW", "⬇️ Abaixo do cartão")
+                                        Pair("ABOVE", "⬆️ Acima do Cartão"),
+                                        Pair("BELOW", "⬇️ Abaixo do Cartão")
                                     ).forEach { (posKey, label) ->
                                         val isSel = bubblePosition == posKey
                                         Surface(
                                             color = if (isSel) PetrolHeader else SoftSurfaceVariant,
                                             shape = RoundedCornerShape(12.dp),
-                                            border = BorderStroke(1.dp, if (isSel) PetrolHeader else CleanCardBorder),
+                                            border = BorderStroke(1.5.dp, if (isSel) PetrolHeader else CleanCardBorder),
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clickable {
@@ -1871,33 +1913,24 @@ fun GoOrNoComposeApp(
                                                 }
                                         ) {
                                             Row(
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 11.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.Center
                                             ) {
-                                                RadioButton(
-                                                    selected = isSel,
-                                                    onClick = {
-                                                        bubblePosition = posKey
-                                                        savedFlag = false
-                                                        val updated = config.copy(overlayBubblePosition = posKey)
-                                                        scope.launch {
-                                                            app.preferencesRepository.saveConfig(updated)
-                                                            app.overlayPanel.applyConfig(updated)
-                                                            notifyUser("Balão posicionado: $label")
-                                                        }
-                                                    },
-                                                    colors = RadioButtonDefaults.colors(
-                                                        selectedColor = Color.White,
-                                                        unselectedColor = PetrolDarkText
-                                                    )
+                                                Icon(
+                                                    imageVector = if (isSel) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                                    contentDescription = null,
+                                                    tint = if (isSel) LimeBright else MutedText,
+                                                    modifier = Modifier.size(15.dp)
                                                 )
-                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Spacer(modifier = Modifier.width(5.dp))
                                                 Text(
                                                     text = label,
                                                     color = if (isSel) Color.White else PetrolDarkText,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 11.5.sp
+                                                    fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
+                                                    fontSize = 11.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
                                                 )
                                             }
                                         }
@@ -3097,7 +3130,13 @@ fun GoOrNoComposeApp(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Modo Avançado (OCR)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = if (showAdvancedOcr) "Ocultar OCR" else "Modo OCR",
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
 
                                     FilledTonalButton(
@@ -3111,7 +3150,13 @@ fun GoOrNoComposeApp(
                                     ) {
                                         Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(15.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Diagnóstico & Simulador", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = "Simulador",
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
                                 }
 
@@ -3964,6 +4009,9 @@ fun GoOrNoComposeApp(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         var searchFavQuery by remember { mutableStateOf("") }
+                        var isSearchingFavPlace by remember { mutableStateOf(false) }
+                        var searchFavResults by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
+                        var searchFavErrorMsg by remember { mutableStateOf<String?>(null) }
                         val customFavList = remember(config.customFavoriteZones) {
                             FavoriteAreaEvaluator.parseCustomZonesList(config.customFavoriteZones)
                         }
@@ -4054,42 +4102,78 @@ fun GoOrNoComposeApp(
                                     }
                                 }
 
-                                // Campo de Adição Rápida
-                                Text(
-                                    text = "Adicionar Bairro ou Cidade Favorita:",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    color = PetrolHeader
-                                )
+                                // Busca de Bairro/Região no Mapa
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        text = "🔍 Pesquisar Bairro, Região ou Cidade no Mapa:",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = PetrolHeader
+                                    )
+                                    Text(
+                                        text = "Digite o nome da região (Ex: Moema, Rudge Ramos, Centro, Jardins). Buscaremos no mapa com coordenadas exatas para destaque automático nas corridas.",
+                                        fontSize = 11.sp,
+                                        color = MutedText
+                                    )
 
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
                                     OutlinedTextField(
                                         value = searchFavQuery,
-                                        onValueChange = { searchFavQuery = it },
+                                        onValueChange = {
+                                            searchFavQuery = it
+                                            if (searchFavErrorMsg != null) searchFavErrorMsg = null
+                                        },
                                         placeholder = {
                                             Text("Ex: Moema, Rudge Ramos, Centro...", fontSize = 12.sp, color = MutedText)
                                         },
-                                        singleLine = true,
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF059669))
+                                        },
                                         shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Text,
+                                            imeAction = ImeAction.Search
+                                        ),
+                                        keyboardActions = KeyboardActions(
+                                            onSearch = {
+                                                val q = searchFavQuery.trim().replace(",", "")
+                                                if (q.length < 3) {
+                                                    notifyUser("Digite pelo menos 3 letras para pesquisar no mapa.")
+                                                } else {
+                                                    isSearchingFavPlace = true
+                                                    searchFavErrorMsg = null
+                                                    scope.launch {
+                                                        val places = PlaceSearchHelper.searchPlaces(context, q)
+                                                        isSearchingFavPlace = false
+                                                        if (places.isEmpty()) {
+                                                            searchFavErrorMsg = "Nenhum endereço oficial localizado no mapa para '$q'. Você pode favoritar diretamente pelo nome abaixo."
+                                                        } else {
+                                                            searchFavResults = places
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        )
                                     )
 
                                     Button(
                                         onClick = {
-                                            val raw = searchFavQuery.trim()
-                                            if (raw.length >= 3) {
-                                                val updated = (customFavList + raw).distinct()
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(config.copy(customFavoriteZones = updated.joinToString(", ")))
-                                                    searchFavQuery = ""
-                                                    notifyUser("⭐ '$raw' adicionado aos Bairros Favoritos!")
+                                            val q = searchFavQuery.trim().replace(",", "")
+                                            if (q.length < 3) {
+                                                notifyUser("Digite pelo menos 3 letras para pesquisar no mapa.")
+                                                return@Button
+                                            }
+                                            isSearchingFavPlace = true
+                                            searchFavErrorMsg = null
+                                            scope.launch {
+                                                val places = PlaceSearchHelper.searchPlaces(context, q)
+                                                isSearchingFavPlace = false
+                                                if (places.isEmpty()) {
+                                                    searchFavErrorMsg = "Nenhum endereço oficial localizado no mapa para '$q'. Você pode favoritar diretamente pelo nome abaixo."
+                                                } else {
+                                                    searchFavResults = places
                                                 }
-                                            } else {
-                                                notifyUser("Digite ao menos 3 letras.")
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(
@@ -4097,9 +4181,188 @@ fun GoOrNoComposeApp(
                                             contentColor = Color.White
                                         ),
                                         shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.height(52.dp)
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(46.dp),
+                                        enabled = !isSearchingFavPlace
                                     ) {
-                                        Text("+ Adicionar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        if (isSearchingFavPlace) {
+                                            CircularProgressIndicator(
+                                                color = Color.White,
+                                                modifier = Modifier.size(18.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Localizando no Mapa...",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.5.sp,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        } else {
+                                            Icon(Icons.Default.Search, contentDescription = null, tint = LimeBright, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Pesquisar Bairro no Mapa",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (searchFavErrorMsg != null) {
+                                    Surface(
+                                        color = Color(0xFFFEF2F2),
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, TrafficRed.copy(alpha = 0.4f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Text(
+                                                text = searchFavErrorMsg!!,
+                                                color = TrafficRed,
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Button(
+                                                onClick = {
+                                                    val raw = searchFavQuery.trim()
+                                                    if (raw.length >= 3) {
+                                                        val updatedList = (customFavList + raw).distinct()
+                                                        scope.launch {
+                                                            app.preferencesRepository.saveConfig(
+                                                                config.copy(customFavoriteZones = updatedList.joinToString(", "))
+                                                            )
+                                                            searchFavQuery = ""
+                                                            searchFavErrorMsg = null
+                                                            searchFavResults = emptyList()
+                                                            notifyUser("⭐ '$raw' adicionado aos Favoritos diretamente!")
+                                                        }
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                                                shape = RoundedCornerShape(8.dp),
+                                                modifier = Modifier.height(36.dp)
+                                            ) {
+                                                Text("+ Adicionar com este nome mesmo assim", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // RESULTADOS DA BUSCA NO MAPA
+                                if (searchFavResults.isNotEmpty()) {
+                                    Text(
+                                        text = "⭐ Bairros encontrados no Mapa (Toque para confirmar o favorito):",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = PetrolHeader
+                                    )
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        searchFavResults.forEach { place ->
+                                            Surface(
+                                                color = SoftSurfaceVariant,
+                                                shape = RoundedCornerShape(12.dp),
+                                                border = BorderStroke(1.dp, CleanCardBorder),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Column(modifier = Modifier.padding(12.dp)) {
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.Top
+                                                    ) {
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            Text(
+                                                                text = "⭐ ${place.title}",
+                                                                fontWeight = FontWeight.Black,
+                                                                fontSize = 13.sp,
+                                                                color = PetrolHeader
+                                                            )
+                                                            Text(
+                                                                text = place.subtitle,
+                                                                fontSize = 11.5.sp,
+                                                                fontWeight = FontWeight.SemiBold,
+                                                                color = PetrolDarkText
+                                                            )
+                                                            Text(
+                                                                text = place.fullFormattedAddress,
+                                                                fontSize = 10.5.sp,
+                                                                color = MutedText
+                                                            )
+                                                        }
+                                                    }
+
+                                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        Button(
+                                                            onClick = {
+                                                                val toFav = place.termToBlock.trim().replace(",", "")
+                                                                if (toFav.length >= 3) {
+                                                                    val updatedList = (customFavList + toFav).distinct()
+                                                                    scope.launch {
+                                                                        app.preferencesRepository.saveConfig(
+                                                                            config.copy(customFavoriteZones = updatedList.joinToString(", "))
+                                                                        )
+                                                                        searchFavResults = emptyList()
+                                                                        searchFavQuery = ""
+                                                                        notifyUser("⭐ Local validado '$toFav' adicionado aos Favoritos!")
+                                                                    }
+                                                                }
+                                                            },
+                                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            modifier = Modifier.weight(1f).height(38.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Star, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                            Text(
+                                                                text = "Confirmar Bairro Favorito",
+                                                                fontSize = 11.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                maxLines = 1,
+                                                                softWrap = false
+                                                            )
+                                                        }
+
+                                                        FilledTonalButton(
+                                                            onClick = {
+                                                                try {
+                                                                    val mapIntent = Intent(
+                                                                        Intent.ACTION_VIEW,
+                                                                        Uri.parse("geo:0,0?q=" + Uri.encode(place.fullFormattedAddress))
+                                                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                                                                    context.startActivity(mapIntent)
+                                                                } catch (_: Exception) {
+                                                                    notifyUser("Não foi possível abrir o Google Maps.")
+                                                                }
+                                                            },
+                                                            colors = ButtonDefaults.filledTonalButtonColors(
+                                                                containerColor = PureWhiteSurface,
+                                                                contentColor = PetrolHeader
+                                                            ),
+                                                            border = BorderStroke(1.dp, CleanCardBorder),
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            modifier = Modifier.height(38.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                            Text("Ver no Maps", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 
@@ -4626,7 +4889,9 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Sincronizar Agora", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                                        Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Sincronizar", fontWeight = FontWeight.Black, fontSize = 12.sp, maxLines = 1, softWrap = false)
                                     }
 
                                     FilledTonalButton(
@@ -4651,7 +4916,9 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Restaurar da Nuvem", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Restaurar", fontWeight = FontWeight.Black, fontSize = 12.sp, maxLines = 1, softWrap = false)
                                     }
                                 }
 
@@ -4774,10 +5041,14 @@ fun GoOrNoComposeApp(
                                         ),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
+                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = if (isCheckingUpdates) "Verificando..." else "Verificar Atualização",
+                                            text = if (isCheckingUpdates) "Verificando..." else "Verificar",
                                             fontSize = 11.5.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
                                     }
                                 }
@@ -5393,56 +5664,74 @@ private fun PermissionRowItem(
     Surface(
         color = if (granted) TrafficGreenSoft.copy(alpha = 0.55f) else SoftSurfaceVariant,
         shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, if (granted) TrafficGreen else TrafficYellow)
+        border = BorderStroke(1.dp, if (granted) TrafficGreen else TrafficYellow),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(if (granted) TrafficGreen else TrafficYellow),
-                    contentAlignment = Alignment.Center
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(if (granted) TrafficGreen else TrafficYellow),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (granted) "✓" else number,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 11.sp,
+                            color = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (granted) "✓" else number,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 12.sp,
-                        color = Color.White
+                        text = title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.5.sp,
+                        color = PetrolDarkText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(text = title, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = PetrolDarkText)
-                    Text(text = subtitle, fontSize = 11.sp, color = MutedText)
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = onAction,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (granted) TrafficGreen else PetrolHeader,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                    modifier = Modifier.height(28.dp)
+                ) {
+                    Text(
+                        text = if (granted) "Ativo ✓" else "Ativar",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(
-                onClick = onAction,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (granted) TrafficGreen else PetrolHeader,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                modifier = Modifier.height(34.dp)
-            ) {
-                Text(
-                    text = if (granted) "Ativo ✓" else "Ativar",
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
+            Text(
+                text = subtitle,
+                fontSize = 11.sp,
+                color = MutedText,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -5648,21 +5937,76 @@ private fun HistoricalOfferCardContent(
     val totalMinStr = entity.totalDurationMin?.let { "$it min" } ?: "-- min"
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // LINHA 1: CABEÇALHO COM APP, VEREDITO E DATA/HORA SEM QUEBRA VERTICAL
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(color = badgeColor, shape = RoundedCornerShape(8.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Surface(
+                    color = if (entity.sourceApp.contains("99", ignoreCase = true)) Color(0xFFFF9800) else Color(0xFF1E293B),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = entity.sourceApp,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                    )
+                }
                 Text(
-                    text = "${entity.sourceApp} · R$ ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", entity.offeredPrice)}  ($totalKmStr · $totalMinStr)",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 12.sp,
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    text = when (entity.verdict) {
+                        TrafficLightVerdict.GREEN.name -> "🟢 Excelente"
+                        TrafficLightVerdict.YELLOW.name -> "🟡 Atenção"
+                        TrafficLightVerdict.RED.name -> "🔴 Não Compensa"
+                        else -> "⚪ Neutro"
+                    },
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PetrolDarkText
                 )
             }
-            Text(text = dateStr, fontSize = 11.sp, color = MutedText, fontWeight = FontWeight.Medium)
+            Text(
+                text = dateStr,
+                fontSize = 11.sp,
+                color = MutedText,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                softWrap = false
+            )
+        }
+
+        // LINHA 2: BANNER COLORIDO EM LARGURA TOTAL COM VALOR E DISTÂNCIA/TEMPO
+        Surface(
+            color = badgeColor,
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 7.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%.2f", entity.offeredPrice),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 17.sp,
+                    color = Color.White
+                )
+                Text(
+                    text = "$totalKmStr  •  $totalMinStr",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.5.sp,
+                    color = Color.White
+                )
+            }
         }
 
         if (riskCheck.hasRisk) {
@@ -5699,18 +6043,77 @@ private fun HistoricalOfferCardContent(
             }
         }
 
-        Text(
-            text = String.format(
-                Locale.forLanguageTag("pt-BR"),
-                "Bruto: R$ %.2f/km · R$ %.2f/h  |  Lucro Est.: R$ %.2f",
-                entity.grossPerKm ?: 0.0,
-                entity.grossPerHour ?: 0.0,
-                entity.estimatedNetProfit ?: 0.0
-            ),
-            fontSize = 12.5.sp,
-            fontWeight = FontWeight.Bold,
-            color = PetrolHeader
-        )
+        // 3 BLOCOS DE MÉTRICAS ALINHADAS E ELEGANTES
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Surface(
+                color = SoftSurfaceVariant,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("KM BRUTO", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MutedText)
+                    Text(
+                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", entity.grossPerKm ?: 0.0),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = PetrolHeader,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+            Surface(
+                color = SoftSurfaceVariant,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("HORA BRUTA", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MutedText)
+                    Text(
+                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", entity.grossPerHour ?: 0.0),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = PetrolHeader,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+            Surface(
+                color = if ((entity.estimatedNetProfit ?: 0.0) >= 0.0) TrafficGreenSoft else Color(0xFFFEF2F2),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.weight(1.15f)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "LUCRO ESTIM.",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if ((entity.estimatedNetProfit ?: 0.0) >= 0.0) TrafficGreen else TrafficRed
+                    )
+                    Text(
+                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", entity.estimatedNetProfit ?: 0.0),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = if ((entity.estimatedNetProfit ?: 0.0) >= 0.0) TrafficGreen else TrafficRed,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+        }
 
         if (entity.reasonsSummary.contains("Passageiro Nota", ignoreCase = true)) {
             val ratingLine = entity.reasonsSummary.split("|")
@@ -5738,7 +6141,7 @@ private fun HistoricalOfferCardContent(
             }
         }
 
-        // EXIBIÇÃO COMPLETA DO ENDEREÇO DE ORIGEM E DESTINO (Clicável para Street View 360° + Botão 1-toque Marcar Risco)
+        // EXIBIÇÃO DO ENDEREÇO DE ORIGEM (100% de largura para o texto, botões no cabeçalho)
         Surface(
             color = SoftSurfaceVariant,
             shape = RoundedCornerShape(12.dp),
@@ -5749,79 +6152,79 @@ private fun HistoricalOfferCardContent(
                     entity.originAddress?.let { onOpenStreetView(it) }
                 }
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "📍 ENDEREÇO DE ORIGEM (EMBARQUE)",
+                        text = "📍 ORIGEM (EMBARQUE)",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Black,
                         color = PetrolHeader
                     )
-                    Text(
-                        text = entity.originAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na tela da oferta",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PetrolDarkText
-                    )
-                }
-                if (!entity.originAddress.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Surface(
-                            color = Color(0xFFECFDF5),
-                            border = BorderStroke(1.dp, Color(0xFF059669)),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.clickable {
-                                onMarkAddressAsFavorite(entity.originAddress)
+                    if (!entity.originAddress.isNullOrBlank()) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Surface(
+                                color = Color(0xFFECFDF5),
+                                border = BorderStroke(1.dp, Color(0xFF059669)),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.clickable { onMarkAddressAsFavorite(entity.originAddress) }
+                            ) {
+                                Text(
+                                    text = "⭐ +Fav",
+                                    color = Color(0xFF065F46),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
                             }
-                        ) {
-                            Text(
-                                text = "⭐ +Fav",
-                                color = Color(0xFF065F46),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
-                            )
-                        }
-                        Surface(
-                            color = Color(0xFFFEF2F2),
-                            border = BorderStroke(1.dp, TrafficRed),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.clickable {
-                                onMarkAddressAsRisk(entity.originAddress)
+                            Surface(
+                                color = Color(0xFFFEF2F2),
+                                border = BorderStroke(1.dp, TrafficRed),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.clickable { onMarkAddressAsRisk(entity.originAddress) }
+                            ) {
+                                Text(
+                                    text = "⚠️ +Risco",
+                                    color = TrafficRed,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
                             }
-                        ) {
-                            Text(
-                                text = "⚠️ +Risco",
-                                color = TrafficRed,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
-                            )
-                        }
-                        Surface(
-                            color = PetrolHeader,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = "360°",
-                                color = Color.White,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
-                            )
+                            Surface(
+                                color = PetrolHeader,
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = "360°",
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                )
+                            }
                         }
                     }
                 }
+                Text(
+                    text = entity.originAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na oferta",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PetrolDarkText,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
+        // EXIBIÇÃO DO ENDEREÇO DE DESTINO (100% de largura para o texto, botões no cabeçalho)
         Surface(
             color = TrafficGreenSoft.copy(alpha = 0.55f),
             shape = RoundedCornerShape(12.dp),
@@ -5832,80 +6235,79 @@ private fun HistoricalOfferCardContent(
                     entity.destinationAddress?.let { onOpenStreetView(it) }
                 }
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "🏁 ENDEREÇO DE DESTINO (DESEMBARQUE)",
+                        text = "🏁 DESTINO (DESEMBARQUE)",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Black,
                         color = PetrolHeader
                     )
-                    Text(
-                        text = entity.destinationAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na tela da oferta",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PetrolDarkText
-                    )
-                }
-                if (!entity.destinationAddress.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Surface(
-                            color = Color(0xFFECFDF5),
-                            border = BorderStroke(1.dp, Color(0xFF059669)),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.clickable {
-                                onMarkAddressAsFavorite(entity.destinationAddress)
+                    if (!entity.destinationAddress.isNullOrBlank()) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Surface(
+                                color = Color(0xFFECFDF5),
+                                border = BorderStroke(1.dp, Color(0xFF059669)),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.clickable { onMarkAddressAsFavorite(entity.destinationAddress) }
+                            ) {
+                                Text(
+                                    text = "⭐ +Fav",
+                                    color = Color(0xFF065F46),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
                             }
-                        ) {
-                            Text(
-                                text = "⭐ +Fav",
-                                color = Color(0xFF065F46),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
-                            )
-                        }
-                        Surface(
-                            color = Color(0xFFFEF2F2),
-                            border = BorderStroke(1.dp, TrafficRed),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.clickable {
-                                onMarkAddressAsRisk(entity.destinationAddress)
+                            Surface(
+                                color = Color(0xFFFEF2F2),
+                                border = BorderStroke(1.dp, TrafficRed),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.clickable { onMarkAddressAsRisk(entity.destinationAddress) }
+                            ) {
+                                Text(
+                                    text = "⚠️ +Risco",
+                                    color = TrafficRed,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
                             }
-                        ) {
-                            Text(
-                                text = "⚠️ +Risco",
-                                color = TrafficRed,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
-                            )
-                        }
-                        Surface(
-                            color = TrafficGreen,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = "360°",
-                                color = Color.White,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
-                            )
+                            Surface(
+                                color = TrafficGreen,
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = "360°",
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                )
+                            }
                         }
                     }
                 }
+                Text(
+                    text = entity.destinationAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na oferta",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PetrolDarkText,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
-        // Auditoria de Valor Pago pela Uber / 99 (Layout limpo sem quebrar linhas na vertical)
+        // Auditoria de Valor Pago pela Uber / 99
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -5916,35 +6318,40 @@ private fun HistoricalOfferCardContent(
                 Text(
                     text = String.format(
                         Locale.forLanguageTag("pt-BR"),
-                        "✅ Aceita · Pago: R$ %.2f (%s)",
+                        "✅ Pago: R$ %.2f (%s)",
                         entity.actualReceivedPrice,
-                        if (diff < -0.05) "Pagou a menor!" else "Valor OK ✓"
+                        if (diff < -0.05) "Menor!" else "Valor OK ✓"
                     ),
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (diff < -0.05) TrafficRed else TrafficGreen,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
             } else {
                 Text(
-                    text = "Aceitou esta corrida? Confira o valor pago:",
+                    text = "Conferência do valor recebido:",
                     fontSize = 11.sp,
                     color = MutedText,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
                     modifier = Modifier.weight(1f)
                 )
             }
+            Spacer(modifier = Modifier.width(8.dp))
             FilledTonalButton(
                 onClick = { showAuditInput = !showAuditInput },
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = SoftSurfaceVariant,
                     contentColor = PetrolHeader
                 ),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(8.dp),
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 modifier = Modifier.height(30.dp)
             ) {
                 Text(
-                    text = if (entity.actualReceivedPrice != null) "Editar Valor" else "Conferir Valor",
+                    text = if (entity.actualReceivedPrice != null) "Editar" else "Conferir",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
