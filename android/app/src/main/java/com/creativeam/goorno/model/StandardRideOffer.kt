@@ -125,25 +125,26 @@ enum class PassengerRatingVerdict(val label: String, val emoji: String, val hexC
  */
 enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
     FULL_CARD(
-        title = "Janela Moderna 3 Pilares + Balão Veredito (Recomendado)",
-        subtitle = "Balão de Veredito (Aceitar/Avaliar/Recusar) + Pilares R$/km, R$/h e Nota com barras verticais coloridas"
+        title = "Janela Moderna 3 Pilares + Veredito (Recomendado)",
+        subtitle = "Card escuro moderno com barras luminosas nos 3 pilares e pílula de veredito flutuante"
     ),
-    CLASSIC_V334(
-        title = "Card Clássico v3.3.4 (Tradicional)",
-        subtitle = "Formato tradicional com valor grande, pílulas emolduradas de R$/km e R$/h, nota e botão Fechar"
-    ),
-    SEMAFORO_COMPACT(
-        title = "Janela Semáforo Compacta",
-        subtitle = "Pílula horizontal com bolinha semáforo, valor, distância, tempo e métricas essenciais"
+    CLASSIC_DARK(
+        title = "Card Clássico Fundo Escuro",
+        subtitle = "Formato tradicional com valor grande, métricas bem espaçadas e fundo escuro translúcido"
     ),
     MINI_BALL(
-        title = "Só Bolinha Semáforo + R$/km (Ultra Discreto)",
-        subtitle = "Pílula mínima alinhada com bolinha colorida, valor, distância e R$/km"
+        title = "Bolinha Semáforo (Ultra Discreto)",
+        subtitle = "Pílula horizontal super limpa com bolinha semáforo e métricas completas sem encavalar"
     );
 
     companion object {
         fun fromName(name: String?): OverlayDisplayStyle {
-            return entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: FULL_CARD
+            return when (name?.uppercase()) {
+                "CLASSIC_DARK", "CLASSIC_V334", "CLASSIC" -> CLASSIC_DARK
+                "MINI_BALL", "SEMAFORO_COMPACT", "COMPACT" -> MINI_BALL
+                "FULL_CARD", "MODERN" -> FULL_CARD
+                else -> entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: FULL_CARD
+            }
         }
     }
 }

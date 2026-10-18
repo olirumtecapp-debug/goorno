@@ -85,7 +85,7 @@ class DriverPreferencesRepository(private val context: Context) {
             minConfidenceThreshold = prefs[Keys.MIN_CONFIDENCE] ?: 0.65,
             overlayOpacityPercent = prefs[Keys.OVERLAY_OPACITY] ?: 92,
             overlayAutoMinimizeSec = (prefs[Keys.OVERLAY_AUTO_MIN_SEC] ?: 5).coerceIn(3, 7),
-            overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: "CLASSIC_V334",
+            overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: "FULL_CARD",
             overlayBubblePosition = prefs[Keys.OVERLAY_BUBBLE_POSITION] ?: "ABOVE",
             showFloatingShortcutBubble = prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] ?: true,
             showProfitOnOverlay = prefs[Keys.SHOW_PROFIT_ON_OVERLAY] ?: false,
