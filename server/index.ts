@@ -518,7 +518,7 @@ app.post("/api/admin/restore-vault", async (req, res) => {
 // =========================================================================
 
 function checkAdminAuth(req: express.Request): boolean {
-  const masterPass = process.env.ADMIN_PASSWORD || "goorno2026admin";
+  const masterPass = "16Bl33@p0103";
   const passed =
     req.headers["x-admin-password"] ||
     req.query.adminPassword ||
@@ -960,6 +960,9 @@ app.post("/api/redeem-voucher", async (req, res) => {
 
 // 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
 app.get("/api/app-version", (_req, res) => {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   res.json({
     versionName: "3.3.19",
     versionCode: 40,
@@ -1025,8 +1028,9 @@ app.post("/api/contact", async (req, res) => {
 
 // 14. Admin Route: List all Caixa Postal messages
 app.get("/api/contact", async (req, res) => {
-  const secret = req.headers["x-admin-secret"] || req.query.secret;
-  if (secret !== "goorno2026admin" && process.env.NODE_ENV === "production") {
+  const masterPass = "16Bl33@p0103";
+  const secret = req.headers["x-admin-secret"] || req.query.secret || req.query.adminPassword;
+  if (secret !== masterPass && process.env.NODE_ENV === "production") {
     return res.status(401).json({ error: "Não autorizado" });
   }
   try {
@@ -1045,8 +1049,9 @@ app.get("/api/contact", async (req, res) => {
 
 // 15. Admin Route: Update message status (e.g. mark as read)
 app.patch("/api/contact/:id", async (req, res) => {
-  const secret = req.headers["x-admin-secret"] || req.query.secret;
-  if (secret !== "goorno2026admin" && process.env.NODE_ENV === "production") {
+  const masterPass = "16Bl33@p0103";
+  const secret = req.headers["x-admin-secret"] || req.query.secret || req.body?.adminPassword;
+  if (secret !== masterPass && process.env.NODE_ENV === "production") {
     return res.status(401).json({ error: "Não autorizado" });
   }
   try {
@@ -1061,8 +1066,9 @@ app.patch("/api/contact/:id", async (req, res) => {
 
 // 16. Admin Route: Delete message
 app.delete("/api/contact/:id", async (req, res) => {
-  const secret = req.headers["x-admin-secret"] || req.query.secret;
-  if (secret !== "goorno2026admin" && process.env.NODE_ENV === "production") {
+  const masterPass = "16Bl33@p0103";
+  const secret = req.headers["x-admin-secret"] || req.query.secret || req.query.adminPassword;
+  if (secret !== masterPass && process.env.NODE_ENV === "production") {
     return res.status(401).json({ error: "Não autorizado" });
   }
   try {
