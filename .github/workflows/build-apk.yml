@@ -70,6 +70,6 @@ jobs:
           VERSION_NAME=$(grep 'versionName' android/app/build.gradle | head -n 1 | awk -F'"' '{print $2}')
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add "GoOrNo-v${VERSION_NAME}.apk" GoOrNo.apk client/public/ dist/public/
+          git add "GoOrNo-v${VERSION_NAME}.apk" GoOrNo.apk "client/public/GoOrNo-v${VERSION_NAME}.apk" client/public/GoOrNo.apk
           git commit -m "chore(release): publish GoOrNo-v${VERSION_NAME}.apk [skip ci]" || echo "No changes to commit"
           git push origin main || echo "Push skipped"
