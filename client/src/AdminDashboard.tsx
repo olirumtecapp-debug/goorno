@@ -650,7 +650,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                   </span>
                   <button
                     onClick={() => {
-                      const msg = `🚗 *GoOrNo — O Copiloto dos Motoristas de Aplicativo (Uber e 99)*\n\nFala parceiro! Baixe o aplicativo oficial do GoOrNo e descubra na hora se a corrida compensa antes de aceitar:\n\n✅ Cálculo automático de R$/km e R$/hora na tela\n✅ Veredito em cores: 🟢 Aceitar, 🟡 Atenção, 🔴 Recusar\n✅ Sem propagandas e sem travamentos\n✅ 7 DIAS GRÁTIS de teste na rua para você testar!\n\n📥 *Link para Baixar o APK Oficial:*\n${window.location.origin}\n\n🛡️ *Aviso de Segurança:* Como o GoOrNo precisa ler a tela por cima da Uber/99, ele é distribuído em APK oficial direto aos motoristas (fora da Play Store). Se o seu celular avisar "arquivo pode ser nocivo", pode clicar em "Baixar mesmo assim" e "Instalar assim mesmo" sem medo — o app é 100% limpo, verificado e seguro!`;
+                      const msg = `🚗 *GoOrNo — O Copiloto dos Motoristas de Aplicativo (Uber e 99)*\n\nOlá Motorista! Baixe o aplicativo oficial do GoOrNo e descubra na hora se a corrida compensa antes de aceitar:\n\n✅ Cálculo automático de R$/km e R$/hora na tela\n✅ Veredito em cores: 🟢 Aceitar, 🟡 Atenção, 🔴 Recusar\n✅ Sem propagandas e sem travamentos\n✅ 7 DIAS GRÁTIS de teste na rua para você testar!\n\n📥 *Link para Baixar o APK Oficial:*\n${window.location.origin}\n\n🛡️ *Aviso de Segurança:* Como o GoOrNo precisa ler a tela por cima da Uber/99, ele é distribuído em APK oficial direto aos motoristas (fora da Play Store). Se o seu celular avisar "arquivo pode ser nocivo", pode clicar em "Baixar mesmo assim" e "Instalar assim mesmo" sem medo — o app é 100% limpo, verificado e seguro!`;
                       navigator.clipboard.writeText(msg);
                       setCopiedShareMsg(true);
                       setTimeout(() => setCopiedShareMsg(false), 2500);
@@ -665,7 +665,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                 <div className="text-xs text-[#071d19] font-mono whitespace-pre-wrap bg-white p-3.5 rounded-lg border border-[rgba(7,29,25,0.12)] max-h-48 overflow-y-auto leading-relaxed">
 {`🚗 *GoOrNo — O Copiloto dos Motoristas de Aplicativo (Uber e 99)*
 
-Fala parceiro! Baixe o aplicativo oficial do GoOrNo e descubra na hora se a corrida compensa antes de aceitar:
+Olá Motorista! Baixe o aplicativo oficial do GoOrNo e descubra na hora se a corrida compensa antes de aceitar:
 
 ✅ Cálculo automático de R$/km e R$/hora na tela
 ✅ Veredito em cores: 🟢 Aceitar, 🟡 Atenção, 🔴 Recusar
@@ -681,7 +681,7 @@ ${window.location.origin}
                 <div className="flex items-center justify-end">
                   <a
                     href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                      `🚗 *GoOrNo — O Copiloto dos Motoristas de Aplicativo (Uber e 99)*\n\nFala parceiro! Baixe o aplicativo oficial do GoOrNo e descubra na hora se a corrida compensa antes de aceitar:\n\n✅ Cálculo automático de R$/km e R$/hora na tela\n✅ Veredito em cores: 🟢 Aceitar, 🟡 Atenção, 🔴 Recusar\n✅ Sem propagandas e sem travamentos\n✅ 7 DIAS GRÁTIS de teste na rua para você testar!\n\n📥 *Link para Baixar o APK Oficial:*\n${window.location.origin}\n\n🛡️ *Aviso de Segurança:* Como o GoOrNo precisa ler a tela por cima da Uber/99, ele é distribuído em APK oficial direto aos motoristas (fora da Play Store). Se o seu celular avisar "arquivo pode ser nocivo", pode clicar em "Baixar mesmo assim" e "Instalar assim mesmo" sem medo — o app é 100% limpo, verificado e seguro!`
+                      `🚗 *GoOrNo — O Copiloto dos Motoristas de Aplicativo (Uber e 99)*\n\nOlá Motorista! Baixe o aplicativo oficial do GoOrNo e descubra na hora se a corrida compensa antes de aceitar:\n\n✅ Cálculo automático de R$/km e R$/hora na tela\n✅ Veredito em cores: 🟢 Aceitar, 🟡 Atenção, 🔴 Recusar\n✅ Sem propagandas e sem travamentos\n✅ 7 DIAS GRÁTIS de teste na rua para você testar!\n\n📥 *Link para Baixar o APK Oficial:*\n${window.location.origin}\n\n🛡️ *Aviso de Segurança:* Como o GoOrNo precisa ler a tela por cima da Uber/99, ele é distribuído em APK oficial direto aos motoristas (fora da Play Store). Se o seu celular avisar "arquivo pode ser nocivo", pode clicar em "Baixar mesmo assim" e "Instalar assim mesmo" sem medo — o app é 100% limpo, verificado e seguro!`
                     )}`}
                     target="_blank"
                     rel="noreferrer"
