@@ -738,6 +738,7 @@ app.get("/api/admin/stats-and-licenses", async (req, res) => {
 
     let totalUsers = licenses.length;
     let activePaid = 0;
+    let courtesyVip = 0;
     let inTrial = 0;
     let expired = 0;
     let blocked = 0;
@@ -750,17 +751,18 @@ app.get("/api/admin/stats-and-licenses", async (req, res) => {
       if (lic.status === "blocked") {
         blocked++;
       } else if (lic.plano === "vitalicio" || lic.plano === "cortesia") {
-        activePaid++;
-      } else if (lic.plano === "mensal") {
+        courtesyVip++;
+      } else if (["mensal", "trimestral", "semestral", "anual"].includes(lic.plano)) {
         const validMs = new Date(lic.validoAte || 0).getTime();
         if (validMs >= nowMs) {
           activePaid++;
-          estimatedMonthlyRevenue += 9.90;
+          const planCost = lic.plano === "mensal" ? 7.99 : lic.plano === "trimestral" ? 7.30 : lic.plano === "semestral" ? 6.98 : 6.65;
+          estimatedMonthlyRevenue += planCost;
         } else {
           expired++;
         }
       } else if (lic.plano === "trial") {
-        const trialMs = new Date(lic.trialEndsAt || 0).getTime();
+        const trialMs = new Date(lic.trialEndsAt || lic.validoAte || 0).getTime();
         if (trialMs >= nowMs) {
           inTrial++;
         } else {
@@ -773,6 +775,7 @@ app.get("/api/admin/stats-and-licenses", async (req, res) => {
       stats: {
         totalUsers,
         activePaid,
+        courtesyVip,
         inTrial,
         expired,
         blocked,

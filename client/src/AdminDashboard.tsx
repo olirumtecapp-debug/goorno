@@ -87,6 +87,7 @@ interface ContactMessage {
 interface AdminStats {
   totalUsers: number;
   activePaid: number;
+  courtesyVip: number;
   inTrial: number;
   expired: number;
   blocked: number;
@@ -108,7 +109,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
   const [vouchers, setVouchers] = useState<VoucherRecord[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'trial' | 'expired' | 'fraud'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'vip' | 'trial' | 'expired' | 'fraud'>('all');
   const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers' | 'mailbox'>('overview');
   const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'replied'>('all');
   const [selectedUser, setSelectedUser] = useState<LicenseRecord | null>(null);
@@ -393,7 +394,8 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
 
     if (!matchSearch) return false;
 
-    if (statusFilter === 'active') return lic.status === 'active';
+    if (statusFilter === 'paid') return lic.status === 'active' && lic.plano !== 'vitalicio' && lic.plano !== 'cortesia';
+    if (statusFilter === 'vip') return lic.plano === 'vitalicio' || lic.plano === 'cortesia';
     if (statusFilter === 'trial') return lic.plano === 'trial' && lic.status !== 'expired';
     if (statusFilter === 'expired') return lic.status === 'expired';
     if (statusFilter === 'fraud') return lic.fraudSuspicion;
@@ -563,10 +565,20 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                   <CheckCircle className="w-4 h-4" />
                 </div>
                 <div className="text-2xl font-space font-bold text-[#6b8900]">{stats?.activePaid || 0}</div>
-                <p className="text-[11px] text-[#7a8982] mt-1">Mensal ou vitalício</p>
+                <p className="text-[11px] text-[#7a8982] mt-1">Planos via PIX</p>
               </div>
 
-              {/* Card 4: Em Teste */}
+              {/* Card 4: VIP / Cortesia */}
+              <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
+                <div className="flex items-center justify-between text-[#071d19] mb-1">
+                  <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">VIP / Cortesia</span>
+                  <Award className="w-4 h-4 text-[#8aa500]" />
+                </div>
+                <div className="text-2xl font-space font-bold text-[#071d19]">{stats?.courtesyVip || 0}</div>
+                <p className="text-[11px] text-[#7a8982] mt-1">Vitalício / cortesia</p>
+              </div>
+
+              {/* Card 5: Em Teste */}
               <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
                 <div className="flex items-center justify-between text-[#0284c7] mb-1">
                   <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">Em Teste</span>
@@ -576,7 +588,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                 <p className="text-[11px] text-[#7a8982] mt-1">Período de 7 dias grátis</p>
               </div>
 
-              {/* Card 5: Vencidas */}
+              {/* Card 6: Vencidas */}
               <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
                 <div className="flex items-center justify-between text-[#b45309] mb-1">
                   <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">Vencidas</span>
@@ -584,16 +596,6 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                 </div>
                 <div className="text-2xl font-space font-bold text-[#b45309]">{stats?.expired || 0}</div>
                 <p className="text-[11px] text-[#7a8982] mt-1">Aguardando renovação</p>
-              </div>
-
-              {/* Card 6: Alertas Fraude */}
-              <div className="bg-white border border-red-200 rounded-2xl p-4 sm:p-5 shadow-xs">
-                <div className="flex items-center justify-between text-[#ff6e58] mb-1">
-                  <span className="text-[11px] font-space font-bold uppercase tracking-wider text-[#7a8982]">Fraude</span>
-                  <ShieldAlert className="w-4 h-4" />
-                </div>
-                <div className="text-2xl font-space font-bold text-[#ff6e58]">{stats?.fraudAlerts || 0}</div>
-                <p className="text-[11px] text-[#7a8982] mt-1">Suspeitas detectadas</p>
               </div>
             </div>
 
@@ -732,8 +734,8 @@ ${window.location.origin}
         {activeTab === 'drivers' && (
           <div className="space-y-4">
             {/* BARRA DE FILTROS E BUSCA */}
-            <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
-              <div className="relative w-full md:w-80">
+            <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl p-3.5 shadow-xs flex flex-col xl:flex-row items-center justify-between gap-3">
+              <div className="relative w-full xl:w-72 shrink-0">
                 <Search className="w-4 h-4 absolute left-3.5 top-3 text-[#7a8982]" />
                 <input
                   type="text"
@@ -744,11 +746,11 @@ ${window.location.origin}
                 />
               </div>
 
-              {/* Pílulas de filtro */}
-              <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
+              {/* Pílulas de filtro em linha única (sem quebra) */}
+              <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto no-scrollbar w-full xl:w-auto shrink-0 py-0.5">
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold whitespace-nowrap shrink-0 transition cursor-pointer border-0 ${
                     statusFilter === 'all'
                       ? 'bg-[#071d19] text-[#d9ff4f]'
                       : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
@@ -757,9 +759,9 @@ ${window.location.origin}
                   Todos ({licenses.length})
                 </button>
                 <button
-                  onClick={() => setStatusFilter('active')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
-                    statusFilter === 'active'
+                  onClick={() => setStatusFilter('paid')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold whitespace-nowrap shrink-0 transition cursor-pointer border-0 ${
+                    statusFilter === 'paid'
                       ? 'bg-[#6b8900] text-white'
                       : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
                   }`}
@@ -767,8 +769,18 @@ ${window.location.origin}
                   Pagantes ({stats?.activePaid || 0})
                 </button>
                 <button
+                  onClick={() => setStatusFilter('vip')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold whitespace-nowrap shrink-0 transition cursor-pointer border-0 ${
+                    statusFilter === 'vip'
+                      ? 'bg-[#071d19] text-[#d9ff4f] ring-1 ring-[#d9ff4f]/40'
+                      : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
+                  }`}
+                >
+                  VIP / Cortesia ({stats?.courtesyVip || 0})
+                </button>
+                <button
                   onClick={() => setStatusFilter('trial')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold whitespace-nowrap shrink-0 transition cursor-pointer border-0 ${
                     statusFilter === 'trial'
                       ? 'bg-[#0284c7] text-white'
                       : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
@@ -778,7 +790,7 @@ ${window.location.origin}
                 </button>
                 <button
                   onClick={() => setStatusFilter('expired')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold whitespace-nowrap shrink-0 transition cursor-pointer border-0 ${
                     statusFilter === 'expired'
                       ? 'bg-[#b45309] text-white'
                       : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
@@ -788,7 +800,7 @@ ${window.location.origin}
                 </button>
                 <button
                   onClick={() => setStatusFilter('fraud')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-space font-bold whitespace-nowrap shrink-0 transition cursor-pointer border-0 ${
                     statusFilter === 'fraud'
                       ? 'bg-[#ff6e58] text-white'
                       : 'bg-[#fbfcf7] text-[#7a8982] hover:bg-[#f3f5ed]'
