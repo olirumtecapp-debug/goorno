@@ -1,8 +1,9 @@
 {
   "name": "GoOrNo — Aceitar ou Recusar?",
   "short_name": "GoOrNo",
+  "id": "/?pwa=3",
   "description": "Copiloto inteligente de cálculo de ganhos, Semáforo de Corridas em tempo real, Street View de segurança e Auditoria de Histórico para motoristas Uber, 99 e inDrive.",
-  "start_url": "/",
+  "start_url": "/?pwa=3",
   "display": "standalone",
   "background_color": "#073B32",
   "theme_color": "#073B32",

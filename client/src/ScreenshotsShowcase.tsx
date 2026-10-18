@@ -531,51 +531,55 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
       {/* LIGHTBOX MODAL */}
       {selectedImage && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn"
           onClick={closeLightbox}
         >
           <div
-            className="bg-[#071d19] text-white border border-white/15 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col md:flex-row shadow-2xl relative"
+            className="bg-[#071d19] text-white border border-white/15 rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col md:flex-row shadow-2xl relative overflow-y-auto md:overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* BOTÃO FECHAR */}
             <button
               onClick={closeLightbox}
-              className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white grid place-items-center transition cursor-pointer"
+              className="absolute top-3 right-3 z-30 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/75 hover:bg-black/95 text-white grid place-items-center transition cursor-pointer border border-white/20 shadow-md"
+              title="Fechar"
+              aria-label="Fechar"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             {/* ÁREA DA IMAGEM */}
-            <div className="md:w-1/2 bg-black/50 flex items-center justify-center p-4 relative min-h-[350px] md:min-h-[550px]">
+            <div className="w-full md:w-1/2 bg-black/50 flex items-center justify-center p-3 sm:p-5 relative shrink-0 min-h-[250px] sm:min-h-[300px] md:min-h-[500px] max-h-[44vh] md:max-h-[85vh]">
               <img
                 src={`/telas/${selectedImage.filename}`}
                 alt={selectedImage.title}
-                className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+                className="max-h-[38vh] sm:max-h-[40vh] md:max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
               />
 
               {/* NAVEGAÇÃO ANTERIOR / PRÓXIMO */}
               <button
                 onClick={handlePrev}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white grid place-items-center transition cursor-pointer"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 hover:bg-black/95 text-white grid place-items-center transition cursor-pointer border border-white/20 z-10 shadow-md"
                 title="Imagem anterior"
+                aria-label="Imagem anterior"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
               <button
                 onClick={handleNext}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white grid place-items-center transition cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 hover:bg-black/95 text-white grid place-items-center transition cursor-pointer border border-white/20 z-10 shadow-md"
                 title="Próxima imagem"
+                aria-label="Próxima imagem"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
             {/* DETALHES DA TELA */}
-            <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto">
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-bold text-[#c2d0ca] uppercase tracking-wider font-dm">
+            <div className="w-full md:w-1/2 p-4 sm:p-6 md:p-8 flex flex-col justify-between md:overflow-y-auto">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] sm:text-xs font-bold text-[#c2d0ca] uppercase tracking-wider font-dm">
                     {selectedImage.categoryLabel}
                   </span>
                   {selectedImage.badge && (
@@ -597,37 +601,37 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   )}
                 </div>
 
-                <h2 className="font-space text-xl sm:text-2xl font-bold text-white leading-tight mb-3">
+                <h2 className="font-space text-lg sm:text-2xl font-bold text-white leading-snug">
                   {selectedImage.title}
                 </h2>
 
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-4">
-                  <h4 className="text-xs font-bold text-[#d9ff4f] uppercase mb-1 font-space">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 sm:p-4">
+                  <h4 className="text-[11px] sm:text-xs font-bold text-[#d9ff4f] uppercase mb-1 font-space">
                     O que esta tela mostra:
                   </h4>
-                  <p className="text-sm text-[#c2d0ca] leading-relaxed font-dm">
+                  <p className="text-xs sm:text-sm text-[#c2d0ca] leading-relaxed font-dm m-0">
                     {selectedImage.summary}
                   </p>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                  <h4 className="text-xs font-bold text-white uppercase mb-1 flex items-center gap-1.5 font-space">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 sm:p-4">
+                  <h4 className="text-[11px] sm:text-xs font-bold text-white uppercase mb-1 flex items-center gap-1.5 font-space">
                     <Sparkles className="w-3.5 h-3.5 text-[#d9ff4f]" />
                     Como isso protege o seu bolso:
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#c2d0ca] leading-relaxed font-dm">
+                  <p className="text-xs sm:text-sm text-[#c2d0ca] leading-relaxed font-dm m-0">
                     {selectedImage.highlightText}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-6 mt-6 border-t border-white/10 flex items-center justify-between">
-                <span className="text-xs text-[#7a8982]">
+              <div className="pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-white/10 flex items-center justify-between gap-3">
+                <span className="text-[11px] sm:text-xs text-[#7a8982] truncate">
                   {selectedImage.filename}
                 </span>
                 <a
                   href="/download/apk"
-                  className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-bold text-xs px-4 py-2.5 rounded-full transition shadow-xs no-underline"
+                  className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-bold text-xs px-4 py-2.5 rounded-full transition shadow-xs no-underline shrink-0"
                 >
                   Baixar APK Oficial ↗
                 </a>
