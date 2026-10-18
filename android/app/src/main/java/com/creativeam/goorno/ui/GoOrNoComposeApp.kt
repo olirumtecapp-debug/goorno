@@ -45,6 +45,7 @@ import com.creativeam.goorno.detector.ForegroundAppDetector
 import com.creativeam.goorno.diagnostics.*
 import com.creativeam.goorno.engine.FinancialEngine
 import com.creativeam.goorno.engine.RiskAreaEvaluator
+import com.creativeam.goorno.engine.FavoriteAreaEvaluator
 import com.creativeam.goorno.model.*
 import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
 import com.creativeam.goorno.reader.uber.UberOfferReader
@@ -152,6 +153,7 @@ fun GoOrNoComposeApp(
 
     var showAdjustFaixasDialog by remember { mutableStateOf(false) }
     var pendingRiskAddressToConfirm by remember { mutableStateOf<String?>(null) }
+    var pendingFavoriteAddressToConfirm by remember { mutableStateOf<String?>(null) }
 
     val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
         val cleanTerm = RiskAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
@@ -159,6 +161,15 @@ fun GoOrNoComposeApp(
             pendingRiskAddressToConfirm = cleanTerm
         } else {
             Toast.makeText(context, "Endereço muito curto para cadastrar como risco.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val promptMarkAddressAsFavorite: (String) -> Unit = { rawAddr ->
+        val cleanTerm = FavoriteAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
+        if (cleanTerm.length >= 3) {
+            pendingFavoriteAddressToConfirm = cleanTerm
+        } else {
+            Toast.makeText(context, "Endereço muito curto para cadastrar como favorito.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -902,6 +913,7 @@ fun GoOrNoComposeApp(
                                         config = config,
                                         onOpenStreetView = { addr -> openStreetViewExternal(context, addr) },
                                         onMarkAddressAsRisk = promptMarkAddressAsRisk,
+                                        onMarkAddressAsFavorite = promptMarkAddressAsFavorite,
                                         onUpdateReceivedPrice = { newVal ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(latestDbOffer.id, newVal)
@@ -2793,6 +2805,7 @@ fun GoOrNoComposeApp(
                                         config = config,
                                         onOpenStreetView = { addr -> openStreetViewExternal(context, addr) },
                                         onMarkAddressAsRisk = promptMarkAddressAsRisk,
+                                        onMarkAddressAsFavorite = promptMarkAddressAsFavorite,
                                         onUpdateReceivedPrice = { valPaid ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(item.id, valPaid)
@@ -3412,6 +3425,303 @@ fun GoOrNoComposeApp(
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "🚨 Testar Alerta de Risco na Janela",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        var searchFavQuery by remember { mutableStateOf("") }
+                        val customFavList = remember(config.customFavoriteZones) {
+                            FavoriteAreaEvaluator.parseCustomZonesList(config.customFavoriteZones)
+                        }
+
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFF059669).copy(alpha = 0.55f)),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        color = Color(0xFF059669),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .padding(4.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Bairros Favoritos & Zona de Conforto",
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 15.sp,
+                                            color = PetrolHeader
+                                        )
+                                        Text(
+                                            text = "Destaque verde no card quando a corrida for para sua área preferida",
+                                            fontSize = 11.sp,
+                                            color = MutedText
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                // Switch: Ativar Destaque de Regiões Favoritas
+                                Surface(
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, CleanCardBorder)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Destacar Bairros Favoritos",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = PetrolHeader
+                                            )
+                                            Text(
+                                                text = "Exibe selo verde com estrela no card flutuante quando o destino ou embarque for na sua lista.",
+                                                fontSize = 11.sp,
+                                                color = MutedText
+                                            )
+                                        }
+                                        Switch(
+                                            checked = config.favoriteZonesEnabled,
+                                            onCheckedChange = { enabled ->
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(config.copy(favoriteZonesEnabled = enabled))
+                                                    notifyUser(if (enabled) "Destaque de Bairros Favoritos ativado!" else "Destaque de Bairros Favoritos pausado.")
+                                                }
+                                            },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = Color(0xFF059669)
+                                            )
+                                        )
+                                    }
+                                }
+
+                                // Campo de Adição Rápida
+                                Text(
+                                    text = "Adicionar Bairro ou Cidade Favorita:",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = PetrolHeader
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedTextField(
+                                        value = searchFavQuery,
+                                        onValueChange = { searchFavQuery = it },
+                                        placeholder = {
+                                            Text("Ex: Moema, Rudge Ramos, Centro...", fontSize = 12.sp, color = MutedText)
+                                        },
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    )
+
+                                    Button(
+                                        onClick = {
+                                            val raw = searchFavQuery.trim()
+                                            if (raw.length >= 3) {
+                                                val updated = (customFavList + raw).distinct()
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(config.copy(customFavoriteZones = updated.joinToString(", ")))
+                                                    searchFavQuery = ""
+                                                    notifyUser("⭐ '$raw' adicionado aos Bairros Favoritos!")
+                                                }
+                                            } else {
+                                                notifyUser("Digite ao menos 3 letras.")
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF059669),
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.height(52.dp)
+                                    ) {
+                                        Text("+ Adicionar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
+                                }
+
+                                // Lista de Bairros Favoritos Cadastrados
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "⭐ Seus Bairros Favoritos (${customFavList.size}):",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 13.sp,
+                                        color = PetrolHeader
+                                    )
+                                    if (customFavList.isNotEmpty()) {
+                                        TextButton(onClick = {
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(config.copy(customFavoriteZones = ""))
+                                                notifyUser("Lista de bairros favoritos esvaziada.")
+                                            }
+                                        }) {
+                                            Text("Limpar Todos", color = TrafficRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+
+                                if (customFavList.isEmpty()) {
+                                    Surface(
+                                        color = SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "Nenhum bairro favorito cadastrado ainda. Digite os nomes dos bairros onde você mais gosta de trabalhar acima.",
+                                            fontSize = 11.5.sp,
+                                            color = MutedText,
+                                            modifier = Modifier.padding(12.dp)
+                                        )
+                                    }
+                                } else {
+                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        customFavList.forEach { zone ->
+                                            Surface(
+                                                color = Color(0xFFECFDF5),
+                                                shape = RoundedCornerShape(12.dp),
+                                                border = BorderStroke(1.dp, Color(0xFF059669).copy(alpha = 0.35f)),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFF059669), modifier = Modifier.size(16.dp))
+                                                        Text(
+                                                            text = zone,
+                                                            fontSize = 12.5.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFF065F46)
+                                                        )
+                                                    }
+
+                                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                try {
+                                                                    val mapIntent = Intent(
+                                                                        Intent.ACTION_VIEW,
+                                                                        Uri.parse("geo:0,0?q=" + Uri.encode(zone))
+                                                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                                                                    context.startActivity(mapIntent)
+                                                                } catch (_: Exception) {}
+                                                            },
+                                                            modifier = Modifier.size(32.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Map, contentDescription = "Ver no mapa", tint = PetrolHeader, modifier = Modifier.size(16.dp))
+                                                        }
+
+                                                        IconButton(
+                                                            onClick = {
+                                                                val remaining = customFavList.filterNot { it.equals(zone, ignoreCase = true) }
+                                                                scope.launch {
+                                                                    app.preferencesRepository.saveConfig(
+                                                                        config.copy(customFavoriteZones = remaining.joinToString(", "))
+                                                                    )
+                                                                    notifyUser("'$zone' removido dos bairros favoritos.")
+                                                                }
+                                                            },
+                                                            modifier = Modifier.size(32.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Delete, contentDescription = "Remover", tint = TrafficRed, modifier = Modifier.size(16.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Botão de teste na tela flutuante
+                                Button(
+                                    onClick = {
+                                        val sampleFavZone = customFavList.firstOrNull() ?: "Moema"
+                                        val testOffer = NinetyNineOfferReader.parseScreenNodes(
+                                            rawNodes = listOf(
+                                                "UberX",
+                                                "R$ 28,50",
+                                                "★ 4,96 (180 corridas)",
+                                                "3 min (0,9 km) Av. Paulista, 1500 - Bela Vista",
+                                                "16 min (8,2 km) R. Gaivota, 450 - $sampleFavZone"
+                                            ),
+                                            captureMethod = CaptureMethod.SIMULATION,
+                                            isSimulated = true
+                                        )
+                                        val eval = FinancialEngine.evaluate(testOffer, config)
+                                        RuntimeDiagnosticsBus.publishEvaluation(eval)
+                                        if (hasOverlayPermission) {
+                                            app.overlayPanel.applyConfig(config)
+                                            app.overlayPanel.showEvaluation(eval)
+                                        }
+                                        CopilotNotificationReceiver.showActiveNotification(
+                                            context = context,
+                                            latestEvaluation = eval,
+                                            showProfit = config.showProfitOnOverlay,
+                                            showCost = config.showCostOnOverlay
+                                        )
+                                        notifyUser("Simulação de Bairro Favorito enviada para a Janela Flutuante!")
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF065F46),
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(46.dp)
+                                ) {
+                                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFA7F3D0), modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "⭐ Testar Bairro Favorito na Janela",
                                         fontWeight = FontWeight.Black,
                                         fontSize = 12.sp,
                                         maxLines = 1,
@@ -4460,6 +4770,89 @@ fun GoOrNoComposeApp(
             }
         )
     }
+
+    if (pendingFavoriteAddressToConfirm != null) {
+        val targetZone = pendingFavoriteAddressToConfirm!!
+        AlertDialog(
+            onDismissRequest = { pendingFavoriteAddressToConfirm = null },
+            shape = RoundedCornerShape(22.dp),
+            containerColor = PureWhiteSurface,
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFF059669))
+                    Text(
+                        text = "Cadastrar Bairro Favorito",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 17.sp,
+                        color = PetrolDarkText
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Deseja salvar este local como sua Região/Bairro Favorito no GoOrNo?",
+                        fontSize = 12.5.sp,
+                        color = PetrolDarkText
+                    )
+                    Surface(
+                        color = Color(0xFFECFDF5),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFF059669).copy(alpha = 0.35f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "⭐ $targetZone",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = Color(0xFF065F46),
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                    Text(
+                        text = "Quando uma nova corrida for chamada para esta região ou com embarque nela, o card flutuante exibirá um destaque verde com estrela.",
+                        fontSize = 11.5.sp,
+                        color = MutedText
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val currentList = FavoriteAreaEvaluator.parseCustomZonesList(config.customFavoriteZones)
+                        val updatedList = (currentList + targetZone).distinct()
+                        scope.launch {
+                            app.preferencesRepository.saveConfig(
+                                config.copy(customFavoriteZones = updatedList.joinToString(", "))
+                            )
+                            notifyUser("⭐ '$targetZone' cadastrado como Bairro Favorito!")
+                        }
+                        pendingFavoriteAddressToConfirm = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF059669),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Sim, Cadastrar Bairro Favorito", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { pendingFavoriteAddressToConfirm = null },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cancelar", color = MutedText, fontWeight = FontWeight.Medium, fontSize = 12.5.sp)
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -4698,6 +5091,7 @@ private fun HistoricalOfferCardContent(
     config: DriverFinancialConfig,
     onOpenStreetView: (String) -> Unit,
     onMarkAddressAsRisk: (String) -> Unit,
+    onMarkAddressAsFavorite: (String) -> Unit = {},
     onUpdateReceivedPrice: (Double) -> Unit
 ) {
     var showAuditInput by remember { mutableStateOf(false) }
@@ -4708,6 +5102,10 @@ private fun HistoricalOfferCardContent(
 
     val riskCheck = remember(entity.originAddress, entity.destinationAddress, config) {
         RiskAreaEvaluator.evaluate(entity.originAddress, entity.destinationAddress, config)
+    }
+
+    val favCheck = remember(entity.originAddress, entity.destinationAddress, config) {
+        FavoriteAreaEvaluator.evaluate(entity.originAddress, entity.destinationAddress, config)
     }
 
     val badgeColor = when (entity.verdict) {
@@ -4752,6 +5150,23 @@ private fun HistoricalOfferCardContent(
                     fontWeight = FontWeight.Black,
                     fontSize = 11.5.sp,
                     color = TrafficRed,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                )
+            }
+        }
+
+        if (favCheck.isFavorite) {
+            Surface(
+                color = Color(0xFFECFDF5),
+                border = BorderStroke(1.dp, Color(0xFF059669)),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "⭐ REGIÃO FAVORITA: ${favCheck.shortBadge}",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 11.5.sp,
+                    color = Color(0xFF065F46),
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                 )
             }
@@ -4832,6 +5247,22 @@ private fun HistoricalOfferCardContent(
                     Spacer(modifier = Modifier.width(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Surface(
+                            color = Color(0xFFECFDF5),
+                            border = BorderStroke(1.dp, Color(0xFF059669)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.clickable {
+                                onMarkAddressAsFavorite(entity.originAddress)
+                            }
+                        ) {
+                            Text(
+                                text = "⭐ +Fav",
+                                color = Color(0xFF065F46),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
+                            )
+                        }
+                        Surface(
                             color = Color(0xFFFEF2F2),
                             border = BorderStroke(1.dp, TrafficRed),
                             shape = RoundedCornerShape(8.dp),
@@ -4898,6 +5329,22 @@ private fun HistoricalOfferCardContent(
                 if (!entity.destinationAddress.isNullOrBlank()) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Surface(
+                            color = Color(0xFFECFDF5),
+                            border = BorderStroke(1.dp, Color(0xFF059669)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.clickable {
+                                onMarkAddressAsFavorite(entity.destinationAddress)
+                            }
+                        ) {
+                            Text(
+                                text = "⭐ +Fav",
+                                color = Color(0xFF065F46),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
+                            )
+                        }
                         Surface(
                             color = Color(0xFFFEF2F2),
                             border = BorderStroke(1.dp, TrafficRed),

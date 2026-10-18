@@ -52,6 +52,8 @@ object CloudSyncManager {
             put("forceRedOnRiskArea", config.forceRedOnRiskArea)
             put("useDefaultRiskKeywords", config.useDefaultRiskKeywords)
             put("customRiskZones", config.customRiskZones)
+            put("favoriteZonesEnabled", config.favoriteZonesEnabled)
+            put("customFavoriteZones", config.customFavoriteZones)
             put("overlayOpacityPercent", config.overlayOpacityPercent)
             put("overlayAutoMinimizeSec", config.overlayAutoMinimizeSec)
             put("saveHistoryEnabled", config.saveHistoryEnabled)
@@ -121,6 +123,8 @@ object CloudSyncManager {
                 forceRedOnRiskArea = c.optBoolean("forceRedOnRiskArea", true),
                 useDefaultRiskKeywords = c.optBoolean("useDefaultRiskKeywords", true),
                 customRiskZones = c.optString("customRiskZones", ""),
+                favoriteZonesEnabled = c.optBoolean("favoriteZonesEnabled", true),
+                customFavoriteZones = c.optString("customFavoriteZones", ""),
                 overlayOpacityPercent = c.optInt("overlayOpacityPercent", 90),
                 overlayAutoMinimizeSec = c.optInt("overlayAutoMinimizeSec", 12),
                 saveHistoryEnabled = c.optBoolean("saveHistoryEnabled", true),

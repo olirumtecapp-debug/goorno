@@ -183,6 +183,8 @@ data class DriverFinancialConfig(
     val forceRedOnRiskArea: Boolean = true,
     val useDefaultRiskKeywords: Boolean = true,
     val customRiskZones: String = "",
+    val favoriteZonesEnabled: Boolean = true,
+    val customFavoriteZones: String = "",
     val copilotMonitoringEnabled: Boolean = true,
     val saveHistoryEnabled: Boolean = true,
     val cloudBackupConsent: Boolean = false,
@@ -210,7 +212,7 @@ enum class TrafficLightVerdict(val label: String, val shortAction: String) {
 }
 
 /**
- * Resultado completo do Motor Financeiro + Semáforo de Decisão + Avaliação do Passageiro + Área de Risco.
+ * Resultado completo do Motor Financeiro + Semáforo de Decisão + Avaliação do Passageiro + Área de Risco + Região Favorita.
  */
 data class FinancialEvaluationResult(
     val offer: StandardRideOffer,
@@ -237,5 +239,7 @@ data class FinancialEvaluationResult(
     val passengerRatingVerdict: PassengerRatingVerdict = PassengerRatingVerdict.UNKNOWN,
     val passengerRatingBadge: String? = null,
     val hasRiskAlert: Boolean = false,
-    val riskAlertBadge: String? = null
+    val riskAlertBadge: String? = null,
+    val isFavoriteZone: Boolean = false,
+    val favoriteZoneBadge: String? = null
 )

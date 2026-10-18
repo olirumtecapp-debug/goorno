@@ -205,24 +205,24 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   {
     id: 'seguranca-moto-1',
     filename: 'TelaSeguracaMoto1.jpeg',
-    title: 'Módulo de Segurança e Zonas de Risco (Parte 1)',
+    title: 'Módulo de Segurança, Áreas de Risco & Bairros Favoritos',
     category: 'safety',
     categoryLabel: 'Segurança & Auditoria',
-    badge: '🛡️ ÁREAS DE RISCO',
+    badge: '🛡️ ÁREAS DE RISCO & FAVORITOS',
     badgeType: 'red',
-    summary: 'Configuração de alertas antecipados para áreas com histórico elevado de ocorrências.',
-    highlightText: 'Proteção essencial especialmente à noite e na madrugada, tanto para motoristas de carro quanto para entregadores/mototaxistas.'
+    summary: 'Cadastre suas Áreas de Risco para alerta vermelho imediato e seus Bairros Favoritos para rodar com tranquilidade na sua zona de conforto.',
+    highlightText: 'Controle total da sua operação: você decide onde quer trabalhar e recebe alerta visual na hora em que o passageiro chama.'
   },
   {
     id: 'seguranca-moto-2',
     filename: 'TelaSeguracaMoto2.jpeg',
-    title: 'Módulo de Segurança e Zonas de Risco (Parte 2)',
+    title: 'Radar de Bairros & Alerta em Tempo Real',
     category: 'safety',
     categoryLabel: 'Segurança & Auditoria',
-    badge: '🛡️ ALERTA EM TEMPO REAL',
-    badgeType: 'red',
-    summary: 'Sinalização visual imediata caso a rota passe por regiões com restrições de segurança.',
-    highlightText: 'Não seja pego de surpresa em bairros desconhecidos. O copiloto checa o itinerário instantaneamente.'
+    badge: '⭐ ZONA DE CONFORTO',
+    badgeType: 'green',
+    summary: 'Sinalização visual imediata no card: estrela dourada para seus bairros preferidos e alerta vermelho para regiões perigosas.',
+    highlightText: 'Não seja pego de surpresa em bairros desconhecidos. O copiloto checa origem e destino instantaneamente antes do aceite.'
   },
   {
     id: 'metas-pax',
@@ -238,13 +238,13 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   {
     id: 'historico-chamados',
     filename: 'TelaHistoricoChamados.jpeg',
-    title: 'Histórico Completo & Auditoria de Chamadas',
+    title: 'Histórico de Chamadas com 1 Toque (+Fav / +Risco)',
     category: 'safety',
     categoryLabel: 'Segurança & Auditoria',
-    badge: '📋 AUDITORIA',
+    badge: '📋 AUDITORIA & 1 TOQUE',
     badgeType: 'purple',
-    summary: 'Registro automático de todas as corridas que tocaram no celular com data, hora, km e valor ofertado.',
-    highlightText: 'Confira se a Uber ou 99 pagou exatamente o valor prometido na chamada original ou se houve diferença de repasse.'
+    summary: 'Registro automático de todas as corridas que tocaram no celular com atalhos de 1 toque para adicionar aos Favoritos (+Fav) ou Áreas de Risco (+Risco).',
+    highlightText: 'Gostou do bairro ou achou a rua perigosa? Com um simples toque no histórico o local é salvo nas suas regras personalizadas.'
   },
   {
     id: 'seg-unico-usuario',

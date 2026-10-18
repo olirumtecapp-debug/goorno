@@ -31,7 +31,7 @@ import {
   VoucherRecord,
   recoverPin,
 } from "./licenseStore.js";
-import { createPixCharge, verifyPaymentStatus } from "./asaas.js";
+import { createPixCharge, verifyPaymentStatus, getPendingPixPhone } from "./asaas.js";
 import { sendFraudAlertEmail } from "./fraudAlert.js";
 import { saveMessage, listAllMessages, markMessageStatus, deleteMessage } from "./mailboxStore.js";
 
@@ -692,6 +692,8 @@ app.post("/api/goorno-webhook", async (req, res) => {
       let phone = "";
       if (payment.externalReference && payment.externalReference.startsWith("goorno_tel_")) {
         phone = payment.externalReference.replace("goorno_tel_", "");
+      } else if (payment.pixQrCodeId && getPendingPixPhone(payment.pixQrCodeId)) {
+        phone = getPendingPixPhone(payment.pixQrCodeId)!;
       } else if (payment.customer) {
         // Fallback: try customer mobilePhone
         try {

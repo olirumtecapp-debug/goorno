@@ -412,6 +412,7 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val riskTag = if (result.hasRiskAlert) " · ⚠️ Risco" else ""
+        val favTag = if (result.isFavoriteZone && !result.favoriteZoneBadge.isNullOrBlank()) " · ⭐ ${result.favoriteZoneBadge}" else ""
         val line2Color = when (result.verdict) {
             TrafficLightVerdict.GREEN -> "#4ADE80"
             TrafficLightVerdict.YELLOW -> "#FDE047"
@@ -422,7 +423,7 @@ class FloatingOverlayPanel(private val context: Context) {
         // Linha 2: Os números essenciais destacados em negrito e tamanho nítido (15.5sp)!
         val tvLine2 = TextView(context).apply {
             val ratingPart = if (ratingStr.isNotBlank()) " · $ratingStr" else ""
-            text = "$grossKmStr · $grossHrStr$ratingPart$riskTag$optionalSuffix"
+            text = "$grossKmStr · $grossHrStr$ratingPart$riskTag$favTag$optionalSuffix"
             setTextColor(Color.parseColor(line2Color))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f)
             setTypeface(typeface, Typeface.BOLD)
@@ -939,6 +940,25 @@ class FloatingOverlayPanel(private val context: Context) {
             card.addView(tvRisk)
         }
 
+        // Se houver destaque de Região Favorita:
+        if (result.isFavoriteZone && !result.favoriteZoneBadge.isNullOrBlank()) {
+            val tvFav = TextView(context).apply {
+                text = "⭐ REGIÃO FAVORITA: ${result.favoriteZoneBadge}"
+                setTextColor(Color.parseColor("#6EE7B7"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                background = roundedBg("#064E3B", 6f)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(if (result.hasRiskAlert) 4 else 8)
+                }
+            }
+            card.addView(tvFav)
+        }
+
         // Se o balão estiver ACIMA, adiciona a barra decorativa de destaque na BASE do card (conforme padrão)
         if (isBubbleAbove) {
             val bottomAccent = View(context).apply {
@@ -1227,6 +1247,23 @@ class FloatingOverlayPanel(private val context: Context) {
                 }
             }
             box.addView(tvRisk)
+        }
+
+        // 5. REGIÃO FAVORITA (se detectado)
+        if (result.isFavoriteZone && !result.favoriteZoneBadge.isNullOrBlank()) {
+            val tvFav = TextView(context).apply {
+                text = "⭐ REGIÃO FAVORITA: ${result.favoriteZoneBadge}"
+                setTextColor(Color.parseColor("#047857"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(4)
+                }
+            }
+            box.addView(tvFav)
         }
 
         card.addView(box)

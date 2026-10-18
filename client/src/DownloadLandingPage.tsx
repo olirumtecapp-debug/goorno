@@ -23,7 +23,9 @@ import {
   Maximize2,
   Zap,
   AlertTriangle,
-  Check
+  Check,
+  Star,
+  ShieldAlert
 } from 'lucide-react';
 import { ContactModal } from './ContactModal';
 import { SCREENSHOTS, ScreenshotItem } from './ScreenshotsShowcase';
@@ -266,6 +268,16 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                   </div>
 
                   {heroMode === 'good' ? (
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9.5px] font-bold my-1">
+                      <span>⭐ Região Favorita: Jardins</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-800 border border-rose-200 text-[9.5px] font-bold my-1">
+                      <span>🚨 Alerta: Área de Risco no Destino</span>
+                    </div>
+                  )}
+
+                  {heroMode === 'good' ? (
                     <div className="decision decision-good">
                       <span>●</span> ACEITAR <b>R$ 2,63/km</b>
                     </div>
@@ -422,6 +434,87 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 <p>Configure combustível e consumo para decidir com a realidade do seu bolso.</p>
               </div>
             </article>
+            <article>
+              <span className="feature-number">05</span>
+              <div>
+                <h3>⭐ Bairros Favoritos</h3>
+                <p>Trabalhe na sua zona de conforto. O card destaca na hora se a corrida é nos seus bairros preferidos.</p>
+              </div>
+            </article>
+            <article>
+              <span className="feature-number">06</span>
+              <div>
+                <h3>🚨 Radar de Áreas de Risco</h3>
+                <p>Alerta vermelho antecipado se o embarque ou destino for em local perigoso. Volte para casa com segurança.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        {/* SEÇÃO DESTAQUE: BAIRROS FAVORITOS & ÁREAS DE RISCO */}
+        <section className="section-shell" style={{ paddingTop: '0.5rem', paddingBottom: '2.5rem' }}>
+          <div className="bg-gradient-to-br from-[#071d19] to-[#0c3128] rounded-3xl p-6 sm:p-10 text-white border border-[#175244] shadow-xl">
+            <div className="max-w-3xl mb-8">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#d9ff4f]/15 text-[#d9ff4f] border border-[#d9ff4f]/30 font-space font-bold text-xs uppercase tracking-wider mb-3">
+                <MapPin className="w-3.5 h-3.5" /> Geolocalização Inteligente
+              </span>
+              <h2 className="font-space font-bold text-2xl sm:text-3xl text-white mb-3">
+                Você no controle de <em>onde quer rodar.</em>
+              </h2>
+              <p className="font-dm text-sm sm:text-base text-[#b8ccc3] leading-relaxed m-0">
+                Cada motorista tem seus bairros prediletos e locais que prefere evitar. O GoOrNo lê o embarque e desembarque da chamada e aplica seu filtro de segurança e preferência instantaneamente.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* CARD 1: BAIRROS FAVORITOS */}
+              <div className="p-6 rounded-2xl bg-[#092b24] border border-emerald-500/30 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center justify-center">
+                      <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                    </span>
+                    <span className="text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Zona de Conforto
+                    </span>
+                  </div>
+                  <h3 className="font-space font-bold text-lg text-white mb-2">
+                    ⭐ Radar de Bairros Favoritos
+                  </h3>
+                  <p className="font-dm text-xs sm:text-sm text-[#b8ccc3] leading-relaxed mb-4">
+                    Gosta de rodar perto de casa ou em regiões nobres e movimentadas? Cadastre seus bairros favoritos ou adicione com <strong>1 toque direto no histórico de corridas</strong>. Quando tocar uma viagem compatível, o card carimba com destaque dourado:
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-[#051915] border border-emerald-500/40 text-xs font-mono text-emerald-300 flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-400 shrink-0 fill-amber-400" />
+                  <span><strong>⭐ REGIÃO FAVORITA:</strong> Centro / Jardins</span>
+                </div>
+              </div>
+
+              {/* CARD 2: ÁREAS DE RISCO */}
+              <div className="p-6 rounded-2xl bg-[#092b24] border border-rose-500/30 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center">
+                      <ShieldAlert className="w-5 h-5 text-rose-400" />
+                    </span>
+                    <span className="text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      Proteção Noturna
+                    </span>
+                  </div>
+                  <h3 className="font-space font-bold text-lg text-white mb-2">
+                    🚨 Escudo de Áreas de Risco
+                  </h3>
+                  <p className="font-dm text-xs sm:text-sm text-[#b8ccc3] leading-relaxed mb-4">
+                    Evite entrar em becos perigosos ou bairros com histórico de assalto. O GoOrNo avisa antes de você aceitar a corrida se a origem ou o destino estiverem na sua lista de alerta, evitando sustos e emboscadas:
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-[#051915] border border-rose-500/40 text-xs font-mono text-rose-300 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span><strong>🚨 ATENÇÃO:</strong> Destino em Área de Risco</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -756,6 +849,27 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               </summary>
               <p>
                 Distribuir o APK oficial direto pelo site permite aplicar melhorias e ajustes rápidos sempre que a Uber ou a 99 alteram suas telas ou regras, sem a demora da aprovação de lojas de apps. Além disso, você tem uma versão limpa, sem anúncios chatos e sem travas.
+              </p>
+            </details>
+
+            <details
+              open={openFaq === 8}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleFaq(8);
+              }}
+            >
+              <summary>
+                Como funciona o filtro de Bairros Favoritos e Áreas de Risco? <span>{openFaq === 8 ? '−' : '+'}</span>
+              </summary>
+              <p>
+                O GoOrNo traz duas ferramentas essenciais de geolocalização para você ter total controle de onde roda:
+                <br /><br />
+                <strong>1. ⭐ Bairros Favoritos (Zona de Conforto):</strong> Cadastre os bairros onde você prefere trabalhar. Quando a corrida embarcar ou desembarcar nessa região, o card flutuante carimba com destaque dourado (ex: <em>"⭐ Região Favorita: Centro"</em>).
+                <br /><br />
+                <strong>2. 🚨 Áreas de Risco:</strong> Defina bairros ou locais que você prefere evitar. Ao tocar uma chamada para esses locais, o card emite alerta vermelho imediato para você recusar sem hesitar.
+                <br /><br />
+                <strong>Facilidade máxima:</strong> Além de configurar manualmente no menu de Segurança, você pode marcar qualquer endereço como Favorito ou Risco com <strong>1 toque direto no Histórico de Corridas</strong> do aplicativo!
               </p>
             </details>
 

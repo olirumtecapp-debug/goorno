@@ -280,6 +280,17 @@ object FinancialEngine {
             verdictAfterRating
         }
 
+        // 7. Avaliação de Região Favorita (Origem / Destino)
+        val favoriteAssessment = FavoriteAreaEvaluator.evaluate(
+            originAddress = offer.originAddress,
+            destinationAddress = offer.destinationAddress,
+            config = config
+        )
+
+        if (favoriteAssessment.isFavorite) {
+            reasons.add(0, "⭐ ${favoriteAssessment.shortBadge} — Região preferida de trabalho")
+        }
+
         val yellowRatio = config.yellowToleranceRatio.coerceIn(0.50, 0.99)
         val kmVerdict = when {
             grossPerKm == null -> TrafficLightVerdict.GRAY_NEUTRAL
@@ -320,7 +331,9 @@ object FinancialEngine {
             passengerRatingVerdict = ratingVerdict,
             passengerRatingBadge = ratingBadge,
             hasRiskAlert = riskAssessment.hasRisk,
-            riskAlertBadge = if (riskAssessment.hasRisk) riskAssessment.shortBadge else null
+            riskAlertBadge = if (riskAssessment.hasRisk) riskAssessment.shortBadge else null,
+            isFavoriteZone = favoriteAssessment.isFavorite,
+            favoriteZoneBadge = if (favoriteAssessment.isFavorite) favoriteAssessment.shortBadge else null
         )
     }
 

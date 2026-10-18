@@ -53,6 +53,8 @@ class DriverPreferencesRepository(private val context: Context) {
         val FORCE_RED_ON_RISK_AREA = booleanPreferencesKey("force_red_on_risk_area")
         val USE_DEFAULT_RISK_KEYWORDS = booleanPreferencesKey("use_default_risk_keywords")
         val CUSTOM_RISK_ZONES = stringPreferencesKey("custom_risk_zones")
+        val FAVORITE_ZONES_ENABLED = booleanPreferencesKey("favorite_zones_enabled")
+        val CUSTOM_FAVORITE_ZONES = stringPreferencesKey("custom_favorite_zones")
         val COPILOT_MONITORING_ENABLED = booleanPreferencesKey("copilot_monitoring_enabled")
         val SAVE_HISTORY = booleanPreferencesKey("save_history")
         val CLOUD_BACKUP_CONSENT = booleanPreferencesKey("cloud_backup_consent")
@@ -92,6 +94,8 @@ class DriverPreferencesRepository(private val context: Context) {
             forceRedOnRiskArea = prefs[Keys.FORCE_RED_ON_RISK_AREA] ?: true,
             useDefaultRiskKeywords = prefs[Keys.USE_DEFAULT_RISK_KEYWORDS] ?: true,
             customRiskZones = prefs[Keys.CUSTOM_RISK_ZONES] ?: "",
+            favoriteZonesEnabled = prefs[Keys.FAVORITE_ZONES_ENABLED] ?: true,
+            customFavoriteZones = prefs[Keys.CUSTOM_FAVORITE_ZONES] ?: "",
             copilotMonitoringEnabled = prefs[Keys.COPILOT_MONITORING_ENABLED] ?: true,
             saveHistoryEnabled = prefs[Keys.SAVE_HISTORY] ?: true,
             cloudBackupConsent = prefs[Keys.CLOUD_BACKUP_CONSENT] ?: false,
@@ -134,6 +138,8 @@ class DriverPreferencesRepository(private val context: Context) {
             prefs[Keys.FORCE_RED_ON_RISK_AREA] = config.forceRedOnRiskArea
             prefs[Keys.USE_DEFAULT_RISK_KEYWORDS] = config.useDefaultRiskKeywords
             prefs[Keys.CUSTOM_RISK_ZONES] = config.customRiskZones
+            prefs[Keys.FAVORITE_ZONES_ENABLED] = config.favoriteZonesEnabled
+            prefs[Keys.CUSTOM_FAVORITE_ZONES] = config.customFavoriteZones
             prefs[Keys.COPILOT_MONITORING_ENABLED] = config.copilotMonitoringEnabled
             prefs[Keys.SAVE_HISTORY] = config.saveHistoryEnabled
             prefs[Keys.CLOUD_BACKUP_CONSENT] = config.cloudBackupConsent
