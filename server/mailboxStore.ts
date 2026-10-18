@@ -9,6 +9,8 @@ export interface MailboxMessage {
   id: string;
   name: string;
   contact: string; // WhatsApp or Phone
+  email?: string;
+  preferredReply?: "whatsapp" | "email";
   category: "duvida" | "sugestao" | "problema" | "elogio" | "outro";
   categoryLabel: string;
   subject: string;

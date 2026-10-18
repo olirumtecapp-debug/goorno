@@ -18,6 +18,8 @@ interface ContactModalProps {
 export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalProps) {
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
+  const [email, setEmail] = useState('');
+  const [preferredReply, setPreferredReply] = useState<'whatsapp' | 'email'>('whatsapp');
   const [category, setCategory] = useState<'duvida' | 'sugestao' | 'problema' | 'elogio' | 'outro'>('duvida');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -44,6 +46,8 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
         body: JSON.stringify({
           name: name.trim() || 'Motorista Autônomo',
           contact: contact.trim(),
+          email: email.trim(),
+          preferredReply,
           category,
           subject: subject.trim() || 'Contato via Caixa Postal',
           message: message.trim(),
@@ -59,6 +63,8 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
       setSuccessTicket(data.ticketId || `TKT-${Date.now().toString().slice(-6)}`);
       setName('');
       setContact('');
+      setEmail('');
+      setPreferredReply('whatsapp');
       setSubject('');
       setMessage('');
     } catch (err: any) {
@@ -83,7 +89,7 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
         className="bg-white text-[#071d19] border border-[rgba(7,29,25,0.12)] rounded-2xl sm:rounded-3xl max-w-lg w-full shadow-[0_24px_60px_rgba(7,29,25,0.18)] relative font-sans my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* HEADER LIMPO E ELEGANTE COMPACTO */}
+        {/* HEADER LIMPO E TRANSPARENTE */}
         <div className="px-5 py-3 sm:py-3.5 bg-[#fbfcf7] border-b border-[rgba(7,29,25,0.08)] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#f3f5ed] border border-[rgba(7,29,25,0.08)] text-[#071d19] grid place-items-center shrink-0">
@@ -97,7 +103,7 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                 </span>
               </h3>
               <p className="text-[11px] text-[#63756b] mt-0.5 leading-none">
-                Canal oficial direto com nossa equipe de suporte e produto
+                Canal direto com o desenvolvedor do GoOrNo
               </p>
             </div>
           </div>
@@ -122,11 +128,11 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                 Mensagem Entregue com Sucesso!
               </h4>
               <p className="text-xs text-[#63756b] max-w-xs mx-auto leading-relaxed mb-3">
-                Sua solicitação foi registrada no sistema com o protocolo{' '}
+                Sua solicitação foi registrada na Caixa Postal com o protocolo{' '}
                 <span className="font-mono font-bold text-[#071d19] bg-[#f3f5ed] px-1.5 py-0.5 rounded border border-[rgba(7,29,25,0.1)]">
                   #{successTicket}
                 </span>
-                . Nossa equipe analisa todas as mensagens.
+                . O desenvolvedor analisa cada mensagem recebida e responderá conforme sua preferência.
               </p>
               <button
                 onClick={handleReset}
@@ -172,6 +178,53 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                     placeholder="DDD + Número (ex: 11999998888)"
                     className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl px-3 py-1.5 text-xs text-[#071d19] placeholder-[#9ca8a1] focus:outline-none focus:border-[#071d19] transition"
                   />
+                </div>
+              </div>
+
+              {/* Linha 2: E-mail e Preferência de Retorno */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#4e5d56] uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <Mail className="w-3 h-3 text-[#071d19]" />
+                    E-mail (Opcional)
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seuemail@exemplo.com"
+                    className="w-full bg-[#fbfcf7] border border-[rgba(7,29,25,0.14)] rounded-xl px-3 py-1.5 text-xs text-[#071d19] placeholder-[#9ca8a1] focus:outline-none focus:border-[#071d19] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-[#4e5d56] uppercase tracking-wider mb-1">
+                    Prefere retorno por:
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setPreferredReply('whatsapp')}
+                      className={`text-[11px] py-1 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
+                        preferredReply === 'whatsapp'
+                          ? 'bg-[#071d19] text-[#d9ff4f] border-[#071d19] shadow-xs'
+                          : 'bg-[#fbfcf7] text-[#556961] border-[rgba(7,29,25,0.12)] hover:border-[#071d19]'
+                      }`}
+                    >
+                      <span>💬 WhatsApp</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreferredReply('email')}
+                      className={`text-[11px] py-1 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
+                        preferredReply === 'email'
+                          ? 'bg-[#071d19] text-[#d9ff4f] border-[#071d19] shadow-xs'
+                          : 'bg-[#fbfcf7] text-[#556961] border-[rgba(7,29,25,0.12)] hover:border-[#071d19]'
+                      }`}
+                    >
+                      <span>✉️ E-mail</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

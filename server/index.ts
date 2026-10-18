@@ -980,12 +980,14 @@ app.get("/api/app-version", (_req, res) => {
 // 13. Public Route: Driver submits message to Caixa Postal (Fale Conosco)
 app.post("/api/contact", async (req, res) => {
   try {
-    const { name, contact, category = "duvida", subject = "", message, source = "web" } = req.body || {};
+    const { name, contact, email = "", preferredReply = "whatsapp", category = "duvida", subject = "", message, source = "web" } = req.body || {};
     if (!message || String(message).trim().length === 0) {
       return res.status(400).json({ error: "A mensagem é obrigatória." });
     }
     const cleanName = String(name || "Motorista").trim();
     const cleanContact = String(contact || "").trim();
+    const cleanEmail = String(email || "").trim();
+    const cleanPreferred = preferredReply === "email" ? "email" : "whatsapp";
     const cleanSubject = String(subject || "").trim() || "Contato pelo App";
     const cleanMessage = String(message).trim();
 
@@ -1000,6 +1002,8 @@ app.post("/api/contact", async (req, res) => {
     const saved = await saveMessage({
       name: cleanName,
       contact: cleanContact,
+      email: cleanEmail,
+      preferredReply: cleanPreferred,
       category: category as any,
       categoryLabel: categoryLabels[category] || "Geral",
       subject: cleanSubject,
@@ -1009,7 +1013,7 @@ app.post("/api/contact", async (req, res) => {
 
     res.json({
       ok: true,
-      message: "Mensagem recebida com sucesso na nossa Caixa Postal! Nossa equipe entrará em contato se necessário.",
+      message: "Mensagem recebida com sucesso na Caixa Postal! O desenvolvedor analisará sua mensagem.",
       ticketId: saved.id
     });
   } catch (err: any) {
@@ -1024,7 +1028,13 @@ app.get("/api/contact", async (req, res) => {
     return res.status(401).json({ error: "Não autorizado" });
   }
   try {
-    const messages = await listAllMessages();
+    const rawMessages = await listAllMessages();
+    const messages = rawMessages.map((m) => ({
+      ...m,
+      whatsapp: m.contact || "",
+      email: m.email || "",
+      preferredReply: m.preferredReply || "whatsapp"
+    }));
     res.json({ ok: true, messages, total: messages.length });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || "Erro ao listar mensagens." });

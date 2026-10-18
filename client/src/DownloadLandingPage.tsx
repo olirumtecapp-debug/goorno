@@ -216,14 +216,14 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 <div>
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="font-space font-bold text-xs text-white">
-                      Download 100% Seguro & Verificado (Arquivo APK)
+                      Download Seguro & Direto (Arquivo APK)
                     </span>
                     <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30">
-                      LIVRE DE VÍRUS
+                      PRIVACIDADE TOTAL
                     </span>
                   </div>
                   <p className="font-dm text-[11.5px] text-[#b8ccc3] leading-relaxed m-0">
-                    O Android exibe um aviso padrão (<em>"O arquivo pode ser nocivo"</em>) para <strong>qualquer</strong> aplicativo baixado direto da internet fora da Play Store. <strong>Pode baixar com total tranquilidade:</strong> o APK do GoOrNo é assinado digitalmente, 100% seguro e não coloca seu aparelho em risco. Basta tocar em <strong>"Fazer o download mesmo assim"</strong>.
+                    O Android exibe um aviso padrão (<em>"O arquivo pode ser nocivo"</em>) para qualquer aplicativo baixado fora da Play Store. <strong>Pode baixar com total tranquilidade:</strong> o GoOrNo não pede senhas, não acessa contas bancárias e não coloca seu aparelho em risco. Basta tocar em <strong>"Fazer o download mesmo assim"</strong>.
                   </p>
                 </div>
               </div>
@@ -679,10 +679,10 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </div>
                 <div>
                   <h4 className="font-space font-bold text-sm text-white mb-1">
-                    100% Seguro, Assinado & Antiban
+                    Privacidade & Foco na Corrida
                   </h4>
                   <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed m-0">
-                    O GoOrNo é assinado digitalmente e verificado contra ameaças. Ele <strong>não acessa contas bancárias</strong> nem dados confidenciais, e <strong>não altera o código dos apps da Uber ou 99</strong>. Sua conta permanece 100% segura.
+                    O GoOrNo funciona lendo os valores da chamada na tela. Não acessa suas contas bancárias, não pede suas senhas e não altera os aplicativos da Uber ou 99.
                   </p>
                 </div>
               </div>
@@ -738,9 +738,9 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 É seguro baixar o arquivo APK? Por que o celular avisa sobre “arquivo nocivo”? <span>{openFaq === 2 ? '−' : '+'}</span>
               </summary>
               <p>
-                <strong>Sim, é 100% seguro!</strong> O aviso “O arquivo pode ser nocivo” é uma mensagem preventiva automática e padrão que o Google Chrome exibe para <em>qualquer</em> aplicativo baixado no formato APK fora da Play Store.
+                O aviso "O arquivo pode ser nocivo" é uma mensagem padrão e automática que o Google Chrome exibe para qualquer aplicativo baixado no formato APK fora da Play Store.
                 <br /><br />
-                Isso não significa vírus: nosso arquivo é verificado por antivírus, assinado com certificado digital de segurança e desenvolvido especificamente para motoristas. Basta tocar em <strong>"Fazer o download mesmo assim"</strong> e, ao instalar, ativar <strong>"Permitir desta fonte"</strong> nas configurações do Chrome.
+                Isso não significa vírus: o GoOrNo foi feito exclusivamente para calcular corridas. Ele não pede senhas, não acessa contas bancárias nem contatos pessoais — apenas lê os dados da corrida na tela para projetar seu ganho em tempo real. Basta tocar em <strong>"Fazer o download mesmo assim"</strong> e, ao instalar, ativar <strong>"Permitir desta fonte"</strong> nas configurações do Chrome.
               </p>
             </details>
 
@@ -755,7 +755,22 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 Por que o GoOrNo é distribuído em APK e não somente pela Play Store? <span>{openFaq === 6 ? '−' : '+'}</span>
               </summary>
               <p>
-                O GoOrNo é um copiloto em tempo real que lê chamadas instantâneas e calcula lucros. Distribuir o APK oficial direto pelo site nos permite lançar atualizações imediatas no mesmo dia em que a Uber ou a 99 alteram suas telas ou regras, sem que você fique dias esperando aprovação de lojas de apps. Além disso, você tem suporte direto e garantia de versão limpa, sem anúncios intrusivos.
+                Distribuir o APK oficial direto pelo site permite aplicar melhorias e ajustes rápidos sempre que a Uber ou a 99 alteram suas telas ou regras, sem a demora da aprovação de lojas de apps. Além disso, você tem uma versão limpa, sem anúncios chatos e sem travas.
+              </p>
+            </details>
+
+            <details
+              open={openFaq === 7}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleFaq(7);
+              }}
+            >
+              <summary>
+                Como funciona o suporte se eu tiver alguma dúvida? <span>{openFaq === 7 ? '−' : '+'}</span>
+              </summary>
+              <p>
+                O GoOrNo conta com um canal de <strong>Caixa Postal</strong> direto (pelo botão "Fale Conosco" no rodapé do site e dentro do aplicativo). Todas as mensagens, dúvidas e sugestões são enviadas diretamente para o desenvolvedor do app e respondidas assim que possível pelo seu canal de preferência (WhatsApp ou e-mail).
               </p>
             </details>
 
@@ -825,7 +840,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             </button>
             <div className="flex items-center gap-2 text-xs text-[#b8ccc3]">
               <ShieldCheck className="w-4 h-4 text-[#d9ff4f]" />
-              <span>APK Oficial Verificado • 100% Seguro • Sem Cartão</span>
+              <span>APK Oficial • Instalação Rápida • 7 Dias Grátis</span>
             </div>
           </div>
         </section>

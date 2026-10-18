@@ -75,6 +75,8 @@ interface ContactMessage {
   id: string;
   name: string;
   whatsapp: string;
+  email?: string;
+  preferredReply?: 'whatsapp' | 'email';
   category: 'duvida' | 'sugestao' | 'problema' | 'financeiro' | 'outro';
   message: string;
   createdAt: string;
@@ -1259,16 +1261,37 @@ ${window.location.origin}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <span className="font-space font-bold text-sm text-[#071d19]">{msg.name}</span>
-                          <a
-                            href={waLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-mono text-xs text-[#6b8900] bg-[#dff4af]/60 hover:bg-[#dff4af] px-2 py-0.5 rounded-lg flex items-center gap-1 transition font-bold"
-                            title="Conversar no WhatsApp"
+                          {msg.whatsapp && (
+                            <a
+                              href={waLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-mono text-xs text-[#6b8900] bg-[#dff4af]/60 hover:bg-[#dff4af] px-2 py-0.5 rounded-lg flex items-center gap-1 transition font-bold"
+                              title="Conversar no WhatsApp"
+                            >
+                              <span>{msg.whatsapp}</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                          {msg.email && (
+                            <a
+                              href={`mailto:${msg.email}?subject=${encodeURIComponent('GoOrNo: Resposta à sua mensagem')}`}
+                              className="font-mono text-xs text-sky-800 bg-sky-100 hover:bg-sky-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition font-bold"
+                              title="Enviar E-mail"
+                            >
+                              <span>{msg.email}</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                          <span
+                            className={`text-[10px] font-space font-bold px-2 py-0.5 rounded-full border ${
+                              msg.preferredReply === 'email'
+                                ? 'bg-sky-50 text-sky-700 border-sky-300'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            }`}
                           >
-                            <span>{msg.whatsapp}</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
+                            {msg.preferredReply === 'email' ? '✉️ Prefere E-mail' : '💬 Prefere WhatsApp'}
+                          </span>
                           <span
                             className={`text-[10px] font-space font-bold px-2 py-0.5 rounded-full border ${catInfo.color}`}
                           >
@@ -1304,21 +1327,38 @@ ${window.location.origin}
 
                       {/* BARRA DE AÇÕES */}
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[rgba(7,29,25,0.06)]">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={waLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={() => {
-                              if (msg.status === 'unread') {
-                                handleUpdateMessageStatus(msg.id, 'replied');
-                              }
-                            }}
-                            className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-space font-bold px-3 py-1.5 rounded-xl transition shadow-2xs"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            <span>Responder no WhatsApp</span>
-                          </a>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {msg.whatsapp && (
+                            <a
+                              href={waLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={() => {
+                                if (msg.status === 'unread') {
+                                  handleUpdateMessageStatus(msg.id, 'replied');
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-space font-bold px-3 py-1.5 rounded-xl transition shadow-2xs"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>Responder no WhatsApp</span>
+                            </a>
+                          )}
+
+                          {msg.email && (
+                            <a
+                              href={`mailto:${msg.email}?subject=${encodeURIComponent('GoOrNo: Resposta à sua mensagem')}`}
+                              onClick={() => {
+                                if (msg.status === 'unread') {
+                                  handleUpdateMessageStatus(msg.id, 'replied');
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 bg-[#071d19] hover:bg-[#0d302a] text-[#d9ff4f] text-xs font-space font-bold px-3 py-1.5 rounded-xl transition shadow-2xs"
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                              <span>Responder por E-mail</span>
+                            </a>
+                          )}
 
                           {msg.status !== 'read' && (
                             <button
