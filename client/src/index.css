@@ -57,3 +57,16 @@ body {
 .pulse-lime {
   animation: pulseGlow 2s infinite;
 }
+
+/* Utilitário universal para ocultar barras de rolagem em cards e modais mantendo a rolagem fluida */
+.no-scrollbar,
+.no-scrollbar * {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.no-scrollbar::-webkit-scrollbar,
+.no-scrollbar *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}

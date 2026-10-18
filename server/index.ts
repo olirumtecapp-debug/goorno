@@ -961,19 +961,19 @@ app.post("/api/redeem-voucher", async (req, res) => {
 // 12. Public Route: App Version & Changelog (used for in-app update checks & web badges)
 app.get("/api/app-version", (_req, res) => {
   res.json({
-    versionName: "3.3.18",
-    versionCode: 39,
+    versionName: "3.3.19",
+    versionCode: 40,
     releaseDate: "2026-10-18",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.18.apk",
-    directDownload: "/GoOrNo-v3.3.18.apk",
-    fileSizeBytes: 55238020,
-    fileSizeFormatted: "52.6 MB",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.19.apk",
+    directDownload: "/GoOrNo-v3.3.19.apk",
+    fileSizeBytes: 55258504,
+    fileSizeFormatted: "52.7 MB",
     changelog: [
-      "Card Flutuante Dark Moderno: Linha superior unificada sem corte, 3 pilares luminosos e veredito flutuante limpo.",
-      "Novo Modo Card Clássico Escuro (Dark): Alta legibilidade com fundo escuro (#111F1A) e controle total de transparência.",
-      "Teste de Visualização nas Configurações: Agora reflete fielmente o estilo selecionado (Moderno, Clássico Dark ou Ultra Discreto).",
-      "Filtro de Bairros Favoritos (⭐ +Fav) e Áreas de Risco (🚨 +Risco) integrados ao card e landing page.",
-      "Notificação automática de novas versões aprimorada."
+      "Os 4 Formatos de Janela Disponíveis: Janela Moderna 3 Pilares, Card Clássico Claro, Card Clássico Dark e Bolinha Ultra Discreta.",
+      "Card Clássico Claro Tradicional Mantido: Fundo suave e alto contraste com todas as métricas.",
+      "Novo Card Clássico Escuro (Dark): Fundo escuro com pílulas luminosas e transparência configurável.",
+      "Landing Page Otimizada: Zero barras de rolagem nos cards e alinhamento impecável dos passos e segurança.",
+      "Teste de Visualização Completo: Prévia em tempo real para todos os 4 estilos de tela."
     ],
     mandatory: false,
   });
@@ -1075,11 +1075,14 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.18.apk", "/GoOrNo-v3.3.17.apk", "/GoOrNo-v3.3.16.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.19.apk", "/GoOrNo-v3.3.18.apk", "/GoOrNo-v3.3.17.apk", "/GoOrNo-v3.3.16.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.19.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.19.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.19.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.18.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.18.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.18.apk"),
@@ -1095,7 +1098,7 @@ app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.18.apk", "/GoOrNo-v3.3.17.apk", "/GoOrNo-v
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.18.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.19.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");

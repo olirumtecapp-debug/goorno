@@ -673,44 +673,46 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
 
         {/* SEÇÃO DE INSTALAÇÃO & APK */}
         <section className="install-section section-shell" id="instalacao">
-          <div className="install-copy">
-            <div className="eyebrow">Comece em menos de 1 minuto</div>
-            <h2>
-              Baixe. Ative.
-              <br />
-              <em>Rode tranquilo.</em>
-            </h2>
-            <p>
-              O GoOrNo é distribuído por APK oficial direto porque precisa abrir sobre a Uber e a 99 com máxima velocidade e atualização em tempo real. Sem anúncios irritantes e sem mensalidade para testar.
-            </p>
-            <button
-              onClick={handleDownloadApk}
-              className="button button-primary cursor-pointer border-0"
-              style={{ background: '#d9ff4f', color: '#071d19' }}
-            >
-              Baixar APK grátis <span>↓</span>
-            </button>
-          </div>
-          <div className="steps">
-            <article>
-              <span>01</span>
-              <h3>Baixe o APK</h3>
-              <p>Toque no botão e confirme o download direto pelo navegador Chrome.</p>
-            </article>
-            <article>
-              <span>02</span>
-              <h3>Permita a instalação</h3>
-              <p>Ative “Permitir desta fonte” quando o Android solicitar a permissão.</p>
-            </article>
-            <article>
-              <span>03</span>
-              <h3>Ative seus 7 dias</h3>
-              <p>Informe seu WhatsApp e conceda as duas permissões do copiloto.</p>
-            </article>
+          <div className="install-main">
+            <div className="install-copy">
+              <div className="eyebrow">Comece em menos de 1 minuto</div>
+              <h2>
+                Baixe. Ative.
+                <br />
+                <em>Rode tranquilo.</em>
+              </h2>
+              <p>
+                O GoOrNo é distribuído por APK oficial direto porque precisa abrir sobre a Uber e a 99 com máxima velocidade e atualização em tempo real. Sem anúncios irritantes e sem mensalidade para testar.
+              </p>
+              <button
+                onClick={handleDownloadApk}
+                className="button button-primary cursor-pointer border-0"
+                style={{ background: '#d9ff4f', color: '#071d19' }}
+              >
+                Baixar APK grátis <span>↓</span>
+              </button>
+            </div>
+            <div className="steps">
+              <article>
+                <span>01</span>
+                <h3>Baixe o APK</h3>
+                <p>Toque no botão e confirme o download direto pelo navegador Chrome.</p>
+              </article>
+              <article>
+                <span>02</span>
+                <h3>Permita a instalação</h3>
+                <p>Ative “Permitir desta fonte” quando o Android solicitar a permissão.</p>
+              </article>
+              <article>
+                <span>03</span>
+                <h3>Ative seus 7 dias</h3>
+                <p>Informe seu WhatsApp e conceda as duas permissões do copiloto.</p>
+              </article>
+            </div>
           </div>
 
-          {/* GUIA DE TRANSPARÊNCIA E SEGURANÇA DO APK */}
-          <div className="mt-10 pt-8 border-t border-[rgba(255,255,255,0.12)]">
+          {/* GUIA DE TRANSPARÊNCIA E SEGURANÇA DO APK (LARGURA TOTAL, SEM CORTE DE TEXTO E SEM BARRAS) */}
+          <div className="install-security">
             <div className="text-center max-w-2xl mx-auto mb-8">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-space font-bold text-xs uppercase tracking-wider mb-2">
                 <ShieldCheck className="w-3.5 h-3.5" /> Segurança & Transparência
@@ -723,58 +725,58 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-[#092b24] border border-[#175244] flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-[#d9ff4f]/15 border border-[#d9ff4f]/30 flex items-center justify-center shrink-0 text-[#d9ff4f] mt-0.5">
+            <div className="install-security-grid">
+              <div className="install-security-card">
+                <div className="install-security-icon bg-[#d9ff4f]/15 border border-[#d9ff4f]/30 text-[#d9ff4f]">
                   <HelpCircle className="w-5 h-5" />
                 </div>
-                <div>
-                  <h4 className="font-space font-bold text-sm text-white mb-1">
+                <div className="install-security-content">
+                  <h4>
                     O que é um arquivo APK?
                   </h4>
-                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed m-0">
+                  <p>
                     APK (Android Package Kit) é o formato oficial e original de instalação de aplicativos para celulares Android (assim como o instalador .exe no Windows). É o arquivo legítimo do GoOrNo que instala direto no seu smartphone.
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#092b24] border border-[#175244] flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400 mt-0.5">
+              <div className="install-security-card">
+                <div className="install-security-icon bg-amber-500/15 border border-amber-500/30 text-amber-400">
                   <AlertTriangle className="w-5 h-5" />
                 </div>
-                <div>
-                  <h4 className="font-space font-bold text-sm text-white mb-1">
+                <div className="install-security-content">
+                  <h4>
                     Aviso: "O arquivo pode ser nocivo"?
                   </h4>
-                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed m-0">
-                    Esse é um aviso preventivo <strong>padrão e genérico</strong> do Google Chrome para qualquer arquivo baixado fora da Play Store. Não é vírus! Basta tocar em <strong>"Fazer o download mesmo assim"</strong> para continuar normalmente.
+                  <p>
+                    Esse é um aviso preventivo <strong>padrão e genérico</strong> do Google Chrome para qualquer arquivo baixado fora da Play Store. Não é vírus: o GoOrNo foi feito exclusivamente para calcular corridas. Ele não pede senhas, não acessa contas bancárias nem contatos pessoais — apenas lê os dados da corrida na tela para projetar seu ganho em tempo real.
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#092b24] border border-[#175244] flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-300 mt-0.5">
+              <div className="install-security-card">
+                <div className="install-security-icon bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">
                   <Smartphone className="w-5 h-5" />
                 </div>
-                <div>
-                  <h4 className="font-space font-bold text-sm text-white mb-1">
+                <div className="install-security-content">
+                  <h4>
                     Aviso: "Permitir desta fonte"?
                   </h4>
-                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed m-0">
+                  <p>
                     O Android protege você exigindo autorização para o navegador Chrome abrir instaladores. Quando o alerta surgir, basta tocar em <strong>"Configurações"</strong> e ativar a chavinha <strong>"Permitir desta fonte"</strong>. Leva 3 segundos.
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#092b24] border border-[#175244] flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400 mt-0.5">
+              <div className="install-security-card">
+                <div className="install-security-icon bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
-                <div>
-                  <h4 className="font-space font-bold text-sm text-white mb-1">
+                <div className="install-security-content">
+                  <h4>
                     Privacidade & Foco na Corrida
                   </h4>
-                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed m-0">
+                  <p>
                     O GoOrNo funciona lendo os valores da chamada na tela. Não acessa suas contas bancárias, não pede suas senhas e não altera os aplicativos da Uber ou 99.
                   </p>
                 </div>
@@ -1013,7 +1015,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
           onClick={() => setSelectedScreenshot(null)}
         >
           <div
-            className="bg-[#071d19] text-white border border-white/15 rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col md:flex-row shadow-2xl relative overflow-y-auto md:overflow-hidden"
+            className="bg-[#071d19] text-white border border-white/15 rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col md:flex-row shadow-2xl relative overflow-hidden no-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
             {/* BOTÃO FECHAR FIXO */}
@@ -1027,11 +1029,11 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             </button>
 
             {/* ÁREA DA IMAGEM COM PROPORÇÃO CONTROLADA */}
-            <div className="w-full md:w-1/2 bg-black/50 flex items-center justify-center p-3 sm:p-5 relative shrink-0 min-h-[250px] sm:min-h-[300px] md:min-h-[500px] max-h-[44vh] md:max-h-[85vh]">
+            <div className="w-full md:w-1/2 bg-black/50 flex items-center justify-center p-3 sm:p-4 md:p-5 relative shrink-0 min-h-[220px] sm:min-h-[280px] md:min-h-[460px] max-h-[40vh] md:max-h-[80vh]">
               <img
                 src={`/telas/${selectedScreenshot.filename}`}
                 alt={selectedScreenshot.title}
-                className="max-h-[38vh] sm:max-h-[40vh] md:max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+                className="max-h-[34vh] sm:max-h-[36vh] md:max-h-[68vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
               />
               <button
                 onClick={handlePrevScreenshot}
@@ -1051,9 +1053,9 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               </button>
             </div>
 
-            {/* DETALHES DA TELA COM ROLAGEM PERFEITA */}
-            <div className="w-full md:w-1/2 p-4 sm:p-6 md:p-8 flex flex-col justify-between md:overflow-y-auto">
-              <div className="space-y-3 sm:space-y-4">
+            {/* DETALHES DA TELA SEM BARRA DE ROLAGEM */}
+            <div className="w-full md:w-1/2 p-4 sm:p-5 md:p-6 flex flex-col justify-between overflow-y-auto no-scrollbar">
+              <div className="space-y-2.5 sm:space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] sm:text-xs font-bold text-[#c2d0ca] uppercase tracking-wider font-dm">
                     {selectedScreenshot.categoryLabel}
@@ -1077,31 +1079,31 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                   )}
                 </div>
 
-                <h2 className="font-space text-lg sm:text-2xl font-bold text-white leading-snug">
+                <h2 className="font-space text-lg sm:text-xl md:text-2xl font-bold text-white leading-tight">
                   {selectedScreenshot.title}
                 </h2>
 
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 sm:p-4">
-                  <h4 className="text-[11px] sm:text-xs font-bold text-[#d9ff4f] uppercase mb-1 font-space">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-3.5">
+                  <h4 className="text-[10px] sm:text-[11px] font-bold text-[#d9ff4f] uppercase mb-1 font-space">
                     O que esta tela mostra:
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#c2d0ca] leading-relaxed font-dm m-0">
+                  <p className="text-xs sm:text-[13px] text-[#c2d0ca] leading-relaxed font-dm m-0">
                     {selectedScreenshot.summary}
                   </p>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 sm:p-4">
-                  <h4 className="text-[11px] sm:text-xs font-bold text-white uppercase mb-1 flex items-center gap-1.5 font-space">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-3.5">
+                  <h4 className="text-[10px] sm:text-[11px] font-bold text-white uppercase mb-1 flex items-center gap-1.5 font-space">
                     <Sparkles className="w-3.5 h-3.5 text-[#d9ff4f]" />
                     Como isso protege o seu bolso:
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#c2d0ca] leading-relaxed font-dm m-0">
+                  <p className="text-xs sm:text-[13px] text-[#c2d0ca] leading-relaxed font-dm m-0">
                     {selectedScreenshot.highlightText}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-white/10 flex items-center justify-between gap-3">
+              <div className="pt-3 sm:pt-4 mt-3 sm:mt-4 border-t border-white/10 flex items-center justify-between gap-3">
                 <span className="text-[11px] sm:text-xs text-[#7a8982] truncate">
                   {selectedScreenshot.filename}
                 </span>

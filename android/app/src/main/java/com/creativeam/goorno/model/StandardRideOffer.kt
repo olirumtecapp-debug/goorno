@@ -128,8 +128,12 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
         title = "Janela Moderna 3 Pilares + Veredito (Recomendado)",
         subtitle = "Card escuro moderno com barras luminosas nos 3 pilares e pílula de veredito flutuante"
     ),
+    CLASSIC_LIGHT(
+        title = "Card Clássico Fundo Claro (Tradicional)",
+        subtitle = "Formato clássico com fundo claro suave, valor grande em destaque e métricas completas"
+    ),
     CLASSIC_DARK(
-        title = "Card Clássico Fundo Escuro",
+        title = "Card Clássico Fundo Escuro (Novo)",
         subtitle = "Formato tradicional com valor grande, métricas bem espaçadas e fundo escuro translúcido"
     ),
     MINI_BALL(
@@ -140,7 +144,8 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
     companion object {
         fun fromName(name: String?): OverlayDisplayStyle {
             return when (name?.uppercase()) {
-                "CLASSIC_DARK", "CLASSIC_V334", "CLASSIC" -> CLASSIC_DARK
+                "CLASSIC_LIGHT", "CLASSIC_V334", "CLASSIC" -> CLASSIC_LIGHT
+                "CLASSIC_DARK" -> CLASSIC_DARK
                 "MINI_BALL", "SEMAFORO_COMPACT", "COMPACT" -> MINI_BALL
                 "FULL_CARD", "MODERN" -> FULL_CARD
                 else -> entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: FULL_CARD

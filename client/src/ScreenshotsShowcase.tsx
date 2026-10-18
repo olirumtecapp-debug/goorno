@@ -535,7 +535,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
           onClick={closeLightbox}
         >
           <div
-            className="bg-[#071d19] text-white border border-white/15 rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col md:flex-row shadow-2xl relative overflow-y-auto md:overflow-hidden"
+            className="bg-[#071d19] text-white border border-white/15 rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col md:flex-row shadow-2xl relative overflow-hidden no-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
             {/* BOTÃO FECHAR */}
@@ -549,11 +549,11 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             </button>
 
             {/* ÁREA DA IMAGEM */}
-            <div className="w-full md:w-1/2 bg-black/50 flex items-center justify-center p-3 sm:p-5 relative shrink-0 min-h-[250px] sm:min-h-[300px] md:min-h-[500px] max-h-[44vh] md:max-h-[85vh]">
+            <div className="w-full md:w-1/2 bg-black/50 flex items-center justify-center p-3 sm:p-4 md:p-5 relative shrink-0 min-h-[220px] sm:min-h-[280px] md:min-h-[460px] max-h-[40vh] md:max-h-[80vh]">
               <img
                 src={`/telas/${selectedImage.filename}`}
                 alt={selectedImage.title}
-                className="max-h-[38vh] sm:max-h-[40vh] md:max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+                className="max-h-[34vh] sm:max-h-[36vh] md:max-h-[68vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
               />
 
               {/* NAVEGAÇÃO ANTERIOR / PRÓXIMO */}
@@ -576,8 +576,8 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             </div>
 
             {/* DETALHES DA TELA */}
-            <div className="w-full md:w-1/2 p-4 sm:p-6 md:p-8 flex flex-col justify-between md:overflow-y-auto">
-              <div className="space-y-3 sm:space-y-4">
+            <div className="w-full md:w-1/2 p-4 sm:p-5 md:p-6 flex flex-col justify-between overflow-y-auto no-scrollbar">
+              <div className="space-y-2.5 sm:space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] sm:text-xs font-bold text-[#c2d0ca] uppercase tracking-wider font-dm">
                     {selectedImage.categoryLabel}
@@ -601,31 +601,31 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   )}
                 </div>
 
-                <h2 className="font-space text-lg sm:text-2xl font-bold text-white leading-snug">
+                <h2 className="font-space text-lg sm:text-xl md:text-2xl font-bold text-white leading-tight">
                   {selectedImage.title}
                 </h2>
 
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 sm:p-4">
-                  <h4 className="text-[11px] sm:text-xs font-bold text-[#d9ff4f] uppercase mb-1 font-space">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-3.5">
+                  <h4 className="text-[10px] sm:text-[11px] font-bold text-[#d9ff4f] uppercase mb-1 font-space">
                     O que esta tela mostra:
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#c2d0ca] leading-relaxed font-dm m-0">
+                  <p className="text-xs sm:text-[13px] text-[#c2d0ca] leading-relaxed font-dm m-0">
                     {selectedImage.summary}
                   </p>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 sm:p-4">
-                  <h4 className="text-[11px] sm:text-xs font-bold text-white uppercase mb-1 flex items-center gap-1.5 font-space">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-3.5">
+                  <h4 className="text-[10px] sm:text-[11px] font-bold text-white uppercase mb-1 flex items-center gap-1.5 font-space">
                     <Sparkles className="w-3.5 h-3.5 text-[#d9ff4f]" />
                     Como isso protege o seu bolso:
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#c2d0ca] leading-relaxed font-dm m-0">
+                  <p className="text-xs sm:text-[13px] text-[#c2d0ca] leading-relaxed font-dm m-0">
                     {selectedImage.highlightText}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-white/10 flex items-center justify-between gap-3">
+              <div className="pt-3 sm:pt-4 mt-3 sm:mt-4 border-t border-white/10 flex items-center justify-between gap-3">
                 <span className="text-[11px] sm:text-xs text-[#7a8982] truncate">
                   {selectedImage.filename}
                 </span>
