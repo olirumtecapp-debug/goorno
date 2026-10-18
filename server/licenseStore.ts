@@ -261,33 +261,6 @@ export async function listAllLicenses(): Promise<LicenseRecord[]> {
             const parsed: LicenseRecord = JSON.parse(raw);
             mapById.set(parsed.id, parsed);
           } catch {}
-        } else if (d.name.includes("/slot_day_")) {
-          try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed.users)) {
-              for (const u of parsed.users) {
-                const phoneClean = cleanPhone(u.phone || u.id);
-                if (phoneClean && !mapById.has(phoneClean)) {
-                  mapById.set(phoneClean, {
-                    id: phoneClean,
-                    whatsapp: formatPhoneBr(u.phone || phoneClean),
-                    deviceId: u.id || "device_app",
-                    deviceModel: u.name || "Motorista GoOrNo",
-                    status: (u.status === "active" ? "active" : "trial") as any,
-                    plano: (u.plan === "vip" || u.plan === "vitalicio" ? "vitalicio" : "trial") as any,
-                    trialEndsAt: u.trialEndsAt || new Date(Date.now() + 7 * 86400000).toISOString(),
-                    validoAte: u.trialEndsAt || new Date(Date.now() + 30 * 86400000).toISOString(),
-                    createdAt: u.createdAt || new Date().toISOString(),
-                    lastSeenAt: u.lastActiveAt || u.createdAt || new Date().toISOString(),
-                    deviceTransfersCount: 0,
-                    transfers: [],
-                    fraudSuspicion: false,
-                    notes: u.name ? `Motorista: ${u.name}` : undefined,
-                  });
-                }
-              }
-            }
-          } catch {}
         }
       }
     }
