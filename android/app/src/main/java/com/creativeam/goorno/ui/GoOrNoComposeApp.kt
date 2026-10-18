@@ -84,17 +84,20 @@ data class AppUpdateInfo(
  * Telas Oficiais do GoOrNo v3.1.0 — Interface Clean, Clara e Moderna.
  */
 enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: String) {
-    HOME(1, "Painel Principal — Copiloto", "Início"),
-    DRIVER_SETUP(2, "Formato da Janela & Motorista", "Janela"),
-    VEHICLE_COSTS(3, "Custos do Carro & O que é Lucro", "Custos"),
-    FINANCIAL_TARGETS(4, "Metas Financeiras e Semáforo", "Metas"),
-    SERVICES_ACTIVATION(5, "Permissões e Serviços de Leitura", "Serviços"),
-    CONNECTION_STATUS(6, "Conexão com Uber e 99", "Uber / 99"),
-    HISTORY(7, "Histórico, Endereços e Street View 360°", "Histórico"),
-    SECURITY(8, "Segurança e Áreas de Risco", "Segurança"),
-    DIAGNOSTICS_TESTS(9, "Diagnóstico, OCR e Simulador", "Testes"),
-    PRIVACY_BACKUP(10, "Privacidade e Troca de Aparelho", "Backup"),
-    SUBSCRIPTION(11, "Assinatura Pro, PIX e Licença", "Plano Pro")
+    HOME(1, "Copiloto & Status", "Início"),
+    FINANCIAL_TARGETS(2, "Metas & Semáforo", "Ganhos"),
+    DRIVER_SETUP(3, "Formato da Janela & Visual", "Janela"),
+    HISTORY(4, "Histórico de Corridas", "Histórico"),
+    SETTINGS(5, "Ajustes do Aplicativo", "Ajustes"),
+
+    // Subtelas de Ajustes e Custos (mantidas para compatibilidade total):
+    VEHICLE_COSTS(6, "Custos do Carro", "Custos"),
+    SERVICES_ACTIVATION(7, "Permissões e Serviços", "Serviços"),
+    CONNECTION_STATUS(8, "Conexão com Uber e 99", "Uber / 99"),
+    SECURITY(9, "Segurança e Áreas de Risco", "Segurança"),
+    DIAGNOSTICS_TESTS(10, "Diagnóstico e Simulador", "Testes"),
+    PRIVACY_BACKUP(11, "Privacidade e Backup", "Backup"),
+    SUBSCRIPTION(12, "Assinatura Pro e Licença", "Plano Pro")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -251,10 +254,15 @@ fun GoOrNoComposeApp(
         if (!initialRequestedScreen.isNullOrBlank()) {
             when (initialRequestedScreen) {
                 "DRIVER_SETUP", "JANELA", "ESTILO" -> currentScreen = GoOrNoScreen.DRIVER_SETUP
-                "FINANCIAL_TARGETS", "SEMAFORO", "METAS" -> currentScreen = GoOrNoScreen.FINANCIAL_TARGETS
+                "FINANCIAL_TARGETS", "SEMAFORO", "METAS", "GANHOS" -> currentScreen = GoOrNoScreen.FINANCIAL_TARGETS
                 "SECURITY", "SEGURANCA" -> currentScreen = GoOrNoScreen.SECURITY
                 "HISTORY", "HISTORICO" -> currentScreen = GoOrNoScreen.HISTORY
                 "VEHICLE_COSTS", "CUSTOS" -> currentScreen = GoOrNoScreen.VEHICLE_COSTS
+                "SETTINGS", "AJUSTES", "CONFIG" -> currentScreen = GoOrNoScreen.SETTINGS
+                "SERVICES_ACTIVATION", "SERVICOS", "PERMISSOES" -> currentScreen = GoOrNoScreen.SERVICES_ACTIVATION
+                "SUBSCRIPTION", "PRO", "PLANO" -> currentScreen = GoOrNoScreen.SUBSCRIPTION
+                "DIAGNOSTICS_TESTS", "TESTES", "SIMULADOR" -> currentScreen = GoOrNoScreen.DIAGNOSTICS_TESTS
+                "PRIVACY_BACKUP", "BACKUP" -> currentScreen = GoOrNoScreen.PRIVACY_BACKUP
                 "HOME", "INICIO" -> currentScreen = GoOrNoScreen.HOME
                 else -> {}
             }
@@ -396,50 +404,61 @@ fun GoOrNoComposeApp(
                         }
                     }
 
-                    // Seletor Clean Horizontal das 10 Telas (Pílulas Modernas em Fundo Claro)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(PureWhiteSurface)
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        GoOrNoScreen.entries.forEach { screen ->
-                            val selected = currentScreen == screen
+                    val isSubScreenOfSettings = currentScreen in listOf(
+                        GoOrNoScreen.SECURITY,
+                        GoOrNoScreen.SERVICES_ACTIVATION,
+                        GoOrNoScreen.CONNECTION_STATUS,
+                        GoOrNoScreen.DIAGNOSTICS_TESTS,
+                        GoOrNoScreen.PRIVACY_BACKUP,
+                        GoOrNoScreen.SUBSCRIPTION
+                    )
+
+                    // Barra Superior Contextual: Se estiver em uma subtela de Ajustes, mostra atalho limpo de retorno
+                    if (isSubScreenOfSettings) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(PureWhiteSurface)
+                                .clickable { currentScreen = GoOrNoScreen.SETTINGS }
+                                .padding(horizontal = 14.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Surface(
-                                color = if (selected) PetrolHeader else PureWhiteSurface,
-                                shape = RoundedCornerShape(14.dp),
-                                border = BorderStroke(1.dp, if (selected) PetrolHeader else CleanCardBorder),
-                                shadowElevation = if (selected) 2.dp else 1.dp,
-                                modifier = Modifier.clickable { currentScreen = screen }
+                                color = SoftSurfaceVariant,
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.size(28.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
-                                ) {
-                                    Surface(
-                                        color = if (selected) Color.White.copy(alpha = 0.2f) else SoftSurfaceVariant,
-                                        shape = RoundedCornerShape(6.dp),
-                                        modifier = Modifier.padding(end = 6.dp)
-                                    ) {
-                                        Text(
-                                            text = "${screen.stepNumber}",
-                                            color = if (selected) Color.White else PetrolHeader,
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 11.sp,
-                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = screen.shortTab,
-                                        color = if (selected) Color.White else PetrolDarkText,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                        fontSize = 12.sp
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowBack,
+                                        contentDescription = "Voltar",
+                                        tint = PetrolHeader,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Voltar para Ajustes",
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PetrolHeader
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Surface(
+                                color = PetrolHeader.copy(alpha = 0.08f),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = currentScreen.shortTab,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = PetrolHeader,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                )
+                            }
                         }
+                        HorizontalDivider(color = CleanCardBorder)
                     }
                 }
             }
@@ -498,30 +517,51 @@ fun GoOrNoComposeApp(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 6.dp, vertical = 6.dp),
+                            .padding(horizontal = 4.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val isSubScreenOfSettings = currentScreen in listOf(
+                            GoOrNoScreen.SECURITY,
+                            GoOrNoScreen.SERVICES_ACTIVATION,
+                            GoOrNoScreen.CONNECTION_STATUS,
+                            GoOrNoScreen.DIAGNOSTICS_TESTS,
+                            GoOrNoScreen.PRIVACY_BACKUP,
+                            GoOrNoScreen.SUBSCRIPTION
+                        )
                         val quickTabs = listOf(
                             Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
+                            Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Ganhos"),
                             Triple(GoOrNoScreen.DRIVER_SETUP, Icons.Default.Layers, "Janela"),
-                            Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
-                            Triple(GoOrNoScreen.SECURITY, Icons.Default.Security, "Segurança"),
-                            Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico")
+                            Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico"),
+                            Triple(GoOrNoScreen.SETTINGS, Icons.Default.Settings, "Ajustes")
                         )
                         quickTabs.forEach { (screen, icon, label) ->
-                            val selected = currentScreen == screen
+                            val selected = when (screen) {
+                                GoOrNoScreen.HOME -> currentScreen == GoOrNoScreen.HOME
+                                GoOrNoScreen.FINANCIAL_TARGETS -> currentScreen == GoOrNoScreen.FINANCIAL_TARGETS || currentScreen == GoOrNoScreen.VEHICLE_COSTS
+                                GoOrNoScreen.DRIVER_SETUP -> currentScreen == GoOrNoScreen.DRIVER_SETUP
+                                GoOrNoScreen.HISTORY -> currentScreen == GoOrNoScreen.HISTORY
+                                GoOrNoScreen.SETTINGS -> currentScreen == GoOrNoScreen.SETTINGS || isSubScreenOfSettings
+                                else -> false
+                            }
                             Surface(
                                 color = if (selected) PetrolHeader.copy(alpha = 0.10f) else Color.Transparent,
                                 shape = RoundedCornerShape(12.dp),
                                 border = if (selected) BorderStroke(1.dp, PetrolHeader.copy(alpha = 0.25f)) else null,
                                 modifier = Modifier
-                                    .clickable { currentScreen = screen }
-                                    .padding(vertical = 2.dp, horizontal = 4.dp)
+                                    .clickable {
+                                        currentScreen = when (screen) {
+                                            GoOrNoScreen.SETTINGS -> GoOrNoScreen.SETTINGS
+                                            GoOrNoScreen.FINANCIAL_TARGETS -> GoOrNoScreen.FINANCIAL_TARGETS
+                                            else -> screen
+                                        }
+                                    }
+                                    .padding(vertical = 2.dp, horizontal = 2.dp)
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
                                 ) {
                                     Icon(
                                         imageVector = icon,
@@ -556,12 +596,37 @@ fun GoOrNoComposeApp(
             contentPadding = PaddingValues(vertical = 14.dp)
         ) {
             item {
-                Text(
-                    text = "${currentScreen.stepNumber}. ${currentScreen.title}",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 17.sp,
-                    color = PetrolHeader
-                )
+                if (currentScreen != GoOrNoScreen.HOME) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) {
+                        Text(
+                            text = currentScreen.title,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 17.sp,
+                            color = PetrolHeader
+                        )
+                        val screenSubtitle = when (currentScreen) {
+                            GoOrNoScreen.FINANCIAL_TARGETS, GoOrNoScreen.VEHICLE_COSTS -> "Metas de lucro e custos operacionais do seu veículo"
+                            GoOrNoScreen.DRIVER_SETUP -> "Escolha o formato e a transparência do aviso flutuante"
+                            GoOrNoScreen.HISTORY -> "Auditoria de chamadas lidas e conferência de ganhos"
+                            GoOrNoScreen.SETTINGS -> "Segurança, permissões e conexões com os aplicativos"
+                            GoOrNoScreen.SECURITY -> "Cadastre ruas e bairros perigosos para alerta sonoro"
+                            GoOrNoScreen.SERVICES_ACTIVATION -> "Permissões de acessibilidade, sobreposição e bateria"
+                            GoOrNoScreen.CONNECTION_STATUS -> "Status de comunicação com os apps da Uber e 99"
+                            GoOrNoScreen.DIAGNOSTICS_TESTS -> "Simulador de chamadas para testar o semáforo na tela"
+                            GoOrNoScreen.PRIVACY_BACKUP -> "Exportar ou restaurar suas configurações salvas"
+                            GoOrNoScreen.SUBSCRIPTION -> "Licença de uso, ativação e plano GoOrNo Pro"
+                            else -> ""
+                        }
+                        if (screenSubtitle.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = screenSubtitle,
+                                fontSize = 11.5.sp,
+                                color = MutedText
+                            )
+                        }
+                    }
+                }
             }
 
             when (currentScreen) {
@@ -795,90 +860,107 @@ fun GoOrNoComposeApp(
                         )
                     }
 
-                    // FERRAMENTAS — Grade Moderna de Acesso Rápido às Configurações
+                    // ATALHOS RÁPIDOS & FERRAMENTAS (Design Limpo e Otimizado)
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(
-                                text = "FERRAMENTAS",
-                                fontSize = 13.5.sp,
-                                fontWeight = FontWeight.Black,
-                                color = PetrolHeader
-                            )
-
-                            // Linha 1: Estilo do Cartão + Semáforo de Valores
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                ModernToolCard(
-                                    modifier = Modifier.weight(1f),
-                                    icon = "🎨",
-                                    title = "Estilo do Cartão",
-                                    subtitle = "Balão, pilares e visual",
-                                    badge = if (config.overlayBubblePosition == "BELOW") "Balão Abaixo" else "Balão Acima",
-                                    badgeColor = PetrolHeader,
-                                    onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
+                                Text(
+                                    text = "ATALHOS RÁPIDOS",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = PetrolHeader
                                 )
-                                ModernToolCard(
+                                Surface(
+                                    color = TrafficGreen.copy(alpha = 0.12f),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "• Praticidade no Volante",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TrafficGreen,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            // Linha com 3 Cards Coloridos Centrais (Estilo Oficial dos Atalhos Rápidos)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                QuickHubActionCard(
                                     modifier = Modifier.weight(1f),
                                     icon = "🚦",
                                     title = "Semáforo",
-                                    subtitle = "Ganhos e notas mínimas",
-                                    badge = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f/km", config.targetGrossPerKm),
-                                    badgeColor = TrafficGreen,
+                                    badgeText = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f/km", config.targetGrossPerKm),
+                                    badgeColor = Color(0xFF15803D),
+                                    bgColor = Color(0xFFF0FDF4),
+                                    borderColor = Color(0xFFBBF7D0),
                                     onClick = { currentScreen = GoOrNoScreen.FINANCIAL_TARGETS }
                                 )
-                            }
-
-                            // Linha 2: Custo Operacional + Endereços de Risco
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                ModernToolCard(
+                                QuickHubActionCard(
                                     modifier = Modifier.weight(1f),
                                     icon = "⛽",
-                                    title = "Custo do Carro",
-                                    subtitle = "Consumo e combustível",
-                                    badge = String.format(Locale.forLanguageTag("pt-BR"), "%.1f km/L", config.fuelConsumptionKmPerLiter),
-                                    badgeColor = Color(0xFF0284C7),
+                                    title = "Custo Carro",
+                                    badgeText = String.format(Locale.forLanguageTag("pt-BR"), "%.1f km/L", config.fuelConsumptionKmPerLiter),
+                                    badgeColor = Color(0xFF0369A1),
+                                    bgColor = Color(0xFFF0F9FF),
+                                    borderColor = Color(0xFFBAE6FD),
                                     onClick = { currentScreen = GoOrNoScreen.VEHICLE_COSTS }
                                 )
-                                ModernToolCard(
+                                QuickHubActionCard(
                                     modifier = Modifier.weight(1f),
                                     icon = "🛡️",
-                                    title = "Áreas de Risco",
-                                    subtitle = "Alerta de segurança",
-                                    badge = if (config.riskAlertEnabled) "Ativo" else "Desligado",
-                                    badgeColor = if (config.riskAlertEnabled) TrafficRed else MutedText,
+                                    title = "Segurança",
+                                    badgeText = if (config.riskAlertEnabled) "Ativo" else "Off",
+                                    badgeColor = if (config.riskAlertEnabled) Color(0xFFBE123C) else Color(0xFF64748B),
+                                    bgColor = if (config.riskAlertEnabled) Color(0xFFFFF1F2) else Color(0xFFF8FAFC),
+                                    borderColor = if (config.riskAlertEnabled) Color(0xFFFECDD3) else Color(0xFFE2E8F0),
                                     onClick = { currentScreen = GoOrNoScreen.SECURITY }
                                 )
                             }
 
-                            // Linha 3: Botão Flutuante de Atalho + Histórico
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                ModernToolCard(
-                                    modifier = Modifier.weight(1f),
-                                    icon = "🔘",
-                                    title = "Botão Flutuante",
-                                    subtitle = "Atalhos na borda da tela",
-                                    badge = if (config.showFloatingShortcutBubble) "Visível" else "Ocultado",
-                                    badgeColor = if (config.showFloatingShortcutBubble) TrafficGreen else MutedText,
-                                    onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
-                                )
-                                ModernToolCard(
-                                    modifier = Modifier.weight(1f),
-                                    icon = "📋",
-                                    title = "Histórico",
-                                    subtitle = "Corridas salvas e mapas",
-                                    badge = "${realHistory.size} salvas",
-                                    badgeColor = PetrolHeader,
-                                    onClick = { currentScreen = GoOrNoScreen.HISTORY }
-                                )
-                            }
+                            // Ações Rápidas em Linha Cheia (Zero quebras de linha e textos 100% legíveis)
+                            QuickHubListActionRow(
+                                icon = "🎨",
+                                title = "Estilo do Cartão & Janela",
+                                subtitle = "Balão, 3 Pilares, Clássico ou Bolinha",
+                                badge = if (config.overlayBubblePosition == "BELOW") "Balão Abaixo" else "Balão Acima",
+                                badgeColor = PetrolHeader,
+                                onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
+                            )
+
+                            QuickHubListActionRow(
+                                icon = "📋",
+                                title = "Histórico de Corridas",
+                                subtitle = "Ver chamadas capturadas e Street View 360°",
+                                badge = "${realHistory.size} salvas",
+                                badgeColor = PetrolHeader,
+                                onClick = { currentScreen = GoOrNoScreen.HISTORY }
+                            )
+
+                            QuickHubListActionRow(
+                                icon = "🔘",
+                                title = "Botão Flutuante de Atalho",
+                                subtitle = "Bolinha permanente na borda da tela",
+                                badge = if (config.showFloatingShortcutBubble) "Visível" else "Oculto",
+                                badgeColor = if (config.showFloatingShortcutBubble) TrafficGreen else MutedText,
+                                onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
+                            )
+
+                            QuickHubListActionRow(
+                                icon = "⚙️",
+                                title = "Mais Ajustes & Permissões",
+                                subtitle = "Serviços, Conexão, Simulador, Backup e Pro",
+                                badge = "Abrir",
+                                badgeColor = PetrolHeader,
+                                onClick = { currentScreen = GoOrNoScreen.SETTINGS }
+                            )
                         }
                     }
 
@@ -928,6 +1010,98 @@ fun GoOrNoComposeApp(
                                         color = MutedText
                                     )
                                 }
+                            }
+                        }
+                    }
+                }
+
+                // =====================================================
+                // TELA: AJUSTES DO APLICATIVO (CENTRAL DE CONFIGURAÇÕES)
+                // =====================================================
+                GoOrNoScreen.SETTINGS -> {
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text(
+                                    text = "SEGURANÇA & LEITURA",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = PetrolHeader
+                                )
+
+                                QuickHubListActionRow(
+                                    icon = "🛡️",
+                                    title = "Áreas de Risco & Alerta",
+                                    subtitle = "Bairros e ruas perigosas com aviso sonoro",
+                                    badge = if (config.riskAlertEnabled) "Ativo" else "Off",
+                                    badgeColor = if (config.riskAlertEnabled) TrafficRed else MutedText,
+                                    onClick = { currentScreen = GoOrNoScreen.SECURITY }
+                                )
+
+                                val isPermsReady = hasOverlayPermission && hasAccessibilityPermission
+                                QuickHubListActionRow(
+                                    icon = "⚡",
+                                    title = "Permissões & Serviços",
+                                    subtitle = "Sobreposição, Acessibilidade e Bateria",
+                                    badge = if (isPermsReady) "OK" else "Ativar",
+                                    badgeColor = if (isPermsReady) TrafficGreen else TrafficYellow,
+                                    onClick = { currentScreen = GoOrNoScreen.SERVICES_ACTIVATION }
+                                )
+
+                                QuickHubListActionRow(
+                                    icon = "🚗",
+                                    title = "Conexão Uber & 99",
+                                    subtitle = "Detecção de aplicativos e status de leitura",
+                                    badge = if (accessibilityConnected) "Conectado" else "Aguardando",
+                                    badgeColor = if (accessibilityConnected) TrafficGreen else MutedText,
+                                    onClick = { currentScreen = GoOrNoScreen.CONNECTION_STATUS }
+                                )
+
+                                Spacer(modifier = Modifier.height(4.dp))
+                                HorizontalDivider(color = CleanCardBorder)
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "RECURSOS & CONTA",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = PetrolHeader
+                                )
+
+                                QuickHubListActionRow(
+                                    icon = "⭐",
+                                    title = "Plano Pro & Licença",
+                                    subtitle = "Chave de ativação, renovação e PIX",
+                                    badge = "PRO",
+                                    badgeColor = PetrolHeader,
+                                    onClick = { currentScreen = GoOrNoScreen.SUBSCRIPTION }
+                                )
+
+                                QuickHubListActionRow(
+                                    icon = "🧪",
+                                    title = "Simulador & Testes OCR",
+                                    subtitle = "Simular chamadas na tela para testar o semáforo",
+                                    badge = "Testar",
+                                    badgeColor = Color(0xFF0284C7),
+                                    onClick = { currentScreen = GoOrNoScreen.DIAGNOSTICS_TESTS }
+                                )
+
+                                QuickHubListActionRow(
+                                    icon = "💾",
+                                    title = "Privacidade & Backup",
+                                    subtitle = "Exportar/restaurar dados e configurações",
+                                    badge = "Backup",
+                                    badgeColor = PetrolHeader,
+                                    onClick = { currentScreen = GoOrNoScreen.PRIVACY_BACKUP }
+                                )
                             }
                         }
                     }
@@ -1980,6 +2154,12 @@ fun GoOrNoComposeApp(
                 // =====================================================
                 GoOrNoScreen.VEHICLE_COSTS -> {
                     item {
+                        EarningsPillTabSelector(
+                            currentScreen = currentScreen,
+                            onSelectScreen = { currentScreen = it }
+                        )
+                    }
+                    item {
                         var kmPerLiter by remember(config.fuelConsumptionKmPerLiter) {
                             mutableStateOf(config.fuelConsumptionKmPerLiter.toString())
                         }
@@ -2129,6 +2309,12 @@ fun GoOrNoComposeApp(
                 // TELA 4: CONFIGURAÇÃO DAS METAS FINANCEIRAS E SEMÁFORO
                 // =====================================================
                 GoOrNoScreen.FINANCIAL_TARGETS -> {
+                    item {
+                        EarningsPillTabSelector(
+                            currentScreen = currentScreen,
+                            onSelectScreen = { currentScreen = it }
+                        )
+                    }
                     item {
                         SuasFaixasMatrixCard(
                             config = config,
@@ -5908,19 +6094,19 @@ fun SuasFaixasMatrixCard(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFF64748B),
-                        modifier = Modifier.weight(1.2f)
+                        modifier = Modifier.weight(1.1f)
                     )
-                    Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Row(modifier = Modifier.weight(0.95f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                         Box(modifier = Modifier.size(7.dp).background(TrafficRed, CircleShape))
                         Spacer(modifier = Modifier.width(3.dp))
                         Text("Ruim", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficRed)
                     }
-                    Row(modifier = Modifier.weight(1.1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Row(modifier = Modifier.weight(1.3f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                         Box(modifier = Modifier.size(7.dp).background(TrafficYellow, CircleShape))
                         Spacer(modifier = Modifier.width(3.dp))
                         Text("Atenção", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficYellow)
                     }
-                    Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Row(modifier = Modifier.weight(0.95f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                         Box(modifier = Modifier.size(7.dp).background(TrafficGreen, CircleShape))
                         Spacer(modifier = Modifier.width(3.dp))
                         Text("Aceitar", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficGreen)
@@ -5936,33 +6122,39 @@ fun SuasFaixasMatrixCard(
                         .padding(vertical = 9.dp, horizontal = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1.2f)) {
+                    Column(modifier = Modifier.weight(1.1f)) {
                         Text("R$/km", fontSize = 11.5.sp, fontWeight = FontWeight.Black, color = PetrolDarkText)
-                        Text("por km", fontSize = 9.5.sp, color = MutedText)
+                        Text("por km", fontSize = 9.sp, color = MutedText)
                     }
                     Text(
                         text = "< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinYellow)}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B),
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinGreen)}",
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E293B),
-                        modifier = Modifier.weight(1.1f),
-                        textAlign = TextAlign.Center
+                        modifier = Modifier.weight(0.95f),
+                        textAlign = TextAlign.Center,
+                        softWrap = false,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinGreen)}",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1.3f),
+                        textAlign = TextAlign.Center,
+                        softWrap = false,
+                        maxLines = 1
                     )
                     Text(
                         text = "≥ ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmMinGreen)}",
-                        fontSize = 11.sp,
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = TrafficGreen,
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center
+                        modifier = Modifier.weight(0.95f),
+                        textAlign = TextAlign.Center,
+                        softWrap = false,
+                        maxLines = 1
                     )
                 }
 
@@ -5975,33 +6167,39 @@ fun SuasFaixasMatrixCard(
                         .padding(vertical = 9.dp, horizontal = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1.2f)) {
+                    Column(modifier = Modifier.weight(1.1f)) {
                         Text("R$/hora", fontSize = 11.5.sp, fontWeight = FontWeight.Black, color = PetrolDarkText)
-                        Text("por hora", fontSize = 9.5.sp, color = MutedText)
+                        Text("por hora", fontSize = 9.sp, color = MutedText)
                     }
                     Text(
                         text = "< ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinYellow)}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B),
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinGreen)}",
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E293B),
-                        modifier = Modifier.weight(1.1f),
-                        textAlign = TextAlign.Center
+                        modifier = Modifier.weight(0.95f),
+                        textAlign = TextAlign.Center,
+                        softWrap = false,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinGreen)}",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1.3f),
+                        textAlign = TextAlign.Center,
+                        softWrap = false,
+                        maxLines = 1
                     )
                     Text(
                         text = "≥ ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrMinGreen)}",
-                        fontSize = 11.sp,
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = TrafficGreen,
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center
+                        modifier = Modifier.weight(0.95f),
+                        textAlign = TextAlign.Center,
+                        softWrap = false,
+                        maxLines = 1
                     )
                 }
 
@@ -6014,33 +6212,39 @@ fun SuasFaixasMatrixCard(
                         .padding(vertical = 9.dp, horizontal = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1.2f)) {
+                    Column(modifier = Modifier.weight(1.1f)) {
                         Text("Nota", fontSize = 11.5.sp, fontWeight = FontWeight.Black, color = PetrolDarkText)
-                        Text("passageiro", fontSize = 9.5.sp, color = MutedText)
+                        Text("passageiro", fontSize = 9.sp, color = MutedText)
                     }
                     Text(
                         text = "< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinYellow)}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B),
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinGreen)}",
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E293B),
-                        modifier = Modifier.weight(1.1f),
-                        textAlign = TextAlign.Center
+                        modifier = Modifier.weight(0.95f),
+                        textAlign = TextAlign.Center,
+                        softWrap = false,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinGreen)}",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1.3f),
+                        textAlign = TextAlign.Center,
+                        softWrap = false,
+                        maxLines = 1
                     )
                     Text(
                         text = "≥ ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingMinGreen)}",
-                        fontSize = 11.sp,
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = TrafficGreen,
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center
+                        modifier = Modifier.weight(0.95f),
+                        textAlign = TextAlign.Center,
+                        softWrap = false,
+                        maxLines = 1
                     )
                 }
             }
@@ -6109,4 +6313,195 @@ private fun ModernToolCard(
         }
     }
 }
+
+@Composable
+private fun QuickHubActionCard(
+    modifier: Modifier = Modifier,
+    icon: String,
+    title: String,
+    badgeText: String,
+    badgeColor: Color,
+    bgColor: Color,
+    borderColor: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = bgColor,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, borderColor),
+        shadowElevation = 1.dp,
+        modifier = modifier.clickable { onClick() }
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(text = icon, fontSize = 22.sp)
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                color = PetrolDarkText,
+                maxLines = 1,
+                softWrap = false
+            )
+            Surface(
+                color = badgeColor.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text(
+                    text = badgeText,
+                    color = badgeColor,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 10.5.sp,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickHubListActionRow(
+    icon: String,
+    title: String,
+    subtitle: String,
+    badge: String? = null,
+    badgeColor: Color = PetrolHeader,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = PureWhiteSurface,
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, CleanCardBorder),
+        shadowElevation = 1.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                color = SoftSurfaceVariant,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.size(38.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(text = icon, fontSize = 18.sp)
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = PetrolDarkText,
+                    maxLines = 1,
+                    softWrap = false
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 11.sp,
+                    color = MutedText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            if (!badge.isNullOrBlank()) {
+                Surface(
+                    color = badgeColor.copy(alpha = 0.10f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = badge,
+                        color = badgeColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.5.sp,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MutedText.copy(alpha = 0.6f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun EarningsPillTabSelector(
+    currentScreen: GoOrNoScreen,
+    onSelectScreen: (GoOrNoScreen) -> Unit
+) {
+    Surface(
+        color = SoftSurfaceVariant,
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, CleanCardBorder),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            val isSemaforo = currentScreen == GoOrNoScreen.FINANCIAL_TARGETS
+            Surface(
+                color = if (isSemaforo) PetrolHeader else Color.Transparent,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onSelectScreen(GoOrNoScreen.FINANCIAL_TARGETS) }
+            ) {
+                Row(
+                    modifier = Modifier.padding(vertical = 9.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "🚦 Semáforo & Metas",
+                        fontSize = 12.sp,
+                        fontWeight = if (isSemaforo) FontWeight.Black else FontWeight.Bold,
+                        color = if (isSemaforo) Color.White else PetrolDarkText
+                    )
+                }
+            }
+            val isCustos = currentScreen == GoOrNoScreen.VEHICLE_COSTS
+            Surface(
+                color = if (isCustos) PetrolHeader else Color.Transparent,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onSelectScreen(GoOrNoScreen.VEHICLE_COSTS) }
+            ) {
+                Row(
+                    modifier = Modifier.padding(vertical = 9.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "⛽ Custos do Carro",
+                        fontSize = 12.sp,
+                        fontWeight = if (isCustos) FontWeight.Black else FontWeight.Bold,
+                        color = if (isCustos) Color.White else PetrolDarkText
+                    )
+                }
+            }
+        }
+    }
+}
+
 

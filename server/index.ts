@@ -967,18 +967,18 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.20",
-    versionCode: 41,
+    versionName: "3.3.21",
+    versionCode: 42,
     releaseDate: "2026-10-18",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.20.apk",
-    directDownload: "/GoOrNo-v3.3.20.apk",
-    fileSizeBytes: 55265000,
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.21.apk",
+    directDownload: "/GoOrNo-v3.3.21.apk",
+    fileSizeBytes: 55270000,
     fileSizeFormatted: "52.7 MB",
     changelog: [
-      "Blindagem Total Anti-Crash: Escudo Global que impede o fechamento inesperado e o diálogo 'O GoOrNo continua apresentando falhas'.",
-      "Otimização Extrema de Memória: Downscale inteligente na leitura visual, economizando 75% de RAM e prevenindo OutOfMemoryError no Motorola moto g05.",
-      "Persistência Reforçada para Android 14: KeepAlive e Foreground Service com START_STICKY blindados contra o LMK e suspensão em segundo plano.",
-      "Compatibilidade Total Motorola & Android 14: Proteção contra encerramento por otimização de bateria durante corridas longas."
+      "Novo Design Otimizado (5 Menus Práticos): Fim da poluição visual e excesso de abas no topo. Agora o app tem navegação simplificada, direta e intuitiva para o motorista.",
+      "Central de Ajustes Completa: Segurança, Áreas de Risco, Permissões, Conexão e Plano Pro reunidos em uma tela moderna com cartões elegantes.",
+      "Metas e Custos Integrados: Tela de Ganhos unificada com alternador rápido entre Semáforo de Metas e Custos Operacionais do Carro.",
+      "Layout Sem Quebras de Linha: Matriz de faixas, atalhos rápidos e cartões perfeitamente alinhados, sem textos cortados ou sobrepostos."
     ],
     mandatory: true,
   });
@@ -1083,33 +1083,27 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.20.apk", "/GoOrNo-v3.3.19.apk", "/GoOrNo-v3.3.18.apk", "/GoOrNo-v3.3.17.apk", "/GoOrNo-v3.3.16.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.21.apk", "/GoOrNo-v3.3.20.apk", "/GoOrNo-v3.3.19.apk", "/GoOrNo-v3.3.18.apk", "/GoOrNo-v3.3.17.apk", "/GoOrNo-v3.3.16.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.21.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.21.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.21.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.20.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.20.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.20.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.19.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.19.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.19.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.18.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.18.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.18.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.17.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.17.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.17.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.16.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.16.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.16.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.20.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.21.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");
