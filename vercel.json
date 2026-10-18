@@ -4,6 +4,11 @@
   "outputDirectory": "dist/public",
   "redirects": [
     {
+      "source": "/GoOrNo-v3.3.20.apk",
+      "destination": "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.20.apk",
+      "permanent": false
+    },
+    {
       "source": "/GoOrNo-v3.3.19.apk",
       "destination": "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.19.apk",
       "permanent": false
