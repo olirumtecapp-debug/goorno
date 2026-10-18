@@ -21,7 +21,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Maximize2,
-  Zap
+  Zap,
+  AlertTriangle,
+  Check
 } from 'lucide-react';
 import { ContactModal } from './ContactModal';
 import { SCREENSHOTS, ScreenshotItem } from './ScreenshotsShowcase';
@@ -203,6 +205,28 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <span>Android 8+</span>
               <span className="trust-separator"></span>
               <span>Versão oficial v{appVersion}</span>
+            </div>
+
+            {/* AVISO DE CONFIANÇA E SEGURANÇA DO APK */}
+            <div className="mt-5 p-3.5 rounded-2xl bg-[#092b24] border border-[#175244] text-left max-w-xl shadow-md">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400 mt-0.5">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="font-space font-bold text-xs text-white">
+                      Download 100% Seguro & Verificado (Arquivo APK)
+                    </span>
+                    <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                      LIVRE DE VÍRUS
+                    </span>
+                  </div>
+                  <p className="font-dm text-[11.5px] text-[#b8ccc3] leading-relaxed m-0">
+                    O Android exibe um aviso padrão (<em>"O arquivo pode ser nocivo"</em>) para <strong>qualquer</strong> aplicativo baixado direto da internet fora da Play Store. <strong>Pode baixar com total tranquilidade:</strong> o APK do GoOrNo é assinado digitalmente, 100% seguro e não coloca seu aparelho em risco. Basta tocar em <strong>"Fazer o download mesmo assim"</strong>.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -564,7 +588,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <em>Rode tranquilo.</em>
             </h2>
             <p>
-              O GoOrNo é distribuído por APK oficial direto porque precisa abrir sobre a Uber e a 99. Sem anúncios irritantes e sem mensalidade para testar.
+              O GoOrNo é distribuído por APK oficial direto porque precisa abrir sobre a Uber e a 99 com máxima velocidade e atualização em tempo real. Sem anúncios irritantes e sem mensalidade para testar.
             </p>
             <button
               onClick={handleDownloadApk}
@@ -590,6 +614,79 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <h3>Ative seus 7 dias</h3>
               <p>Informe seu WhatsApp e conceda as duas permissões do copiloto.</p>
             </article>
+          </div>
+
+          {/* GUIA DE TRANSPARÊNCIA E SEGURANÇA DO APK */}
+          <div className="mt-10 pt-8 border-t border-[rgba(255,255,255,0.12)]">
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-space font-bold text-xs uppercase tracking-wider mb-2">
+                <ShieldCheck className="w-3.5 h-3.5" /> Segurança & Transparência
+              </span>
+              <h3 className="font-space font-bold text-xl sm:text-2xl text-white mb-2">
+                Dúvidas sobre baixar o APK? Veja como é 100% seguro:
+              </h3>
+              <p className="font-dm text-sm text-[#b8ccc3]">
+                Criamos um copiloto feito para quem trabalha duro. Sem pegadinhas, sem riscos e com total clareza.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-[#092b24] border border-[#175244] flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-[#d9ff4f]/15 border border-[#d9ff4f]/30 flex items-center justify-center shrink-0 text-[#d9ff4f] mt-0.5">
+                  <HelpCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-space font-bold text-sm text-white mb-1">
+                    O que é um arquivo APK?
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed m-0">
+                    APK (Android Package Kit) é o formato oficial e original de instalação de aplicativos para celulares Android (assim como o instalador .exe no Windows). É o arquivo legítimo do GoOrNo que instala direto no seu smartphone.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#092b24] border border-[#175244] flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400 mt-0.5">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-space font-bold text-sm text-white mb-1">
+                    Aviso: "O arquivo pode ser nocivo"?
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed m-0">
+                    Esse é um aviso preventivo <strong>padrão e genérico</strong> do Google Chrome para qualquer arquivo baixado fora da Play Store. Não é vírus! Basta tocar em <strong>"Fazer o download mesmo assim"</strong> para continuar normalmente.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#092b24] border border-[#175244] flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-300 mt-0.5">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-space font-bold text-sm text-white mb-1">
+                    Aviso: "Permitir desta fonte"?
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed m-0">
+                    O Android protege você exigindo autorização para o navegador Chrome abrir instaladores. Quando o alerta surgir, basta tocar em <strong>"Configurações"</strong> e ativar a chavinha <strong>"Permitir desta fonte"</strong>. Leva 3 segundos.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#092b24] border border-[#175244] flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400 mt-0.5">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-space font-bold text-sm text-white mb-1">
+                    100% Seguro, Assinado & Antiban
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed m-0">
+                    O GoOrNo é assinado digitalmente e verificado contra ameaças. Ele <strong>não acessa contas bancárias</strong> nem dados confidenciais, e <strong>não altera o código dos apps da Uber ou 99</strong>. Sua conta permanece 100% segura.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -638,10 +735,27 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               }}
             >
               <summary>
-                Por que o celular avisa sobre “aplicativo nocivo”? <span>{openFaq === 2 ? '−' : '+'}</span>
+                É seguro baixar o arquivo APK? Por que o celular avisa sobre “arquivo nocivo”? <span>{openFaq === 2 ? '−' : '+'}</span>
               </summary>
               <p>
-                Esse é um aviso padrão que o Google Play Protect exibe para qualquer aplicativo baixado em formato APK fora da Play Store. Baixe sempre pelo botão oficial desta página para ter 100% de garantia de segurança e autenticidade.
+                <strong>Sim, é 100% seguro!</strong> O aviso “O arquivo pode ser nocivo” é uma mensagem preventiva automática e padrão que o Google Chrome exibe para <em>qualquer</em> aplicativo baixado no formato APK fora da Play Store.
+                <br /><br />
+                Isso não significa vírus: nosso arquivo é verificado por antivírus, assinado com certificado digital de segurança e desenvolvido especificamente para motoristas. Basta tocar em <strong>"Fazer o download mesmo assim"</strong> e, ao instalar, ativar <strong>"Permitir desta fonte"</strong> nas configurações do Chrome.
+              </p>
+            </details>
+
+            <details
+              open={openFaq === 6}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleFaq(6);
+              }}
+            >
+              <summary>
+                Por que o GoOrNo é distribuído em APK e não somente pela Play Store? <span>{openFaq === 6 ? '−' : '+'}</span>
+              </summary>
+              <p>
+                O GoOrNo é um copiloto em tempo real que lê chamadas instantâneas e calcula lucros. Distribuir o APK oficial direto pelo site nos permite lançar atualizações imediatas no mesmo dia em que a Uber ou a 99 alteram suas telas ou regras, sem que você fique dias esperando aprovação de lojas de apps. Além disso, você tem suporte direto e garantia de versão limpa, sem anúncios intrusivos.
               </p>
             </details>
 
@@ -702,12 +816,18 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <em>Comece a decidir.</em>
             </h2>
           </div>
-          <button
-            onClick={handleDownloadApk}
-            className="button button-light cursor-pointer border-0"
-          >
-            Baixar GoOrNo grátis <span>↗</span>
-          </button>
+          <div className="flex flex-col items-center sm:items-end gap-3">
+            <button
+              onClick={handleDownloadApk}
+              className="button button-light cursor-pointer border-0"
+            >
+              Baixar GoOrNo grátis <span>↗</span>
+            </button>
+            <div className="flex items-center gap-2 text-xs text-[#b8ccc3]">
+              <ShieldCheck className="w-4 h-4 text-[#d9ff4f]" />
+              <span>APK Oficial Verificado • 100% Seguro • Sem Cartão</span>
+            </div>
+          </div>
         </section>
       </main>
 
