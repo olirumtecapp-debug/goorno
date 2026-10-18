@@ -122,6 +122,9 @@ class MainActivity : ComponentActivity() {
             app.overlayPanel.showOrUpdateTopStatusBar(accessibilityEnabled = hasAccessibilityPerm)
             if (hasAccessibilityPerm) {
                 CopilotNotificationReceiver.showActiveNotification(this)
+                try {
+                    GoOrNoForegroundKeepAliveService.start(this)
+                } catch (_: Throwable) {}
             }
         } else if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
             app.overlayPanel.hidePanel()

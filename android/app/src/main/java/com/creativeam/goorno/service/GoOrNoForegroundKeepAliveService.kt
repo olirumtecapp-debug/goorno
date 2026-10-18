@@ -28,6 +28,7 @@ class GoOrNoForegroundKeepAliveService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        isRunning = true
         try {
             val notification = CopilotNotificationReceiver.buildActiveNotification(this)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -55,7 +56,6 @@ class GoOrNoForegroundKeepAliveService : Service() {
         private var isRunning = false
 
         fun start(context: Context) {
-            if (isRunning) return
             try {
                 val intent = Intent(context, GoOrNoForegroundKeepAliveService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

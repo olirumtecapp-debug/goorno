@@ -275,7 +275,7 @@ class FloatingOverlayPanel(private val context: Context) {
         if (isAdded && rootContainer != null) {
             try {
                 windowManager.removeView(rootContainer)
-            } catch (_: Exception) {
+            } catch (_: Throwable) {
             }
             isAdded = false
             RuntimeDiagnosticsBus.setOverlayVisible(false)
@@ -307,7 +307,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 windowManager.addView(rootContainer, layoutParams)
                 isAdded = true
                 RuntimeDiagnosticsBus.setOverlayVisible(true)
-            } catch (_: Exception) {
+            } catch (_: Throwable) {
             }
         }
     }
@@ -1418,7 +1418,7 @@ class FloatingOverlayPanel(private val context: Context) {
         try {
             windowManager.addView(bubble, shortcutBubbleParams)
             isShortcutBubbleAdded = true
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
         }
     }
 
@@ -1426,7 +1426,7 @@ class FloatingOverlayPanel(private val context: Context) {
         if (isShortcutBubbleAdded && shortcutBubbleContainer != null) {
             try {
                 windowManager.removeView(shortcutBubbleContainer)
-            } catch (_: Exception) {
+            } catch (_: Throwable) {
             }
             isShortcutBubbleAdded = false
             shortcutBubbleContainer = null
@@ -1464,7 +1464,7 @@ class FloatingOverlayPanel(private val context: Context) {
                             if (isShortcutBubbleAdded && shortcutBubbleContainer != null) {
                                 try {
                                     windowManager.updateViewLayout(shortcutBubbleContainer, lp)
-                                } catch (_: Exception) {
+                                } catch (_: Throwable) {
                                 }
                             }
                             return true
@@ -1482,7 +1482,7 @@ class FloatingOverlayPanel(private val context: Context) {
                             if (isShortcutBubbleAdded && shortcutBubbleContainer != null) {
                                 try {
                                     windowManager.updateViewLayout(shortcutBubbleContainer, lp)
-                                } catch (_: Exception) {
+                                } catch (_: Throwable) {
                                 }
                             }
                         } else if (event.actionMasked == MotionEvent.ACTION_UP) {
@@ -1533,7 +1533,7 @@ class FloatingOverlayPanel(private val context: Context) {
         try {
             windowManager.addView(modalView, quickModalParams)
             isQuickModalAdded = true
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
         }
     }
 
@@ -1541,7 +1541,7 @@ class FloatingOverlayPanel(private val context: Context) {
         if (isQuickModalAdded && quickModalContainer != null) {
             try {
                 windowManager.removeView(quickModalContainer)
-            } catch (_: Exception) {
+            } catch (_: Throwable) {
             }
             isQuickModalAdded = false
             quickModalContainer = null
@@ -1953,7 +1953,7 @@ class FloatingOverlayPanel(private val context: Context) {
                             if (isAdded && rootContainer != null) {
                                 try {
                                     windowManager.updateViewLayout(rootContainer, lp)
-                                } catch (_: Exception) {
+                                } catch (_: Throwable) {
                                 }
                             }
                             return true

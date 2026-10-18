@@ -40,30 +40,36 @@ jobs:
 
       - name: Prepare APK for Artifact
         run: |
+          VERSION_NAME=$(grep 'versionName' android/app/build.gradle | head -n 1 | awk -F'"' '{print $2}')
+          echo "Building version: $VERSION_NAME"
           mkdir -p release-apk
-          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            cp android/app/build/outputs/apk/release/app-release.apk release-apk/GoOrNo-v3.3.19.apk
-            cp android/app/build/outputs/apk/release/app-release.apk release-apk/GoOrNo.apk
-            cp android/app/build/outputs/apk/release/app-release.apk GoOrNo-v3.3.19.apk
-            cp android/app/build/outputs/apk/release/app-release.apk GoOrNo.apk
-          else
-            cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo-v3.3.19.apk
-            cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/GoOrNo.apk
-            cp android/app/build/outputs/apk/debug/app-debug.apk GoOrNo-v3.3.19.apk
-            cp android/app/build/outputs/apk/debug/app-debug.apk GoOrNo.apk
+          mkdir -p client/public
+          mkdir -p dist/public
+          APK_SRC="android/app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK_SRC" ]; then
+            APK_SRC="android/app/build/outputs/apk/debug/app-debug.apk"
           fi
+          cp "$APK_SRC" "release-apk/GoOrNo-v${VERSION_NAME}.apk"
+          cp "$APK_SRC" "release-apk/GoOrNo.apk"
+          cp "$APK_SRC" "GoOrNo-v${VERSION_NAME}.apk"
+          cp "$APK_SRC" "GoOrNo.apk"
+          cp "$APK_SRC" "client/public/GoOrNo-v${VERSION_NAME}.apk"
+          cp "$APK_SRC" "client/public/GoOrNo.apk"
+          cp "$APK_SRC" "dist/public/GoOrNo-v${VERSION_NAME}.apk"
+          cp "$APK_SRC" "dist/public/GoOrNo.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: GoOrNo-APK-v3.3.19
+          name: GoOrNo-APK-v3.3.20
           path: release-apk/*
           retention-days: 30
 
       - name: Push APK to main repo
         run: |
+          VERSION_NAME=$(grep 'versionName' android/app/build.gradle | head -n 1 | awk -F'"' '{print $2}')
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add GoOrNo-v3.3.19.apk GoOrNo.apk
-          git commit -m "chore(release): publish GoOrNo-v3.3.19.apk [skip ci]" || echo "No changes to commit"
+          git add "GoOrNo-v${VERSION_NAME}.apk" GoOrNo.apk client/public/ dist/public/
+          git commit -m "chore(release): publish GoOrNo-v${VERSION_NAME}.apk [skip ci]" || echo "No changes to commit"
           git push origin main || echo "Push skipped"

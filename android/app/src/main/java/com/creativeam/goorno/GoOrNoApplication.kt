@@ -14,6 +14,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+
 class GoOrNoApplication : Application() {
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -29,6 +33,7 @@ class GoOrNoApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        installGlobalCrashShield()
         database = GoOrNoDatabase.getInstance(this)
         preferencesRepository = DriverPreferencesRepository(this)
         overlayPanel = FloatingOverlayPanel(this).apply {
@@ -67,6 +72,57 @@ class GoOrNoApplication : Application() {
         appScope.launch {
             preferencesRepository.configFlow.collectLatest { cfg ->
                 overlayPanel.applyConfig(cfg)
+            }
+        }
+    }
+
+    /**
+     * Blindagem Global contra Falhas e Fechamento Inesperado (CrashShield).
+     *
+     * 1. Intercepta exceções não tratadas no Main Looper (UI thread), impedindo o diálogo
+     *    "O GoOrNo continua apresentando falhas. Fechar app".
+     * 2. Intercepta erros graves em segundo plano (como OutOfMemoryError, StaleObjectException,
+     *    BadTokenException) e aciona limpeza de RAM (System.gc()) silenciosa.
+     */
+    private fun installGlobalCrashShield() {
+        val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            Log.e("GoOrNoCrashShield", "🛡️ Falha evitada na thread '${thread.name}': ${throwable.message}", throwable)
+            if (throwable is OutOfMemoryError) {
+                try {
+                    System.gc()
+                } catch (_: Throwable) {}
+            }
+
+            // Se for na thread secundária (leitura, acessibilidade, corrotina), não derruba o app
+            if (thread.name != "main") {
+                return@setDefaultUncaughtExceptionHandler
+            }
+
+            // Se for no Main Thread, só repassa ao handler original se não for erro recuperável
+            val isRecoverable = throwable is OutOfMemoryError ||
+                throwable is IllegalArgumentException ||
+                throwable is IllegalStateException ||
+                throwable is SecurityException ||
+                throwable is NullPointerException
+            if (!isRecoverable) {
+                originalHandler?.uncaughtException(thread, throwable)
+            }
+        }
+
+        // Blindagem contínua da fila de mensagens da UI (Main Looper)
+        Handler(Looper.getMainLooper()).post {
+            while (true) {
+                try {
+                    Looper.loop()
+                } catch (t: Throwable) {
+                    Log.e("GoOrNoCrashShield", "🛡️ Main Looper absorveu falha: ${t.message}", t)
+                    if (t is OutOfMemoryError) {
+                        try {
+                            System.gc()
+                        } catch (_: Throwable) {}
+                    }
+                }
             }
         }
     }

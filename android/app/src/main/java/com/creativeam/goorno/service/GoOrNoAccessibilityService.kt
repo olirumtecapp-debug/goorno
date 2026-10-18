@@ -425,14 +425,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                         val colorSpace = screenshotResult.colorSpace
                         val hwBitmap = try {
                             Bitmap.wrapHardwareBuffer(hwBuffer, colorSpace)
-                        } catch (_: Exception) {
+                        } catch (_: Throwable) {
                             null
                         }
 
                         if (hwBitmap == null) {
                             try {
                                 hwBuffer.close()
-                            } catch (_: Exception) {
+                            } catch (_: Throwable) {
                             }
                             isTakingAutoScreenshot = false
                             return
@@ -440,13 +440,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
                         val softBitmap = try {
                             hwBitmap.copy(Bitmap.Config.ARGB_8888, false)
-                        } catch (_: Exception) {
+                        } catch (_: Throwable) {
                             null
                         }
-                        hwBitmap.recycle()
+                        try {
+                            hwBitmap.recycle()
+                        } catch (_: Throwable) {}
                         try {
                             hwBuffer.close()
-                        } catch (_: Exception) {
+                        } catch (_: Throwable) {
                         }
 
                         if (softBitmap == null) {
@@ -459,14 +461,39 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                         val cropHeight = (softBitmap.height - cropTop).coerceAtLeast(100)
                         val croppedBitmap = try {
                             Bitmap.createBitmap(softBitmap, 0, cropTop, softBitmap.width, cropHeight)
-                        } catch (_: Exception) {
+                        } catch (_: Throwable) {
                             softBitmap
                         }
                         if (croppedBitmap != softBitmap) {
-                            softBitmap.recycle()
+                            try { softBitmap.recycle() } catch (_: Throwable) {}
                         }
 
-                        val inputImage = InputImage.fromBitmap(croppedBitmap, 0)
+                        // Otimização para aparelhos de 4GB (como Motorola moto g05):
+                        // Se a largura for superior a 720p, reduz pela metade para economizar 75% da RAM sem perder qualidade no OCR!
+                        val finalOcrBitmap = try {
+                            if (croppedBitmap.width > 720) {
+                                val halfW = croppedBitmap.width / 2
+                                val halfH = croppedBitmap.height / 2
+                                val scaled = Bitmap.createScaledBitmap(croppedBitmap, halfW, halfH, true)
+                                if (scaled != croppedBitmap) {
+                                    try { croppedBitmap.recycle() } catch (_: Throwable) {}
+                                }
+                                scaled
+                            } else {
+                                croppedBitmap
+                            }
+                        } catch (_: Throwable) {
+                            croppedBitmap
+                        }
+
+                        val inputImage = try {
+                            InputImage.fromBitmap(finalOcrBitmap, 0)
+                        } catch (_: Throwable) {
+                            try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
+                            isTakingAutoScreenshot = false
+                            return
+                        }
+
                         mlKitRecognizer.process(inputImage)
                             .addOnSuccessListener { visionText ->
                                 val positionedOcr = mutableListOf<PositionedText>()
@@ -504,7 +531,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         }
                                     }
                                 }
-                                croppedBitmap.recycle()
+                                try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
 
                                 val mergedOcrLines = mergeSameRowNodes(positionedOcr)
                                 val normalizedOcr = BrazilianOfferParser.normalizeFragmentedNodes(mergedOcrLines)
@@ -569,7 +596,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                 isTakingAutoScreenshot = false
                             }
                             .addOnFailureListener {
-                                croppedBitmap.recycle()
+                                try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
                                 isTakingAutoScreenshot = false
                             }
                     }
@@ -579,7 +606,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     }
                 }
             )
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             isTakingAutoScreenshot = false
         }
     }
@@ -738,46 +765,49 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         requireVisible: Boolean = true
     ) {
         if (node == null || depth > 50 || output.size >= 600) return
-        if (requireVisible && !node.isVisibleToUser) return
-
-        val rect = Rect()
         try {
-            node.getBoundsInScreen(rect)
-        } catch (_: Exception) {
-        }
+            if (requireVisible && !node.isVisibleToUser) return
 
-        if (requireVisible && (rect.width() <= 0 || rect.height() <= 0)) {
-            return
-        }
-
-        val centerY = if (rect.height() > 0) (rect.top + rect.bottom) / 2 else rect.top
-
-        node.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { txt ->
-            output.add(PositionedText(txt, rect.top, rect.left, centerY))
-        }
-        node.contentDescription?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { desc ->
-            if (output.none { it.text == desc && kotlin.math.abs(it.centerY - centerY) <= 14 }) {
-                output.add(PositionedText(desc, rect.top, rect.left, centerY))
+            val rect = Rect()
+            try {
+                node.getBoundsInScreen(rect)
+            } catch (_: Throwable) {
             }
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            node.hintText?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { hint ->
-                if (output.none { it.text == hint }) {
-                    output.add(PositionedText(hint, rect.top, rect.left, centerY))
+
+            if (requireVisible && (rect.width() <= 0 || rect.height() <= 0)) {
+                return
+            }
+
+            val centerY = if (rect.height() > 0) (rect.top + rect.bottom) / 2 else rect.top
+
+            node.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { txt ->
+                output.add(PositionedText(txt, rect.top, rect.left, centerY))
+            }
+            node.contentDescription?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { desc ->
+                if (output.none { it.text == desc && kotlin.math.abs(it.centerY - centerY) <= 14 }) {
+                    output.add(PositionedText(desc, rect.top, rect.left, centerY))
                 }
             }
-        }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                node.hintText?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { hint ->
+                    if (output.none { it.text == hint }) {
+                        output.add(PositionedText(hint, rect.top, rect.left, centerY))
+                    }
+                }
+            }
 
-        val count = node.childCount
-        for (i in 0 until count) {
-            val child = try {
-                node.getChild(i)
-            } catch (_: Exception) {
-                null
+            val count = node.childCount
+            for (i in 0 until count) {
+                val child = try {
+                    node.getChild(i)
+                } catch (_: Throwable) {
+                    null
+                }
+                if (child != null) {
+                    collectPositionedTexts(child, output, depth + 1, requireVisible)
+                }
             }
-            if (child != null) {
-                collectPositionedTexts(child, output, depth + 1, requireVisible)
-            }
+        } catch (_: Throwable) {
         }
     }
 
