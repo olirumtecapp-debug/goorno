@@ -85,14 +85,14 @@ object NinetyNineOfferReader {
             )
         }
 
-        // 2. Preço oferecido principal (ignorando R$/km e R$ por deslocamento incl.)
+        // 2. Preço oferecido principal (ignorando R$/km, bônus de dinâmica e deslocamento incl.)
         val prices = BrazilianOfferParser.extractAllCurrencies(cleanedLines)
         val hasInvalidCurrency = cleanedLines.any {
             it.contains("R$", ignoreCase = true) && BrazilianOfferParser.parseCurrencyBr(it).isUnrecognized
         }
         val priceField: ExtractedField<Double> = when {
-            // Na 99 o primeiro valor grande no topo do card é o valor total da corrida (ex: R$8,10)
-            prices.isNotEmpty() -> ExtractedField.Present(prices.first())
+            // Na 99 selecionamos o valor principal total da corrida (sempre o maior valor, descartando sub-tarifas e bônus)
+            prices.isNotEmpty() -> ExtractedField.Present(prices.maxOrNull() ?: prices.first())
             hasInvalidCurrency -> ExtractedField.Unrecognized("R$ inválido")
             else -> ExtractedField.Missing
         }
@@ -181,7 +181,31 @@ object NinetyNineOfferReader {
         if (captureMethod == CaptureMethod.OCR) confidence *= 0.90
         if (conflictNotes.isNotEmpty()) confidence *= 0.50
 
-        val isOffer = priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
+        val has99RideTrigger = cleanedLines.any { line ->
+            NINETY_NINE_CATEGORIES.any { cat -> line.contains(cat, ignoreCase = true) } ||
+                line.contains("Aceitar", ignoreCase = true) ||
+                line.contains("Recusar", ignoreCase = true) ||
+                line.contains("Escolher", ignoreCase = true) ||
+                line.contains("Solicitações", ignoreCase = true) ||
+                line.contains("Solicitacoes", ignoreCase = true) ||
+                line.contains("Pgto. no app", ignoreCase = true) ||
+                line.contains("Pagamento no app", ignoreCase = true) ||
+                line.contains("Embarque", ignoreCase = true) ||
+                line.contains("Desembarque", ignoreCase = true) ||
+                line.contains("corridas", ignoreCase = true)
+        }
+
+        val isSelfReadingGoOrNo = cleanedLines.any { line ->
+            line.contains("GoOrNo", ignoreCase = true) ||
+                line.contains("R$/km", ignoreCase = true) ||
+                line.contains("R$/hora", ignoreCase = true) ||
+                line.contains("Suas Faixas", ignoreCase = true)
+        } && !cleanedLines.any { it.contains("Aceitar", ignoreCase = true) || it.contains("Escolher", ignoreCase = true) }
+
+        val isSanePrice = (priceField.valueOrNull() ?: 0.0) >= 4.50
+
+        val isOffer = isSanePrice && priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
+            has99RideTrigger && !isSelfReadingGoOrNo &&
             !BrazilianOfferParser.isNonRideAdOrService(cleanedLines)
         val classification = if (isOffer) {
             ScreenClassification.NEW_OFFER

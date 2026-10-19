@@ -5415,11 +5415,9 @@ fun GoOrNoComposeApp(
         val info = updateInfoState!!
         AlertDialog(
             onDismissRequest = {
-                if (!info.mandatory) {
-                    showUpdateDialog = false
-                }
+                showUpdateDialog = false
             },
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
             containerColor = PureWhiteSurface,
             title = {
                 Row(
@@ -5428,19 +5426,19 @@ fun GoOrNoComposeApp(
                 ) {
                     Text(
                         text = "🚀",
-                        fontSize = 24.sp
+                        fontSize = 20.sp
                     )
                     Column {
                         Text(
                             text = "Nova Atualização Disponível!",
                             fontWeight = FontWeight.Black,
-                            fontSize = 17.sp,
+                            fontSize = 15.sp,
                             color = PetrolDarkText
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.padding(top = 2.dp)
+                            modifier = Modifier.padding(top = 1.dp)
                         ) {
                             Surface(
                                 color = TrafficGreenSoft,
@@ -5450,14 +5448,14 @@ fun GoOrNoComposeApp(
                                     text = "v${info.versionName} (Build ${info.versionCode})",
                                     color = TrafficGreen,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    fontSize = 10.5.sp,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                 )
                             }
                             if (info.fileSizeFormatted.isNotBlank()) {
                                 Text(
                                     text = info.fileSizeFormatted,
-                                    fontSize = 11.sp,
+                                    fontSize = 10.5.sp,
                                     color = MutedText
                                 )
                             }
@@ -5467,36 +5465,42 @@ fun GoOrNoComposeApp(
             },
             text = {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "O GoOrNo detectou uma nova versão oficial pronta para instalação com as seguintes melhorias:",
-                        fontSize = 12.5.sp,
+                        text = "Confira as melhorias desta versão:",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
                         color = PetrolDarkText
                     )
                     Surface(
                         color = SoftSurfaceVariant,
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, CleanCardBorder),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
                             if (info.changelog.isNotEmpty()) {
                                 info.changelog.forEach { item ->
                                     Row(
                                         verticalAlignment = Alignment.Top,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
-                                        Text("✓", color = TrafficGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                        Text(item, fontSize = 11.5.sp, color = PetrolDarkText)
+                                        Text("✓", color = TrafficGreen, fontWeight = FontWeight.Black, fontSize = 10.5.sp)
+                                        Text(
+                                            text = item,
+                                            fontSize = 10.sp,
+                                            lineHeight = 12.5.sp,
+                                            color = PetrolDarkText
+                                        )
                                     }
                                 }
                             } else {
-                                Text("• Melhorias de desempenho e estabilidade.", fontSize = 11.5.sp, color = PetrolDarkText)
+                                Text("• Melhorias de estabilidade e precisão.", fontSize = 10.5.sp, color = PetrolDarkText)
                             }
                         }
                     }
@@ -5520,30 +5524,30 @@ fun GoOrNoComposeApp(
                         containerColor = TrafficGreen,
                         contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = "Baixar e Atualizar Agora",
                         fontWeight = FontWeight.Black,
-                        fontSize = 13.sp
+                        fontSize = 12.5.sp
                     )
                 }
             },
             dismissButton = {
-                if (!info.mandatory) {
-                    TextButton(
-                        onClick = { showUpdateDialog = false },
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Lembrar Mais Tarde",
-                            color = MutedText,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 12.5.sp
-                        )
-                    }
+                TextButton(
+                    onClick = { showUpdateDialog = false },
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Atualizar Depois",
+                        color = MutedText,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 11.5.sp
+                    )
                 }
             }
         )

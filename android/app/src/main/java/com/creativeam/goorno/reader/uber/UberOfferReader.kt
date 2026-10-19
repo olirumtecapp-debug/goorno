@@ -84,7 +84,7 @@ object UberOfferReader {
             it.contains("R$", ignoreCase = true) && BrazilianOfferParser.parseCurrencyBr(it).isUnrecognized
         }
         val priceField: ExtractedField<Double> = when {
-            prices.isNotEmpty() -> ExtractedField.Present(prices.first())
+            prices.isNotEmpty() -> ExtractedField.Present(prices.maxOrNull() ?: prices.first())
             hasInvalidCurrencyToken -> ExtractedField.Unrecognized("R$ inválido")
             else -> ExtractedField.Missing
         }
@@ -164,7 +164,9 @@ object UberOfferReader {
                 line.contains("Suas Faixas", ignoreCase = true)
         } && !cleanedLines.any { it.contains("Aceitar", ignoreCase = true) || it.contains("Exclusivo", ignoreCase = true) }
 
-        val isOfferScreen = priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
+        val isSanePrice = (priceField.valueOrNull() ?: 0.0) >= 4.50
+
+        val isOfferScreen = isSanePrice && priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
             hasUberRideTrigger && !isSelfReadingGoOrNo &&
             !BrazilianOfferParser.isNonRideAdOrService(cleanedLines)
 

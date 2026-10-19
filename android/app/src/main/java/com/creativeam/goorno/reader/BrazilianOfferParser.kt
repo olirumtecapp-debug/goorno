@@ -23,9 +23,9 @@ object BrazilianOfferParser {
         option = RegexOption.IGNORE_CASE
     )
 
-    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "R$1,44/km aprox.", "R$ 1,16 por deslocamento", "R$ 45/h")
+    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "R$1,44/km aprox.", "R$ 1,16 por deslocamento", "R$3,06 Tarifa base dinâmica incl.", "R$ 45/h")
     private val NON_OFFER_PRICE_NOISE_REGEX = Regex(
-        pattern = """R\$\s*\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km(?:\s*aprox\.?)?|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus)""",
+        pattern = """R\$\s*\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km(?:\s*aprox\.?)?|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus|tarifa\s+base|din[âa]mica|a\s+mais.*)""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -220,13 +220,26 @@ object BrazilianOfferParser {
         val results = mutableListOf<Double>()
         for (line in normalized) {
             val lower = line.lowercase(Locale.getDefault())
-            if (lower.contains("por deslocamento") || lower.contains("deslocamento incl")) {
+            if (lower.contains("por deslocamento") ||
+                lower.contains("deslocamento incl") ||
+                lower.contains("tarifa base") ||
+                lower.contains("dinâmica") ||
+                lower.contains("dinamica") ||
+                lower.contains("a mais") ||
+                lower.contains("/km") ||
+                lower.contains("por km") ||
+                lower.contains("/h") ||
+                lower.contains("bônus") ||
+                lower.contains("bonus") ||
+                lower.contains("pedágio") ||
+                lower.contains("pedagio")
+            ) {
                 continue
             }
             val sanitized = stripNonOfferPriceNoise(line)
             CURRENCY_REGEX.findAll(sanitized).forEach { m ->
                 val v = parseBrazilianDecimal(m.groupValues[1].replace(" ", ""))
-                if (v != null && v >= 3.0 && v <= 5000.0) {
+                if (v != null && v >= 4.0 && v <= 5000.0) {
                     results.add(v)
                 }
             }

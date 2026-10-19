@@ -691,11 +691,17 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 showCost = config.showCostOnOverlay
             )
 
-            // Grava todas as ofertas reais detectadas no banco local Room
+            // Grava apenas ofertas autênticas, completas e válidas no banco local Room (blindagem anti-sujeira)
             if (config.saveHistoryEnabled) {
                 for (evaluation in evaluations) {
                     val offer = evaluation.offer
-                    if (!offer.isSimulated && offer.offeredPrice != null) {
+                    val isSanePrice = (offer.offeredPrice ?: 0.0) >= 4.50
+                    val totalKm = evaluation.totalConsideredDistanceKm ?: 0.0
+                    val totalMin = evaluation.totalConsideredDurationMin ?: 0
+                    val hasAddresses = !offer.originAddress.isNullOrBlank() || !offer.destinationAddress.isNullOrBlank()
+                    val isLegitOffer = isSanePrice && totalKm >= 0.2 && totalMin > 0 && hasAddresses && !offer.hasFieldConflict
+
+                    if (!offer.isSimulated && isLegitOffer) {
                         val entity = RideOfferEntity(
                             id = offer.offerId,
                             timestampMillis = offer.timestampMillis,

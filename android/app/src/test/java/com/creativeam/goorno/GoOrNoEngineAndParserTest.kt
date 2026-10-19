@@ -569,6 +569,41 @@ class GoOrNoEngineAndParserTest {
         // Veredito geral com meta combinada -> AVALIAR (AMARELO)
         assertEquals(TrafficLightVerdict.YELLOW, eval.verdict)
     }
+
+    // 25. TESTE DO CASO REAL DA 99: PREÇO TOTAL R$10,80 COM "R$3,06 Tarifa base dinâmica incl." E R$2,18/km
+    @Test
+    fun `test 99 real screenshot with dynamic fare ignores 3_06 subfare and captures 10_80 main fare`() {
+        val real99DynamicNodes = listOf(
+            "Pgto. no app",
+            "R$10,80",
+            "R$3,06 Tarifa base dinâmica incl.",
+            "R$2,18/km",
+            "5,0 ★ • 49 corridas",
+            "7 min (1,6 km)",
+            "Rua Barão de Ladário, 770 - Brás",
+            "5 min (1,6 km)",
+            "Rua da Cantareira, 306 - Centro",
+            "99Pop",
+            "Recusar",
+            "Aceitar"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(real99DynamicNodes)
+        assertEquals(1, offers.size)
+
+        val offer = offers.first()
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+
+        // Preço principal capturado DEVE SER R$ 10,80 e NUNCA a sub-tarifa R$ 3,06!
+        assertEquals(10.80, offer.offeredPrice!!, 0.001)
+        assertEquals(1.6, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(1.6, offer.tripDistanceKm!!, 0.001)
+        assertEquals(3.2, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(12, eval.totalConsideredDurationMin)
+        assertEquals(3.375, eval.grossPerKm!!, 0.01)
+        assertEquals("Rua Barão de Ladário, 770 - Brás", offer.originAddress)
+        assertEquals("Rua da Cantareira, 306 - Centro", offer.destinationAddress)
+    }
 }
 
 

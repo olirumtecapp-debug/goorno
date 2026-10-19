@@ -967,21 +967,21 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.26",
-    versionCode: 47,
+    versionName: "3.3.27",
+    versionCode: 48,
     releaseDate: "2026-10-19",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.26.apk",
-    directDownload: "/GoOrNo-v3.3.26.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.27.apk",
+    directDownload: "/GoOrNo-v3.3.27.apk",
     fileSizeBytes: 55500000,
     fileSizeFormatted: "53.0 MB",
     changelog: [
-      "Street View Otimizado: Busca direta no Google Maps e botão de Visão 360° nativa sem erro de licença.",
-      "Temporizador & Trava Anti-Loop: O card fecha pontualmente no tempo configurado e não fica reabrindo na mesma oferta.",
-      "Alinhamento Imediato na Tela: Posicionamento à Esquerda, Centro ou Direita com aplicação instantânea.",
-      "Tela de Ganhos Clean: Remoção de campos redundantes, mantendo os controles visuais interativos.",
-      "Widget Lateral Compacto: Identidade 100% GoOrNo com velocímetro, odômetro e cronômetro."
+      "Filtro Anti-Distorção 99/Uber: Captura precisa do valor real, descartando bônus de dinâmica e acréscimos.",
+      "Histórico 100% Protegido: Bloqueio contra dados incompletos ou leituras corrompidas.",
+      "Suporte Preciso a Metros: Reconhecimento de distâncias curtas (ex: 459 m) na 99 e Uber.",
+      "Diálogo de Atualização Inteligente: Layout compacto sem cortes e botão Atualizar Depois restaurado.",
+      "Street View Otimizado: Busca direta no Google Maps com Visão 360° nativa."
     ],
-    mandatory: true,
+    mandatory: false,
   });
 });
 
