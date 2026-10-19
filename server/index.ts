@@ -967,18 +967,19 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.22",
-    versionCode: 43,
+    versionName: "3.3.23",
+    versionCode: 44,
     releaseDate: "2026-10-18",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.22.apk",
-    directDownload: "/GoOrNo-v3.3.22.apk",
-    fileSizeBytes: 55270000,
-    fileSizeFormatted: "52.7 MB",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.23.apk",
+    directDownload: "/GoOrNo-v3.3.23.apk",
+    fileSizeBytes: 55300000,
+    fileSizeFormatted: "52.8 MB",
     changelog: [
       "Alinhamento & Design Perfeito: Fim definitivo de todas as quebras verticais de texto em datas, notas de passageiro (★ 4.96), botões e cartões de histórico.",
-      "Novo Card de Oferta Expandido: Endereços de origem e destino com 100% da largura, métricas em grade de 3 caixas e data elegante no topo.",
-      "Bairros Favoritos com Busca no Mapa: Pesquise bairros e regiões com geocodificação oficial e confirme em 1 toque, idêntico às Áreas de Risco.",
-      "Prévia de Janela Flutuante Otimizada: Visualização Clássica Clara e Escura com proporção perfeita sem textos espremidos.",
+      "Novo Card de Oferta Expandido: Endereços de origem e destino com 100% da largura, botões de ação dedicados e sem sobreposição.",
+      "Ajuste Fino de Nota do Passageiro: Botões de incremento compactos e valores numéricos perfeitamente visíveis sem cortes.",
+      "Bairros Favoritos com Busca no Mapa: Pesquise bairros e regiões com geocodificação oficial, botão de limpar e confirmação em 1 toque.",
+      "Prévia de Janela Flutuante Otimizada: Veredito em português (ACEITAR, AVALIAR, RECUSAR) com proporção harmoniosa sem quebras verticais.",
       "Botões e Menus Harmônicos: Sincronização, backup, simulador e permissões refinados com ícones elegantes e sem quebras de linha."
     ],
     mandatory: true,
@@ -1084,11 +1085,14 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.22.apk", "/GoOrNo-v3.3.21.apk", "/GoOrNo-v3.3.20.apk", "/GoOrNo-v3.3.19.apk", "/GoOrNo-v3.3.18.apk", "/GoOrNo-v3.3.17.apk", "/GoOrNo-v3.3.16.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.23.apk", "/GoOrNo-v3.3.22.apk", "/GoOrNo-v3.3.21.apk", "/GoOrNo-v3.3.20.apk", "/GoOrNo-v3.3.19.apk", "/GoOrNo-v3.3.18.apk", "/GoOrNo-v3.3.17.apk", "/GoOrNo-v3.3.16.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.23.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.23.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.23.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.22.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.22.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.22.apk"),
@@ -1104,7 +1108,7 @@ app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.22.apk", "/GoOrNo-v3.3.21.apk", "/GoOrNo-v
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.22.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.23.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");

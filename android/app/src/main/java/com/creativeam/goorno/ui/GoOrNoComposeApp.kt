@@ -808,7 +808,7 @@ fun GoOrNoComposeApp(
                                 // Checklist Rápido das 2 Permissões Essenciais
                                 PermissionRowItem(
                                     number = "1",
-                                    title = "Janela Flutuante (Sobrepor a outros apps)",
+                                    title = "Sobreposição de Tela",
                                     subtitle = "Exibe a barrinha ativa no topo e o painel sobre a Uber/99",
                                     granted = hasOverlayPermission,
                                     onAction = onRequestOverlayPermission
@@ -816,7 +816,7 @@ fun GoOrNoComposeApp(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 PermissionRowItem(
                                     number = "2",
-                                    title = "Leitor Automático (Acessibilidade GoOrNo)",
+                                    title = "Acessibilidade GoOrNo",
                                     subtitle = "Lê R$, km, minutos e endereços automaticamente",
                                     granted = hasAccessibilityPermission,
                                     onAction = onRequestAccessibilityPermission
@@ -832,7 +832,7 @@ fun GoOrNoComposeApp(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 PermissionRowItem(
                                     number = "3",
-                                    title = "Execução em 2º Plano (Sem Restrições do Google)",
+                                    title = "Sem Restrições de Bateria",
                                     subtitle = if (isBatteryUnrestricted)
                                         "Bateria sem restrições. O Android nunca fechará o GoOrNo sozinho."
                                     else
@@ -936,9 +936,9 @@ fun GoOrNoComposeApp(
                             // Ações Rápidas em Linha Cheia (Zero quebras de linha e textos 100% legíveis)
                             QuickHubListActionRow(
                                 icon = "🎨",
-                                title = "Estilo do Cartão & Janela",
+                                title = "Estilo do Cartão",
                                 subtitle = "Balão, 3 Pilares, Clássico ou Bolinha",
-                                badge = if (config.overlayBubblePosition == "BELOW") "Balão Abaixo" else "Balão Acima",
+                                badge = if (config.overlayBubblePosition == "BELOW") "Abaixo" else "Acima",
                                 badgeColor = PetrolHeader,
                                 onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
                             )
@@ -954,7 +954,7 @@ fun GoOrNoComposeApp(
 
                             QuickHubListActionRow(
                                 icon = "🔘",
-                                title = "Botão Flutuante de Atalho",
+                                title = "Botão Flutuante",
                                 subtitle = "Bolinha permanente na borda da tela",
                                 badge = if (config.showFloatingShortcutBubble) "Visível" else "Oculto",
                                 badgeColor = if (config.showFloatingShortcutBubble) TrafficGreen else MutedText,
@@ -963,7 +963,7 @@ fun GoOrNoComposeApp(
 
                             QuickHubListActionRow(
                                 icon = "⚙️",
-                                title = "Mais Ajustes & Permissões",
+                                title = "Mais Ajustes",
                                 subtitle = "Serviços, Conexão, Simulador, Backup e Pro",
                                 badge = "Abrir",
                                 badgeColor = PetrolHeader,
@@ -1047,7 +1047,7 @@ fun GoOrNoComposeApp(
 
                                 QuickHubListActionRow(
                                     icon = "🛡️",
-                                    title = "Áreas de Risco & Alerta",
+                                    title = "Áreas de Risco",
                                     subtitle = "Bairros e ruas perigosas com aviso sonoro",
                                     badge = if (config.riskAlertEnabled) "Ativo" else "Off",
                                     badgeColor = if (config.riskAlertEnabled) TrafficRed else MutedText,
@@ -1057,7 +1057,7 @@ fun GoOrNoComposeApp(
                                 val isPermsReady = hasOverlayPermission && hasAccessibilityPermission
                                 QuickHubListActionRow(
                                     icon = "⚡",
-                                    title = "Permissões & Serviços",
+                                    title = "Permissões",
                                     subtitle = "Sobreposição, Acessibilidade e Bateria",
                                     badge = if (isPermsReady) "OK" else "Ativar",
                                     badgeColor = if (isPermsReady) TrafficGreen else TrafficYellow,
@@ -1066,7 +1066,7 @@ fun GoOrNoComposeApp(
 
                                 QuickHubListActionRow(
                                     icon = "🚗",
-                                    title = "Conexão Uber & 99",
+                                    title = "Conexão dos Apps",
                                     subtitle = "Detecção de aplicativos e status de leitura",
                                     badge = if (accessibilityConnected) "Conectado" else "Aguardando",
                                     badgeColor = if (accessibilityConnected) TrafficGreen else MutedText,
@@ -1086,7 +1086,7 @@ fun GoOrNoComposeApp(
 
                                 QuickHubListActionRow(
                                     icon = "⭐",
-                                    title = "Plano Pro & Licença",
+                                    title = "Plano Pro",
                                     subtitle = "Chave de ativação, renovação e PIX",
                                     badge = "PRO",
                                     badgeColor = PetrolHeader,
@@ -1095,7 +1095,7 @@ fun GoOrNoComposeApp(
 
                                 QuickHubListActionRow(
                                     icon = "🧪",
-                                    title = "Simulador & Testes OCR",
+                                    title = "Simulador",
                                     subtitle = "Simular chamadas na tela para testar o semáforo",
                                     badge = "Testar",
                                     badgeColor = Color(0xFF0284C7),
@@ -1104,7 +1104,7 @@ fun GoOrNoComposeApp(
 
                                 QuickHubListActionRow(
                                     icon = "💾",
-                                    title = "Privacidade & Backup",
+                                    title = "Backup & Nuvem",
                                     subtitle = "Exportar/restaurar dados e configurações",
                                     badge = "Backup",
                                     badgeColor = PetrolHeader,
@@ -1407,34 +1407,36 @@ fun GoOrNoComposeApp(
                                                                         horizontalArrangement = Arrangement.SpaceBetween,
                                                                         verticalAlignment = Alignment.CenterVertically
                                                                     ) {
-                                                                        Row(
-                                                                            verticalAlignment = Alignment.CenterVertically,
-                                                                            modifier = Modifier.weight(1f, fill = false)
+                                                                        Text(
+                                                                            text = "R$ 14,01",
+                                                                            color = Color(0xFF073B32),
+                                                                            fontSize = 18.sp,
+                                                                            fontWeight = FontWeight.Black,
+                                                                            maxLines = 1,
+                                                                            softWrap = false
+                                                                        )
+                                                                        Surface(
+                                                                            color = vColor,
+                                                                            shape = RoundedCornerShape(6.dp)
                                                                         ) {
                                                                             Text(
-                                                                                text = "R$ 14,01",
-                                                                                color = Color(0xFF073B32),
-                                                                                fontSize = 19.sp,
-                                                                                fontWeight = FontWeight.Black
+                                                                                text = when (previewVerdictState) {
+                                                                                    "GREEN" -> "ACEITAR"
+                                                                                    "YELLOW" -> "AVALIAR"
+                                                                                    else -> "RECUSAR"
+                                                                                },
+                                                                                color = vTextColor,
+                                                                                fontSize = 10.sp,
+                                                                                fontWeight = FontWeight.Black,
+                                                                                maxLines = 1,
+                                                                                softWrap = false,
+                                                                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                                                                             )
-                                                                            Spacer(modifier = Modifier.width(6.dp))
-                                                                            Surface(
-                                                                                color = vColor,
-                                                                                shape = RoundedCornerShape(6.dp)
-                                                                            ) {
-                                                                                Text(
-                                                                                    text = previewVerdictState,
-                                                                                    color = vTextColor,
-                                                                                    fontSize = 10.sp,
-                                                                                    fontWeight = FontWeight.Black,
-                                                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                                                )
-                                                                            }
                                                                         }
                                                                         Text(
                                                                             text = "6,3 km · 17 min",
                                                                             color = Color(0xFF334155),
-                                                                            fontSize = 11.sp,
+                                                                            fontSize = 11.5.sp,
                                                                             fontWeight = FontWeight.Bold,
                                                                             maxLines = 1,
                                                                             softWrap = false
@@ -1562,34 +1564,36 @@ fun GoOrNoComposeApp(
                                                                         horizontalArrangement = Arrangement.SpaceBetween,
                                                                         verticalAlignment = Alignment.CenterVertically
                                                                     ) {
-                                                                        Row(
-                                                                            verticalAlignment = Alignment.CenterVertically,
-                                                                            modifier = Modifier.weight(1f, fill = false)
+                                                                        Text(
+                                                                            text = "R$ 14,01",
+                                                                            color = Color.White,
+                                                                            fontSize = 18.sp,
+                                                                            fontWeight = FontWeight.Black,
+                                                                            maxLines = 1,
+                                                                            softWrap = false
+                                                                        )
+                                                                        Surface(
+                                                                            color = vColor,
+                                                                            shape = RoundedCornerShape(6.dp)
                                                                         ) {
                                                                             Text(
-                                                                                text = "R$ 14,01",
-                                                                                color = Color.White,
-                                                                                fontSize = 19.sp,
-                                                                                fontWeight = FontWeight.Black
+                                                                                text = when (previewVerdictState) {
+                                                                                    "GREEN" -> "ACEITAR"
+                                                                                    "YELLOW" -> "AVALIAR"
+                                                                                    else -> "RECUSAR"
+                                                                                },
+                                                                                color = vTextColor,
+                                                                                fontSize = 10.sp,
+                                                                                fontWeight = FontWeight.Black,
+                                                                                maxLines = 1,
+                                                                                softWrap = false,
+                                                                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                                                                             )
-                                                                            Spacer(modifier = Modifier.width(6.dp))
-                                                                            Surface(
-                                                                                color = vColor,
-                                                                                shape = RoundedCornerShape(6.dp)
-                                                                            ) {
-                                                                                Text(
-                                                                                    text = previewVerdictState,
-                                                                                    color = vTextColor,
-                                                                                    fontSize = 10.sp,
-                                                                                    fontWeight = FontWeight.Black,
-                                                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                                                )
-                                                                            }
                                                                         }
                                                                         Text(
                                                                             text = "6,3 km · 17 min",
                                                                             color = Color(0xFFCBD5E1),
-                                                                            fontSize = 11.sp,
+                                                                            fontSize = 11.5.sp,
                                                                             fontWeight = FontWeight.Bold,
                                                                             maxLines = 1,
                                                                             softWrap = false
@@ -1891,8 +1895,8 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(
-                                        Pair("ABOVE", "⬆️ Acima do Cartão"),
-                                        Pair("BELOW", "⬇️ Abaixo do Cartão")
+                                        Pair("ABOVE", "⬆️ Acima"),
+                                        Pair("BELOW", "⬇️ Abaixo")
                                     ).forEach { (posKey, label) ->
                                         val isSel = bubblePosition == posKey
                                         Surface(
@@ -1913,7 +1917,7 @@ fun GoOrNoComposeApp(
                                                 }
                                         ) {
                                             Row(
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 11.dp),
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 11.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.Center
                                             ) {
@@ -1923,12 +1927,12 @@ fun GoOrNoComposeApp(
                                                     tint = if (isSel) LimeBright else MutedText,
                                                     modifier = Modifier.size(15.dp)
                                                 )
-                                                Spacer(modifier = Modifier.width(5.dp))
+                                                Spacer(modifier = Modifier.width(6.dp))
                                                 Text(
                                                     text = label,
                                                     color = if (isSel) Color.White else PetrolDarkText,
                                                     fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
-                                                    fontSize = 11.sp,
+                                                    fontSize = 12.sp,
                                                     maxLines = 1,
                                                     softWrap = false
                                                 )
@@ -2240,21 +2244,82 @@ fun GoOrNoComposeApp(
 
                                 Surface(
                                     color = SoftSurfaceVariant,
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = RoundedCornerShape(14.dp),
+                                    border = BorderStroke(1.dp, CleanCardBorder),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = String.format(
-                                            Locale.forLanguageTag("pt-BR"),
-                                            "Gasto Atual do Seu Carro: R$ %.2f por cada km rodado\n(Combustível: R$ %.2f/km + Manutenção: R$ %.2f/km)",
-                                            config.totalVariableCostPerKm,
-                                            config.fuelCostPerKm,
-                                            config.maintenanceCostPerKm
-                                        ),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.5.sp,
-                                        color = PetrolHeader,
-                                        modifier = Modifier.padding(12.dp)
-                                    )
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "Custo Total por KM:",
+                                                fontSize = 12.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PetrolHeader
+                                            )
+                                            Text(
+                                                text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f / km", config.totalVariableCostPerKm),
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = PetrolHeader
+                                            )
+                                        }
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Surface(
+                                                color = PureWhiteSurface,
+                                                shape = RoundedCornerShape(8.dp),
+                                                border = BorderStroke(1.dp, CleanCardBorder),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    Text("COMBUSTÍVEL", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MutedText)
+                                                    Text(
+                                                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f/km", config.fuelCostPerKm),
+                                                        fontSize = 11.5.sp,
+                                                        fontWeight = FontWeight.Black,
+                                                        color = PetrolDarkText,
+                                                        maxLines = 1,
+                                                        softWrap = false
+                                                    )
+                                                }
+                                            }
+
+                                            Surface(
+                                                color = PureWhiteSurface,
+                                                shape = RoundedCornerShape(8.dp),
+                                                border = BorderStroke(1.dp, CleanCardBorder),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    Text("MANUTENÇÃO", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MutedText)
+                                                    Text(
+                                                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f/km", config.maintenanceCostPerKm),
+                                                        fontSize = 11.5.sp,
+                                                        fontWeight = FontWeight.Black,
+                                                        color = PetrolDarkText,
+                                                        maxLines = 1,
+                                                        softWrap = false
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
 
                                 OutlinedTextField(
@@ -2546,30 +2611,30 @@ fun GoOrNoComposeApp(
                                 // Legenda visual harmônica e alinhada das 3 cores da nota do passageiro (Altura igual e sem quebra feia)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     // Card Verde
                                     Surface(
                                         color = TrafficGreen,
-                                        shape = RoundedCornerShape(14.dp),
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(68.dp)
+                                            .height(62.dp)
                                     ) {
                                         Column(
                                             modifier = Modifier
                                                 .fillMaxSize()
-                                                .padding(horizontal = 6.dp, vertical = 8.dp),
+                                                .padding(horizontal = 4.dp, vertical = 6.dp),
                                             verticalArrangement = Arrangement.SpaceBetween,
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(3.dp)
                                             ) {
                                                 Box(
                                                     modifier = Modifier
-                                                        .size(7.dp)
+                                                        .size(6.dp)
                                                         .clip(CircleShape)
                                                         .background(Color.White)
                                                 )
@@ -2577,14 +2642,18 @@ fun GoOrNoComposeApp(
                                                     text = "BOA",
                                                     color = Color.White,
                                                     fontWeight = FontWeight.Black,
-                                                    fontSize = 11.sp
+                                                    fontSize = 11.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
                                                 )
                                             }
                                             Text(
                                                 text = ">= ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.targetGoodPassengerRating)}",
                                                 color = Color.White,
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp
+                                                fontSize = 11.5.sp,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         }
                                     }
@@ -2592,25 +2661,25 @@ fun GoOrNoComposeApp(
                                     // Card Amarelo
                                     Surface(
                                         color = TrafficYellow,
-                                        shape = RoundedCornerShape(14.dp),
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(68.dp)
+                                            .height(62.dp)
                                     ) {
                                         Column(
                                             modifier = Modifier
                                                 .fillMaxSize()
-                                                .padding(horizontal = 6.dp, vertical = 8.dp),
+                                                .padding(horizontal = 4.dp, vertical = 6.dp),
                                             verticalArrangement = Arrangement.SpaceBetween,
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(3.dp)
                                             ) {
                                                 Box(
                                                     modifier = Modifier
-                                                        .size(7.dp)
+                                                        .size(6.dp)
                                                         .clip(CircleShape)
                                                         .background(Color.White)
                                                 )
@@ -2618,15 +2687,18 @@ fun GoOrNoComposeApp(
                                                     text = "MÉDIA",
                                                     color = Color.White,
                                                     fontWeight = FontWeight.Black,
-                                                    fontSize = 11.sp
+                                                    fontSize = 11.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
                                                 )
                                             }
                                             Text(
                                                 text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.minAcceptablePassengerRating)} – ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", (config.targetGoodPassengerRating - 0.01).coerceAtLeast(config.minAcceptablePassengerRating))}",
                                                 color = Color.White,
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 11.sp,
-                                                maxLines = 1
+                                                fontSize = 10.sp,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         }
                                     }
@@ -2634,25 +2706,25 @@ fun GoOrNoComposeApp(
                                     // Card Vermelho
                                     Surface(
                                         color = TrafficRed,
-                                        shape = RoundedCornerShape(14.dp),
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(68.dp)
+                                            .height(62.dp)
                                     ) {
                                         Column(
                                             modifier = Modifier
                                                 .fillMaxSize()
-                                                .padding(horizontal = 6.dp, vertical = 8.dp),
+                                                .padding(horizontal = 4.dp, vertical = 6.dp),
                                             verticalArrangement = Arrangement.SpaceBetween,
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(3.dp)
                                             ) {
                                                 Box(
                                                     modifier = Modifier
-                                                        .size(7.dp)
+                                                        .size(6.dp)
                                                         .clip(CircleShape)
                                                         .background(Color.White)
                                                 )
@@ -2660,14 +2732,18 @@ fun GoOrNoComposeApp(
                                                     text = "RUIM",
                                                     color = Color.White,
                                                     fontWeight = FontWeight.Black,
-                                                    fontSize = 11.sp
+                                                    fontSize = 11.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
                                                 )
                                             }
                                             Text(
                                                 text = "< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.minAcceptablePassengerRating)}",
                                                 color = Color.White,
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp
+                                                fontSize = 11.5.sp,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         }
                                     }
@@ -2685,10 +2761,12 @@ fun GoOrNoComposeApp(
                                         verticalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
                                         Text(
-                                            text = "Configurar Valores das Notas (toque no + ou - para regular):",
+                                            text = "Configurar Valores das Notas (toque no + ou -):",
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Black,
-                                            color = PetrolHeader
+                                            color = PetrolHeader,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
 
                                         // Linha Nota Boa
@@ -2698,27 +2776,27 @@ fun GoOrNoComposeApp(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(TrafficGreen))
-                                                Text("Nota Boa (>=):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText)
+                                                Box(modifier = Modifier.size(9.dp).clip(CircleShape).background(TrafficGreen))
+                                                Text("Nota Boa:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText, maxLines = 1, softWrap = false)
                                             }
-                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                                 Surface(
                                                     onClick = {
                                                         val updatedGood = ((config.targetGoodPassengerRating - 0.05) * 100).roundToInt() / 100.0
                                                         val valid = updatedGood.coerceIn(config.minAcceptablePassengerRating + 0.05, 5.0)
                                                         goodRatingText = String.format(Locale.US, "%.2f", valid)
                                                         scope.launch {
-                                                            app.preferencesRepository.saveConfig(config.copy(targetGoodPassengerRating = valid))
+                                                             app.preferencesRepository.saveConfig(config.copy(targetGoodPassengerRating = valid))
                                                             notifyUser("Nota Boa ajustada para ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", valid)}!")
                                                         }
                                                     },
                                                     shape = RoundedCornerShape(8.dp),
                                                     color = Color(0xFFF3E8FF),
                                                     border = BorderStroke(1.dp, Color(0xFFE9D5FF)),
-                                                    modifier = Modifier.height(34.dp)
+                                                    modifier = Modifier.width(42.dp).height(32.dp)
                                                 ) {
-                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 9.dp)) {
-                                                        Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87))
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                                        Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87), maxLines = 1, softWrap = false)
                                                     }
                                                 }
 
@@ -2726,14 +2804,14 @@ fun GoOrNoComposeApp(
                                                     shape = RoundedCornerShape(8.dp),
                                                     border = BorderStroke(1.dp, CleanCardBorder),
                                                     color = PureWhiteSurface,
-                                                    modifier = Modifier.width(58.dp).height(34.dp)
+                                                    modifier = Modifier.width(50.dp).height(32.dp)
                                                 ) {
                                                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                                         BasicTextField(
                                                             value = goodRatingText,
                                                             onValueChange = { goodRatingText = it.replace(",", "."); savedRatingFlag = false },
                                                             textStyle = LocalTextStyle.current.copy(
-                                                                fontSize = 13.5.sp,
+                                                                fontSize = 13.sp,
                                                                 fontWeight = FontWeight.Black,
                                                                 color = PetrolDarkText,
                                                                 textAlign = TextAlign.Center
@@ -2758,10 +2836,10 @@ fun GoOrNoComposeApp(
                                                     shape = RoundedCornerShape(8.dp),
                                                     color = Color(0xFFF3E8FF),
                                                     border = BorderStroke(1.dp, Color(0xFFE9D5FF)),
-                                                    modifier = Modifier.height(34.dp)
+                                                    modifier = Modifier.width(42.dp).height(32.dp)
                                                 ) {
-                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 9.dp)) {
-                                                        Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87))
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                                        Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87), maxLines = 1, softWrap = false)
                                                     }
                                                 }
                                             }
@@ -2776,10 +2854,10 @@ fun GoOrNoComposeApp(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(TrafficYellow))
-                                                Text("Nota Mínima (>=):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText)
+                                                Box(modifier = Modifier.size(9.dp).clip(CircleShape).background(TrafficYellow))
+                                                Text("Nota Mínima:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText, maxLines = 1, softWrap = false)
                                             }
-                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                                 Surface(
                                                     onClick = {
                                                         val updatedMin = ((config.minAcceptablePassengerRating - 0.05) * 100).roundToInt() / 100.0
@@ -2793,10 +2871,10 @@ fun GoOrNoComposeApp(
                                                     shape = RoundedCornerShape(8.dp),
                                                     color = Color(0xFFF3E8FF),
                                                     border = BorderStroke(1.dp, Color(0xFFE9D5FF)),
-                                                    modifier = Modifier.height(34.dp)
+                                                    modifier = Modifier.width(42.dp).height(32.dp)
                                                 ) {
-                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 9.dp)) {
-                                                        Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87))
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                                        Text("-0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87), maxLines = 1, softWrap = false)
                                                     }
                                                 }
 
@@ -2804,14 +2882,14 @@ fun GoOrNoComposeApp(
                                                     shape = RoundedCornerShape(8.dp),
                                                     border = BorderStroke(1.dp, CleanCardBorder),
                                                     color = PureWhiteSurface,
-                                                    modifier = Modifier.width(58.dp).height(34.dp)
+                                                    modifier = Modifier.width(50.dp).height(32.dp)
                                                 ) {
                                                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                                         BasicTextField(
                                                             value = minRatingText,
                                                             onValueChange = { minRatingText = it.replace(",", "."); savedRatingFlag = false },
                                                             textStyle = LocalTextStyle.current.copy(
-                                                                fontSize = 13.5.sp,
+                                                                fontSize = 13.sp,
                                                                 fontWeight = FontWeight.Black,
                                                                 color = PetrolDarkText,
                                                                 textAlign = TextAlign.Center
@@ -2836,10 +2914,10 @@ fun GoOrNoComposeApp(
                                                     shape = RoundedCornerShape(8.dp),
                                                     color = Color(0xFFF3E8FF),
                                                     border = BorderStroke(1.dp, Color(0xFFE9D5FF)),
-                                                    modifier = Modifier.height(34.dp)
+                                                    modifier = Modifier.width(42.dp).height(32.dp)
                                                 ) {
-                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 9.dp)) {
-                                                        Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87))
+                                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                                        Text("+0,05", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF581C87), maxLines = 1, softWrap = false)
                                                     }
                                                 }
                                             }
@@ -3075,7 +3153,7 @@ fun GoOrNoComposeApp(
                                 ) {
                                     Icon(Icons.Default.Layers, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Configurar Sobreposição", fontWeight = FontWeight.Bold)
+                                    Text("Configurar Sobreposição", fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, softWrap = false)
                                 }
 
                                 HorizontalDivider(color = CleanCardBorder)
@@ -3105,7 +3183,7 @@ fun GoOrNoComposeApp(
                                 ) {
                                     Icon(Icons.Default.AccessibilityNew, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Abrir Configurações de Acessibilidade", fontWeight = FontWeight.Bold)
+                                    Text("Configurar Acessibilidade", fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, softWrap = false)
                                 }
 
                                 HorizontalDivider(color = CleanCardBorder)
@@ -4127,6 +4205,17 @@ fun GoOrNoComposeApp(
                                         },
                                         leadingIcon = {
                                             Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF059669))
+                                        },
+                                        trailingIcon = {
+                                            if (searchFavQuery.isNotBlank()) {
+                                                IconButton(onClick = {
+                                                    searchFavQuery = ""
+                                                    searchFavResults = emptyList()
+                                                    searchFavErrorMsg = null
+                                                }) {
+                                                    Icon(Icons.Default.Clear, contentDescription = "Limpar")
+                                                }
+                                            }
                                         },
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.fillMaxWidth(),
@@ -6125,95 +6214,61 @@ private fun HistoricalOfferCardContent(
                     ratingLine.contains("🟡") || ratingLine.contains("Média", ignoreCase = true) -> TrafficYellow
                     else -> TrafficRed
                 }
+                val conciseRating = when {
+                    ratingLine.contains("Boa", ignoreCase = true) -> {
+                        val score = Regex("""[\d.,]+""").find(ratingLine)?.value ?: ""
+                        "🟢 Nota Passageiro: ★ $score (Boa)"
+                    }
+                    ratingLine.contains("Média", ignoreCase = true) -> {
+                        val score = Regex("""[\d.,]+""").find(ratingLine)?.value ?: ""
+                        "🟡 Nota Passageiro: ★ $score (Atenção)"
+                    }
+                    ratingLine.contains("Ruim", ignoreCase = true) -> {
+                        val score = Regex("""[\d.,]+""").find(ratingLine)?.value ?: ""
+                        "🔴 Nota Passageiro: ★ $score (Baixa)"
+                    }
+                    else -> ratingLine.take(45)
+                }
                 Surface(
-                    color = rColor.copy(alpha = 0.14f),
-                    border = BorderStroke(1.dp, rColor),
-                    shape = RoundedCornerShape(8.dp)
+                    color = rColor.copy(alpha = 0.12f),
+                    border = BorderStroke(1.dp, rColor.copy(alpha = 0.45f)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = ratingLine,
+                        text = conciseRating,
                         fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.Bold,
                         color = rColor,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
             }
         }
 
-        // EXIBIÇÃO DO ENDEREÇO DE ORIGEM (100% de largura para o texto, botões no cabeçalho)
+        // EXIBIÇÃO DO ENDEREÇO DE ORIGEM (100% de largura para o texto e botões em linha dedicada)
         Surface(
             color = SoftSurfaceVariant,
             shape = RoundedCornerShape(12.dp),
             border = BorderStroke(1.dp, CleanCardBorder),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = !entity.originAddress.isNullOrBlank()) {
-                    entity.originAddress?.let { onOpenStreetView(it) }
-                }
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "📍 ORIGEM (EMBARQUE)",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        color = PetrolHeader
-                    )
-                    if (!entity.originAddress.isNullOrBlank()) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Surface(
-                                color = Color(0xFFECFDF5),
-                                border = BorderStroke(1.dp, Color(0xFF059669)),
-                                shape = RoundedCornerShape(6.dp),
-                                modifier = Modifier.clickable { onMarkAddressAsFavorite(entity.originAddress) }
-                            ) {
-                                Text(
-                                    text = "⭐ +Fav",
-                                    color = Color(0xFF065F46),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                )
-                            }
-                            Surface(
-                                color = Color(0xFFFEF2F2),
-                                border = BorderStroke(1.dp, TrafficRed),
-                                shape = RoundedCornerShape(6.dp),
-                                modifier = Modifier.clickable { onMarkAddressAsRisk(entity.originAddress) }
-                            ) {
-                                Text(
-                                    text = "⚠️ +Risco",
-                                    color = TrafficRed,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                )
-                            }
-                            Surface(
-                                color = PetrolHeader,
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Text(
-                                    text = "360°",
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-                    }
-                }
+                Text(
+                    text = "📍 ORIGEM (EMBARQUE)",
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Black,
+                    color = PetrolHeader,
+                    maxLines = 1,
+                    softWrap = false
+                )
                 Text(
                     text = entity.originAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na oferta",
                     fontSize = 12.sp,
@@ -6221,82 +6276,107 @@ private fun HistoricalOfferCardContent(
                     color = PetrolDarkText,
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-        }
-
-        // EXIBIÇÃO DO ENDEREÇO DE DESTINO (100% de largura para o texto, botões no cabeçalho)
-        Surface(
-            color = TrafficGreenSoft.copy(alpha = 0.55f),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, TrafficGreen.copy(alpha = 0.5f)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = !entity.destinationAddress.isNullOrBlank()) {
-                    entity.destinationAddress?.let { onOpenStreetView(it) }
-                }
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "🏁 DESTINO (DESEMBARQUE)",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        color = PetrolHeader
-                    )
-                    if (!entity.destinationAddress.isNullOrBlank()) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Surface(
-                                color = Color(0xFFECFDF5),
-                                border = BorderStroke(1.dp, Color(0xFF059669)),
-                                shape = RoundedCornerShape(6.dp),
-                                modifier = Modifier.clickable { onMarkAddressAsFavorite(entity.destinationAddress) }
+                if (!entity.originAddress.isNullOrBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Surface(
+                            color = Color(0xFFECFDF5),
+                            border = BorderStroke(1.dp, Color(0xFF059669)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onMarkAddressAsFavorite(entity.originAddress) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "⭐ +Fav",
+                                    text = "⭐ +Favorito",
                                     color = Color(0xFF065F46),
-                                    fontSize = 10.sp,
+                                    fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
-                            Surface(
-                                color = Color(0xFFFEF2F2),
-                                border = BorderStroke(1.dp, TrafficRed),
-                                shape = RoundedCornerShape(6.dp),
-                                modifier = Modifier.clickable { onMarkAddressAsRisk(entity.destinationAddress) }
+                        }
+
+                        Surface(
+                            color = Color(0xFFFEF2F2),
+                            border = BorderStroke(1.dp, TrafficRed),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onMarkAddressAsRisk(entity.originAddress) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = "⚠️ +Risco",
                                     color = TrafficRed,
-                                    fontSize = 10.sp,
+                                    fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
-                            Surface(
-                                color = TrafficGreen,
-                                shape = RoundedCornerShape(6.dp)
+                        }
+
+                        Surface(
+                            color = PetrolHeader,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onOpenStreetView(entity.originAddress) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "360°",
+                                    text = "🌐 360° Maps",
                                     color = Color.White,
-                                    fontSize = 10.sp,
+                                    fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
                     }
                 }
+            }
+        }
+
+        // EXIBIÇÃO DO ENDEREÇO DE DESTINO (100% de largura para o texto e botões em linha dedicada)
+        Surface(
+            color = TrafficGreenSoft.copy(alpha = 0.55f),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, TrafficGreen.copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "🏁 DESTINO (DESEMBARQUE)",
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Black,
+                    color = PetrolHeader,
+                    maxLines = 1,
+                    softWrap = false
+                )
                 Text(
                     text = entity.destinationAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na oferta",
                     fontSize = 12.sp,
@@ -6304,6 +6384,83 @@ private fun HistoricalOfferCardContent(
                     color = PetrolDarkText,
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (!entity.destinationAddress.isNullOrBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Surface(
+                            color = Color(0xFFECFDF5),
+                            border = BorderStroke(1.dp, Color(0xFF059669)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onMarkAddressAsFavorite(entity.destinationAddress) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "⭐ +Favorito",
+                                    color = Color(0xFF065F46),
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+
+                        Surface(
+                            color = Color(0xFFFEF2F2),
+                            border = BorderStroke(1.dp, TrafficRed),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onMarkAddressAsRisk(entity.destinationAddress) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "⚠️ +Risco",
+                                    color = TrafficRed,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+
+                        Surface(
+                            color = PetrolHeader,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onOpenStreetView(entity.destinationAddress) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "🌐 360° Maps",
+                                    color = Color.White,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -6790,19 +6947,19 @@ private fun QuickHubListActionRow(
             .clickable { onClick() }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
                 color = SoftSurfaceVariant,
                 shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.size(38.dp)
+                modifier = Modifier.size(34.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(text = icon, fontSize = 18.sp)
+                    Text(text = icon, fontSize = 17.sp)
                 }
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -6810,7 +6967,7 @@ private fun QuickHubListActionRow(
                     fontSize = 13.sp,
                     color = PetrolDarkText,
                     maxLines = 1,
-                    softWrap = false
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = subtitle,
@@ -6820,29 +6977,29 @@ private fun QuickHubListActionRow(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
             if (!badge.isNullOrBlank()) {
                 Surface(
-                    color = badgeColor.copy(alpha = 0.10f),
-                    shape = RoundedCornerShape(8.dp)
+                    color = badgeColor.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(6.dp)
                 ) {
                     Text(
                         text = badge,
                         color = badgeColor,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 10.5.sp,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.5.dp),
                         maxLines = 1,
                         softWrap = false
                     )
                 }
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(3.dp))
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = MutedText.copy(alpha = 0.6f),
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
     }
