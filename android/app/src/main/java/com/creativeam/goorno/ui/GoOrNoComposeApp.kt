@@ -1282,11 +1282,10 @@ fun GoOrNoComposeApp(
                                                             ) {
                                                                 Box(contentAlignment = Alignment.Center) {
                                                                     Text(
-                                                                        text = when (selectedVerdict) {
-                                                                            TrafficLightVerdict.RED -> "✕ NÃO COMPENSA"
-                                                                            TrafficLightVerdict.GREEN -> "✓ COMPENSA"
-                                                                            TrafficLightVerdict.YELLOW -> "⚡ AVALIAR"
-                                                                            TrafficLightVerdict.GRAY_NEUTRAL -> "⚪ INDEFINIDO"
+                                                                        text = when (previewVerdictState) {
+                                                                            "GREEN" -> "✓ COMPENSA"
+                                                                            "YELLOW" -> "⚡ AVALIAR"
+                                                                            else -> "✕ NÃO COMPENSA"
                                                                         },
                                                                         color = Color.White,
                                                                         fontWeight = FontWeight.Black,
