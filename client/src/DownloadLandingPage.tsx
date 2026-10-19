@@ -42,7 +42,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
   const [heroMode, setHeroMode] = useState<'good' | 'bad'>('good');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
-  const [appVersion, setAppVersion] = useState<string>('3.3.23');
+  const [appVersion, setAppVersion] = useState<string>('3.3.24');
 
   useEffect(() => {
     fetch('/api/app-version')

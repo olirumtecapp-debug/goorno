@@ -359,7 +359,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               href="/download/apk"
               className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-bold text-xs px-4 py-2.5 rounded-full transition flex items-center gap-1.5 shadow-xs no-underline"
             >
-              Baixar APK v3.3.23 <span>↗</span>
+              Baixar APK v3.3.24 <span>↗</span>
             </a>
           </div>
         </div>

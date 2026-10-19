@@ -2619,13 +2619,13 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(62.dp)
+                                            .height(72.dp)
                                     ) {
                                         Column(
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(horizontal = 4.dp, vertical = 6.dp),
-                                            verticalArrangement = Arrangement.SpaceBetween,
+                                            verticalArrangement = Arrangement.Center,
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Row(
@@ -2647,6 +2647,7 @@ fun GoOrNoComposeApp(
                                                     softWrap = false
                                                 )
                                             }
+                                            Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = ">= ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.targetGoodPassengerRating)}",
                                                 color = Color.White,
@@ -2664,13 +2665,13 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(62.dp)
+                                            .height(72.dp)
                                     ) {
                                         Column(
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(horizontal = 4.dp, vertical = 6.dp),
-                                            verticalArrangement = Arrangement.SpaceBetween,
+                                            verticalArrangement = Arrangement.Center,
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Row(
@@ -2692,6 +2693,7 @@ fun GoOrNoComposeApp(
                                                     softWrap = false
                                                 )
                                             }
+                                            Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = "${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.minAcceptablePassengerRating)} – ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", (config.targetGoodPassengerRating - 0.01).coerceAtLeast(config.minAcceptablePassengerRating))}",
                                                 color = Color.White,
@@ -2709,13 +2711,13 @@ fun GoOrNoComposeApp(
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(62.dp)
+                                            .height(72.dp)
                                     ) {
                                         Column(
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(horizontal = 4.dp, vertical = 6.dp),
-                                            verticalArrangement = Arrangement.SpaceBetween,
+                                            verticalArrangement = Arrangement.Center,
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Row(
@@ -2737,6 +2739,7 @@ fun GoOrNoComposeApp(
                                                     softWrap = false
                                                 )
                                             }
+                                            Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = "< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.minAcceptablePassengerRating)}",
                                                 color = Color.White,
@@ -2761,12 +2764,11 @@ fun GoOrNoComposeApp(
                                         verticalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
                                         Text(
-                                            text = "Configurar Valores das Notas (toque no + ou -):",
+                                            text = "Ajustar Valores das Notas (+ ou -):",
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Black,
                                             color = PetrolHeader,
-                                            maxLines = 1,
-                                            softWrap = false
+                                            maxLines = 1
                                         )
 
                                         // Linha Nota Boa
