@@ -220,19 +220,14 @@ object BrazilianOfferParser {
         val results = mutableListOf<Double>()
         for (line in normalized) {
             val lower = line.lowercase(Locale.getDefault())
+            // Ignora linhas que são exclusivamente subtarifas ou bônus de dinâmica/deslocamento
             if (lower.contains("por deslocamento") ||
                 lower.contains("deslocamento incl") ||
-                lower.contains("tarifa base") ||
-                lower.contains("dinâmica") ||
-                lower.contains("dinamica") ||
-                lower.contains("a mais") ||
-                lower.contains("/km") ||
-                lower.contains("por km") ||
-                lower.contains("/h") ||
-                lower.contains("bônus") ||
-                lower.contains("bonus") ||
-                lower.contains("pedágio") ||
-                lower.contains("pedagio")
+                lower.contains("tarifa base dinâmica") ||
+                lower.contains("tarifa base dinamica") ||
+                lower.contains("dinâmica incl") ||
+                lower.contains("dinamica incl") ||
+                lower.contains("a mais por corrida")
             ) {
                 continue
             }
@@ -800,6 +795,11 @@ object BrazilianOfferParser {
             val lower = line.lowercase(Locale.getDefault())
             if (lower.contains("por deslocamento") ||
                 lower.contains("deslocamento incl") ||
+                lower.contains("tarifa base dinâmica") ||
+                lower.contains("tarifa base dinamica") ||
+                lower.contains("dinâmica incl") ||
+                lower.contains("dinamica incl") ||
+                lower.contains("a mais por corrida") ||
                 lower.contains("meta") ||
                 lower.contains("saldo") ||
                 lower.contains("ganhos")
