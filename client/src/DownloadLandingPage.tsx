@@ -74,8 +74,8 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
   };
 
   const handleDownloadApk = () => {
-    // Redireciona diretamente para o link de download oficial do APK v3.3.7
-    window.location.href = '/download/apk';
+    // Redireciona diretamente para o link de download oficial do APK v3.3.28
+    window.location.href = '/GoOrNo-v3.3.28.apk';
   };
 
   const toggleFaq = (index: number) => {
