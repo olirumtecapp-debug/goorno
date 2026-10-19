@@ -125,6 +125,8 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun applyConfig(config: DriverFinancialConfig) {
         mainHandler.post {
+            val previousHorizontalPos = overlayHorizontalPosition
+            val previousBubblePos = overlayBubblePosition
             lastKnownConfig = config
             currentOpacityPercent = config.overlayOpacityPercent.coerceIn(25, 100)
             displayDurationSec = config.overlayAutoMinimizeSec.coerceIn(3, 45)
@@ -136,6 +138,30 @@ class FloatingOverlayPanel(private val context: Context) {
             showCostOnOverlay = config.showCostOnOverlay
             isMonitoringEnabled = config.copilotMonitoringEnabled
             rootContainer?.alpha = currentOpacityPercent / 100f
+
+            // Se o usuário mudou o alinhamento horizontal (Esquerda, Centro ou Direita)
+            // ou a posição do balão (Acima ou Abaixo), reposiciona imediatamente a janela na tela!
+            if (previousHorizontalPos != overlayHorizontalPosition || previousBubblePos != overlayBubblePosition) {
+                posPrefs.edit().remove("saved_x").remove("saved_y").apply()
+                val (newGravity, newX) = when (overlayHorizontalPosition) {
+                    "LEFT" -> Pair(Gravity.TOP or Gravity.START, dp(10))
+                    "RIGHT" -> Pair(Gravity.TOP or Gravity.END, dp(10))
+                    else -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
+                }
+                val newY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(210)
+                layoutParams?.let { lp ->
+                    lp.gravity = newGravity
+                    lp.x = newX
+                    lp.y = newY
+                    if (isAdded && rootContainer != null) {
+                        try {
+                            windowManager.updateViewLayout(rootContainer, lp)
+                        } catch (_: Exception) {
+                        }
+                    }
+                }
+            }
+
             if (!isMonitoringEnabled) {
                 hidePanel()
             }
@@ -200,6 +226,16 @@ class FloatingOverlayPanel(private val context: Context) {
             val newKm = firstEval.totalConsideredDistanceKm ?: 0.0
             val newFingerprint = "${firstEval.offer.sourceApp.name}|${String.format(Locale.US, "%.2f", newPrice)}|${String.format(Locale.US, "%.1f", newKm)}"
 
+            val now = System.currentTimeMillis()
+            recentlyDismissedOfferTimestamps.entries.removeAll { now - it.value > 60_000L }
+
+            // Proteção Anti-Reabertura: se esta oferta já foi fechada/expirada recentemente,
+            // ignora novas leituras da acessibilidade por 18s para a janela não ficar reabrindo em loop
+            val lastDismissed = recentlyDismissedOfferTimestamps[newFingerprint]
+            if (lastDismissed != null && (now - lastDismissed) < 18_000L && results.none { it.offer.isSimulated }) {
+                return@post
+            }
+
             // Proteção Anti-Flicker: se o card flutuante já está visível para a mesma corrida,
             // NÃO destrói nem recria as views (evita sumir o valor ou piscar a janela!)
             if (isCardCurrentlyVisible() && activeCardFingerprint == newFingerprint && offerQueue.isNotEmpty()) {
@@ -237,7 +273,7 @@ class FloatingOverlayPanel(private val context: Context) {
         rootContainer?.alpha = currentOpacityPercent / 100f
         contentWrapper?.removeAllViews()
 
-        remainingSeconds = displayDurationSec.coerceIn(3, 7)
+        remainingSeconds = displayDurationSec.coerceIn(3, 45)
 
         val builtView = when (displayStyle) {
             OverlayDisplayStyle.BANNER_PRO_STREETVIEW -> buildBannerProStreetView(currentEval, oneBasedIndex, totalInQueue)
@@ -249,12 +285,16 @@ class FloatingOverlayPanel(private val context: Context) {
 
         contentWrapper?.addView(builtView)
 
+        activeTimerLabel?.text = "${remainingSeconds}s"
         mainHandler.removeCallbacks(countdownRunnable)
         mainHandler.postDelayed(countdownRunnable, 1000L)
     }
 
     private fun advanceToNextOfferOrFinish() {
         mainHandler.removeCallbacks(countdownRunnable)
+        if (activeCardFingerprint.isNotBlank()) {
+            recentlyDismissedOfferTimestamps[activeCardFingerprint] = System.currentTimeMillis()
+        }
         currentQueueIndex++
         if (currentQueueIndex < offerQueue.size) {
             removeWindowViewOnly()
@@ -268,6 +308,9 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     fun dismissCurrentOfferCardByUser() {
+        if (activeCardFingerprint.isNotBlank()) {
+            recentlyDismissedOfferTimestamps[activeCardFingerprint] = System.currentTimeMillis()
+        }
         activeCardFingerprint = ""
         offerQueue = emptyList()
         currentQueueIndex = 0
@@ -293,6 +336,9 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun hidePanel() {
         mainHandler.post {
+            if (activeCardFingerprint.isNotBlank()) {
+                recentlyDismissedOfferTimestamps[activeCardFingerprint] = System.currentTimeMillis()
+            }
             activeCardFingerprint = ""
             mainHandler.removeCallbacks(countdownRunnable)
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
@@ -532,6 +578,49 @@ class FloatingOverlayPanel(private val context: Context) {
             }
         }
 
+        // Topo do Card: Marca GoOrNo + Temporizador regressivo visível + Botão Fechar ✕
+        val topControlBar = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, dp(6))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val tvCardBrand = TextView(context).apply {
+            text = "⚡ GOORNO"
+            setTextColor(Color.parseColor("#38BDF8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        topControlBar.addView(tvCardBrand)
+
+        val tvCardTimer = TextView(context).apply {
+            text = "${remainingSeconds}s"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(6), dp(2), dp(6), dp(2))
+            background = roundedBg("#1E293B", 8f)
+        }
+        activeTimerLabel = tvCardTimer
+        topControlBar.addView(tvCardTimer)
+
+        val btnCardClose = TextView(context).apply {
+            text = "✕"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(8), dp(2), dp(2), dp(2))
+            setOnClickListener { dismissCurrentOfferCardByUser() }
+        }
+        topControlBar.addView(btnCardClose)
+
+        card.addView(topControlBar)
+
         // Linha Principal Superior: Barra Luminosa do Veredito + 3 Métricas Grandes (R$/km, R$/hora, R$/min)
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -708,6 +797,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 tvBtnDestino.text = "✕ Fechar"
                 streetViewContainer.visibility = View.VISIBLE
                 remainingSeconds = 45 // Estende o tempo para o motorista visualizar com tranquilidade
+                activeTimerLabel?.text = "${remainingSeconds}s"
 
                 streetViewContainer.removeAllViews()
 
@@ -743,25 +833,66 @@ class FloatingOverlayPanel(private val context: Context) {
                 streetViewContainer.addView(svHeader)
 
                 if (destAddress.isNotBlank()) {
+                    // Botão Destaque Direto: abre visão 360° no app do Google Maps instantaneamente
+                    val btnOpenFull360 = LinearLayout(context).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER
+                        setPadding(dp(8), dp(7), dp(8), dp(7))
+                        background = roundedCardBg("#0369A1", "#38BDF8", 8f, 1)
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            bottomMargin = dp(6)
+                        }
+                        setOnClickListener {
+                            StreetViewLauncher.openDirectStreetView(context, destAddress)
+                        }
+                    }
+                    val tv360Title = TextView(context).apply {
+                        text = "🌍 Abrir Street View 360° no Google Maps"
+                        setTextColor(Color.WHITE)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                        setTypeface(typeface, Typeface.BOLD)
+                    }
+                    btnOpenFull360.addView(tv360Title)
+                    streetViewContainer.addView(btnOpenFull360)
+
                     try {
                         val webView = WebView(context).apply {
                             layoutParams = LinearLayout.LayoutParams(
                                 LinearLayout.LayoutParams.MATCH_PARENT,
-                                dp(210)
+                                dp(200)
                             )
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            settings.loadWithOverviewMode = true
-                            settings.useWideViewPort = true
-                            webViewClient = WebViewClient()
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                databaseEnabled = true
+                                loadWithOverviewMode = true
+                                useWideViewPort = true
+                                userAgentString = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+                            }
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                                    if (url != null && (url.startsWith("intent:") || url.startsWith("market:") || url.startsWith("google.streetview:"))) {
+                                        try {
+                                            val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            context.startActivity(intent)
+                                            return true
+                                        } catch (_: Throwable) {}
+                                    }
+                                    return false
+                                }
+                            }
                             val encoded = Uri.encode(destAddress)
-                            loadUrl("https://maps.google.com/maps?q=$encoded&layer=c&output=embed")
+                            loadUrl("https://www.google.com/maps/search/?api=1&query=$encoded")
                         }
                         activeWebView = webView
                         streetViewContainer.addView(webView)
                     } catch (_: Throwable) {
                         val tvError = TextView(context).apply {
-                            text = "Toque em '🗺️ App' para abrir o Street View direto no Maps."
+                            text = "Toque no botão acima para abrir a visão 360° no Google Maps."
                             setTextColor(Color.parseColor("#CBD5E1"))
                             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                             setPadding(dp(8), dp(16), dp(8), dp(16))
@@ -797,7 +928,7 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     // =========================================================================
-    // FORMATO 2: WIDGET LATERAL PIRULITO (IMAGEM 2)
+    // FORMATO 2: WIDGET LATERAL COMPACTO (MÉTRICAS VERTICAIS)
     // =========================================================================
     @SuppressLint("ClickableViewAccessibility")
     private fun buildPirulitoSidebarView(
@@ -834,7 +965,7 @@ class FloatingOverlayPanel(private val context: Context) {
             setOnTouchListener(createDragOrTapTouchListener())
         }
 
-        // Card Vertical Estilo Pirulito (Imagem 2)
+        // Card Vertical Compacto (Métricas Verticais)
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(10), dp(8), dp(10), dp(8))
@@ -845,7 +976,7 @@ class FloatingOverlayPanel(private val context: Context) {
             }
         }
 
-        // Topo: Ícone Pin + "PIRULITO" + Temporizador + Botão Fechar
+        // Topo: Marca GoOrNo + Temporizador + Botão Fechar
         val header = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -853,8 +984,8 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val tvTitle = TextView(context).apply {
-            text = "📍 PIRULITO"
-            setTextColor(Color.parseColor("#F59E0B"))
+            text = "⚡ GOORNO"
+            setTextColor(Color.parseColor("#38BDF8"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)

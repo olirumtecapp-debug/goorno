@@ -967,19 +967,19 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.25",
-    versionCode: 46,
+    versionName: "3.3.26",
+    versionCode: 47,
     releaseDate: "2026-10-19",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.25.apk",
-    directDownload: "/GoOrNo-v3.3.25.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.26.apk",
+    directDownload: "/GoOrNo-v3.3.26.apk",
     fileSizeBytes: 55500000,
     fileSizeFormatted: "53.0 MB",
     changelog: [
-      "Banner Pro com Street View Direto: Toque no botão 'Destino' para ver a fachada no Google Street View sem sair da Uber/99.",
-      "Widget Lateral Pirulito: Card compacto vertical com velocímetro (R$/km), odômetro (R$/hora) e cronômetro (Tempo total).",
-      "Posicionamento Lateral na Tela: Escolha alinhar o card à Esquerda, Centro ou Direita da tela.",
-      "Metas Visuais Interativas: Painéis com marcadores visuais 'Ruim até' e 'Bom a partir de' com barra gradiente para R$/km e R$/hora.",
-      "Blindagem em Segundo Plano Anti-Morte: WakeLock renovável e auto-reinício garantem que o app não pare mesmo com Spotify e Instagram abertos."
+      "Street View Otimizado: Busca direta no Google Maps e botão de Visão 360° nativa sem erro de licença.",
+      "Temporizador & Trava Anti-Loop: O card fecha pontualmente no tempo configurado e não fica reabrindo na mesma oferta.",
+      "Alinhamento Imediato na Tela: Posicionamento à Esquerda, Centro ou Direita com aplicação instantânea.",
+      "Tela de Ganhos Clean: Remoção de campos redundantes, mantendo os controles visuais interativos.",
+      "Widget Lateral Compacto: Identidade 100% GoOrNo com velocímetro, odômetro e cronômetro."
     ],
     mandatory: true,
   });
@@ -1084,11 +1084,14 @@ app.delete("/api/contact/:id", async (req, res) => {
 });
 
 // Direct APK download routes
-app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.25.apk", "/GoOrNo-v3.3.24.apk", "/GoOrNo-v3.3.23.apk", "/GoOrNo-v3.3.22.apk", "/GoOrNo-v3.3.21.apk", "/GoOrNo-v3.3.20.apk", "/GoOrNo-v3.3.19.apk", "/GoOrNo-v3.3.18.apk", "/GoOrNo-v3.3.17.apk", "/GoOrNo-v3.3.16.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
+app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.26.apk", "/GoOrNo-v3.3.25.apk", "/GoOrNo-v3.3.24.apk", "/GoOrNo-v3.3.23.apk", "/GoOrNo-v3.3.22.apk", "/GoOrNo-v3.3.21.apk", "/GoOrNo-v3.3.20.apk", "/GoOrNo-v3.3.19.apk", "/GoOrNo-v3.3.18.apk", "/GoOrNo-v3.3.17.apk", "/GoOrNo-v3.3.16.apk", "/GoOrNo-v3.3.15.apk", "/GoOrNo-v3.3.14.apk", "/GoOrNo-v3.3.13.apk", "/GoOrNo-v3.3.11.apk", "/GoOrNo-v3.3.10.apk", "/GoOrNo-v3.3.9.apk", "/GoOrNo-v3.3.8.apk", "/GoOrNo-v3.3.7.apk", "/GoOrNo-v3.3.6.apk", "/GoOrNo-v3.3.5.apk", "/GoOrNo-v3.3.4.apk", "/download/apk"], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.26.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.26.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.26.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.25.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.25.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.25.apk"),
@@ -1113,7 +1116,7 @@ app.get(["/GoOrNo.apk", "/GoOrNo-v3.3.25.apk", "/GoOrNo-v3.3.24.apk", "/GoOrNo-v
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.25.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.26.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");

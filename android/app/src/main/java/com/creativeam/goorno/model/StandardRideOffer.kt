@@ -129,7 +129,7 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
         subtitle = "Card horizontal moderno com R$/km, R$/hora, R$/min e botão Destino com Street View 360° embutido"
     ),
     PIRULITO_SIDEBAR(
-        title = "Widget Lateral Pirulito (Métricas Verticais)",
+        title = "Widget Lateral Compacto (Métricas Verticais)",
         subtitle = "Card vertical compacto com velocímetro, odômetro, relógio e barras laterais coloridas (Esquerda, Centro ou Direita)"
     ),
     CLASSIC_LIGHT(
@@ -149,7 +149,7 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
         fun fromName(name: String?): OverlayDisplayStyle {
             return when (name?.uppercase()) {
                 "BANNER_PRO_STREETVIEW", "BANNER_PRO", "BANNER", "FULL_CARD", "MODERN" -> BANNER_PRO_STREETVIEW
-                "PIRULITO_SIDEBAR", "PIRULITO", "SIDEBAR" -> PIRULITO_SIDEBAR
+                "PIRULITO_SIDEBAR", "PIRULITO", "SIDEBAR", "WIDGET_COMPACTO", "LATERAL_COMPACTO", "COMPACTO_SIDEBAR" -> PIRULITO_SIDEBAR
                 "CLASSIC_LIGHT", "CLASSIC_V334", "CLASSIC" -> CLASSIC_LIGHT
                 "CLASSIC_DARK" -> CLASSIC_DARK
                 "MINI_BALL", "SEMAFORO_COMPACT", "COMPACT" -> MINI_BALL

@@ -764,44 +764,7 @@ fun GoOrNoComposeApp(
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
-                                Spacer(modifier = Modifier.height(14.dp))
-                                // Seletor Moderno de Pílulas do Tempo da Janelinha na Tela
-                                Text(
-                                    text = "Tempo que a janelinha fica aberta antes de sumir:",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PetrolDarkText
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    listOf(3, 4, 5, 6, 7).forEach { sec ->
-                                        val selected = config.overlayAutoMinimizeSec == sec
-                                        FilledTonalButton(
-                                            onClick = {
-                                                val updated = config.copy(overlayAutoMinimizeSec = sec)
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(updated)
-                                                    app.overlayPanel.applyConfig(updated)
-                                                    notifyUser("Tempo da janelinha definido para ${sec} segundos!")
-                                                }
-                                            },
-                                            colors = ButtonDefaults.filledTonalButtonColors(
-                                                containerColor = if (selected) PetrolHeader else SoftSurfaceVariant,
-                                                contentColor = if (selected) Color.White else PetrolDarkText
-                                            ),
-                                            shape = RoundedCornerShape(12.dp),
-                                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(36.dp)
-                                        ) {
-                                            Text("${sec}s", fontSize = 11.5.sp, fontWeight = FontWeight.Black)
-                                        }
-                                    }
-                                }
+
 
                                 Spacer(modifier = Modifier.height(14.dp))
                                 HorizontalDivider(color = CleanCardBorder)
@@ -1388,7 +1351,7 @@ fun GoOrNoComposeApp(
                                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                                 verticalAlignment = Alignment.CenterVertically
                                                             ) {
-                                                                Text("📍 PIRULITO", color = Color(0xFFF59E0B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                                Text("⚡ GOORNO", color = Color(0xFF38BDF8), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                                                 Text("7s", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                                             }
                                                             Spacer(modifier = Modifier.height(6.dp))
@@ -2072,7 +2035,7 @@ fun GoOrNoComposeApp(
                                     color = PetrolHeader
                                 )
                                 Text(
-                                    text = "Escolha onde o card deve se posicionar na tela (ideal para o Widget Pirulito ou Banner não tampar os botões):",
+                                    text = "Escolha onde o card deve se posicionar na tela (ideal para o Widget Compacto ou Banner não tampar os botões):",
                                     fontSize = 11.5.sp,
                                     color = MutedText
                                 )
@@ -2673,18 +2636,6 @@ fun GoOrNoComposeApp(
                         )
                     }
                     item {
-                        var grossKm by remember(config.targetGrossPerKm) {
-                            mutableStateOf(config.targetGrossPerKm.toString())
-                        }
-                        var grossHr by remember(config.targetGrossPerHour) {
-                            mutableStateOf(config.targetGrossPerHour.toString())
-                        }
-                        var netKm by remember(config.targetNetPerKm) {
-                            mutableStateOf(config.targetNetPerKm.toString())
-                        }
-                        var netHr by remember(config.targetNetPerHour) {
-                            mutableStateOf(config.targetNetPerHour.toString())
-                        }
                         var reqGrossKm by remember(config.requireGrossPerKm) {
                             mutableStateOf(config.requireGrossPerKm)
                         }
@@ -2697,7 +2648,6 @@ fun GoOrNoComposeApp(
                         var reqNetHr by remember(config.requireNetPerHour) {
                             mutableStateOf(config.requireNetPerHour)
                         }
-                        var savedTargetsFlag by remember { mutableStateOf(false) }
 
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
@@ -2710,100 +2660,131 @@ fun GoOrNoComposeApp(
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Text(
-                                    text = "Defina os valores mínimos para o Semáforo classificar uma corrida como VERDE e escolha quais metas são obrigatórias:",
-                                    fontSize = 12.sp,
+                                    text = "Critérios Obrigatórios do Semáforo",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 14.sp,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = "Escolha quais critérios a oferta deve cumprir obrigatoriamente para receber sinal VERDE no card flutuante:",
+                                    fontSize = 11.5.sp,
                                     color = MutedText
                                 )
 
-                                OutlinedTextField(
-                                    value = grossKm,
-                                    onValueChange = { grossKm = it.replace(",", "."); savedTargetsFlag = false },
-                                    label = { Text("Meta Mínima de Ganho Bruto por KM (R$/km)") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = reqGrossKm, onCheckedChange = { reqGrossKm = it; savedTargetsFlag = false })
-                                    Text("Exigir Ganho Bruto/km na classificação", fontSize = 12.sp, color = PetrolDarkText)
-                                }
-
-                                OutlinedTextField(
-                                    value = grossHr,
-                                    onValueChange = { grossHr = it.replace(",", "."); savedTargetsFlag = false },
-                                    label = { Text("Meta Mínima de Ganho Bruto por Hora (R$/h)") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = reqGrossHr, onCheckedChange = { reqGrossHr = it; savedTargetsFlag = false })
-                                    Text("Exigir Ganho Bruto/hora na classificação", fontSize = 12.sp, color = PetrolDarkText)
-                                }
-
-                                OutlinedTextField(
-                                    value = netKm,
-                                    onValueChange = { netKm = it.replace(",", "."); savedTargetsFlag = false },
-                                    label = { Text("Meta de Lucro Líquido por KM (R$/km)") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = reqNetKm, onCheckedChange = { reqNetKm = it; savedTargetsFlag = false })
-                                    Text("Exigir Lucro Líquido/km na classificação", fontSize = 12.sp, color = PetrolDarkText)
-                                }
-
-                                OutlinedTextField(
-                                    value = netHr,
-                                    onValueChange = { netHr = it.replace(",", "."); savedTargetsFlag = false },
-                                    label = { Text("Meta de Lucro Líquido por Hora (R$/h)") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = reqNetHr, onCheckedChange = { reqNetHr = it; savedTargetsFlag = false })
-                                    Text("Exigir Lucro Líquido/hora na classificação", fontSize = 12.sp, color = PetrolDarkText)
-                                }
-
-                                Button(
-                                    onClick = {
-                                        val updated = config.copy(
-                                            targetGrossPerKm = (grossKm.toDoubleOrNull() ?: 2.0).coerceAtLeast(0.5),
-                                            targetGrossPerHour = (grossHr.toDoubleOrNull() ?: 40.0).coerceAtLeast(5.0),
-                                            targetNetPerKm = (netKm.toDoubleOrNull() ?: 1.3).coerceAtLeast(0.1),
-                                            targetNetPerHour = (netHr.toDoubleOrNull() ?: 28.0).coerceAtLeast(5.0),
-                                            requireGrossPerKm = reqGrossKm,
-                                            requireGrossPerHour = reqGrossHr,
-                                            requireNetPerKm = reqNetKm,
-                                            requireNetPerHour = reqNetHr
-                                        )
-                                        scope.launch {
-                                            app.preferencesRepository.saveConfig(updated)
-                                            savedTargetsFlag = true
-                                            notifyUser("Metas financeiras e critérios do semáforo salvos com sucesso!")
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (savedTargetsFlag) TrafficGreen else PetrolHeader,
-                                        contentColor = Color.White
-                                    ),
-                                    shape = RoundedCornerShape(14.dp),
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(48.dp)
+                                        .clickable {
+                                            val newVal = !reqGrossKm
+                                            reqGrossKm = newVal
+                                            val updated = config.copy(requireGrossPerKm = newVal)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                            }
+                                        }
                                 ) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (savedTargetsFlag) Color.White else LimeBright)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = if (savedTargetsFlag) "✓ Metas Salvas com Sucesso!" else "Salvar Metas Financeiras",
-                                        fontWeight = FontWeight.Black
+                                    Checkbox(
+                                        checked = reqGrossKm,
+                                        onCheckedChange = {
+                                            reqGrossKm = it
+                                            val updated = config.copy(requireGrossPerKm = it)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                            }
+                                        }
                                     )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Exigir Ganho Bruto/km na classificação", fontSize = 12.5.sp, color = PetrolDarkText, fontWeight = FontWeight.SemiBold)
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            val newVal = !reqGrossHr
+                                            reqGrossHr = newVal
+                                            val updated = config.copy(requireGrossPerHour = newVal)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                            }
+                                        }
+                                ) {
+                                    Checkbox(
+                                        checked = reqGrossHr,
+                                        onCheckedChange = {
+                                            reqGrossHr = it
+                                            val updated = config.copy(requireGrossPerHour = it)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                            }
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Exigir Ganho Bruto/hora na classificação", fontSize = 12.5.sp, color = PetrolDarkText, fontWeight = FontWeight.SemiBold)
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            val newVal = !reqNetKm
+                                            reqNetKm = newVal
+                                            val updated = config.copy(requireNetPerKm = newVal)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                            }
+                                        }
+                                ) {
+                                    Checkbox(
+                                        checked = reqNetKm,
+                                        onCheckedChange = {
+                                            reqNetKm = it
+                                            val updated = config.copy(requireNetPerKm = it)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                            }
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Exigir Lucro Líquido/km na classificação", fontSize = 12.5.sp, color = PetrolDarkText, fontWeight = FontWeight.SemiBold)
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            val newVal = !reqNetHr
+                                            reqNetHr = newVal
+                                            val updated = config.copy(requireNetPerHour = newVal)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                            }
+                                        }
+                                ) {
+                                    Checkbox(
+                                        checked = reqNetHr,
+                                        onCheckedChange = {
+                                            reqNetHr = it
+                                            val updated = config.copy(requireNetPerHour = it)
+                                            scope.launch {
+                                                app.preferencesRepository.saveConfig(updated)
+                                                app.overlayPanel.applyConfig(updated)
+                                            }
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Exigir Lucro Líquido/hora na classificação", fontSize = 12.5.sp, color = PetrolDarkText, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
