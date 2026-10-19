@@ -967,19 +967,19 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.27",
-    versionCode: 48,
+    versionName: "3.3.28",
+    versionCode: 49,
     releaseDate: "2026-10-19",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.27.apk",
-    directDownload: "/GoOrNo-v3.3.27.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.28.apk",
+    directDownload: "/GoOrNo-v3.3.28.apk",
     fileSizeBytes: 55500000,
     fileSizeFormatted: "53.0 MB",
     changelog: [
+      "Novo Card Impacto Pro: Design de alto contraste com valor gigante, métricas nítidas e barra de veredito sólida (COMPENSA / NÃO COMPENSA).",
+      "Street View 360° nas Notificações: Totalmente preservado na barra de notificações com botões para Origem e Destino direto no Google Maps.",
+      "Leveza e Desempenho 0ms: Remoção de WebView no card flutuante, eliminando consumo de memória e travamentos.",
       "Filtro Anti-Distorção 99/Uber: Captura precisa do valor real, descartando bônus de dinâmica e acréscimos.",
-      "Histórico 100% Protegido: Bloqueio contra dados incompletos ou leituras corrompidas.",
-      "Suporte Preciso a Metros: Reconhecimento de distâncias curtas (ex: 459 m) na 99 e Uber.",
-      "Diálogo de Atualização Inteligente: Layout compacto sem cortes e botão Atualizar Depois restaurado.",
-      "Street View Otimizado: Busca direta no Google Maps com Visão 360° nativa."
+      "Histórico 100% Protegido: Bloqueio contra dados incompletos ou leituras corrompidas."
     ],
     mandatory: false,
   });

@@ -125,8 +125,8 @@ enum class PassengerRatingVerdict(val label: String, val emoji: String, val hexC
  */
 enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
     BANNER_PRO_STREETVIEW(
-        title = "Banner Pro com Street View Direto (Recomendado)",
-        subtitle = "Card horizontal moderno com R$/km, R$/hora, R$/min e botão Destino com Street View 360° embutido"
+        title = "Card Impacto Pro - Corrida Tocou (Recomendado)",
+        subtitle = "Design escuro com valor gigante, km, min, R$/km e barra de veredito de alto contraste (COMPENSA / NÃO COMPENSA)"
     ),
     PIRULITO_SIDEBAR(
         title = "Widget Lateral Compacto (Métricas Verticais)",
