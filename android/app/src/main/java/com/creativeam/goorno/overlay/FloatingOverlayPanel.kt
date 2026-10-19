@@ -610,7 +610,7 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             riskPill.addView(tvRisk)
             card.addView(riskPill)
-        } else if (result.isFavoriteDestination) {
+        } else if (result.isFavoriteZone) {
             val favPill = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
@@ -625,7 +625,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 }
             }
             val tvFav = TextView(context).apply {
-                text = "⭐ Destino Favorito: ${result.favoriteDestinationBadge.orEmpty()}"
+                text = "⭐ Destino Favorito: ${result.favoriteZoneBadge.orEmpty()}"
                 setTextColor(Color.parseColor("#6EE7B7"))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 setTypeface(typeface, Typeface.BOLD)
