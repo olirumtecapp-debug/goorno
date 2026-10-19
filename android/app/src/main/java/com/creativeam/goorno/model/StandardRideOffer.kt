@@ -124,9 +124,13 @@ enum class PassengerRatingVerdict(val label: String, val emoji: String, val hexC
  * Formato visual da janelinha flutuante quando toca corrida.
  */
 enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
-    FULL_CARD(
-        title = "Janela Moderna 3 Pilares + Veredito (Recomendado)",
-        subtitle = "Card escuro moderno com barras luminosas nos 3 pilares e pílula de veredito flutuante"
+    BANNER_PRO_STREETVIEW(
+        title = "Banner Pro com Street View Direto (Recomendado)",
+        subtitle = "Card horizontal moderno com R$/km, R$/hora, R$/min e botão Destino com Street View 360° embutido"
+    ),
+    PIRULITO_SIDEBAR(
+        title = "Widget Lateral Pirulito (Métricas Verticais)",
+        subtitle = "Card vertical compacto com velocímetro, odômetro, relógio e barras laterais coloridas (Esquerda, Centro ou Direita)"
     ),
     CLASSIC_LIGHT(
         title = "Card Clássico Fundo Claro (Tradicional)",
@@ -144,11 +148,12 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
     companion object {
         fun fromName(name: String?): OverlayDisplayStyle {
             return when (name?.uppercase()) {
+                "BANNER_PRO_STREETVIEW", "BANNER_PRO", "BANNER", "FULL_CARD", "MODERN" -> BANNER_PRO_STREETVIEW
+                "PIRULITO_SIDEBAR", "PIRULITO", "SIDEBAR" -> PIRULITO_SIDEBAR
                 "CLASSIC_LIGHT", "CLASSIC_V334", "CLASSIC" -> CLASSIC_LIGHT
                 "CLASSIC_DARK" -> CLASSIC_DARK
                 "MINI_BALL", "SEMAFORO_COMPACT", "COMPACT" -> MINI_BALL
-                "FULL_CARD", "MODERN" -> FULL_CARD
-                else -> entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: FULL_CARD
+                else -> entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: BANNER_PRO_STREETVIEW
             }
         }
     }
@@ -164,8 +169,10 @@ data class DriverFinancialConfig(
     val fuelPricePerLiter: Double = 5.89,
     val maintenanceCostPerKm: Double = 0.25,
     val fixedExtraCostPerRide: Double = 0.0,
-    val targetGrossPerKm: Double = 2.00,
-    val targetGrossPerHour: Double = 40.00,
+    val targetGrossPerKm: Double = 2.50,
+    val targetGrossPerHour: Double = 50.00,
+    val minGrossPerKm: Double = 1.80,
+    val minGrossPerHour: Double = 35.00,
     val targetNetPerKm: Double = 1.30,
     val targetNetPerHour: Double = 28.00,
     val yellowToleranceRatio: Double = 0.80,
@@ -180,8 +187,9 @@ data class DriverFinancialConfig(
     val minConfidenceThreshold: Double = 0.65,
     val overlayOpacityPercent: Int = 92,
     val overlayAutoMinimizeSec: Int = 5,
-    val overlayDisplayStyle: String = OverlayDisplayStyle.FULL_CARD.name,
+    val overlayDisplayStyle: String = OverlayDisplayStyle.BANNER_PRO_STREETVIEW.name,
     val overlayBubblePosition: String = "BELOW",
+    val overlayHorizontalPosition: String = "RIGHT",
     val showFloatingShortcutBubble: Boolean = true,
     val showProfitOnOverlay: Boolean = false,
     val showCostOnOverlay: Boolean = false,

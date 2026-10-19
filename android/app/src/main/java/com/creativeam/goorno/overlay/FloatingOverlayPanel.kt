@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -15,6 +16,9 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.creativeam.goorno.diagnostics.CopilotRuntimeState
@@ -25,18 +29,13 @@ import com.creativeam.goorno.model.OverlayDisplayStyle
 import com.creativeam.goorno.model.PassengerRatingVerdict
 import com.creativeam.goorno.model.SourceApp
 import com.creativeam.goorno.model.TrafficLightVerdict
+import com.creativeam.goorno.util.StreetViewLauncher
+import java.net.URLEncoder
 import java.util.Locale
 import kotlin.math.abs
 
 /**
- * Painel Flutuante Nativo v2.8.0 — Livremente Arrastável na Tela + Semáforo Otimizado + Lucro/Custo Opcionais.
- *
- * - TOTALMENTE ARRASTÁVEL: O motorista pode segurar e arrastar a janelinha para qualquer lugar da tela
- *   (meio, lateral, embaixo) para não atrapalhar o botão de recusar/desistir de um chamado da Uber ou 99.
- *   A posição escolhida fica salva automaticamente para todas as próximas chamadas!
- * - LUCRO E CUSTO OPCIONAIS (Ocultos por padrão na janela flutuante, ativáveis em "2. Janela").
- * - ZERO botões de Origem/Destino na janela flutuante (ficam apenas na Notificação do Topo e no Histórico).
- * - Quando há várias ofertas na tela (ex: Lista de Solicitações da 99), mostra 1 por vez (mostra -> apaga -> mostra a outra).
+ * Painel Flutuante Nativo v3.3.25 — Livremente Arrastável na Tela + Banner Pro com Street View + Widget Pirulito.
  */
 class FloatingOverlayPanel(private val context: Context) {
 
@@ -57,8 +56,9 @@ class FloatingOverlayPanel(private val context: Context) {
 
     private var currentOpacityPercent: Int = 92
     private var displayDurationSec: Int = 7
-    private var displayStyle: OverlayDisplayStyle = OverlayDisplayStyle.FULL_CARD
+    private var displayStyle: OverlayDisplayStyle = OverlayDisplayStyle.BANNER_PRO_STREETVIEW
     private var overlayBubblePosition: String = "BELOW"
+    private var overlayHorizontalPosition: String = "RIGHT"
     private var showFloatingShortcutBubble: Boolean = true
     private var showProfitOnOverlay: Boolean = false
     private var showCostOnOverlay: Boolean = false
@@ -130,6 +130,7 @@ class FloatingOverlayPanel(private val context: Context) {
             displayDurationSec = config.overlayAutoMinimizeSec.coerceIn(3, 45)
             displayStyle = OverlayDisplayStyle.fromName(config.overlayDisplayStyle)
             overlayBubblePosition = config.overlayBubblePosition
+            overlayHorizontalPosition = config.overlayHorizontalPosition
             showFloatingShortcutBubble = config.showFloatingShortcutBubble
             showProfitOnOverlay = config.showProfitOnOverlay
             showCostOnOverlay = config.showCostOnOverlay
@@ -143,14 +144,21 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     /**
-     * Volta a janela flutuante para a posição inicial padrão (abaixo do topo, sem cobrir botões).
+     * Volta a janela flutuante para a posição padrão configurada (Esquerda, Centro ou Direita).
      */
     fun resetSavedPosition() {
         posPrefs.edit().clear().apply()
         mainHandler.post {
             layoutParams?.let { lp ->
-                lp.x = 0
-                lp.y = dp(90)
+                val (defaultGravity, defaultX) = when (overlayHorizontalPosition) {
+                    "LEFT" -> Pair(Gravity.TOP or Gravity.START, dp(10))
+                    "RIGHT" -> Pair(Gravity.TOP or Gravity.END, dp(10))
+                    else -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
+                }
+                val defaultY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(210)
+                lp.gravity = defaultGravity
+                lp.x = defaultX
+                lp.y = defaultY
                 if (isAdded && rootContainer != null) {
                     try {
                         windowManager.updateViewLayout(rootContainer, lp)
@@ -232,10 +240,11 @@ class FloatingOverlayPanel(private val context: Context) {
         remainingSeconds = displayDurationSec.coerceIn(3, 7)
 
         val builtView = when (displayStyle) {
+            OverlayDisplayStyle.BANNER_PRO_STREETVIEW -> buildBannerProStreetView(currentEval, oneBasedIndex, totalInQueue)
+            OverlayDisplayStyle.PIRULITO_SIDEBAR -> buildPirulitoSidebarView(currentEval, oneBasedIndex, totalInQueue)
             OverlayDisplayStyle.MINI_BALL -> buildMiniBallView(currentEval, oneBasedIndex, totalInQueue)
             OverlayDisplayStyle.CLASSIC_LIGHT -> buildClassicLightCardView(currentEval, oneBasedIndex, totalInQueue)
             OverlayDisplayStyle.CLASSIC_DARK -> buildClassicDarkCardView(currentEval, oneBasedIndex, totalInQueue)
-            OverlayDisplayStyle.FULL_CARD -> buildModernSpeechBubbleCardView(currentEval, oneBasedIndex, totalInQueue)
         }
 
         contentWrapper?.addView(builtView)
@@ -459,17 +468,526 @@ class FloatingOverlayPanel(private val context: Context) {
     // IDENTICO AO DESIGN DE ALTA VISIBILIDADE DO MERCADO (NÚMEROS GRANDES 28sp)
     // SUPORTE TOTAL À POSIÇÃO DO BALÃO: ACIMA DO CARTÃO OU ABAIXO DO CARTÃO!
     // =========================================================================
-    @SuppressLint("ClickableViewAccessibility")
-    private fun buildFullCardView(
+    // =========================================================================
+    // FORMATO 1: BANNER PRO COM STREET VIEW DIRETO (IMAGENS 3 E 4 - RECOMENDADO)
+    // =========================================================================
+    @SuppressLint("ClickableViewAccessibility", "SetJavaScriptEnabled")
+    private fun buildBannerProStreetView(
         result: FinancialEvaluationResult,
         index: Int,
         totalCount: Int
     ): View {
-        return buildModernSpeechBubbleCardView(result, index, totalCount)
+        val offer = result.offer
+        val grossKm = result.grossPerKm ?: 0.0
+        val grossHr = result.grossPerHour ?: 0.0
+        val grossMin = grossHr / 60.0
+        val totalKm = result.totalConsideredDistanceKm ?: 0.0
+        val totalMin = result.totalConsideredDurationMin ?: 0
+        val price = offer.offeredPrice ?: 0.0
+
+        val targetKm = lastKnownConfig?.targetGrossPerKm ?: 2.50
+        val minKm = lastKnownConfig?.minGrossPerKm ?: 1.80
+        val targetHr = lastKnownConfig?.targetGrossPerHour ?: 50.00
+        val minHr = lastKnownConfig?.minGrossPerHour ?: 35.00
+
+        val kmColorHex = when {
+            grossKm >= targetKm -> "#22C55E"
+            grossKm >= minKm -> "#FACC15"
+            else -> "#EF4444"
+        }
+        val hrColorHex = when {
+            grossHr >= targetHr -> "#22C55E"
+            grossHr >= minHr -> "#FACC15"
+            else -> "#EF4444"
+        }
+        val minColorHex = when {
+            grossMin >= (targetHr / 60.0) -> "#22C55E"
+            grossMin >= (minHr / 60.0) -> "#FACC15"
+            else -> "#EF4444"
+        }
+
+        val verdictAccentHex = when (result.verdict) {
+            TrafficLightVerdict.GREEN -> "#22C55E"
+            TrafficLightVerdict.YELLOW -> "#FACC15"
+            TrafficLightVerdict.RED -> "#EF4444"
+            TrafficLightVerdict.GRAY_NEUTRAL -> "#64748B"
+        }
+
+        val rootLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setOnTouchListener(createDragOrTapTouchListener())
+        }
+
+        // Card Principal Escuro Translúcido
+        val card = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = roundedCardBg("#12151B", "#262E3B", 18f, 1)
+            layoutParams = LinearLayout.LayoutParams(dp(340), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                elevation = dp(10).toFloat()
+            }
+        }
+
+        // Linha Principal Superior: Barra Luminosa do Veredito + 3 Métricas Grandes (R$/km, R$/hora, R$/min)
+        val topRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        // Barra Luminosa Vertical na Lateral Esquerda (Imagem 3)
+        val leftGlowingBar = View(context).apply {
+            background = roundedBg(verdictAccentHex, 3f)
+            layoutParams = LinearLayout.LayoutParams(dp(4), dp(44)).apply {
+                rightMargin = dp(10)
+            }
+        }
+        topRow.addView(leftGlowingBar)
+
+        // 3 Colunas de Métricas Grandes
+        fun createMetricColumn(valueText: String, subtitleText: String, colorHex: String): View {
+            return LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+
+                val tvValue = TextView(context).apply {
+                    text = valueText
+                    setTextColor(Color.parseColor(colorHex))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 23f)
+                    setTypeface(typeface, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                }
+                addView(tvValue)
+
+                val tvSub = TextView(context).apply {
+                    text = subtitleText
+                    setTextColor(Color.parseColor("#94A3B8"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                    setTypeface(typeface, Typeface.NORMAL)
+                    gravity = Gravity.CENTER
+                }
+                addView(tvSub)
+            }
+        }
+
+        val kmStr = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm)
+        val hrStr = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossHr)
+        val minStr = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossMin)
+
+        topRow.addView(createMetricColumn(kmStr, "/km", kmColorHex))
+        topRow.addView(createMetricColumn(hrStr, "/hora", hrColorHex))
+        topRow.addView(createMetricColumn(minStr, "/min", minColorHex))
+        card.addView(topRow)
+
+        // Alerta de Zona de Risco ou Área Favorita
+        if (result.hasRiskAlert) {
+            val riskPill = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                setPadding(dp(8), dp(3), dp(8), dp(3))
+                background = roundedCardBg("#450A0A", "#DC2626", 8f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                    bottomMargin = dp(4)
+                }
+            }
+            val tvRisk = TextView(context).apply {
+                text = "⚠️ Zona de Risco: ${result.riskAlertBadge.orEmpty()}"
+                setTextColor(Color.parseColor("#FCA5A5"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+            }
+            riskPill.addView(tvRisk)
+            card.addView(riskPill)
+        } else if (result.isFavoriteDestination) {
+            val favPill = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                setPadding(dp(8), dp(3), dp(8), dp(3))
+                background = roundedCardBg("#064E3B", "#059669", 8f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                    bottomMargin = dp(4)
+                }
+            }
+            val tvFav = TextView(context).apply {
+                text = "⭐ Destino Favorito: ${result.favoriteDestinationBadge.orEmpty()}"
+                setTextColor(Color.parseColor("#6EE7B7"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+            }
+            favPill.addView(tvFav)
+            card.addView(favPill)
+        }
+
+        // Linha Inferior: R$ Total, Distância, Tempo, e Botão [📍 Destino / ✕ Fechar]
+        val bottomRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(8)
+            }
+        }
+
+        val tvSummary = TextView(context).apply {
+            val priceFormatted = formatCurrency(price)
+            val kmFormatted = String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", totalKm)
+            val minFormatted = "${totalMin} min"
+            text = "$priceFormatted  $kmFormatted  $minFormatted"
+            setTextColor(Color.parseColor("#E2E8F0"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setTypeface(typeface, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        bottomRow.addView(tvSummary)
+
+        // Divisor vertical sutil
+        val tvDivider = TextView(context).apply {
+            text = "|"
+            setTextColor(Color.parseColor("#475569"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setPadding(dp(4), 0, dp(6), 0)
+        }
+        bottomRow.addView(tvDivider)
+
+        // Botão Interativo "📍 Destino" com Street View 360° embutido
+        val btnDestino = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+            background = roundedCardBg("#1E2530", "#3B4858", 8f, 1)
+            isClickable = true
+            isFocusable = true
+        }
+
+        val tvBtnDestino = TextView(context).apply {
+            text = "📍 Destino"
+            setTextColor(Color.parseColor("#E2E8F0"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        btnDestino.addView(tvBtnDestino)
+        bottomRow.addView(btnDestino)
+        card.addView(bottomRow)
+
+        // Container Expansível do Street View (Imagem 4)
+        val streetViewContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setPadding(0, dp(8), 0, 0)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val destAddress = offer.destinationAddress.orEmpty().trim()
+        var isExpanded = false
+        var activeWebView: WebView? = null
+
+        btnDestino.setOnClickListener {
+            if (!isExpanded) {
+                isExpanded = true
+                tvBtnDestino.text = "✕ Fechar"
+                streetViewContainer.visibility = View.VISIBLE
+                remainingSeconds = 45 // Estende o tempo para o motorista visualizar com tranquilidade
+
+                streetViewContainer.removeAllViews()
+
+                // Barra superior de controle do Street View
+                val svHeader = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, 0, 0, dp(4))
+                }
+
+                val tvAddressTitle = TextView(context).apply {
+                    text = if (destAddress.isNotBlank()) "📍 $destAddress" else "📍 Destino desconhecido"
+                    setTextColor(Color.parseColor("#94A3B8"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                    maxLines = 1
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                svHeader.addView(tvAddressTitle)
+
+                if (destAddress.isNotBlank()) {
+                    val btnOpenFullMaps = TextView(context).apply {
+                        text = "🗺️ App"
+                        setTextColor(Color.parseColor("#38BDF8"))
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                        setTypeface(typeface, Typeface.BOLD)
+                        setPadding(dp(6), dp(2), dp(6), dp(2))
+                        setOnClickListener {
+                            StreetViewLauncher.openDirectStreetView(context, destAddress)
+                        }
+                    }
+                    svHeader.addView(btnOpenFullMaps)
+                }
+                streetViewContainer.addView(svHeader)
+
+                if (destAddress.isNotBlank()) {
+                    try {
+                        val webView = WebView(context).apply {
+                            layoutParams = LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                dp(210)
+                            )
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            settings.loadWithOverviewMode = true
+                            settings.useWideViewPort = true
+                            webViewClient = WebViewClient()
+                            val encoded = Uri.encode(destAddress)
+                            loadUrl("https://maps.google.com/maps?q=$encoded&layer=c&output=embed")
+                        }
+                        activeWebView = webView
+                        streetViewContainer.addView(webView)
+                    } catch (_: Throwable) {
+                        val tvError = TextView(context).apply {
+                            text = "Toque em '🗺️ App' para abrir o Street View direto no Maps."
+                            setTextColor(Color.parseColor("#CBD5E1"))
+                            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                            setPadding(dp(8), dp(16), dp(8), dp(16))
+                            gravity = Gravity.CENTER
+                        }
+                        streetViewContainer.addView(tvError)
+                    }
+                } else {
+                    val tvNoAddr = TextView(context).apply {
+                        text = "Endereço de destino não identificado na oferta da Uber/99."
+                        setTextColor(Color.parseColor("#CBD5E1"))
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                        setPadding(dp(8), dp(16), dp(8), dp(16))
+                        gravity = Gravity.CENTER
+                    }
+                    streetViewContainer.addView(tvNoAddr)
+                }
+            } else {
+                isExpanded = false
+                tvBtnDestino.text = "📍 Destino"
+                streetViewContainer.visibility = View.GONE
+                try {
+                    activeWebView?.destroy()
+                } catch (_: Throwable) {}
+                activeWebView = null
+                streetViewContainer.removeAllViews()
+            }
+        }
+
+        card.addView(streetViewContainer)
+        rootLayout.addView(card)
+        return rootLayout
+    }
+
+    // =========================================================================
+    // FORMATO 2: WIDGET LATERAL PIRULITO (IMAGEM 2)
+    // =========================================================================
+    @SuppressLint("ClickableViewAccessibility")
+    private fun buildPirulitoSidebarView(
+        result: FinancialEvaluationResult,
+        index: Int,
+        totalCount: Int
+    ): View {
+        val offer = result.offer
+        val grossKm = result.grossPerKm ?: 0.0
+        val grossHr = result.grossPerHour ?: 0.0
+        val totalKm = result.totalConsideredDistanceKm ?: 0.0
+        val totalMin = result.totalConsideredDurationMin ?: 0
+        val price = offer.offeredPrice ?: 0.0
+
+        val targetKm = lastKnownConfig?.targetGrossPerKm ?: 2.50
+        val minKm = lastKnownConfig?.minGrossPerKm ?: 1.80
+        val targetHr = lastKnownConfig?.targetGrossPerHour ?: 50.00
+        val minHr = lastKnownConfig?.minGrossPerHour ?: 35.00
+
+        val kmColorHex = when {
+            grossKm >= targetKm -> "#22C55E"
+            grossKm >= minKm -> "#FACC15"
+            else -> "#EF4444"
+        }
+        val hrColorHex = when {
+            grossHr >= targetHr -> "#22C55E"
+            grossHr >= minHr -> "#FACC15"
+            else -> "#EF4444"
+        }
+
+        val rootLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setOnTouchListener(createDragOrTapTouchListener())
+        }
+
+        // Card Vertical Estilo Pirulito (Imagem 2)
+        val card = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            background = roundedCardBg("#12141A", "#2A3241", 16f, 1)
+            layoutParams = LinearLayout.LayoutParams(dp(170), LinearLayout.LayoutParams.WRAP_CONTENT)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                elevation = dp(10).toFloat()
+            }
+        }
+
+        // Topo: Ícone Pin + "PIRULITO" + Temporizador + Botão Fechar
+        val header = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, dp(6))
+        }
+
+        val tvTitle = TextView(context).apply {
+            text = "📍 PIRULITO"
+            setTextColor(Color.parseColor("#F59E0B"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        header.addView(tvTitle)
+
+        val timerTv = TextView(context).apply {
+            text = "${remainingSeconds}s"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setPadding(0, 0, dp(6), 0)
+        }
+        activeTimerLabel = timerTv
+        header.addView(timerTv)
+
+        val btnClose = TextView(context).apply {
+            text = "✕"
+            setTextColor(Color.parseColor("#64748B"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setPadding(dp(4), 0, dp(4), 0)
+            setOnClickListener { dismissCurrentOfferCardByUser() }
+        }
+        header.addView(btnClose)
+        card.addView(header)
+
+        // Item 1: Velocímetro (R$/km) com barra lateral colorida
+        fun createPirulitoTile(
+            barColorHex: String,
+            iconEmoji: String,
+            titleText: String,
+            valueText: String,
+            textColorHex: String
+        ): View {
+            val tile = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = roundedCardBg("#1A1D24", "#262C38", 10f, 1)
+                setPadding(dp(6), dp(5), dp(8), dp(5))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    bottomMargin = dp(5)
+                }
+            }
+
+            // Barra lateral colorida (Vermelho / Amarelo / Verde)
+            val bar = View(context).apply {
+                background = roundedBg(barColorHex, 2f)
+                layoutParams = LinearLayout.LayoutParams(dp(4), dp(28)).apply {
+                    rightMargin = dp(6)
+                }
+            }
+            tile.addView(bar)
+
+            // Ícone do Tile
+            val tvIcon = TextView(context).apply {
+                text = iconEmoji
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                setPadding(0, 0, dp(6), 0)
+            }
+            tile.addView(tvIcon)
+
+            // Texto com Label e Valor
+            val col = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            val tvLabel = TextView(context).apply {
+                text = titleText
+                setTextColor(Color.parseColor("#94A3B8"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f)
+            }
+            col.addView(tvLabel)
+
+            val tvVal = TextView(context).apply {
+                text = valueText
+                setTextColor(Color.parseColor(textColorHex))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                setTypeface(typeface, Typeface.BOLD)
+            }
+            col.addView(tvVal)
+            tile.addView(col)
+
+            return tile
+        }
+
+        val kmVal = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm)
+        val hrVal = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossHr)
+        val timeVal = if (totalKm > 0) "${totalMin} min • ${String.format(Locale.forLanguageTag("pt-BR"), "%.1f", totalKm)}km" else "${totalMin} min"
+
+        card.addView(createPirulitoTile(kmColorHex, "🏎️", "R$/km", kmVal, kmColorHex))
+        card.addView(createPirulitoTile(hrColorHex, "🕒", "R$/hora", hrVal, hrColorHex))
+        card.addView(createPirulitoTile("#3B82F6", "⏱️", "Tempo total", timeVal, "#60A5FA"))
+
+        // Alerta de Risco compacto se houver
+        if (result.hasRiskAlert) {
+            val tvRisk = TextView(context).apply {
+                text = "⚠️ Risco: ${result.riskAlertBadge.orEmpty()}"
+                setTextColor(Color.parseColor("#EF4444"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(2), 0, dp(4))
+                gravity = Gravity.CENTER
+            }
+            card.addView(tvRisk)
+        }
+
+        // Rodapé com Valor Total
+        val footer = TextView(context).apply {
+            text = "${offer.sourceApp.displayName}  •  ${formatCurrency(price)}"
+            setTextColor(Color.parseColor("#E2E8F0"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(3), 0, 0)
+        }
+        card.addView(footer)
+
+        rootLayout.addView(card)
+        return rootLayout
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun buildModernSpeechBubbleCardView(
+        result: FinancialEvaluationResult,
+        index: Int,
+        totalCount: Int
+    ): View {
+        return buildBannerProStreetView(result, index, totalCount)
+    }
+
+    private fun legacyBuildModernSpeechBubbleCardView(
         result: FinancialEvaluationResult,
         index: Int,
         totalCount: Int
@@ -1989,10 +2507,15 @@ class FloatingOverlayPanel(private val context: Context) {
             WindowManager.LayoutParams.TYPE_PHONE
         }
 
-        // Posição inicial padrão: dp(90) abaixo do topo para não ficar em cima do botão "X / Recusar" do topo da 99/Uber,
-        // ou na última posição exata para onde o motorista arrastou!
-        val savedX = posPrefs.getInt("saved_x", 0)
-        val savedY = posPrefs.getInt("saved_y", dp(90))
+        val (defaultGravity, defaultX) = when (overlayHorizontalPosition) {
+            "LEFT" -> Pair(Gravity.TOP or Gravity.START, dp(10))
+            "RIGHT" -> Pair(Gravity.TOP or Gravity.END, dp(10))
+            else -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
+        }
+        val defaultY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(210)
+
+        val savedX = posPrefs.getInt("saved_x", defaultX)
+        val savedY = posPrefs.getInt("saved_y", defaultY)
 
         layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -2003,7 +2526,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            gravity = defaultGravity
             x = savedX
             y = savedY
         }

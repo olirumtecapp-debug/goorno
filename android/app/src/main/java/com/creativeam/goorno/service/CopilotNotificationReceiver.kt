@@ -350,6 +350,11 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                 )
 
                 val notification = builder.build()
+                if (!GoOrNoForegroundKeepAliveService.isServiceRunning()) {
+                    try {
+                        GoOrNoForegroundKeepAliveService.start(context)
+                    } catch (_: Throwable) {}
+                }
                 nm.notify(STATUS_NOTIFICATION_ID, notification)
             } catch (_: Exception) {
             }

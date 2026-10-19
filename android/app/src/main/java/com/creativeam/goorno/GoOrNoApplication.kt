@@ -68,10 +68,21 @@ class GoOrNoApplication : Application() {
         }
 
         // Mantém todas as configurações do motorista sincronizadas continuamente em memória
-        // mesmo que o motorista abra WhatsApp, Waze ou outros aplicativos de terceiros!
+        // e ancora o Foreground Service para blindagem total contra o LMK do Android (Spotify, Instagram, etc)
         appScope.launch {
             preferencesRepository.configFlow.collectLatest { cfg ->
                 overlayPanel.applyConfig(cfg)
+                if (cfg.copilotMonitoringEnabled) {
+                    com.creativeam.goorno.service.GoOrNoForegroundKeepAliveService.start(this@GoOrNoApplication)
+                    com.creativeam.goorno.service.CopilotNotificationReceiver.showActiveNotification(
+                        context = this@GoOrNoApplication,
+                        showProfit = cfg.showProfitOnOverlay,
+                        showCost = cfg.showCostOnOverlay
+                    )
+                } else {
+                    com.creativeam.goorno.service.GoOrNoForegroundKeepAliveService.stop(this@GoOrNoApplication)
+                    com.creativeam.goorno.service.CopilotNotificationReceiver.cancelActiveNotification(this@GoOrNoApplication)
+                }
             }
         }
     }

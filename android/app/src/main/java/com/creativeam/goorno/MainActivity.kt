@@ -139,6 +139,7 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READING_IN_PROGRESS)
+            requestIgnoreBatteryOptimizationsIfNeeded()
         }
     }
 
@@ -176,6 +177,21 @@ class MainActivity : ComponentActivity() {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
         } catch (_: Exception) {
+        }
+    }
+
+    private fun requestIgnoreBatteryOptimizationsIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    startActivity(intent)
+                }
+            } catch (_: Exception) {
+            }
         }
     }
 

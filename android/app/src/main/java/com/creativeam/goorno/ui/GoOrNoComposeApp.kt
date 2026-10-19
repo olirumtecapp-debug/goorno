@@ -28,6 +28,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -1131,6 +1133,9 @@ fun GoOrNoComposeApp(
                         var bubblePosition by remember(config.overlayBubblePosition) {
                             mutableStateOf(config.overlayBubblePosition)
                         }
+                        var horizontalPosition by remember(config.overlayHorizontalPosition) {
+                            mutableStateOf(config.overlayHorizontalPosition)
+                        }
                         var showShortcutBubble by remember(config.showFloatingShortcutBubble) {
                             mutableStateOf(config.showFloatingShortcutBubble)
                         }
@@ -1242,8 +1247,8 @@ fun GoOrNoComposeApp(
                                                 .padding(vertical = 8.dp)
                                         ) {
                                             when (selectedStyle) {
-                                                OverlayDisplayStyle.FULL_CARD -> {
-                                                    // FORMATO 1: MODERNO 3 PILARES + VEREDITO (IDÊNTICO À IMAGEM 2)
+                                                OverlayDisplayStyle.BANNER_PRO_STREETVIEW -> {
+                                                    // FORMATO 1: BANNER PRO COM STREET VIEW DIRETO (IMAGEM 3 & 4)
                                                     if (isAbove) {
                                                         Surface(
                                                             color = vColor,
@@ -1262,20 +1267,48 @@ fun GoOrNoComposeApp(
                                                     }
 
                                                     Surface(
-                                                        color = Color(0xFF111F1A),
+                                                        color = Color(0xFF12151B),
                                                         shape = RoundedCornerShape(18.dp),
-                                                        border = BorderStroke(1.5.dp, vColor),
+                                                        border = BorderStroke(1.5.dp, Color(0xFF262E3B)),
                                                         shadowElevation = 8.dp,
                                                         modifier = Modifier.fillMaxWidth()
                                                     ) {
                                                         Column(modifier = Modifier.padding(14.dp, 10.dp, 14.dp, 10.dp)) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth()
-                                                                    .height(3.dp)
-                                                                    .background(vColor, RoundedCornerShape(2.dp))
-                                                            )
-                                                            Spacer(modifier = Modifier.height(8.dp))
+                                                            Row(
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .width(4.dp)
+                                                                        .height(42.dp)
+                                                                        .background(vColor, RoundedCornerShape(2.dp))
+                                                                )
+                                                                Spacer(modifier = Modifier.width(10.dp))
+                                                                Column(
+                                                                    modifier = Modifier.weight(1f),
+                                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                                ) {
+                                                                    Text("2,11", color = vColor, fontSize = 23.sp, fontWeight = FontWeight.Black)
+                                                                    Text("/km", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                                }
+                                                                Column(
+                                                                    modifier = Modifier.weight(1f),
+                                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                                ) {
+                                                                    Text("57,42", color = vColor, fontSize = 23.sp, fontWeight = FontWeight.Black)
+                                                                    Text("/hora", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                                }
+                                                                Column(
+                                                                    modifier = Modifier.weight(1f),
+                                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                                ) {
+                                                                    Text("0,96", color = vColor, fontSize = 23.sp, fontWeight = FontWeight.Black)
+                                                                    Text("/min", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                                }
+                                                            }
+
+                                                            Spacer(modifier = Modifier.height(10.dp))
 
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
@@ -1283,48 +1316,136 @@ fun GoOrNoComposeApp(
                                                                 verticalAlignment = Alignment.CenterVertically
                                                             ) {
                                                                 Text(
-                                                                    text = "Uber - R$ 14,01 · 17 min · 6,3 km",
-                                                                    color = Color(0xFFCBD5E1),
+                                                                    text = "R$ 42,11 · 20,0 km · 44 min",
+                                                                    color = Color.White,
                                                                     fontSize = 12.sp,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    modifier = Modifier.weight(1f)
-                                                                )
-                                                                Text(
-                                                                    text = "7s",
-                                                                    color = Color(0xFF94A3B8),
-                                                                    fontSize = 11.sp,
                                                                     fontWeight = FontWeight.Bold
                                                                 )
+                                                                Surface(
+                                                                    color = Color(0xFF1E293B),
+                                                                    shape = RoundedCornerShape(8.dp),
+                                                                    border = BorderStroke(1.dp, Color(0xFF38BDF8))
+                                                                ) {
+                                                                    Text(
+                                                                        text = "📍 Destino",
+                                                                        color = Color(0xFF38BDF8),
+                                                                        fontSize = 11.sp,
+                                                                        fontWeight = FontWeight.Bold,
+                                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                                    )
+                                                                }
                                                             }
+                                                        }
+                                                    }
 
-                                                            Spacer(modifier = Modifier.height(8.dp))
+                                                    if (!isAbove) {
+                                                        Spacer(modifier = Modifier.height(6.dp))
+                                                        Surface(
+                                                            color = vColor,
+                                                            shape = RoundedCornerShape(22.dp),
+                                                            shadowElevation = 6.dp
+                                                        ) {
+                                                            Text(
+                                                                text = vText,
+                                                                color = vTextColor,
+                                                                fontWeight = FontWeight.Black,
+                                                                fontSize = 13.sp,
+                                                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 7.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
 
+                                                OverlayDisplayStyle.PIRULITO_SIDEBAR -> {
+                                                    // FORMATO 2: WIDGET LATERAL PIRULITO (IMAGEM 2)
+                                                    if (isAbove) {
+                                                        Surface(
+                                                            color = vColor,
+                                                            shape = RoundedCornerShape(22.dp),
+                                                            shadowElevation = 6.dp
+                                                        ) {
+                                                            Text(
+                                                                text = vText,
+                                                                color = vTextColor,
+                                                                fontWeight = FontWeight.Black,
+                                                                fontSize = 13.sp,
+                                                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 7.dp)
+                                                            )
+                                                        }
+                                                        Spacer(modifier = Modifier.height(6.dp))
+                                                    }
+
+                                                    Surface(
+                                                        color = Color(0xFF12141A),
+                                                        shape = RoundedCornerShape(16.dp),
+                                                        border = BorderStroke(1.5.dp, Color(0xFF2A3241)),
+                                                        shadowElevation = 8.dp,
+                                                        modifier = Modifier.width(180.dp)
+                                                    ) {
+                                                        Column(modifier = Modifier.padding(10.dp, 8.dp, 10.dp, 8.dp)) {
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
-                                                                horizontalArrangement = Arrangement.SpaceBetween
+                                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                                verticalAlignment = Alignment.CenterVertically
                                                             ) {
-                                                                Column {
-                                                                    Text("R$/Km", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                        Box(modifier = Modifier.size(3.5.dp, 20.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                        Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("2.22", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                                                                Text("📍 PIRULITO", color = Color(0xFFF59E0B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                                Text("7s", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                            }
+                                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                                            // Tile 1: R$/km
+                                                            Surface(
+                                                                color = Color(0xFF1A1D24),
+                                                                shape = RoundedCornerShape(10.dp),
+                                                                border = BorderStroke(1.dp, Color(0xFF262C38)),
+                                                                modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp)
+                                                            ) {
+                                                                Row(modifier = Modifier.padding(6.dp, 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                                    Box(modifier = Modifier.size(3.dp, 28.dp).background(vColor, RoundedCornerShape(2.dp)))
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Text("🏎️", fontSize = 16.sp)
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Column {
+                                                                        Text("R$/km", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                                                                        Text("2,11", color = vColor, fontSize = 14.sp, fontWeight = FontWeight.Black)
                                                                     }
                                                                 }
-                                                                Column {
-                                                                    Text("R$/Hora", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                        Box(modifier = Modifier.size(3.5.dp, 20.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                        Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("49", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                                                            }
+
+                                                            // Tile 2: R$/hora
+                                                            Surface(
+                                                                color = Color(0xFF1A1D24),
+                                                                shape = RoundedCornerShape(10.dp),
+                                                                border = BorderStroke(1.dp, Color(0xFF262C38)),
+                                                                modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp)
+                                                            ) {
+                                                                Row(modifier = Modifier.padding(6.dp, 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                                    Box(modifier = Modifier.size(3.dp, 28.dp).background(vColor, RoundedCornerShape(2.dp)))
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Text("⏱️", fontSize = 16.sp)
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Column {
+                                                                        Text("R$/hora", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                                                                        Text("57,42", color = vColor, fontSize = 14.sp, fontWeight = FontWeight.Black)
                                                                     }
                                                                 }
-                                                                Column {
-                                                                    Text("Nota", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                        Box(modifier = Modifier.size(3.5.dp, 20.dp).background(Color(0xFF00C853), RoundedCornerShape(2.dp)))
-                                                                        Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("4.96", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                                                            }
+
+                                                            // Tile 3: Tempo total
+                                                            Surface(
+                                                                color = Color(0xFF1A1D24),
+                                                                shape = RoundedCornerShape(10.dp),
+                                                                border = BorderStroke(1.dp, Color(0xFF262C38)),
+                                                                modifier = Modifier.fillMaxWidth()
+                                                            ) {
+                                                                Row(modifier = Modifier.padding(6.dp, 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                                    Box(modifier = Modifier.size(3.dp, 28.dp).background(Color(0xFF38BDF8), RoundedCornerShape(2.dp)))
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Text("⌛", fontSize = 16.sp)
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Column {
+                                                                        Text("Tempo total", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                                                                        Text("44 min", color = Color(0xFF38BDF8), fontSize = 14.sp, fontWeight = FontWeight.Black)
                                                                     }
                                                                 }
                                                             }
@@ -1943,6 +2064,73 @@ fun GoOrNoComposeApp(
 
                                 HorizontalDivider(color = CleanCardBorder)
 
+                                // Posição Horizontal na Tela (Esquerda, Centro ou Direita)
+                                Text(
+                                    text = "Alinhamento na Tela (Esquerda, Centro ou Direita)",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 13.5.sp,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = "Escolha onde o card deve se posicionar na tela (ideal para o Widget Pirulito ou Banner não tampar os botões):",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(
+                                        Pair("LEFT", "⬅️ Esquerda"),
+                                        Pair("CENTER", "⏹️ Centro"),
+                                        Pair("RIGHT", "➡️ Direita")
+                                    ).forEach { (posKey, label) ->
+                                        val isSel = horizontalPosition == posKey
+                                        Surface(
+                                            color = if (isSel) PetrolHeader else SoftSurfaceVariant,
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.5.dp, if (isSel) PetrolHeader else CleanCardBorder),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable {
+                                                    horizontalPosition = posKey
+                                                    savedFlag = false
+                                                    val updated = config.copy(overlayHorizontalPosition = posKey)
+                                                    scope.launch {
+                                                        app.preferencesRepository.saveConfig(updated)
+                                                        app.overlayPanel.applyConfig(updated)
+                                                        notifyUser("Alinhamento: $label")
+                                                    }
+                                                }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 11.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (isSel) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                                    contentDescription = null,
+                                                    tint = if (isSel) LimeBright else MutedText,
+                                                    modifier = Modifier.size(15.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = label,
+                                                    color = if (isSel) Color.White else PetrolDarkText,
+                                                    fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
+                                                    fontSize = 11.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
                                 // Botão Flutuante de Atalho na Tela (com opção de ocultar se incomodar)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -2152,6 +2340,7 @@ fun GoOrNoComposeApp(
                                             vehicleModel = vehicleModel.ifBlank { "Veículo" },
                                             overlayDisplayStyle = selectedStyle.name,
                                             overlayBubblePosition = bubblePosition,
+                                            overlayHorizontalPosition = horizontalPosition,
                                             showFloatingShortcutBubble = showShortcutBubble,
                                             showProfitOnOverlay = showProfitOnOverlay,
                                             showCostOnOverlay = showCostOnOverlay,
@@ -2417,6 +2606,70 @@ fun GoOrNoComposeApp(
                         SuasFaixasMatrixCard(
                             config = config,
                             onAdjustClick = { showAdjustFaixasDialog = true }
+                        )
+                    }
+                    item {
+                        VisualDualTargetSliderCard(
+                            title = "Ganho por quilômetro",
+                            description = "Define quando o R$/km da corrida é ruim, OK ou bom.",
+                            unitSuffix = "/km",
+                            minValue = config.minGrossPerKm,
+                            goodValue = config.targetGrossPerKm,
+                            rangeMin = 1.0,
+                            rangeMax = 8.0,
+                            step = 0.10,
+                            onMinChange = { newVal ->
+                                val updated = config.copy(
+                                    minGrossPerKm = newVal,
+                                    yellowToleranceRatio = if (config.targetGrossPerKm > 0.0) (newVal / config.targetGrossPerKm).coerceIn(0.5, 0.95) else config.yellowToleranceRatio
+                                )
+                                scope.launch {
+                                    app.preferencesRepository.saveConfig(updated)
+                                    app.overlayPanel.applyConfig(updated)
+                                }
+                            },
+                            onGoodChange = { newVal ->
+                                val updated = config.copy(
+                                    targetGrossPerKm = newVal,
+                                    yellowToleranceRatio = if (newVal > 0.0) (config.minGrossPerKm / newVal).coerceIn(0.5, 0.95) else config.yellowToleranceRatio
+                                )
+                                scope.launch {
+                                    app.preferencesRepository.saveConfig(updated)
+                                    app.overlayPanel.applyConfig(updated)
+                                }
+                            }
+                        )
+                    }
+                    item {
+                        VisualDualTargetSliderCard(
+                            title = "Ganho por hora",
+                            description = "Define quando o R$/hora da corrida é ruim, OK ou bom.",
+                            unitSuffix = "/h",
+                            minValue = config.minGrossPerHour,
+                            goodValue = config.targetGrossPerHour,
+                            rangeMin = 20.0,
+                            rangeMax = 150.0,
+                            step = 5.0,
+                            onMinChange = { newVal ->
+                                val updated = config.copy(
+                                    minGrossPerHour = newVal,
+                                    yellowToleranceRatio = if (config.targetGrossPerHour > 0.0) (newVal / config.targetGrossPerHour).coerceIn(0.5, 0.95) else config.yellowToleranceRatio
+                                )
+                                scope.launch {
+                                    app.preferencesRepository.saveConfig(updated)
+                                    app.overlayPanel.applyConfig(updated)
+                                }
+                            },
+                            onGoodChange = { newVal ->
+                                val updated = config.copy(
+                                    targetGrossPerHour = newVal,
+                                    yellowToleranceRatio = if (newVal > 0.0) (config.minGrossPerHour / newVal).coerceIn(0.5, 0.95) else config.yellowToleranceRatio
+                                )
+                                scope.launch {
+                                    app.preferencesRepository.saveConfig(updated)
+                                    app.overlayPanel.applyConfig(updated)
+                                }
+                            }
                         )
                     }
                     item {
@@ -5319,13 +5572,10 @@ fun GoOrNoComposeApp(
     // DIALOG 1: AJUSTAR FAIXAS DO SEMÁFORO (POPUP INTERATIVO)
     // -------------------------------------------------------------
     if (showAdjustFaixasDialog) {
-        var tempKm by remember(config.targetGrossPerKm) { mutableStateOf(config.targetGrossPerKm) }
-        var tempHr by remember(config.targetGrossPerHour) { mutableStateOf(config.targetGrossPerHour) }
-        var tempRatio by remember(config.yellowToleranceRatio) { mutableStateOf(config.yellowToleranceRatio) }
-
-        val ratio = tempRatio.coerceIn(0.5, 0.95)
-        val kmYellow = tempKm * ratio
-        val hrYellow = tempHr * ratio
+        var tempMinKm by remember(config.minGrossPerKm) { mutableStateOf(config.minGrossPerKm) }
+        var tempTargetKm by remember(config.targetGrossPerKm) { mutableStateOf(config.targetGrossPerKm) }
+        var tempMinHr by remember(config.minGrossPerHour) { mutableStateOf(config.minGrossPerHour) }
+        var tempTargetHr by remember(config.targetGrossPerHour) { mutableStateOf(config.targetGrossPerHour) }
 
         AlertDialog(
             onDismissRequest = { showAdjustFaixasDialog = false },
@@ -5345,7 +5595,7 @@ fun GoOrNoComposeApp(
                             color = PetrolDarkText
                         )
                         Text(
-                            text = "Defina suas metas e tolerância para classificar as viagens",
+                            text = "Defina os limites de ganho para classificar as viagens",
                             fontSize = 11.sp,
                             color = MutedText
                         )
@@ -5357,153 +5607,37 @@ fun GoOrNoComposeApp(
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // 1. Meta R$/km
-                    Surface(
-                        color = SoftSurfaceVariant,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, CleanCardBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "Meta R$/km (Mínimo Verde):",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PetrolHeader
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                FilledTonalButton(
-                                    onClick = { tempKm = ((tempKm - 0.10) * 100).roundToInt() / 100.0.coerceAtLeast(0.50) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                    modifier = Modifier.height(32.dp)
-                                ) {
-                                    Text("-0,10", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                }
-                                Text(
-                                    text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", tempKm),
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = TrafficGreen
-                                )
-                                FilledTonalButton(
-                                    onClick = { tempKm = ((tempKm + 0.10) * 100).roundToInt() / 100.0.coerceAtMost(15.0) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                    modifier = Modifier.height(32.dp)
-                                ) {
-                                    Text("+0,10", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                }
-                            }
-                        }
-                    }
+                    // 1. Ganho por quilômetro (Imagem 1)
+                    VisualDualTargetSliderCard(
+                        title = "Ganho por quilômetro",
+                        description = "Define quando o R$/km da corrida é ruim, OK ou bom.",
+                        unitSuffix = "/km",
+                        minValue = tempMinKm,
+                        goodValue = tempTargetKm,
+                        rangeMin = 1.0,
+                        rangeMax = 8.0,
+                        step = 0.10,
+                        onMinChange = { tempMinKm = it },
+                        onGoodChange = { tempTargetKm = it }
+                    )
 
-                    // 2. Meta R$/hora
-                    Surface(
-                        color = SoftSurfaceVariant,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, CleanCardBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "Meta R$/hora (Mínimo Verde):",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PetrolHeader
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                FilledTonalButton(
-                                    onClick = { tempHr = (tempHr - 5.0).coerceAtLeast(10.0) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                    modifier = Modifier.height(32.dp)
-                                ) {
-                                    Text("-5,00", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                }
-                                Text(
-                                    text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", tempHr),
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = TrafficGreen
-                                )
-                                FilledTonalButton(
-                                    onClick = { tempHr = (tempHr + 5.0).coerceAtMost(250.0) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                    modifier = Modifier.height(32.dp)
-                                ) {
-                                    Text("+5,00", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                }
-                            }
-                        }
-                    }
+                    // 2. Ganho por hora (Imagem 1)
+                    VisualDualTargetSliderCard(
+                        title = "Ganho por hora",
+                        description = "Define quando o R$/hora da corrida é ruim, OK ou bom.",
+                        unitSuffix = "/h",
+                        minValue = tempMinHr,
+                        goodValue = tempTargetHr,
+                        rangeMin = 20.0,
+                        rangeMax = 150.0,
+                        step = 5.0,
+                        onMinChange = { tempMinHr = it },
+                        onGoodChange = { tempTargetHr = it }
+                    )
 
-                    // 3. Tolerância Amarela (%)
-                    Surface(
-                        color = SoftSurfaceVariant,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, CleanCardBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Tolerância Amarela (Avaliar):",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PetrolHeader
-                                )
-                                Text(
-                                    text = "${(ratio * 100).toInt()}% da meta",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = TrafficYellow
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                listOf(0.70, 0.75, 0.80, 0.85, 0.90).forEach { preset ->
-                                    val isSelected = kotlin.math.abs(tempRatio - preset) < 0.02
-                                    Surface(
-                                        color = if (isSelected) TrafficYellow else Color.White,
-                                        border = BorderStroke(1.dp, if (isSelected) TrafficYellow else CleanCardBorder),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clickable { tempRatio = preset }
-                                    ) {
-                                        Text(
-                                            text = "${(preset * 100).toInt()}%",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) Color.White else PetrolDarkText,
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier.padding(vertical = 5.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 4. Pré-visualização ao vivo das faixas
+                    // 3. Resumo das Faixas ao vivo
                     Text(
                         text = "Resultado das Faixas:",
                         fontSize = 11.5.sp,
@@ -5526,15 +5660,15 @@ fun GoOrNoComposeApp(
                             HorizontalDivider(color = CleanCardBorder)
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("R$/km", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText, modifier = Modifier.weight(1.2f))
-                                Text("< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmYellow)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                                Text("${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", kmYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", tempKm)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center)
-                                Text(">= ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", tempKm)}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficGreen, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+                                Text("< ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", tempMinKm)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                                Text("${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", tempMinKm)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", tempTargetKm)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center)
+                                Text(">= ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", tempTargetKm)}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficGreen, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
                             }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("R$/hora", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = PetrolDarkText, modifier = Modifier.weight(1.2f))
-                                Text("< ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrYellow)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                                Text("${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", hrYellow)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", tempHr)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center)
-                                Text(">= ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", tempHr)}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficGreen, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+                                Text("< ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", tempMinHr)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                                Text("${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", tempMinHr)} - ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", tempTargetHr)}", fontSize = 10.sp, color = PetrolDarkText, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center)
+                                Text(">= ${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", tempTargetHr)}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TrafficGreen, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
                             }
                         }
                     }
@@ -5544,9 +5678,11 @@ fun GoOrNoComposeApp(
                 Button(
                     onClick = {
                         val updated = config.copy(
-                            targetGrossPerKm = tempKm,
-                            targetGrossPerHour = tempHr,
-                            yellowToleranceRatio = tempRatio
+                            minGrossPerKm = tempMinKm,
+                            targetGrossPerKm = tempTargetKm,
+                            minGrossPerHour = tempMinHr,
+                            targetGrossPerHour = tempTargetHr,
+                            yellowToleranceRatio = if (tempTargetKm > 0.0) (tempMinKm / tempTargetKm).coerceIn(0.5, 0.95) else config.yellowToleranceRatio
                         )
                         scope.launch {
                             app.preferencesRepository.saveConfig(updated)
@@ -6564,6 +6700,272 @@ private fun MetricBox(modifier: Modifier = Modifier, label: String, value: Strin
         ) {
             Text(text = label, fontSize = 10.sp, color = MutedText, fontWeight = FontWeight.Bold)
             Text(text = value, fontSize = 13.5.sp, color = PetrolDarkText, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+fun VisualDualTargetSliderCard(
+    title: String,
+    description: String,
+    unitSuffix: String,
+    minValue: Double,
+    goodValue: Double,
+    rangeMin: Double,
+    rangeMax: Double,
+    step: Double,
+    onMinChange: (Double) -> Unit,
+    onGoodChange: (Double) -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, CleanCardBorder),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Column {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp,
+                    color = PetrolDarkText
+                )
+                Text(
+                    text = description,
+                    fontSize = 11.5.sp,
+                    color = MutedText
+                )
+            }
+
+            // Dois Quadros Lado a Lado (Ruim até vs Bom a partir de) - Fiel à Imagem 1
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Caixa 1: Ruim até (Borda âmbar/amarela)
+                Surface(
+                    color = SoftSurfaceVariant,
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.5.dp, Color(0xFFEAB308)),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "Ruim até",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFB45309)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", minValue),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
+                                color = PetrolDarkText
+                            )
+                            Text(
+                                text = unitSuffix,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MutedText
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            FilledTonalButton(
+                                onClick = {
+                                    val n = ((minValue - step) * 100).roundToInt() / 100.0
+                                    onMinChange(n.coerceAtLeast(rangeMin))
+                                },
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.weight(1f).height(28.dp)
+                            ) {
+                                Text("-", fontWeight = FontWeight.Black, fontSize = 13.sp)
+                            }
+                            FilledTonalButton(
+                                onClick = {
+                                    val n = ((minValue + step) * 100).roundToInt() / 100.0
+                                    if (n < goodValue) onMinChange(n)
+                                },
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.weight(1f).height(28.dp)
+                            ) {
+                                Text("+", fontWeight = FontWeight.Black, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                }
+
+                // Caixa 2: Bom a partir de (Borda verde)
+                Surface(
+                    color = SoftSurfaceVariant,
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.5.dp, Color(0xFF22C55E)),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "Bom a partir de",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF15803D)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", goodValue),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
+                                color = TrafficGreen
+                            )
+                            Text(
+                                text = unitSuffix,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MutedText
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            FilledTonalButton(
+                                onClick = {
+                                    val n = ((goodValue - step) * 100).roundToInt() / 100.0
+                                    if (n > minValue) onGoodChange(n)
+                                },
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.weight(1f).height(28.dp)
+                            ) {
+                                Text("-", fontWeight = FontWeight.Black, fontSize = 13.sp)
+                            }
+                            FilledTonalButton(
+                                onClick = {
+                                    val n = ((goodValue + step) * 100).roundToInt() / 100.0
+                                    onGoodChange(n.coerceAtMost(rangeMax))
+                                },
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                modifier = Modifier.weight(1f).height(28.dp)
+                            ) {
+                                Text("+", fontWeight = FontWeight.Black, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Slider Visual com Marcadores (Pins) Vermelho e Verde (Fiel à Imagem 1)
+            Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Ruim", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TrafficRed)
+                    Text(text = "Bom", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TrafficGreen)
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(34.dp)
+                ) {
+                    val totalWidth = maxWidth
+                    val minFrac = ((minValue - rangeMin) / (rangeMax - rangeMin)).toFloat().coerceIn(0.04f, 0.88f)
+                    val goodFrac = ((goodValue - rangeMin) / (rangeMax - rangeMin)).toFloat().coerceIn(minFrac + 0.06f, 0.96f)
+
+                    // Linha Gradiente de Fundo (Vermelho -> Amarelo -> Verde)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .align(Alignment.BottomCenter)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        Color(0xFFEF4444),
+                                        Color(0xFFFACC15),
+                                        Color(0xFF22C55E)
+                                    )
+                                )
+                            )
+                    )
+
+                    // Pin Vermelho (Marcador "Ruim até")
+                    val minOffset = (totalWidth - 20.dp) * minFrac
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .offset(x = minOffset)
+                            .align(Alignment.TopStart)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .shadow(3.dp, CircleShape)
+                                .background(Color(0xFFEF4444), CircleShape)
+                                .border(1.5.dp, Color.White, CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .width(2.5.dp)
+                                .height(10.dp)
+                                .background(Color(0xFFEF4444))
+                        )
+                    }
+
+                    // Pin Verde (Marcador "Bom a partir de")
+                    val goodOffset = (totalWidth - 20.dp) * goodFrac
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .offset(x = goodOffset)
+                            .align(Alignment.TopStart)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .shadow(3.dp, CircleShape)
+                                .background(Color(0xFF22C55E), CircleShape)
+                                .border(1.5.dp, Color.White, CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .width(2.5.dp)
+                                .height(10.dp)
+                                .background(Color(0xFF22C55E))
+                        )
+                    }
+                }
+            }
         }
     }
 }

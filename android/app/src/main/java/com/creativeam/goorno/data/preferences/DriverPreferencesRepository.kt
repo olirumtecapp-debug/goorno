@@ -46,6 +46,9 @@ class DriverPreferencesRepository(private val context: Context) {
         val OVERLAY_AUTO_MIN_SEC = intPreferencesKey("overlay_auto_min_sec")
         val OVERLAY_DISPLAY_STYLE = stringPreferencesKey("overlay_display_style")
         val OVERLAY_BUBBLE_POSITION = stringPreferencesKey("overlay_bubble_position")
+        val OVERLAY_HORIZONTAL_POSITION = stringPreferencesKey("overlay_horizontal_position")
+        val MIN_GROSS_KM = doublePreferencesKey("min_gross_km")
+        val MIN_GROSS_HOUR = doublePreferencesKey("min_gross_hour")
         val SHOW_FLOATING_SHORTCUT_BUBBLE = booleanPreferencesKey("show_floating_shortcut_bubble")
         val SHOW_PROFIT_ON_OVERLAY = booleanPreferencesKey("show_profit_on_overlay")
         val SHOW_COST_ON_OVERLAY = booleanPreferencesKey("show_cost_on_overlay")
@@ -69,8 +72,10 @@ class DriverPreferencesRepository(private val context: Context) {
             fuelPricePerLiter = prefs[Keys.FUEL_PRICE] ?: 5.89,
             maintenanceCostPerKm = prefs[Keys.MAINTENANCE_PER_KM] ?: 0.25,
             fixedExtraCostPerRide = prefs[Keys.FIXED_EXTRA_COST] ?: 0.0,
-            targetGrossPerKm = prefs[Keys.TARGET_GROSS_KM] ?: 2.00,
-            targetGrossPerHour = prefs[Keys.TARGET_GROSS_HOUR] ?: 40.00,
+            targetGrossPerKm = prefs[Keys.TARGET_GROSS_KM] ?: 2.50,
+            targetGrossPerHour = prefs[Keys.TARGET_GROSS_HOUR] ?: 50.00,
+            minGrossPerKm = prefs[Keys.MIN_GROSS_KM] ?: 1.80,
+            minGrossPerHour = prefs[Keys.MIN_GROSS_HOUR] ?: 35.00,
             targetNetPerKm = prefs[Keys.TARGET_NET_KM] ?: 1.30,
             targetNetPerHour = prefs[Keys.TARGET_NET_HOUR] ?: 28.00,
             yellowToleranceRatio = prefs[Keys.YELLOW_TOLERANCE] ?: 0.80,
@@ -85,8 +90,9 @@ class DriverPreferencesRepository(private val context: Context) {
             minConfidenceThreshold = prefs[Keys.MIN_CONFIDENCE] ?: 0.65,
             overlayOpacityPercent = prefs[Keys.OVERLAY_OPACITY] ?: 92,
             overlayAutoMinimizeSec = (prefs[Keys.OVERLAY_AUTO_MIN_SEC] ?: 5).coerceIn(3, 7),
-            overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: "FULL_CARD",
-            overlayBubblePosition = prefs[Keys.OVERLAY_BUBBLE_POSITION] ?: "ABOVE",
+            overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: "BANNER_PRO_STREETVIEW",
+            overlayBubblePosition = prefs[Keys.OVERLAY_BUBBLE_POSITION] ?: "BELOW",
+            overlayHorizontalPosition = prefs[Keys.OVERLAY_HORIZONTAL_POSITION] ?: "RIGHT",
             showFloatingShortcutBubble = prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] ?: true,
             showProfitOnOverlay = prefs[Keys.SHOW_PROFIT_ON_OVERLAY] ?: false,
             showCostOnOverlay = prefs[Keys.SHOW_COST_ON_OVERLAY] ?: false,
@@ -115,6 +121,8 @@ class DriverPreferencesRepository(private val context: Context) {
             prefs[Keys.FIXED_EXTRA_COST] = config.fixedExtraCostPerRide
             prefs[Keys.TARGET_GROSS_KM] = config.targetGrossPerKm
             prefs[Keys.TARGET_GROSS_HOUR] = config.targetGrossPerHour
+            prefs[Keys.MIN_GROSS_KM] = config.minGrossPerKm
+            prefs[Keys.MIN_GROSS_HOUR] = config.minGrossPerHour
             prefs[Keys.TARGET_NET_KM] = config.targetNetPerKm
             prefs[Keys.TARGET_NET_HOUR] = config.targetNetPerHour
             prefs[Keys.YELLOW_TOLERANCE] = config.yellowToleranceRatio
@@ -131,6 +139,7 @@ class DriverPreferencesRepository(private val context: Context) {
             prefs[Keys.OVERLAY_AUTO_MIN_SEC] = config.overlayAutoMinimizeSec.coerceIn(3, 60)
             prefs[Keys.OVERLAY_DISPLAY_STYLE] = config.overlayDisplayStyle
             prefs[Keys.OVERLAY_BUBBLE_POSITION] = config.overlayBubblePosition
+            prefs[Keys.OVERLAY_HORIZONTAL_POSITION] = config.overlayHorizontalPosition
             prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] = config.showFloatingShortcutBubble
             prefs[Keys.SHOW_PROFIT_ON_OVERLAY] = config.showProfitOnOverlay
             prefs[Keys.SHOW_COST_ON_OVERLAY] = config.showCostOnOverlay
