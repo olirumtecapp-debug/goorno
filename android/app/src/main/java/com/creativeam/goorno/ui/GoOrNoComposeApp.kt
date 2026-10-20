@@ -163,6 +163,7 @@ fun GoOrNoComposeApp(
     var showAccessibilityDisclosureDialog by remember { mutableStateOf(false) }
     var showDeleteAccountConfirmDialog by remember { mutableStateOf(false) }
     var isDeletingAccount by remember { mutableStateOf(false) }
+    var showLegalNatureDialog by remember { mutableStateOf(false) }
 
     val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
         val cleanTerm = RiskAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
@@ -5226,6 +5227,15 @@ fun GoOrNoComposeApp(
                                     }
                                 }
 
+                                OutlinedButton(
+                                    onClick = { showLegalNatureDialog = true },
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PetrolHeader),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
+                                ) {
+                                    Text("⚖️ Ver Natureza Jurídica & Precedente TJSP", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+
                                 Surface(
                                     color = Color(0xFFFEF2F2),
                                     shape = RoundedCornerShape(12.dp),
@@ -5802,6 +5812,72 @@ fun GoOrNoComposeApp(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Agora não", color = MutedText, fontWeight = FontWeight.Medium, fontSize = 12.5.sp)
+                }
+            }
+        )
+    }
+
+    if (showLegalNatureDialog) {
+        AlertDialog(
+            onDismissRequest = { showLegalNatureDialog = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = PureWhiteSurface,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("⚖️", fontSize = 22.sp)
+                    Column {
+                        Text(
+                            text = "Natureza Jurídica & Independência",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.sp,
+                            color = PetrolDarkText
+                        )
+                        Text(
+                            text = "Precedentes e Autonomia do Motorista",
+                            fontSize = 10.5.sp,
+                            color = MutedText
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp).verticalScroll(rememberScrollState())
+                ) {
+                    Surface(
+                        color = SoftSurfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, CleanCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("1. Natureza do Serviço", fontWeight = FontWeight.Black, fontSize = 12.sp, color = PetrolHeader)
+                            Text("O GoOrNo é uma ferramenta independente de apoio à análise de rentabilidade de corridas para motoristas de aplicativos. Sua finalidade é auxiliar o motorista na avaliação econômica de uma oferta, utilizando métricas configuradas por ele e as informações necessárias à análise.", fontSize = 11.sp, color = PetrolDarkText, lineHeight = 15.sp)
+
+                            Text("2. Funcionamento e Autonomia", fontWeight = FontWeight.Black, fontSize = 12.sp, color = PetrolHeader)
+                            Text("Mediante autorização de acesso concedida pelo usuário no aparelho, o GoOrNo interpreta informações da oferta para produzir uma classificação indicativa: compensa, merece análise ou não compensa.\n\nO resultado é uma estimativa baseada nas informações disponíveis e nas metas do motorista. Não representa garantia de lucro ou recomendação infalível.\n\nO GoOrNo não aceita nem recusa corridas automaticamente (zero autoclique). A decisão final e o toque na tela pertencem 100% ao motorista.", fontSize = 11.sp, color = PetrolDarkText, lineHeight = 15.sp)
+
+                            Text("3. Independência de Plataformas (Uber e 99)", fontWeight = FontWeight.Black, fontSize = 12.sp, color = PetrolHeader)
+                            Text("O GoOrNo é independente e não possui parceria, patrocínio ou aprovação da Uber ou da 99. As referências a essas marcas destinam-se exclusivamente a indicar compatibilidade operacional (Art. 132, IV da Lei de Propriedade Industrial nº 9.279/1996).", fontSize = 11.sp, color = PetrolDarkText, lineHeight = 15.sp)
+
+                            Text("4. Segurança e Proteção de Dados (LGPD)", fontWeight = FontWeight.Black, fontSize = 12.sp, color = PetrolHeader)
+                            Text("O GoOrNo não solicita senhas ou credenciais de login das contas Uber/99. A leitura da tela é efêmera em memória RAM. Os dados de cadastro (telefone, PIN e placa) são protegidos e usados apenas para manter seus backups.", fontSize = 11.sp, color = PetrolDarkText, lineHeight = 15.sp)
+
+                            Text("5. Precedente Jurídico do TJSP", fontWeight = FontWeight.Black, fontSize = 12.sp, color = PetrolHeader)
+                            Text("A decisão do Tribunal de Justiça de São Paulo no Agravo de Instrumento nº 2207360-65.2023.8.26.0000 constitui precedente relevante de mercado sobre a legitimidade de ferramentas auxiliares de leitura de tela para motoristas autônomos.", fontSize = 11.sp, color = PetrolDarkText, lineHeight = 15.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showLegalNatureDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = PetrolHeader, contentColor = Color.White),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Entendi", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
                 }
             }
         )
