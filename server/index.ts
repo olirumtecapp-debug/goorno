@@ -30,6 +30,7 @@ import {
   redeemVoucher,
   VoucherRecord,
   recoverPin,
+  deleteLicenseAccount,
 } from "./licenseStore.js";
 import { createPixCharge, verifyPaymentStatus, getPendingPixPhone } from "./asaas.js";
 import { sendFraudAlertEmail } from "./fraudAlert.js";
@@ -529,7 +530,7 @@ function checkAdminAuth(req: express.Request): boolean {
 // 1. Check or Activate Driver License (App Startup & Background Sync)
 app.post("/api/license/check-or-activate", async (req, res) => {
   try {
-    const { whatsapp, deviceId, deviceModel, action = "check", pin, recoverySecret } = req.body || {};
+    const { whatsapp, deviceId, deviceModel, action = "check", pin, recoverySecret, termsAcceptedVersion } = req.body || {};
     const clientIp = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "");
 
     if (!whatsapp || !deviceId) {
@@ -547,6 +548,7 @@ app.post("/api/license/check-or-activate", async (req, res) => {
       clientIp,
       pin: pin ? String(pin).trim() : undefined,
       recoverySecret: recoverySecret ? String(recoverySecret).trim().toUpperCase() : undefined,
+      termsAcceptedVersion: termsAcceptedVersion ? String(termsAcceptedVersion) : undefined,
     });
 
     // Se houve alerta de fraude por trocas excessivas, dispara email imediatamente
@@ -588,6 +590,30 @@ app.post("/api/license/recover-pin", async (req, res) => {
   } catch (err: any) {
     console.error("[license] Erro em recover-pin:", err);
     res.status(500).json({ ok: false, error: err?.message || "Erro interno ao redefinir PIN." });
+  }
+});
+
+
+// 1.2 Exclusão Efetiva de Conta e Dados Pessoais (LGPD Art. 18, VI e Requisito Google Play)
+app.post("/api/license/delete-account", async (req, res) => {
+  try {
+    const { whatsapp, pin, recoverySecret } = req.body || {};
+    if (!whatsapp) {
+      return res.status(400).json({ ok: false, error: "WhatsApp é obrigatório para solicitação de exclusão." });
+    }
+    const result = await deleteLicenseAccount({
+      whatsapp: String(whatsapp),
+      pin: pin ? String(pin) : undefined,
+      recoverySecret: recoverySecret ? String(recoverySecret) : undefined,
+      isAdmin: false,
+    });
+    if (!result.ok) {
+      return res.status(400).json({ ok: false, error: result.message });
+    }
+    res.json({ ok: true, message: result.message });
+  } catch (err: any) {
+    console.error("[license] Erro em delete-account:", err);
+    res.status(500).json({ ok: false, error: err?.message || "Erro interno ao processar exclusão." });
   }
 });
 

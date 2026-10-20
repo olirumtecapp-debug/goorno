@@ -144,7 +144,7 @@ object CloudSyncManager {
                 overlayDisplayStyle = c.optString("overlayDisplayStyle", "BANNER_PRO_STREETVIEW"),
                 overlayTheme = c.optString("overlayTheme", "DARK"),
                 overlayBubblePosition = c.optString("overlayBubblePosition", "BELOW"),
-                overlayHorizontalPosition = c.optString("overlayHorizontalPosition", "RIGHT"),
+                overlayHorizontalPosition = c.optString("overlayHorizontalPosition", "CENTER"),
                 showFloatingShortcutBubble = c.optBoolean("showFloatingShortcutBubble", true),
                 showProfitOnOverlay = c.optBoolean("showProfitOnOverlay", false),
                 showCostOnOverlay = c.optBoolean("showCostOnOverlay", false),

@@ -160,6 +160,9 @@ fun GoOrNoComposeApp(
     var pendingRiskAddressToConfirm by remember { mutableStateOf<String?>(null) }
     var pendingFavoriteAddressToConfirm by remember { mutableStateOf<String?>(null) }
     var securitySelectedTab by remember { mutableStateOf(0) }
+    var showAccessibilityDisclosureDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountConfirmDialog by remember { mutableStateOf(false) }
+    var isDeletingAccount by remember { mutableStateOf(false) }
 
     val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
         val cleanTerm = RiskAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
@@ -455,7 +458,9 @@ fun GoOrNoComposeApp(
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
-                                    text = currentScreen.shortTab,
+                                    text = if (currentScreen == GoOrNoScreen.SECURITY) {
+                                        if (securitySelectedTab == 1) "Bairros & Favoritos" else "Áreas de Risco"
+                                    } else currentScreen.shortTab,
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Black,
                                     color = PetrolHeader,
@@ -694,7 +699,7 @@ fun GoOrNoComposeApp(
                                             if (!hasOverlayPermission) {
                                                 onRequestOverlayPermission()
                                             } else if (!hasAccessibilityPermission) {
-                                                onRequestAccessibilityPermission()
+                                                showAccessibilityDisclosureDialog = true
                                             } else {
                                                 val newEnabled = !config.copilotMonitoringEnabled
                                                 val updated = config.copy(copilotMonitoringEnabled = newEnabled)
@@ -3140,7 +3145,7 @@ fun GoOrNoComposeApp(
                                     color = if (hasAccessibilityPermission) TrafficGreen else TrafficYellow
                                 )
                                 Button(
-                                    onClick = onRequestAccessibilityPermission,
+                                    onClick = { showAccessibilityDisclosureDialog = true },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = PetrolHeader,
                                         contentColor = Color.White
@@ -5185,12 +5190,75 @@ fun GoOrNoComposeApp(
                                 )
                                 Text(
                                     text = "• Finalidade da Acessibilidade e OCR: Usados exclusivamente para ler valor (R$), distância (km), tempo (min) e endereços das ofertas na tela da Uber Driver e 99 Motorista.\n" +
-                                        "• Sem Cliques Automáticos: O GoOrNo jamais clica, aceita ou recusa viagens por você.\n" +
+                                        "• Sem Cliques Automáticos: O GoOrNo jamais clica, aceita ou recusa viagens por você. A decisão final é sempre sua.\n" +
                                         "• Privacidade de Capturas de Tela: O OCR processa a imagem em memória via ML Kit local e descarta o bitmap imediatamente, sem armazenar prints.\n" +
-                                        "• Zero Credenciais: O GoOrNo nunca solicita senha ou login da sua conta Uber ou 99.",
+                                        "• Zero Credenciais: O GoOrNo nunca solicita senha ou login da sua conta Uber ou 99.\n" +
+                                        "• Proteção de Dados (LGPD): Seus dados cadastrais (telefone, PIN e placa) são protegidos com hash criptográfico e usados apenas para manter seus cálculos e metas salvos.",
                                     fontSize = 12.sp,
                                     color = MutedText
                                 )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            try {
+                                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://goorno-app.vercel.app/terms")))
+                                            } catch (_: Exception) {}
+                                        },
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Termos de Uso", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                    }
+                                    OutlinedButton(
+                                        onClick = {
+                                            try {
+                                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://goorno-app.vercel.app/privacy")))
+                                            } catch (_: Exception) {}
+                                        },
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Privacidade LGPD", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                    }
+                                }
+
+                                Surface(
+                                    color = Color(0xFFFEF2F2),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFFECACA)),
+                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(
+                                            text = "Exclusão Definitiva de Conta e Dados (LGPD)",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = TrafficRed
+                                        )
+                                        Text(
+                                            text = "Conforme o Art. 18 da LGPD e as diretrizes do Google Play, você pode solicitar a qualquer momento a exclusão imediata e irreversível da sua conta, licença e backups da nuvem.",
+                                            fontSize = 11.sp,
+                                            color = MutedText
+                                        )
+                                        Button(
+                                            onClick = { showDeleteAccountConfirmDialog = true },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = TrafficRed,
+                                                contentColor = Color.White
+                                            ),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(Icons.Default.DeleteForever, contentDescription = null, modifier = Modifier.size(15.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Solicitar Exclusão de Conta e Dados", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -5652,6 +5720,177 @@ fun GoOrNoComposeApp(
             dismissButton = {
                 TextButton(
                     onClick = { pendingFavoriteAddressToConfirm = null },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cancelar", color = MutedText, fontWeight = FontWeight.Medium, fontSize = 12.5.sp)
+                }
+            }
+        )
+    }
+
+    if (showAccessibilityDisclosureDialog) {
+        AlertDialog(
+            onDismissRequest = { showAccessibilityDisclosureDialog = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = PureWhiteSurface,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("⚖️", fontSize = 22.sp)
+                    Column {
+                        Text(
+                            text = "Transparência & Acessibilidade",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.sp,
+                            color = PetrolDarkText
+                        )
+                        Text(
+                            text = "Declaração de Uso da API de Acessibilidade",
+                            fontSize = 10.5.sp,
+                            color = MutedText
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Para calcular a rentabilidade enquanto você dirige com segurança, o GoOrNo precisa da permissão de Acessibilidade:",
+                        fontSize = 12.sp,
+                        color = PetrolDarkText,
+                        lineHeight = 16.sp
+                    )
+                    Surface(
+                        color = SoftSurfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, CleanCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("✓ Leitura exclusiva de valor, distância e destino das ofertas da Uber e 99.", fontSize = 11.sp, color = TrafficGreen, fontWeight = FontWeight.Bold)
+                            Text("✓ Exibição do card flutuante com cálculo de R$/km e R$/hora.", fontSize = 11.sp, color = PetrolDarkText)
+                            Text("✗ NÃO lê mensagens, conversas, fotos, senhas ou histórico.", fontSize = 11.sp, color = TrafficRed, fontWeight = FontWeight.Bold)
+                            Text("✗ NÃO clica, não aceita e não recusa corridas por você (zero automação).", fontSize = 11.sp, color = TrafficRed, fontWeight = FontWeight.Bold)
+                            Text("✗ NÃO coleta credenciais ou login das suas contas de motorista.", fontSize = 11.sp, color = PetrolDarkText)
+                        }
+                    }
+                    Text(
+                        text = "Ao tocar em 'Continuar', você será levado às configurações de Acessibilidade do Android para habilitar o serviço 'GoOrNo'.",
+                        fontSize = 11.sp,
+                        color = MutedText,
+                        lineHeight = 15.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showAccessibilityDisclosureDialog = false
+                        onRequestAccessibilityPermission()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PetrolHeader, contentColor = Color.White),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Continuar para Configurações", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showAccessibilityDisclosureDialog = false },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Agora não", color = MutedText, fontWeight = FontWeight.Medium, fontSize = 12.5.sp)
+                }
+            }
+        )
+    }
+
+    if (showDeleteAccountConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isDeletingAccount) showDeleteAccountConfirmDialog = false
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = PureWhiteSurface,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("⚠️", fontSize = 22.sp)
+                    Column {
+                        Text(
+                            text = "Excluir Conta e Dados?",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.sp,
+                            color = TrafficRed
+                        )
+                        Text(
+                            text = "Direito de Eliminação - Art. 18 LGPD",
+                            fontSize = 10.5.sp,
+                            color = MutedText
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Esta ação é IRREVERSÍVEL. Todos os dados abaixo serão excluídos permanentemente:",
+                        fontSize = 12.sp,
+                        color = PetrolDarkText,
+                        lineHeight = 16.sp
+                    )
+                    Surface(
+                        color = Color(0xFFFEF2F2),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFECACA)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("• Sua licença e vínculo de telefone/placa no servidor", fontSize = 11.sp, color = TrafficRed)
+                            Text("• Seu backup de metas, custos e histórico na nuvem", fontSize = 11.sp, color = TrafficRed)
+                            Text("• Suas preferências locais salvas neste celular", fontSize = 11.sp, color = TrafficRed)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isDeletingAccount = true
+                        scope.launch {
+                            val res = com.creativeam.goorno.data.license.LicenseManager.deleteAccountOnline(
+                                context = context,
+                                whatsapp = config.driverWhatsapp,
+                                pin = config.driverPin,
+                                recoverySecret = config.driverRecoveryCode
+                            )
+                            isDeletingAccount = false
+                            showDeleteAccountConfirmDialog = false
+                            res.onSuccess {
+                                app.preferencesRepository.saveConfig(com.creativeam.goorno.domain.model.DriverFinancialConfig())
+                                notifyUser("Conta e dados excluídos com sucesso.")
+                            }.onFailure { err ->
+                                notifyUser("Erro ao excluir conta: ${err.message}")
+                            }
+                        }
+                    },
+                    enabled = !isDeletingAccount,
+                    colors = ButtonDefaults.buttonColors(containerColor = TrafficRed, contentColor = Color.White),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (isDeletingAccount) "Excluindo..." else "Sim, Excluir Definitivamente",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.5.sp
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteAccountConfirmDialog = false },
+                    enabled = !isDeletingAccount,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {

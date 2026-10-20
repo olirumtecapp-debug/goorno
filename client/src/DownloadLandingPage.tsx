@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
+  LEGAL_METADATA,
+  INDEPENDENCE_DISCLAIMER,
+  HOW_OFFER_READING_WORKS,
+  TERMS_OF_USE_TEXT,
+  PRIVACY_POLICY_TEXT,
+} from './legalTexts';
+import {
   Download,
   Share2,
   Copy,
@@ -45,6 +52,12 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<'terms' | 'privacy' | 'independence' | 'reading' | 'delete' | null>(null);
+  const [deletePhone, setDeletePhone] = useState('');
+  const [deletePin, setDeletePin] = useState('');
+  const [deleteSecret, setDeleteSecret] = useState('');
+  const [deleteFeedback, setDeleteFeedback] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [appVersion, setAppVersion] = useState<string>('3.3.26');
 
   useEffect(() => {
@@ -1119,42 +1132,81 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
         </div>
       )}
 
-      {/* FOOTER */}
+            {/* FOOTER & AVISO LEGAL */}
       <footer className="site-footer section-shell">
-        <div className="brand footer-brand">
-          <img
-            src="/assets/logo-goorno-clean.png"
-            alt="GoOrNo"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/logo-goorno-clean.png';
-            }}
-          />
-          <span>
-            GoOrNo <small>Copiloto de ganhos</small>
-          </span>
+        {/* BANNER DE ISENÇÃO DE VÍNCULO (UBER / 99) */}
+        <div className="w-full bg-[#071d19]/5 border border-[#071d19]/10 rounded-2xl p-4 mb-6 text-center">
+          <p className="font-dm text-xs text-[#506159] leading-relaxed m-0 max-w-4xl mx-auto">
+            <strong>Aviso de Independência:</strong> O GoOrNo é um aplicativo independente de apoio à análise de rentabilidade para motoristas autônomos. Não somos a Uber nem a 99. As marcas "Uber" e "99" pertencem aos seus respectivos titulares e são mencionadas exclusivamente para indicar a compatibilidade das telas analisadas (Art. 132, II, Lei 9.279/1996).
+          </p>
         </div>
 
-        <p>© 2026 GoOrNo. Feito para quem trabalha na rua.</p>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 w-full">
+          <div className="brand footer-brand">
+            <img
+              src="/assets/logo-goorno-clean.png"
+              alt="GoOrNo"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo-goorno-clean.png';
+              }}
+            />
+            <span>
+              GoOrNo <small>Copiloto de ganhos</small>
+            </span>
+          </div>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsContactOpen(true)}
-            className="bg-transparent border-0 text-[#071d19] font-bold text-xs hover:underline cursor-pointer flex items-center gap-1"
-          >
-            <Mail className="w-3.5 h-3.5 text-[#071d19]" />
-            Fale conosco ↗
-          </button>
+          <p className="text-xs text-[#7a8982] m-0">© 2026 GoOrNo • Creative AM. Todos os direitos reservados.</p>
 
-          {onOpenAdmin && (
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-space font-bold">
             <button
-              onClick={onOpenAdmin}
-              className="bg-transparent border-0 text-[#7a8982] hover:text-[#071d19] text-xs transition cursor-pointer flex items-center gap-1"
-              title="Acesso Administrativo"
+              onClick={() => setLegalModalType('terms')}
+              className="bg-transparent border-0 text-[#071d19] hover:text-emerald-700 cursor-pointer p-0 underline text-xs"
             >
-              <Lock className="w-3 h-3" />
-              <span>Painel</span>
+              Termos de Uso
             </button>
-          )}
+            <span className="text-slate-300">•</span>
+            <button
+              onClick={() => setLegalModalType('privacy')}
+              className="bg-transparent border-0 text-[#071d19] hover:text-emerald-700 cursor-pointer p-0 underline text-xs"
+            >
+              Privacidade (LGPD)
+            </button>
+            <span className="text-slate-300">•</span>
+            <button
+              onClick={() => setLegalModalType('independence')}
+              className="bg-transparent border-0 text-[#071d19] hover:text-emerald-700 cursor-pointer p-0 underline text-xs"
+            >
+              Isenção de Vínculo
+            </button>
+            <span className="text-slate-300">•</span>
+            <button
+              onClick={() => setLegalModalType('delete')}
+              className="bg-transparent border-0 text-red-700 hover:text-red-900 cursor-pointer p-0 underline text-xs"
+            >
+              Exclusão de Dados
+            </button>
+            <span className="text-slate-300">•</span>
+            <button
+              onClick={() => setIsContactOpen(true)}
+              className="bg-transparent border-0 text-[#071d19] hover:underline cursor-pointer flex items-center gap-1 text-xs"
+            >
+              <Mail className="w-3.5 h-3.5 text-[#071d19]" />
+              Fale conosco
+            </button>
+            {onOpenAdmin && (
+              <>
+                <span className="text-slate-300">•</span>
+                <button
+                  onClick={onOpenAdmin}
+                  className="bg-transparent border-0 text-[#7a8982] hover:text-[#071d19] text-xs transition cursor-pointer flex items-center gap-1"
+                  title="Acesso Administrativo"
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>Painel</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </footer>
 

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
+  LEGAL_METADATA,
+  INDEPENDENCE_DISCLAIMER,
+  HOW_OFFER_READING_WORKS,
+  TERMS_OF_USE_TEXT,
+  PRIVACY_POLICY_TEXT,
+} from './legalTexts';
+import {
   Download,
   Users,
   ShieldAlert,
@@ -43,7 +50,7 @@ interface LicenseRecord {
   deviceId: string;
   deviceModel?: string;
   status: 'trial' | 'active' | 'expired' | 'blocked';
-  plano: 'trial' | 'mensal' | 'vitalicio' | 'cortesia';
+  plano: 'trial' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'vitalicio' | 'cortesia';
   trialEndsAt: string;
   validoAte: string;
   createdAt: string;
@@ -111,7 +118,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'vip' | 'trial' | 'expired' | 'fraud'>('all');
-  const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers' | 'mailbox' | 'marketing'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers' | 'mailbox' | 'marketing' | 'juridico'>('overview');
   const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'replied'>('all');
   const [selectedUser, setSelectedUser] = useState<LicenseRecord | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
@@ -525,6 +532,18 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
             </button>
 
             <button
+              onClick={() => setActiveTab('juridico')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
+                activeTab === 'juridico'
+                  ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
+                  : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Jurídico & LGPD</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('marketing')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
                 activeTab === 'marketing'
@@ -906,7 +925,7 @@ ${window.location.origin}
                                     ? 'bg-red-100 text-red-800 border border-red-200'
                                     : lic.plano === 'vitalicio'
                                     ? 'bg-[#071d19] text-[#d9ff4f]'
-                                    : lic.plano === 'mensal' && !isExpired
+                                    : ['mensal', 'trimestral', 'semestral', 'anual'].includes(lic.plano) && !isExpired
                                     ? 'bg-[#dff4af] text-[#557000]'
                                     : lic.plano === 'trial' && !isExpired
                                     ? 'bg-sky-100 text-sky-800 border border-sky-200'

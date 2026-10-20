@@ -139,6 +139,8 @@ export interface LicenseRecord {
   fraudSuspicion: boolean;
   fraudReason?: string;
   notes?: string;
+  termsAcceptedVersion?: string;
+  termsAcceptedAt?: string;
 }
 
 function firestoreUrl(collection: string, docId?: string): string {
@@ -302,6 +304,7 @@ export async function checkOrActivateLicense(params: {
   clientIp?: string;
   pin?: string;
   recoverySecret?: string;
+  termsAcceptedVersion?: string;
 }): Promise<CheckLicenseResult> {
   const phone = cleanPhone(params.whatsapp);
   if (phone.length < 10) {
@@ -337,6 +340,8 @@ export async function checkOrActivateLicense(params: {
       deviceTransfersCount: 0,
       transfers: [],
       fraudSuspicion: false,
+      termsAcceptedVersion: params.termsAcceptedVersion || "1.0",
+      termsAcceptedAt: now.toISOString(),
     };
     await saveLicense(record);
     return {
@@ -351,9 +356,13 @@ export async function checkOrActivateLicense(params: {
     };
   }
 
-  // Update last seen & device model
+  // Update last seen & device model & terms
   record.lastSeenAt = now.toISOString();
   if (params.deviceModel) record.deviceModel = params.deviceModel;
+  if (params.termsAcceptedVersion) {
+    record.termsAcceptedVersion = params.termsAcceptedVersion;
+    record.termsAcceptedAt = now.toISOString();
+  }
 
   // Device Lock & PIN Verification
   const isSameDevice = !record.deviceId || record.deviceId === params.deviceId;
@@ -523,17 +532,18 @@ export async function checkOrActivateLicense(params: {
     };
   }
 
-  // Monthly Pro
+  // Paid Plan (Mensal, Trimestral, Semestral, Anual)
   if (nowMs > validUntilMs) {
     record.status = "expired";
     await saveLicense(record);
+    const renewalVal = (record.nextRenewalPrice || 7.99).toFixed(2).replace(".", ",");
     return {
       allowed: false,
       status: "expired",
-      plano: "mensal",
+      plano: record.plano,
       trialDaysRemaining: 0,
       validoAte: record.validoAte,
-      message: "Sua assinatura mensal expirou. Renove via PIX por apenas R$ 9,90 para liberar o copiloto.",
+      message: `Sua assinatura ${record.plano} expirou. Renove via PIX por apenas R$ ${renewalVal} para liberar o copiloto.`,
       license: record,
     };
   }
@@ -541,13 +551,14 @@ export async function checkOrActivateLicense(params: {
   const daysLeft = Math.max(1, Math.ceil((validUntilMs - nowMs) / (1000 * 60 * 60 * 24)));
   record.status = "active";
   await saveLicense(record);
+  const planFormatted = record.plano.charAt(0).toUpperCase() + record.plano.slice(1);
   return {
     allowed: true,
     status: "active",
-    plano: "mensal",
+    plano: record.plano,
     trialDaysRemaining: daysLeft,
     validoAte: record.validoAte,
-    message: `Assinatura Pro Mensal Ativa (${daysLeft} dias restantes).`,
+    message: `Assinatura Pro ${planFormatted} Ativa (${daysLeft} dias restantes).`,
     license: record,
   };
 }
@@ -583,6 +594,13 @@ export async function applyPayment(params: {
 }): Promise<LicenseRecord> {
   const phone = cleanPhone(params.phone);
   let record = await getLicense(phone);
+
+  // Idempotência rigorosa: se este paymentId já foi processado anteriormente, retorna sem duplicar dias
+  if (record && record.paymentsHistory?.some((p) => p.paymentId === params.paymentId)) {
+    console.log(`[licenseStore] Pagamento ${params.paymentId} já processado anteriormente para ${phone}. Retornando registro existente.`);
+    return record;
+  }
+
   const now = new Date();
 
   // Preservação histórica obrigatória: quem já comprou vitalício continua vitalício
@@ -926,4 +944,74 @@ export async function recoverPin(params: {
   await saveLicense(record);
   return { ok: true, message: "PIN de 4 dígitos redefinido com sucesso! Você já pode autorizar seu aparelho." };
 }
+
+/**
+ * Exclusão Efetiva de Conta e Dados Pessoais (LGPD Art. 18, VI e Requisito Google Play).
+ * Remove o registro de licença e o backup em nuvem do motorista no Firestore e no cache local.
+ */
+export async function deleteLicenseAccount(params: {
+  whatsapp: string;
+  pin?: string;
+  recoverySecret?: string;
+  isAdmin?: boolean;
+}): Promise<{ ok: boolean; message: string }> {
+  const phone = cleanPhone(params.whatsapp);
+  if (phone.length < 10) {
+    return { ok: false, message: "WhatsApp inválido para exclusão." };
+  }
+
+  const record = await getLicense(phone);
+  if (!record && !params.isAdmin) {
+    return { ok: false, message: "Nenhum cadastro ativo encontrado para este WhatsApp." };
+  }
+
+  // Se não for admin, exige confirmação via PIN de 4 dígitos ou Placa
+  if (!params.isAdmin && record) {
+    const inputPin = (params.pin || "").trim();
+    const inputSecret = (params.recoverySecret || "").trim().toUpperCase();
+    const storedPin = (record.pin || "").trim();
+    const storedSecret = (record.recoverySecret || "").trim().toUpperCase();
+
+    const isPinMatch = storedPin && inputPin === storedPin;
+    const isSecretMatch = storedSecret && inputSecret === storedSecret;
+
+    if (!isPinMatch && !isSecretMatch && (storedPin || storedSecret)) {
+      return {
+        ok: false,
+        message: "PIN ou Placa/Palavra-chave incorretos. A exclusão exige autenticação para segurança do motorista.",
+      };
+    }
+  }
+
+  // 1. Remove do cache local em memória/disco
+  const cache = readLocalCache();
+  delete cache[phone];
+  saveLocalCache(cache);
+
+  // 2. Remove do Firestore de licenças
+  try {
+    const res = await fetch(firestoreUrl(COL_LICENSES, `lic_tel_${phone}`), {
+      method: "DELETE",
+    });
+    console.log(`[licenseStore] Exclusão da licença lic_tel_${phone} no Firestore: status ${res.status}`);
+  } catch (err) {
+    console.warn(`[licenseStore] Erro ao deletar licença ${phone} do Firestore:`, err);
+  }
+
+  // 3. Remove do Firestore de backups de configurações do motorista (goorno_cloud_store)
+  try {
+    const cloudUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/goorno_cloud_store/driver_${phone}`;
+    const url = FIREBASE_API_KEY ? `${cloudUrl}?key=${encodeURIComponent(FIREBASE_API_KEY)}` : cloudUrl;
+    const resCloud = await fetch(url, { method: "DELETE" });
+    console.log(`[licenseStore] Exclusão de backup driver_${phone} no Firestore: status ${resCloud.status}`);
+  } catch (err) {
+    console.warn(`[licenseStore] Erro ao deletar backup driver_${phone} do Firestore:`, err);
+  }
+
+  return {
+    ok: true,
+    message: "Conta e todos os dados pessoais associados foram excluídos com sucesso do GoOrNo.",
+  };
+}
+
 

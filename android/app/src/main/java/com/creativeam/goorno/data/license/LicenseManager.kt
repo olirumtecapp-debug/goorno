@@ -181,6 +181,7 @@ object LicenseManager {
                 put("action", action)
                 if (effectivePin.isNotBlank()) put("pin", effectivePin)
                 if (effectiveRecovery.isNotBlank()) put("recoverySecret", effectiveRecovery)
+                put("termsAcceptedVersion", "1.0")
             }
 
             OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(reqBody.toString()) }
@@ -533,6 +534,60 @@ object LicenseManager {
             checkOrActivateOnline(context, phone, "check")
 
             Result.success(message)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Solicitação Efetiva de Exclusão de Conta e Dados Pessoais (LGPD Art. 18, VI e Requisito Google Play).
+     */
+    suspend fun deleteAccountOnline(
+        context: Context,
+        whatsapp: String,
+        pin: String? = null,
+        recoverySecret: String? = null
+    ): Result<String> = withContext(Dispatchers.IO) {
+        val phone = cleanPhone(whatsapp)
+        if (phone.length < 10) {
+            return@withContext Result.failure(IllegalArgumentException("Informe o WhatsApp para exclusão."))
+        }
+        val effectivePin = (pin ?: getSavedPin(context)).trim()
+        val effectiveRecovery = (recoverySecret ?: getSavedRecovery(context)).trim().uppercase()
+
+        try {
+            val url = URL("$API_BASE_URL/license/delete-account")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 8000
+                readTimeout = 8000
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+            }
+
+            val reqBody = JSONObject().apply {
+                put("whatsapp", phone)
+                if (effectivePin.isNotBlank()) put("pin", effectivePin)
+                if (effectiveRecovery.isNotBlank()) put("recoverySecret", effectiveRecovery)
+            }
+
+            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(reqBody.toString()) }
+
+            val code = conn.responseCode
+            val responseStream = if (code in 200..299) conn.inputStream else conn.errorStream
+            val respText = responseStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+
+            val json = JSONObject(respText)
+            val ok = json.optBoolean("ok", false)
+            val msg = json.optString("message", json.optString("error", "Erro ao excluir conta."))
+
+            if (ok) {
+                // Limpa licença e preferências locais
+                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
+                Result.success(msg)
+            } else {
+                Result.failure(RuntimeException(msg))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
