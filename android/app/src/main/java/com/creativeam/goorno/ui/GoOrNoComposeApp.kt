@@ -825,14 +825,6 @@ fun GoOrNoComposeApp(
                         }
                     }
 
-                    // Suas Faixas (Resumo dos Valores de Cada Faixa)
-                    item {
-                        SuasFaixasMatrixCard(
-                            config = config,
-                            onAdjustClick = { showAdjustFaixasDialog = true }
-                        )
-                    }
-
                     // ATALHOS RÁPIDOS & FERRAMENTAS (Design Limpo e Otimizado)
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -898,25 +890,7 @@ fun GoOrNoComposeApp(
                                 )
                             }
 
-                            // Ações Rápidas em Linha Cheia (Zero quebras de linha e textos 100% legíveis)
-                            QuickHubListActionRow(
-                                icon = "🎨",
-                                title = "Estilo do Cartão",
-                                subtitle = "Balão, 3 Pilares, Clássico ou Bolinha",
-                                badge = if (config.overlayBubblePosition == "BELOW") "Abaixo" else "Acima",
-                                badgeColor = PetrolHeader,
-                                onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
-                            )
-
-                            QuickHubListActionRow(
-                                icon = "📋",
-                                title = "Histórico de Corridas",
-                                subtitle = "Ver chamadas capturadas e Street View 360°",
-                                badge = "${realHistory.size} salvas",
-                                badgeColor = PetrolHeader,
-                                onClick = { currentScreen = GoOrNoScreen.HISTORY }
-                            )
-
+                            // Ações Rápidas em Linha Cheia (Zero redundância com a barra de navegação)
                             QuickHubListActionRow(
                                 icon = "🔘",
                                 title = "Botão Flutuante",
@@ -1093,6 +1067,9 @@ fun GoOrNoComposeApp(
                         var selectedStyle by remember(config.overlayDisplayStyle) {
                             mutableStateOf(OverlayDisplayStyle.fromName(config.overlayDisplayStyle))
                         }
+                        var overlayTheme by remember(config.overlayTheme) {
+                            mutableStateOf(config.overlayTheme)
+                        }
                         var bubblePosition by remember(config.overlayBubblePosition) {
                             mutableStateOf(config.overlayBubblePosition)
                         }
@@ -1227,11 +1204,10 @@ fun GoOrNoComposeApp(
                                                                     verticalAlignment = Alignment.CenterVertically
                                                                 ) {
                                                                     Text(
-                                                                        text = "CORRIDA TOCOU",
+                                                                        text = "8 km · 15 min",
                                                                         color = Color(0xFF9CA3AF),
-                                                                        fontSize = 11.sp,
-                                                                        fontWeight = FontWeight.Bold,
-                                                                        letterSpacing = 1.sp
+                                                                        fontSize = 13.sp,
+                                                                        fontWeight = FontWeight.Bold
                                                                     )
                                                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                                                         Surface(
@@ -1268,9 +1244,9 @@ fun GoOrNoComposeApp(
                                                                 Spacer(modifier = Modifier.height(2.dp))
 
                                                                 Text(
-                                                                    text = "8 km · 15 min · R$ 2,30/km",
+                                                                    text = "R$ 2,30/km · R$ 43,00/h",
                                                                     color = Color(0xFFD1D5DB),
-                                                                    fontSize = 13.sp,
+                                                                    fontSize = 13.5.sp,
                                                                     fontWeight = FontWeight.Bold
                                                                 )
                                                             }
@@ -1298,115 +1274,78 @@ fun GoOrNoComposeApp(
                                                 }
 
                                                 OverlayDisplayStyle.PIRULITO_SIDEBAR -> {
-                                                    // FORMATO 2: WIDGET LATERAL PIRULITO (IMAGEM 2)
-                                                    if (isAbove) {
-                                                        Surface(
-                                                            color = vColor,
-                                                            shape = RoundedCornerShape(22.dp),
-                                                            shadowElevation = 6.dp
-                                                        ) {
-                                                            Text(
-                                                                text = vText,
-                                                                color = vTextColor,
-                                                                fontWeight = FontWeight.Black,
-                                                                fontSize = 13.sp,
-                                                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 7.dp)
-                                                            )
-                                                        }
-                                                        Spacer(modifier = Modifier.height(6.dp))
-                                                    }
+                                                    // FORMATO: CARD 3 PILARES (R$/KM, R$/HORA E NOTA)
+                                                    val isDarkPreview = overlayTheme != "LIGHT"
+                                                    val cardBg = if (isDarkPreview) Color(0xFF121316) else Color.White
+                                                    val primaryText = if (isDarkPreview) Color.White else Color(0xFF111827)
+                                                    val secondaryText = if (isDarkPreview) Color(0xFF9CA3AF) else Color(0xFF6B7280)
 
                                                     Surface(
-                                                        color = Color(0xFF12141A),
-                                                        shape = RoundedCornerShape(16.dp),
-                                                        border = BorderStroke(1.5.dp, Color(0xFF2A3241)),
+                                                        color = cardBg,
+                                                        shape = RoundedCornerShape(18.dp),
+                                                        border = BorderStroke(2.5.dp, vColor),
                                                         shadowElevation = 8.dp,
-                                                        modifier = Modifier.width(180.dp)
+                                                        modifier = Modifier.fillMaxWidth()
                                                     ) {
-                                                        Column(modifier = Modifier.padding(10.dp, 8.dp, 10.dp, 8.dp)) {
+                                                        Column(modifier = Modifier.padding(14.dp, 10.dp, 14.dp, 10.dp)) {
+                                                            // Linha Superior: Resumo + Timer + Fechar
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                                 verticalAlignment = Alignment.CenterVertically
                                                             ) {
-                                                                Text("⚡ GOORNO", color = Color(0xFF38BDF8), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                                                Text("7s", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                                Text(
+                                                                    text = "R$ 12,70 · 11 min · 5,6 km",
+                                                                    color = primaryText,
+                                                                    fontSize = 14.sp,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    modifier = Modifier.weight(1f)
+                                                                )
+                                                                Text("15s", color = secondaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                                Spacer(modifier = Modifier.width(6.dp))
+                                                                Text("✕", color = secondaryText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                                             }
-                                                            Spacer(modifier = Modifier.height(6.dp))
 
-                                                            // Tile 1: R$/km
-                                                            Surface(
-                                                                color = Color(0xFF1A1D24),
-                                                                shape = RoundedCornerShape(10.dp),
-                                                                border = BorderStroke(1.dp, Color(0xFF262C38)),
-                                                                modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp)
+                                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                                            // 3 Colunas: R$/Km | R$/Hora | Nota
+                                                            Row(
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                                verticalAlignment = Alignment.CenterVertically
                                                             ) {
-                                                                Row(modifier = Modifier.padding(6.dp, 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                                    Box(modifier = Modifier.size(3.dp, 28.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                                    Text("🏎️", fontSize = 16.sp)
-                                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                                    Column {
-                                                                        Text("R$/km", color = Color(0xFF94A3B8), fontSize = 10.sp)
-                                                                        Text("2,11", color = vColor, fontSize = 14.sp, fontWeight = FontWeight.Black)
-                                                                    }
+                                                                // Coluna 1: R$/Km
+                                                                Column(
+                                                                    modifier = Modifier.weight(1f),
+                                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                                ) {
+                                                                    Text("R$/Km", color = secondaryText, fontSize = 11.sp)
+                                                                    Text("2,26", color = primaryText, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                                                                }
+
+                                                                // Barra 1
+                                                                Box(modifier = Modifier.size(3.dp, 36.dp).background(vColor, RoundedCornerShape(2.dp)))
+
+                                                                // Coluna 2: R$/Hora
+                                                                Column(
+                                                                    modifier = Modifier.weight(1f),
+                                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                                ) {
+                                                                    Text("R$/Hora", color = secondaryText, fontSize = 11.sp)
+                                                                    Text("69", color = primaryText, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                                                                }
+
+                                                                // Barra 2
+                                                                Box(modifier = Modifier.size(3.dp, 36.dp).background(vColor, RoundedCornerShape(2.dp)))
+
+                                                                // Coluna 3: Nota
+                                                                Column(
+                                                                    modifier = Modifier.weight(1f),
+                                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                                ) {
+                                                                    Text("Nota", color = secondaryText, fontSize = 11.sp)
+                                                                    Text("4,95", color = vColor, fontSize = 24.sp, fontWeight = FontWeight.Black)
                                                                 }
                                                             }
-
-                                                            // Tile 2: R$/hora
-                                                            Surface(
-                                                                color = Color(0xFF1A1D24),
-                                                                shape = RoundedCornerShape(10.dp),
-                                                                border = BorderStroke(1.dp, Color(0xFF262C38)),
-                                                                modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp)
-                                                            ) {
-                                                                Row(modifier = Modifier.padding(6.dp, 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                                    Box(modifier = Modifier.size(3.dp, 28.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                                    Text("⏱️", fontSize = 16.sp)
-                                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                                    Column {
-                                                                        Text("R$/hora", color = Color(0xFF94A3B8), fontSize = 10.sp)
-                                                                        Text("57,42", color = vColor, fontSize = 14.sp, fontWeight = FontWeight.Black)
-                                                                    }
-                                                                }
-                                                            }
-
-                                                            // Tile 3: Tempo total
-                                                            Surface(
-                                                                color = Color(0xFF1A1D24),
-                                                                shape = RoundedCornerShape(10.dp),
-                                                                border = BorderStroke(1.dp, Color(0xFF262C38)),
-                                                                modifier = Modifier.fillMaxWidth()
-                                                            ) {
-                                                                Row(modifier = Modifier.padding(6.dp, 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                                    Box(modifier = Modifier.size(3.dp, 28.dp).background(Color(0xFF38BDF8), RoundedCornerShape(2.dp)))
-                                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                                    Text("⌛", fontSize = 16.sp)
-                                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                                    Column {
-                                                                        Text("Tempo total", color = Color(0xFF94A3B8), fontSize = 10.sp)
-                                                                        Text("44 min", color = Color(0xFF38BDF8), fontSize = 14.sp, fontWeight = FontWeight.Black)
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-
-                                                    if (!isAbove) {
-                                                        Spacer(modifier = Modifier.height(6.dp))
-                                                        Surface(
-                                                            color = vColor,
-                                                            shape = RoundedCornerShape(22.dp),
-                                                            shadowElevation = 6.dp
-                                                        ) {
-                                                            Text(
-                                                                text = vText,
-                                                                color = vTextColor,
-                                                                fontWeight = FontWeight.Black,
-                                                                fontSize = 13.sp,
-                                                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 7.dp)
-                                                            )
                                                         }
                                                     }
                                                 }
@@ -1759,7 +1698,7 @@ fun GoOrNoComposeApp(
                                                                     maxLines = 1
                                                                 )
                                                                 Text(
-                                                                    text = "R$ 2,22/km · R$ 49/h · ★ 4.96",
+                                                                    text = "R$ 2,22 | 49,00 · ★ 4.96",
                                                                     color = vColor,
                                                                     fontSize = 13.5.sp,
                                                                     fontWeight = FontWeight.Bold,
@@ -1939,15 +1878,15 @@ fun GoOrNoComposeApp(
 
                                 HorizontalDivider(color = CleanCardBorder)
 
-                                // Posição do Balão / Corzinha (Acima do cartão vs Abaixo do cartão)
+                                // Tema do Cartão (Fundo Claro ou Escuro)
                                 Text(
-                                    text = "Posição do Aviso (Balão de Fala com Veredito)",
+                                    text = "Tema do Cartão (Fundo)",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 13.5.sp,
                                     color = PetrolHeader
                                 )
                                 Text(
-                                    text = "Escolha onde o balão colorido de Aceitar / Analisar / Recusar deve ficar:",
+                                    text = "Escolha se o fundo do cartão deve ser claro (branco) ou escuro (preto):",
                                     fontSize = 11.5.sp,
                                     color = MutedText
                                 )
@@ -1957,10 +1896,10 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(
-                                        Pair("ABOVE", "⬆️ Acima"),
-                                        Pair("BELOW", "⬇️ Abaixo")
-                                    ).forEach { (posKey, label) ->
-                                        val isSel = bubblePosition == posKey
+                                        Pair("LIGHT", "☀️ Claro (Branco)"),
+                                        Pair("DARK", "🌙 Escuro (Preto)")
+                                    ).forEach { (themeKey, label) ->
+                                        val isSel = overlayTheme == themeKey
                                         Surface(
                                             color = if (isSel) PetrolHeader else SoftSurfaceVariant,
                                             shape = RoundedCornerShape(12.dp),
@@ -1968,13 +1907,13 @@ fun GoOrNoComposeApp(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clickable {
-                                                    bubblePosition = posKey
+                                                    overlayTheme = themeKey
                                                     savedFlag = false
-                                                    val updated = config.copy(overlayBubblePosition = posKey)
+                                                    val updated = config.copy(overlayTheme = themeKey)
                                                     scope.launch {
                                                         app.preferencesRepository.saveConfig(updated)
                                                         app.overlayPanel.applyConfig(updated)
-                                                        notifyUser("Balão posicionado: $label")
+                                                        notifyUser("Tema alterado: $label")
                                                     }
                                                 }
                                         ) {
@@ -2280,6 +2219,7 @@ fun GoOrNoComposeApp(
                                             driverName = driverName.ifBlank { "Motorista" },
                                             vehicleModel = vehicleModel.ifBlank { "Veículo" },
                                             overlayDisplayStyle = selectedStyle.name,
+                                            overlayTheme = overlayTheme,
                                             overlayBubblePosition = bubblePosition,
                                             overlayHorizontalPosition = horizontalPosition,
                                             showFloatingShortcutBubble = showShortcutBubble,
@@ -2541,12 +2481,6 @@ fun GoOrNoComposeApp(
                         EarningsPillTabSelector(
                             currentScreen = currentScreen,
                             onSelectScreen = { currentScreen = it }
-                        )
-                    }
-                    item {
-                        SuasFaixasMatrixCard(
-                            config = config,
-                            onAdjustClick = { showAdjustFaixasDialog = true }
                         )
                     }
                     item {

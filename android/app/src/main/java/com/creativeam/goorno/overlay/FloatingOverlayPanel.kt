@@ -278,8 +278,8 @@ class FloatingOverlayPanel(private val context: Context) {
             OverlayDisplayStyle.BANNER_PRO_STREETVIEW -> buildBannerProStreetView(currentEval, oneBasedIndex, totalInQueue)
             OverlayDisplayStyle.PIRULITO_SIDEBAR -> buildPirulitoSidebarView(currentEval, oneBasedIndex, totalInQueue)
             OverlayDisplayStyle.MINI_BALL -> buildMiniBallView(currentEval, oneBasedIndex, totalInQueue)
-            OverlayDisplayStyle.CLASSIC_LIGHT -> buildClassicLightCardView(currentEval, oneBasedIndex, totalInQueue)
-            OverlayDisplayStyle.CLASSIC_DARK -> buildClassicDarkCardView(currentEval, oneBasedIndex, totalInQueue)
+            OverlayDisplayStyle.CLASSIC_LIGHT -> if (lastKnownConfig?.overlayTheme == "DARK") buildClassicDarkCardView(currentEval, oneBasedIndex, totalInQueue) else buildClassicLightCardView(currentEval, oneBasedIndex, totalInQueue)
+            OverlayDisplayStyle.CLASSIC_DARK -> if (lastKnownConfig?.overlayTheme == "LIGHT") buildClassicLightCardView(currentEval, oneBasedIndex, totalInQueue) else buildClassicDarkCardView(currentEval, oneBasedIndex, totalInQueue)
         }
 
         contentWrapper?.addView(builtView)
@@ -401,7 +401,7 @@ class FloatingOverlayPanel(private val context: Context) {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(12), dp(8), dp(10), dp(8))
             background = roundedCardBg("#0D1714", badgeHex, 18f, 2)
-            layoutParams = LinearLayout.LayoutParams(dp(330), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(340), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -430,10 +430,10 @@ class FloatingOverlayPanel(private val context: Context) {
             String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it)
         } ?: "-- km"
         val minStr = result.totalConsideredDurationMin?.let { "$it min" } ?: "-- min"
-        val grossKmStr = result.grossPerKm?.let { formatCurrency(it) + "/km" } ?: "--/km"
-        val grossHrStr = result.grossPerHour?.let {
-            String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", it)
-        } ?: "--/h"
+        val grossKmVal = result.grossPerKm?.let { formatCurrency(it) } ?: "--"
+        val grossHrVal = result.grossPerHour?.let {
+            String.format(Locale.forLanguageTag("pt-BR"), "%.2f", it)
+        } ?: "--"
         val ratingMiniTag = if (result.passengerRating != null) {
             val rStr = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", result.passengerRating)
             " · ★$rStr"
@@ -447,6 +447,12 @@ class FloatingOverlayPanel(private val context: Context) {
             else -> offer.sourceApp.displayName
         }
 
+        val zoneTag = when {
+            result.hasRiskAlert -> "⚠️ ${result.riskAlertBadge.orEmpty().ifBlank { "Risco" }} · "
+            result.isFavoriteZone -> "⭐ ${result.favoriteZoneBadge.orEmpty().ifBlank { "Favorito" }} · "
+            else -> ""
+        }
+
         val textCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
@@ -455,9 +461,9 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val tvLine1 = TextView(context).apply {
-            text = "$seqTag$appShort · $distStr · $minStr"
+            text = "$seqTag$zoneTag$appShort · $distStr · $minStr"
             setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setTypeface(typeface, Typeface.BOLD)
             setSingleLine(true)
             ellipsize = android.text.TextUtils.TruncateAt.END
@@ -471,7 +477,7 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val tvLine2 = TextView(context).apply {
-            text = "$grossKmStr · $grossHrStr$ratingMiniTag"
+            text = "$grossKmVal | $grossHrVal$ratingMiniTag"
             setTextColor(Color.parseColor(line2Color))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             setTypeface(typeface, Typeface.BOLD)
@@ -525,6 +531,7 @@ class FloatingOverlayPanel(private val context: Context) {
     ): View {
         val offer = result.offer
         val grossKm = result.grossPerKm ?: 0.0
+        val grossHr = result.grossPerHour ?: 0.0
         val totalKm = result.totalConsideredDistanceKm ?: 0.0
         val totalMin = result.totalConsideredDurationMin ?: 0
         val price = offer.offeredPrice ?: 0.0
@@ -564,7 +571,7 @@ class FloatingOverlayPanel(private val context: Context) {
             )
         }
 
-        // 1. Linha Superior: Cabeçalho "CORRIDA TOCOU" + Temporizador + Botão Fechar ✕
+        // 1. Linha Superior: Distância e Tempo (substituindo CORRIDA TOCOU) + Temporizador + Botão Fechar ✕
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -574,15 +581,21 @@ class FloatingOverlayPanel(private val context: Context) {
             )
         }
 
-        val headerLabel = if (totalCount > 1) "CORRIDA TOCOU ($index/$totalCount)" else "CORRIDA TOCOU"
+        val distStr = if (totalKm > 0.0) {
+            if (totalKm % 1.0 == 0.0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f km", totalKm)
+            else String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", totalKm)
+        } else {
+            "-- km"
+        }
+        val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
+        val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
+        val headerLabel = "$seqTag$distStr · $minStr"
+
         val tvHeader = TextView(context).apply {
             text = headerLabel
             setTextColor(Color.parseColor("#9CA3AF"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setTypeface(typeface, Typeface.BOLD)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                letterSpacing = 0.08f
-            }
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
         topRow.addView(tvHeader)
@@ -627,22 +640,23 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         contentArea.addView(tvPrice)
 
-        // 3. Linha de Métricas: 14 km · 22 min · R$ 0,64/km
-        val distStr = if (totalKm > 0.0) {
-            if (totalKm % 1.0 == 0.0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f km", totalKm)
-            else String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", totalKm)
-        } else {
-            "-- km"
-        }
-        val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
+        // 3. Linha de Métricas: R$/km · R$/h (com valor por hora conforme solicitado)
         val grossKmStr = if (grossKm > 0.0) {
             "${formatCurrency(grossKm)}/km"
         } else {
             "--/km"
         }
+        val grossHrStr = if (grossHr > 0.0) {
+            String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f/h", grossHr)
+        } else {
+            "--/h"
+        }
+        val ratingTag = if (result.passengerRating != null) {
+            " · ★" + String.format(Locale.forLanguageTag("pt-BR"), "%.2f", result.passengerRating)
+        } else ""
 
         val tvMetrics = TextView(context).apply {
-            text = "$distStr · $minStr · $grossKmStr"
+            text = "$grossKmStr · $grossHrStr$ratingTag"
             setTextColor(Color.parseColor("#D1D5DB"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
             setTypeface(typeface, Typeface.BOLD)
@@ -650,25 +664,53 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         contentArea.addView(tvMetrics)
 
-        // Alerta de Zona de Risco ou Destino Favorito (se houver)
+        // Alerta Destacado de Zona de Risco ou Região Favorita (se houver)
         if (result.hasRiskAlert) {
+            val riskRow = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = roundedCardBg("#3F0E0E", "#EF4444", 8f, 1)
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
+            }
             val tvRisk = TextView(context).apply {
-                text = "⚠️ Zona de Risco: ${result.riskAlertBadge.orEmpty()}"
+                text = "⚠️ ZONA DE RISCO: ${result.riskAlertBadge.orEmpty().ifBlank { "Área Perigosa" }}"
                 setTextColor(Color.parseColor("#FCA5A5"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, dp(4), 0, 0)
+                setSingleLine(true)
+                ellipsize = android.text.TextUtils.TruncateAt.END
             }
-            contentArea.addView(tvRisk)
+            riskRow.addView(tvRisk)
+            contentArea.addView(riskRow)
         } else if (result.isFavoriteZone) {
-            val tvFav = TextView(context).apply {
-                text = "⭐ Destino Favorito: ${result.favoriteZoneBadge.orEmpty()}"
-                setTextColor(Color.parseColor("#86EFAC"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, dp(4), 0, 0)
+            val favRow = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = roundedCardBg("#052E16", "#22C55E", 8f, 1)
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
             }
-            contentArea.addView(tvFav)
+            val tvFav = TextView(context).apply {
+                text = "⭐ REGIÃO FAVORITA: ${result.favoriteZoneBadge.orEmpty().ifBlank { "Destino Preferido" }}"
+                setTextColor(Color.parseColor("#86EFAC"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                setSingleLine(true)
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }
+            favRow.addView(tvFav)
+            contentArea.addView(favRow)
         }
 
         card.addView(contentArea)
@@ -693,7 +735,9 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     // =========================================================================
-    // FORMATO 2: WIDGET LATERAL COMPACTO (MÉTRICAS VERTICAIS)
+    // FORMATO: CARD 3 PILARES (R$/KM, R$/HORA E NOTA COM BARRAS VERTICAIS)
+    // IDÊNTICO ÀS IMAGENS FORNECIDAS PELO USUÁRIO (VERDE/AMARELO/VERMELHO)
+    // SUPORTA TEMA CLARO (FUNDO BRANCO) OU TEMA ESCURO (FUNDO PRETO)
     // =========================================================================
     @SuppressLint("ClickableViewAccessibility")
     private fun buildPirulitoSidebarView(
@@ -713,15 +757,34 @@ class FloatingOverlayPanel(private val context: Context) {
         val targetHr = lastKnownConfig?.targetGrossPerHour ?: 50.00
         val minHr = lastKnownConfig?.minGrossPerHour ?: 35.00
 
-        val kmColorHex = when {
+        val isDark = lastKnownConfig?.overlayTheme != "LIGHT"
+
+        val verdictBorderColor = when (result.verdict) {
+            TrafficLightVerdict.GREEN -> "#22C55E"
+            TrafficLightVerdict.YELLOW -> "#F59E0B"
+            TrafficLightVerdict.RED -> "#EF4444"
+            TrafficLightVerdict.GRAY_NEUTRAL -> "#64748B"
+        }
+
+        val cardBg = if (isDark) "#121316" else "#FFFFFF"
+        val primaryTextColor = if (isDark) Color.WHITE else Color.parseColor("#111827")
+        val secondaryTextColor = if (isDark) Color.parseColor("#9CA3AF") else Color.parseColor("#6B7280")
+
+        val kmBarColor = when {
             grossKm >= targetKm -> "#22C55E"
-            grossKm >= minKm -> "#FACC15"
+            grossKm >= minKm -> "#F59E0B"
             else -> "#EF4444"
         }
-        val hrColorHex = when {
+        val hrBarColor = when {
             grossHr >= targetHr -> "#22C55E"
-            grossHr >= minHr -> "#FACC15"
+            grossHr >= minHr -> "#F59E0B"
             else -> "#EF4444"
+        }
+        val ratingColorHex = when (result.passengerRatingVerdict) {
+            PassengerRatingVerdict.GOOD -> "#22C55E"
+            PassengerRatingVerdict.MEDIUM -> "#F59E0B"
+            PassengerRatingVerdict.BAD -> "#EF4444"
+            else -> if (isDark) "#CBD5E1" else "#1F2937"
         }
 
         val rootLayout = LinearLayout(context).apply {
@@ -730,148 +793,213 @@ class FloatingOverlayPanel(private val context: Context) {
             setOnTouchListener(createDragOrTapTouchListener())
         }
 
-        // Card Vertical Compacto (Métricas Verticais)
+        // Card Container com Borda Grossa Colorida pelo Veredito da Corrida
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            background = roundedCardBg("#12141A", "#2A3241", 16f, 1)
-            layoutParams = LinearLayout.LayoutParams(dp(170), LinearLayout.LayoutParams.WRAP_CONTENT)
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = roundedCardBg(cardBg, verdictBorderColor, 18f, 3)
+            layoutParams = LinearLayout.LayoutParams(dp(310), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(10).toFloat()
             }
         }
 
-        // Topo: Marca GoOrNo + Temporizador + Botão Fechar
-        val header = LinearLayout(context).apply {
+        // 1. Linha Superior: Resumo (R$ 12,70 · 11 min · 5,6 km) + Temporizador + Fechar
+        val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, dp(6))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(8)
+            }
         }
 
-        val tvTitle = TextView(context).apply {
-            text = "⚡ GOORNO"
-            setTextColor(Color.parseColor("#38BDF8"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+        val distStr = if (totalKm > 0.0) {
+            if (totalKm % 1.0 == 0.0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f km", totalKm)
+            else String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", totalKm)
+        } else {
+            "-- km"
+        }
+        val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
+        val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
+        val summaryText = "$seqTag${formatCurrency(price)} · $minStr · $distStr"
+
+        val tvSummary = TextView(context).apply {
+            text = summaryText
+            setTextColor(primaryTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-        header.addView(tvTitle)
+        topRow.addView(tvSummary)
 
-        val timerTv = TextView(context).apply {
+        val tvTimer = TextView(context).apply {
             text = "${remainingSeconds}s"
-            setTextColor(Color.parseColor("#94A3B8"))
+            setTextColor(secondaryTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-            setPadding(0, 0, dp(6), 0)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(4), 0, dp(4), 0)
         }
-        activeTimerLabel = timerTv
-        header.addView(timerTv)
+        activeTimerLabel = tvTimer
+        topRow.addView(tvTimer)
 
         val btnClose = TextView(context).apply {
             text = "✕"
-            setTextColor(Color.parseColor("#64748B"))
+            setTextColor(secondaryTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-            setPadding(dp(4), 0, dp(4), 0)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(4), 0, dp(2), 0)
             setOnClickListener { dismissCurrentOfferCardByUser() }
         }
-        header.addView(btnClose)
-        card.addView(header)
+        topRow.addView(btnClose)
 
-        // Item 1: Velocímetro (R$/km) com barra lateral colorida
-        fun createPirulitoTile(
-            barColorHex: String,
-            iconEmoji: String,
-            titleText: String,
-            valueText: String,
-            textColorHex: String
-        ): View {
-            val tile = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                background = roundedCardBg("#1A1D24", "#262C38", 10f, 1)
-                setPadding(dp(6), dp(5), dp(8), dp(5))
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    bottomMargin = dp(5)
-                }
-            }
+        card.addView(topRow)
 
-            // Barra lateral colorida (Vermelho / Amarelo / Verde)
-            val bar = View(context).apply {
-                background = roundedBg(barColorHex, 2f)
-                layoutParams = LinearLayout.LayoutParams(dp(4), dp(28)).apply {
-                    rightMargin = dp(6)
-                }
-            }
-            tile.addView(bar)
-
-            // Ícone do Tile
-            val tvIcon = TextView(context).apply {
-                text = iconEmoji
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
-                setPadding(0, 0, dp(6), 0)
-            }
-            tile.addView(tvIcon)
-
-            // Texto com Label e Valor
-            val col = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-            val tvLabel = TextView(context).apply {
-                text = titleText
-                setTextColor(Color.parseColor("#94A3B8"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f)
-            }
-            col.addView(tvLabel)
-
-            val tvVal = TextView(context).apply {
-                text = valueText
-                setTextColor(Color.parseColor(textColorHex))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
-                setTypeface(typeface, Typeface.BOLD)
-            }
-            col.addView(tvVal)
-            tile.addView(col)
-
-            return tile
+        // 2. Linha dos 3 Pilares: [R$/Km] | [R$/Hora] | [Nota]
+        val pillarsRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
 
-        val kmVal = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm)
-        val hrVal = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossHr)
-        val timeVal = if (totalKm > 0) "${totalMin} min • ${String.format(Locale.forLanguageTag("pt-BR"), "%.1f", totalKm)}km" else "${totalMin} min"
-
-        card.addView(createPirulitoTile(kmColorHex, "🏎️", "R$/km", kmVal, kmColorHex))
-        card.addView(createPirulitoTile(hrColorHex, "🕒", "R$/hora", hrVal, hrColorHex))
-        card.addView(createPirulitoTile("#3B82F6", "⏱️", "Tempo total", timeVal, "#60A5FA"))
-
-        // Alerta de Risco compacto se houver
-        if (result.hasRiskAlert) {
-            val tvRisk = TextView(context).apply {
-                text = "⚠️ Risco: ${result.riskAlertBadge.orEmpty()}"
-                setTextColor(Color.parseColor("#EF4444"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, dp(2), 0, dp(4))
-                gravity = Gravity.CENTER
-            }
-            card.addView(tvRisk)
+        // Coluna 1: R$/Km
+        val col1 = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-
-        // Rodapé com Valor Total
-        val footer = TextView(context).apply {
-            text = "${offer.sourceApp.displayName}  •  ${formatCurrency(price)}"
-            setTextColor(Color.parseColor("#E2E8F0"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+        val tvLabelKm = TextView(context).apply {
+            text = "R$/Km"
+            setTextColor(secondaryTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.NORMAL)
+            gravity = Gravity.CENTER
+        }
+        val tvValKm = TextView(context).apply {
+            text = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm)
+            setTextColor(primaryTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f)
             setTypeface(typeface, Typeface.BOLD)
             gravity = Gravity.CENTER
-            setPadding(0, dp(3), 0, 0)
         }
-        card.addView(footer)
+        col1.addView(tvLabelKm)
+        col1.addView(tvValKm)
+        pillarsRow.addView(col1)
+
+        // Barra Separadora 1 (Colorida conforme Km)
+        val bar1 = View(context).apply {
+            background = roundedBg(kmBarColor, 2f)
+            layoutParams = LinearLayout.LayoutParams(dp(3), dp(36)).apply {
+                marginStart = dp(4)
+                marginEnd = dp(4)
+            }
+        }
+        pillarsRow.addView(bar1)
+
+        // Coluna 2: R$/Hora
+        val col2 = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val tvLabelHr = TextView(context).apply {
+            text = "R$/Hora"
+            setTextColor(secondaryTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.NORMAL)
+            gravity = Gravity.CENTER
+        }
+        val tvValHr = TextView(context).apply {
+            text = String.format(Locale.forLanguageTag("pt-BR"), "%.0f", grossHr)
+            setTextColor(primaryTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+        }
+        col2.addView(tvLabelHr)
+        col2.addView(tvValHr)
+        pillarsRow.addView(col2)
+
+        // Barra Separadora 2 (Colorida conforme Hora)
+        val bar2 = View(context).apply {
+            background = roundedBg(hrBarColor, 2f)
+            layoutParams = LinearLayout.LayoutParams(dp(3), dp(36)).apply {
+                marginStart = dp(4)
+                marginEnd = dp(4)
+            }
+        }
+        pillarsRow.addView(bar2)
+
+        // Coluna 3: Nota do Passageiro (Valor colorido com a cor da avaliação)
+        val col3 = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val tvLabelRating = TextView(context).apply {
+            text = "Nota"
+            setTextColor(secondaryTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.NORMAL)
+            gravity = Gravity.CENTER
+        }
+        val ratingText = if (result.passengerRating != null) {
+            String.format(Locale.forLanguageTag("pt-BR"), "%.2f", result.passengerRating)
+        } else {
+            "--"
+        }
+        val tvValRating = TextView(context).apply {
+            text = ratingText
+            setTextColor(Color.parseColor(ratingColorHex))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+        }
+        col3.addView(tvLabelRating)
+        col3.addView(tvValRating)
+        pillarsRow.addView(col3)
+
+        card.addView(pillarsRow)
+
+        // Alerta de Zona de Risco ou Região Favorita (se houver)
+        if (result.hasRiskAlert) {
+            val tvRisk = TextView(context).apply {
+                text = "⚠️ ZONA DE RISCO: ${result.riskAlertBadge.orEmpty().ifBlank { "Área Perigosa" }}"
+                setTextColor(Color.parseColor("#EF4444"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(6), 0, 0)
+                gravity = Gravity.CENTER
+                setSingleLine(true)
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }
+            card.addView(tvRisk)
+        } else if (result.isFavoriteZone) {
+            val tvFav = TextView(context).apply {
+                text = "⭐ REGIÃO FAVORITA: ${result.favoriteZoneBadge.orEmpty().ifBlank { "Destino Preferido" }}"
+                setTextColor(Color.parseColor("#16A34A"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(6), 0, 0)
+                gravity = Gravity.CENTER
+                setSingleLine(true)
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }
+            card.addView(tvFav)
+        }
 
         rootLayout.addView(card)
         return rootLayout
+    }
     }
 
     @SuppressLint("ClickableViewAccessibility")

@@ -967,19 +967,20 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.28",
-    versionCode: 49,
-    releaseDate: "2026-10-19",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.28.apk",
-    directDownload: "/GoOrNo-v3.3.28.apk",
+    versionName: "3.3.29",
+    versionCode: 50,
+    releaseDate: "2026-10-20",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.29.apk",
+    directDownload: "/GoOrNo-v3.3.29.apk",
     fileSizeBytes: 55500000,
     fileSizeFormatted: "53.0 MB",
     changelog: [
-      "Novo Card Impacto Pro: Design de alto contraste com valor gigante, métricas nítidas e barra de veredito sólida (COMPENSA / NÃO COMPENSA).",
-      "Street View 360° nas Notificações: Totalmente preservado na barra de notificações com botões para Origem e Destino direto no Google Maps.",
-      "Leveza e Desempenho 0ms: Remoção de WebView no card flutuante, eliminando consumo de memória e travamentos.",
-      "Filtro Anti-Distorção 99/Uber: Captura precisa do valor real, descartando bônus de dinâmica e acréscimos.",
-      "Histórico 100% Protegido: Bloqueio contra dados incompletos ou leituras corrompidas."
+      "Card 3 Pilares Oficial: Novo modelo com resumo no topo (R$, tempo, km), 3 colunas e barras verticais coloridas (R$/km, R$/hora e Nota).",
+      "Suporte a Tema Claro e Escuro: Seleção de fundo claro ou escuro tanto para o Card 3 Pilares quanto para o Card Clássico.",
+      "Card Impacto Pro Refinado: Distância e tempo no cabeçalho superior, valor gigante no centro e ganho por km e por hora logo abaixo.",
+      "Alertas de Segurança Destacados: Linhas dedicadas para Zona de Risco e Região Favorita de alto contraste.",
+      "Botão Discreto Sem Cortes: Formatação compacta (R$ 1,70 | 43,00) evitando corte de texto.",
+      "Limpeza Visual nos Menus: Remoção de 'Suas Faixas' e itens duplicados de estilo/histórico nos ajustes."
     ],
     mandatory: false,
   });
@@ -1086,6 +1087,7 @@ app.delete("/api/contact/:id", async (req, res) => {
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
+  "/GoOrNo-v3.3.29.apk",
   "/GoOrNo-v3.3.28.apk",
   "/GoOrNo-v3.3.27.apk",
   "/GoOrNo-v3.3.26.apk",
@@ -1112,18 +1114,22 @@ app.get([
   "/GoOrNo-v3.3.4.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
+  "/download/GoOrNo-v3.3.29.apk",
   "/download/GoOrNo-v3.3.28.apk"
 ], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.28.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.28.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.28.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.29.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.29.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.29.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.28.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.28.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.28.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.27.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.27.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.27.apk"),
@@ -1133,7 +1139,7 @@ app.get([
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.28.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.29.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");

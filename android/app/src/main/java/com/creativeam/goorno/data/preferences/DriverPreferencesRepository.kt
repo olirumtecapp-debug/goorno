@@ -45,6 +45,7 @@ class DriverPreferencesRepository(private val context: Context) {
         val OVERLAY_OPACITY = intPreferencesKey("overlay_opacity")
         val OVERLAY_AUTO_MIN_SEC = intPreferencesKey("overlay_auto_min_sec")
         val OVERLAY_DISPLAY_STYLE = stringPreferencesKey("overlay_display_style")
+        val OVERLAY_THEME = stringPreferencesKey("overlay_theme")
         val OVERLAY_BUBBLE_POSITION = stringPreferencesKey("overlay_bubble_position")
         val OVERLAY_HORIZONTAL_POSITION = stringPreferencesKey("overlay_horizontal_position")
         val MIN_GROSS_KM = doublePreferencesKey("min_gross_km")
@@ -91,6 +92,7 @@ class DriverPreferencesRepository(private val context: Context) {
             overlayOpacityPercent = prefs[Keys.OVERLAY_OPACITY] ?: 92,
             overlayAutoMinimizeSec = (prefs[Keys.OVERLAY_AUTO_MIN_SEC] ?: 5).coerceIn(3, 7),
             overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: "BANNER_PRO_STREETVIEW",
+            overlayTheme = prefs[Keys.OVERLAY_THEME] ?: "DARK",
             overlayBubblePosition = prefs[Keys.OVERLAY_BUBBLE_POSITION] ?: "BELOW",
             overlayHorizontalPosition = prefs[Keys.OVERLAY_HORIZONTAL_POSITION] ?: "RIGHT",
             showFloatingShortcutBubble = prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] ?: true,
@@ -138,6 +140,7 @@ class DriverPreferencesRepository(private val context: Context) {
             prefs[Keys.OVERLAY_OPACITY] = config.overlayOpacityPercent.coerceIn(25, 100)
             prefs[Keys.OVERLAY_AUTO_MIN_SEC] = config.overlayAutoMinimizeSec.coerceIn(3, 60)
             prefs[Keys.OVERLAY_DISPLAY_STYLE] = config.overlayDisplayStyle
+            prefs[Keys.OVERLAY_THEME] = config.overlayTheme
             prefs[Keys.OVERLAY_BUBBLE_POSITION] = config.overlayBubblePosition
             prefs[Keys.OVERLAY_HORIZONTAL_POSITION] = config.overlayHorizontalPosition
             prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] = config.showFloatingShortcutBubble
