@@ -279,7 +279,6 @@ class FloatingOverlayPanel(private val context: Context) {
             OverlayDisplayStyle.PIRULITO_SIDEBAR -> buildPirulitoSidebarView(currentEval, oneBasedIndex, totalInQueue)
             OverlayDisplayStyle.MINI_BALL -> buildMiniBallView(currentEval, oneBasedIndex, totalInQueue)
             OverlayDisplayStyle.CLASSIC_LIGHT -> if (lastKnownConfig?.overlayTheme == "DARK") buildClassicDarkCardView(currentEval, oneBasedIndex, totalInQueue) else buildClassicLightCardView(currentEval, oneBasedIndex, totalInQueue)
-            OverlayDisplayStyle.CLASSIC_DARK -> if (lastKnownConfig?.overlayTheme == "LIGHT") buildClassicLightCardView(currentEval, oneBasedIndex, totalInQueue) else buildClassicDarkCardView(currentEval, oneBasedIndex, totalInQueue)
         }
 
         contentWrapper?.addView(builtView)

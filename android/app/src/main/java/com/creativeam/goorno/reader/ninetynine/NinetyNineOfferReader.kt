@@ -65,10 +65,15 @@ object NinetyNineOfferReader {
             joinedLower.contains("janela histórico ajustes")
         ) {
             return StandardRideOffer(
-                sourceApp = SourceApp.NINETY_NINE_DRIVER,
+                offerId = UUID.randomUUID().toString(),
+                sourceApp = if (isSimulated) SourceApp.SIMULATION else SourceApp.NINETY_NINE_DRIVER,
                 captureMethod = captureMethod,
+                screenClassification = ScreenClassification.NON_OFFER,
                 timestampMillis = timestampMillis,
-                screenClassification = ScreenClassification.NON_OFFER
+                offeredPriceField = ExtractedField.Missing,
+                confidenceScore = 0.0,
+                rawCapturedTexts = cleanedLines,
+                isSimulated = isSimulated
             )
         }
 

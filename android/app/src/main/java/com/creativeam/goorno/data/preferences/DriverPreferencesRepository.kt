@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import androidx.datastore.preferences.core.emptyPreferences
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import java.io.IOException
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "goorno_driver_settings")
