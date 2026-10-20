@@ -477,82 +477,82 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
 
         {/* NAVEGAÇÃO ENTRE ABAS NO ESTILO REDESIGN */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[rgba(7,29,25,0.12)] pb-4">
-          <div className="flex items-center gap-1.5 p-1.5 bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl shadow-xs overflow-x-auto">
+          <div className="flex items-center gap-1 p-1 bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl shadow-xs overflow-x-auto">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 shrink-0 ${
                 activeTab === 'overview'
                   ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
                   : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
               }`}
             >
-              <TrendingUp className="w-4 h-4" />
-              <span>Visão Geral & Faturamento</span>
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Visão Geral</span>
             </button>
 
             <button
               onClick={() => setActiveTab('drivers')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 shrink-0 ${
                 activeTab === 'drivers'
                   ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
                   : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
               }`}
             >
-              <Users className="w-4 h-4" />
-              <span>Motoristas & Licenças ({licenses.length})</span>
+              <Users className="w-3.5 h-3.5" />
+              <span>Motoristas ({licenses.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('vouchers')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 shrink-0 ${
                 activeTab === 'vouchers'
                   ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
                   : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
               }`}
             >
-              <Ticket className="w-4 h-4" />
-              <span>Cupons & Vouchers ({vouchers.length})</span>
+              <Ticket className="w-3.5 h-3.5" />
+              <span>Cupons ({vouchers.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('mailbox')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 relative ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 shrink-0 relative ${
                 activeTab === 'mailbox'
                   ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
                   : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
               }`}
             >
-              <Mail className="w-4 h-4" />
-              <span>Caixa Postal ({messages.length})</span>
+              <Mail className="w-3.5 h-3.5" />
+              <span>Mensagens ({messages.length})</span>
               {messages.filter((m) => m.status === 'unread').length > 0 && (
-                <span className="bg-[#d9ff4f] text-[#071d19] text-[10px] font-space font-black px-1.5 py-0.5 rounded-full ml-1">
+                <span className="bg-[#d9ff4f] text-[#071d19] text-[10px] font-space font-black px-1.5 py-0.2 rounded-full ml-0.5">
                   {messages.filter((m) => m.status === 'unread').length}
                 </span>
               )}
             </button>
 
             <button
-              onClick={() => setActiveTab('juridico')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
-                activeTab === 'juridico'
-                  ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
-                  : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Jurídico & LGPD</span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('marketing')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 shrink-0 ${
                 activeTab === 'marketing'
                   ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
                   : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
               }`}
             >
-              <Share2 className="w-4 h-4" />
-              <span>Material & Folder (QR Code)</span>
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Divulgação & QR Code</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('juridico')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-space font-bold transition cursor-pointer border-0 shrink-0 ${
+                activeTab === 'juridico'
+                  ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
+                  : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Jurídico & LGPD</span>
             </button>
           </div>
 
@@ -1489,6 +1489,204 @@ ${window.location.origin}
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ABA: MARKETING & MATERIAL DE DIVULGAÇÃO */}
+        {activeTab === 'marketing' && (
+          <div className="space-y-6">
+            <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-3xl p-6 sm:p-8 shadow-xs">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-[rgba(7,29,25,0.08)]">
+                <div>
+                  <span className="bg-[#d9ff4f] text-[#071d19] text-xs font-space font-bold px-3 py-1 rounded-full uppercase">
+                    📢 Material Oficial de Divulgação
+                  </span>
+                  <h2 className="font-space font-bold text-xl sm:text-2xl text-[#071d19] mt-2 mb-1">
+                    Folder GoOrNo com QR Code
+                  </h2>
+                  <p className="font-dm text-xs sm:text-sm text-[#7a8982] m-0">
+                    Flyer oficial em alta definição para compartilhar em grupos de WhatsApp, redes sociais ou imprimir.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <a
+                    href="/folder-goorno.png"
+                    download="folder-goorno.png"
+                    className="inline-flex items-center gap-2 bg-[#071d19] hover:bg-[#0c3128] text-[#d9ff4f] text-xs sm:text-sm font-space font-bold px-4 py-2.5 rounded-xl transition shadow-xs"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Baixar Imagem PNG</span>
+                  </a>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('https://goorno-app.vercel.app/folder-goorno.png');
+                      setActionFeedback('Link do flyer copiado!');
+                    }}
+                    className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-space font-bold px-4 py-2.5 rounded-xl transition cursor-pointer border-0"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span>Copiar Link</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 items-center">
+                {/* PREVIEW DO FOLDER */}
+                <div className="flex justify-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <img
+                    src="/folder-goorno.png"
+                    alt="Folder GoOrNo com QR Code"
+                    className="max-h-[500px] w-auto rounded-xl shadow-lg object-contain"
+                  />
+                </div>
+
+                {/* TEXTO DE TRANSMISSÃO WHATSAPP E DICAS */}
+                <div className="space-y-5">
+                  <div className="bg-[#071d19] text-white p-5 rounded-2xl border border-emerald-950 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-space font-bold text-xs uppercase text-[#d9ff4f] flex items-center gap-1.5">
+                        <Share2 className="w-4 h-4" /> Texto Pronto para WhatsApp
+                      </span>
+                      <button
+                        onClick={() => {
+                          const msg = `🚗 Fala parceiro! Conheça o GoOrNo, o copiloto que calcula na hora seu lucro real (R$/km e R$/hora) nas chamadas da Uber e 99 antes de aceitar!\n\n📲 Baixe direto pelo site oficial ou aponte a câmera pro QR Code do folder:\nhttps://goorno-app.vercel.app/\n\nTeste 7 dias grátis!`;
+                          navigator.clipboard.writeText(msg);
+                          setActionFeedback('Texto para WhatsApp copiado!');
+                        }}
+                        className="bg-white/10 hover:bg-white/20 text-white text-xs font-space font-bold px-3 py-1 rounded-lg transition cursor-pointer border-0"
+                      >
+                        Copiar Mensagem
+                      </button>
+                    </div>
+                    <p className="font-dm text-xs text-[#c2d0ca] leading-relaxed whitespace-pre-wrap m-0">
+                      🚗 Fala parceiro! Conheça o GoOrNo, o copiloto que calcula na hora seu lucro real (R$/km e R$/hora) nas chamadas da Uber e 99 antes de aceitar!
+                      {"\n\n"}
+                      📲 Baixe direto pelo site oficial ou aponte a câmera pro QR Code do folder:
+                      {"\n"}
+                      https://goorno-app.vercel.app/
+                      {"\n\n"}
+                      Teste 7 dias grátis!
+                    </p>
+                  </div>
+
+                  <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 text-emerald-900 text-xs leading-relaxed space-y-1">
+                    <p className="font-bold m-0 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-emerald-700" /> Dica de Divulgação
+                    </p>
+                    <p className="m-0 text-emerald-800">
+                      O QR Code impresso no canto superior do flyer direciona qualquer motorista diretamente para a Landing Page oficial com download seguro do APK.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ABA: JURÍDICO & LGPD */}
+        {activeTab === 'juridico' && (
+          <div className="space-y-6">
+            <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+              <div>
+                <span className="bg-emerald-100 text-emerald-800 text-xs font-space font-bold px-3 py-1 rounded-full uppercase">
+                  ⚖️ Compliance, Termos de Uso e LGPD
+                </span>
+                <h2 className="font-space font-bold text-xl sm:text-2xl text-[#071d19] mt-2 mb-1">
+                  Transparência Jurídica & Gestão de Privacidade
+                </h2>
+                <p className="font-dm text-xs sm:text-sm text-[#7a8982] m-0">
+                  Documentação legal ativa e ferramenta administrativa para atendimento ao Art. 18 da LGPD.
+                </p>
+              </div>
+
+              {/* CARD PRECEDENTE JUDICIAL TJSP */}
+              <div className="p-5 rounded-2xl bg-[#071d19] text-white border border-emerald-950 space-y-2">
+                <span className="text-[11px] font-space font-bold uppercase text-[#d9ff4f]">
+                  Jurisprudência & Legitimidade
+                </span>
+                <h3 className="font-space font-bold text-base text-white m-0">
+                  Precedente TJSP: Agravo de Instrumento nº 2207360-65.2023.8.26.0000
+                </h3>
+                <p className="font-dm text-xs text-[#c2d0ca] leading-relaxed m-0">
+                  O Tribunal de Justiça de São Paulo consolidou o entendimento de que ferramentas auxiliares que apenas realizam a leitura da tela do aparelho para calcular rentabilidade e estimativas financeiras em prol do motorista autônomo são legítimas e não configuram concorrência desleal nem violação de segredo.
+                </p>
+              </div>
+
+              {/* GESTÃO DE EXCLUSÃO DE CONTAS (ART. 18 LGPD) */}
+              <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 space-y-4">
+                <div>
+                  <h3 className="font-space font-bold text-sm text-rose-900 m-0 flex items-center gap-2">
+                    <Trash2 className="w-4 h-4 text-rose-700" />
+                    Exclusão Administrativa de Conta & Backups (Direito de Eliminação LGPD)
+                  </h3>
+                  <p className="font-dm text-xs text-rose-700 mt-1 mb-0">
+                    Caso um usuário solicite a exclusão de seus dados via suporte, você pode executar a remoção definitiva informando o WhatsApp cadastrado.
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    const phoneInput = form.elements.namedItem('adminDelPhone') as HTMLInputElement;
+                    const phone = phoneInput.value.trim();
+                    if (!phone) return;
+                    if (!confirm(`Deseja excluir DEFINITIVAMENTE a conta do telefone/placa ${phone}? Todos os backups e licença serão apagados.`)) return;
+
+                    try {
+                      const res = await fetch('/api/license/delete-account', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone, pin: 'ADMIN_OVERRIDE', secret: 'ADMIN_OVERRIDE' }),
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.success) {
+                        setActionFeedback(`Sucesso: ${data.message}`);
+                        phoneInput.value = '';
+                        fetchLicenses();
+                      } else {
+                        setActionFeedback(`Erro: ${data.message || 'Falha ao excluir'}`);
+                      }
+                    } catch (err: any) {
+                      setActionFeedback(`Erro de rede: ${err.message}`);
+                    }
+                  }}
+                  className="flex flex-col sm:flex-row items-center gap-3"
+                >
+                  <input
+                    name="adminDelPhone"
+                    type="text"
+                    required
+                    placeholder="WhatsApp do motorista (ex: 11999999999)"
+                    className="w-full sm:w-80 px-3.5 py-2 text-xs font-mono border border-rose-300 rounded-xl bg-white focus:outline-none focus:border-rose-600"
+                  />
+                  <button
+                    type="submit"
+                    className="w-full sm:w-auto px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-space font-bold text-xs rounded-xl transition cursor-pointer border-0 shrink-0"
+                  >
+                    Excluir Conta e Dados (LGPD)
+                  </button>
+                </form>
+              </div>
+
+              {/* TEXTOS DOS TERMOS E POLÍTICA */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <div className="space-y-2">
+                  <h4 className="font-space font-bold text-sm text-[#071d19] m-0">Termos de Uso Ativos (v1.0)</h4>
+                  <div className="h-72 overflow-y-auto p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-dm text-slate-700 leading-relaxed whitespace-pre-line">
+                    {TERMS_OF_USE_TEXT}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-space font-bold text-sm text-[#071d19] m-0">Política de Privacidade Ativa (v1.0)</h4>
+                  <div className="h-72 overflow-y-auto p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-dm text-slate-700 leading-relaxed whitespace-pre-line">
+                    {PRIVACY_POLICY_TEXT}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

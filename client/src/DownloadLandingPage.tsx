@@ -1132,93 +1132,65 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
         </div>
       )}
 
-            {/* FOOTER & AVISO LEGAL */}
+            {/* FOOTER */}
       <footer className="site-footer section-shell">
-        {/* BANNER DE ISENÇÃO DE VÍNCULO (UBER / 99) */}
-        <div className="w-full bg-[#071d19]/5 border border-[#071d19]/10 rounded-2xl p-4 sm:p-5 text-center">
-          <p className="font-dm text-xs sm:text-[13px] text-[#42544c] leading-relaxed m-0 max-w-4xl mx-auto">
-            <strong className="text-[#071d19] font-bold">Aviso de Independência & Interoperabilidade:</strong> O GoOrNo é uma ferramenta independente de apoio e cálculo de rentabilidade desenvolvida para motoristas de aplicativos. Não somos a Uber nem a 99, e não possuímos qualquer parceria, autorização ou vínculo com essas empresas. As marcas são citadas exclusivamente a título de indicação de compatibilidade técnica (Art. 132, IV, Lei nº 9.279/1996).
-          </p>
+        <div className="brand footer-brand">
+          <img
+            src="/assets/logo-goorno-clean.png"
+            alt="GoOrNo"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/logo-goorno-clean.png';
+            }}
+          />
+          <span>
+            GoOrNo <small>Copiloto de rentabilidade</small>
+          </span>
         </div>
 
-        {/* LINHA PRINCIPAL DO RODAPÉ ORGANIZADA EM GRID/FLEX LIMPO */}
-        <div className="w-full pt-4 border-t border-black/10 flex flex-col md:flex-row items-center justify-between gap-5 text-center md:text-left">
-          {/* LOGO E IDENTIDADE */}
-          <div className="flex items-center gap-3">
-            <img
-              src="/assets/logo-goorno-clean.png"
-              alt="GoOrNo"
-              className="w-9 h-9 rounded-xl object-contain shadow-xs"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/logo-goorno-clean.png';
-              }}
-            />
-            <div className="flex flex-col">
-              <span className="font-space font-bold text-base text-[#071d19] leading-tight tracking-tight">
-                GoOrNo
-              </span>
-              <span className="font-dm text-xs text-[#7a8982]">
-                Copiloto de rentabilidade
-              </span>
-            </div>
-          </div>
+        <p className="text-xs text-[#7a8982] m-0">© 2026 GoOrNo. Feito para quem trabalha na rua.</p>
 
-          {/* COPYRIGHT */}
-          <div className="text-xs text-[#7a8982] font-dm">
-            © 2026 GoOrNo • Creative AM. Todos os direitos reservados.
-          </div>
-
-          {/* NAVEGAÇÃO JURÍDICA E LINKS */}
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-x-3.5 gap-y-2 text-xs font-space font-bold">
-            <button
-              onClick={() => setLegalModalType('terms')}
-              className="bg-transparent border-0 text-[#071d19] hover:text-emerald-700 cursor-pointer p-0 underline text-xs"
-            >
-              Termos de Uso
-            </button>
-            <span className="text-slate-300">•</span>
-            <button
-              onClick={() => setLegalModalType('privacy')}
-              className="bg-transparent border-0 text-[#071d19] hover:text-emerald-700 cursor-pointer p-0 underline text-xs"
-            >
-              Privacidade (LGPD)
-            </button>
-            <span className="text-slate-300">•</span>
-            <button
-              onClick={() => setLegalModalType('independence')}
-              className="bg-transparent border-0 text-[#071d19] hover:text-emerald-700 cursor-pointer p-0 underline text-xs"
-            >
-              Isenção de Vínculo
-            </button>
-            <span className="text-slate-300">•</span>
-            <button
-              onClick={() => setLegalModalType('delete')}
-              className="bg-transparent border-0 text-red-700 hover:text-red-900 cursor-pointer p-0 underline text-xs"
-            >
-              Exclusão de Dados
-            </button>
-            <span className="text-slate-300">•</span>
-            <button
-              onClick={() => setIsContactOpen(true)}
-              className="bg-transparent border-0 text-[#071d19] hover:underline cursor-pointer flex items-center gap-1 text-xs"
-            >
-              <Mail className="w-3.5 h-3.5 text-[#071d19]" />
-              Fale conosco
-            </button>
-            {onOpenAdmin && (
-              <>
-                <span className="text-slate-300">•</span>
-                <button
-                  onClick={onOpenAdmin}
-                  className="bg-transparent border-0 text-[#7a8982] hover:text-[#071d19] text-xs transition cursor-pointer flex items-center gap-1"
-                  title="Acesso Administrativo"
-                >
-                  <Lock className="w-3 h-3" />
-                  <span>Painel</span>
-                </button>
-              </>
-            )}
-          </div>
+        <div className="flex items-center gap-3 text-xs font-space font-bold">
+          <button
+            onClick={() => setLegalModalType('terms')}
+            className="bg-transparent border-0 text-[#071d19] hover:text-[#799900] cursor-pointer p-0 underline"
+          >
+            Termos
+          </button>
+          <span className="text-slate-300">•</span>
+          <button
+            onClick={() => setLegalModalType('privacy')}
+            className="bg-transparent border-0 text-[#071d19] hover:text-[#799900] cursor-pointer p-0 underline"
+          >
+            Privacidade
+          </button>
+          <span className="text-slate-300">•</span>
+          <button
+            onClick={() => setLegalModalType('independence')}
+            className="bg-transparent border-0 text-[#071d19] hover:text-[#799900] cursor-pointer p-0 underline"
+          >
+            Independência
+          </button>
+          <span className="text-slate-300">•</span>
+          <button
+            onClick={() => setIsContactOpen(true)}
+            className="bg-transparent border-0 text-[#071d19] hover:text-[#799900] cursor-pointer flex items-center gap-1"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span>Contato</span>
+          </button>
+          {onOpenAdmin && (
+            <>
+              <span className="text-slate-300">•</span>
+              <button
+                onClick={onOpenAdmin}
+                className="bg-transparent border-0 text-[#7a8982] hover:text-[#071d19] transition cursor-pointer flex items-center gap-1"
+                title="Acesso Administrativo"
+              >
+                <Lock className="w-3 h-3" />
+                <span>Painel</span>
+              </button>
+            </>
+          )}
         </div>
       </footer>
 
