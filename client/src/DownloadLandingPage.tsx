@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Download,
+  Share2,
+  Copy,
   Mail,
   ShieldCheck,
   ChevronDown,
@@ -42,6 +44,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
   const [heroMode, setHeroMode] = useState<'good' | 'bad'>('good');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [appVersion, setAppVersion] = useState<string>('3.3.26');
 
   useEffect(() => {
@@ -937,6 +940,115 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
           </div>
         </section>
 
+                {/* SEÇÃO DO FOLDER OFICIAL DE DIVULGAÇÃO & COMPARTILHAMENTO */}
+        <section className="section-shell" id="folder">
+          <div className="bg-gradient-to-br from-[#071d19] via-[#0c2f27] to-[#071d19] border border-[#d9ff4f]/30 rounded-3xl p-6 sm:p-10 text-white relative overflow-hidden shadow-2xl">
+            {/* Elementos decorativos */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-[#d9ff4f]/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+              {/* Coluna 1: Preview do Folder */}
+              <div className="lg:col-span-5 flex justify-center">
+                <div
+                  className="relative group cursor-pointer max-w-[270px] sm:max-w-[310px]"
+                  onClick={() => setIsFolderModalOpen(true)}
+                >
+                  <div className="absolute -inset-2 bg-gradient-to-r from-[#d9ff4f]/40 to-emerald-400/40 rounded-3xl blur-md group-hover:blur-lg transition opacity-75" />
+                  <div className="relative rounded-2xl overflow-hidden border-2 border-[#d9ff4f] bg-[#071d19] shadow-2xl">
+                    <img
+                      src="/folder-goorno.png"
+                      alt="Folder Oficial GoOrNo com QR Code"
+                      className="w-full h-auto object-contain block transform group-hover:scale-[1.02] transition duration-300"
+                    />
+                  </div>
+                  <div className="absolute bottom-3 left-3 right-3 bg-[#071d19]/90 backdrop-blur-md border border-white/20 rounded-xl py-1.5 px-3 text-center text-[11px] font-space font-bold text-[#d9ff4f] shadow-lg">
+                    🔍 Toque para ampliar o folder
+                  </div>
+                </div>
+              </div>
+
+              {/* Coluna 2: Informações e Ações de Compartilhamento */}
+              <div className="lg:col-span-7 flex flex-col justify-center space-y-5">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d9ff4f]/15 border border-[#d9ff4f]/30 text-[#d9ff4f] font-space font-bold text-xs uppercase w-fit">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Material Oficial de Divulgação</span>
+                </div>
+
+                <h3 className="font-space font-black text-2xl sm:text-3xl text-white tracking-tight leading-tight m-0">
+                  Folder com QR Code do GoOrNo
+                </h3>
+
+                <p className="font-dm text-sm sm:text-base text-[#b8ccc3] leading-relaxed m-0">
+                  Quer apresentar o GoOrNo para colegas motoristas, imprimir panfletos ou compartilhar nos grupos de WhatsApp? Use o nosso folder oficial de alta resolução com QR Code apontando diretamente para o teste grátis de 7 dias.
+                </p>
+
+                {/* Destaques rápidos */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-start gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-[#d9ff4f]/20 text-[#d9ff4f] shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h5 className="font-space font-bold text-xs text-white m-0 mb-0.5">QR Code Integrado</h5>
+                      <p className="font-dm text-[11px] text-[#b8ccc3] m-0">Basta apontar a câmera do celular para abrir o site na hora.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-start gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h5 className="font-space font-bold text-xs text-white m-0 mb-0.5">Alta Resolução</h5>
+                      <p className="font-dm text-[11px] text-[#b8ccc3] m-0">Pronto para envio digital ou impressão gráfica nítida.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botões de Ação */}
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <a
+                    href="/folder-goorno.png"
+                    download="Folder-Oficial-GoOrNo.png"
+                    className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-black text-xs sm:text-sm px-5 py-3 rounded-xl transition inline-flex items-center gap-2 no-underline shadow-md"
+                  >
+                    <Download className="w-4 h-4" /> Baixar Folder (PNG)
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      const shareText = "Conheça o GoOrNo: Seu Copiloto Inteligente para Uber e 99! Acesse https://goorno-app.vercel.app/ e teste 7 dias grátis.";
+                      if (navigator.share) {
+                        navigator.share({
+                          title: "Folder Oficial GoOrNo",
+                          text: shareText,
+                          url: "https://goorno-app.vercel.app/folder-goorno.png"
+                        }).catch(() => {});
+                      } else {
+                        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + "\n\nVeja o folder: https://goorno-app.vercel.app/folder-goorno.png")}`, '_blank');
+                      }
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-space font-bold text-xs sm:text-sm px-4 py-3 rounded-xl transition cursor-pointer border-0 inline-flex items-center gap-2 shadow-sm"
+                  >
+                    <Share2 className="w-4 h-4" /> Compartilhar no WhatsApp
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText("https://goorno-app.vercel.app/folder-goorno.png");
+                      alert("Link do folder copiado para a área de transferência!");
+                    }}
+                    className="bg-white/10 hover:bg-white/20 text-white font-space font-bold text-xs sm:text-sm px-4 py-3 rounded-xl transition cursor-pointer border border-white/20 inline-flex items-center gap-2"
+                  >
+                    <Copy className="w-4 h-4" /> Copiar Link da Imagem
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* BANNER CTA FINAL */}
         <section className="final-cta section-shell">
           <div>
@@ -961,6 +1073,51 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
           </div>
         </section>
       </main>
+
+            {/* LIGHTBOX DO FOLDER OFICIAL */}
+      {isFolderModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+          onClick={() => setIsFolderModalOpen(false)}
+        >
+          <div
+            className="bg-[#071d19] border border-white/20 rounded-3xl p-4 max-w-md w-full max-h-[95vh] flex flex-col items-center shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsFolderModalOpen(false)}
+              className="absolute top-4 right-4 bg-white/10 hover:bg-white/25 text-white p-2 rounded-full border-0 cursor-pointer transition z-20"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="overflow-y-auto max-h-[75vh] w-full flex justify-center py-2 no-scrollbar">
+              <img
+                src="/folder-goorno.png"
+                alt="Folder GoOrNo com QR Code"
+                className="w-full h-auto max-w-[340px] rounded-xl shadow-lg border border-[#d9ff4f]/40"
+              />
+            </div>
+            <div className="flex items-center gap-3 mt-4 w-full justify-center">
+              <a
+                href="/folder-goorno.png"
+                download="Folder-Oficial-GoOrNo.png"
+                className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-black text-xs px-4 py-2.5 rounded-xl transition inline-flex items-center gap-1.5 no-underline shadow-xs"
+              >
+                <Download className="w-4 h-4" /> Baixar PNG
+              </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText("https://goorno-app.vercel.app/folder-goorno.png");
+                  alert("Link do folder copiado!");
+                }}
+                className="bg-white/10 hover:bg-white/20 text-white font-space font-bold text-xs px-4 py-2.5 rounded-xl border border-white/20 cursor-pointer"
+              >
+                Copiar Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FOOTER */}
       <footer className="site-footer section-shell">

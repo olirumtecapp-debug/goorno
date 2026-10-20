@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Download,
   Users,
   ShieldAlert,
   Calendar,
@@ -110,7 +111,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'vip' | 'trial' | 'expired' | 'fraud'>('all');
-  const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers' | 'mailbox'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers' | 'mailbox' | 'marketing'>('overview');
   const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'replied'>('all');
   const [selectedUser, setSelectedUser] = useState<LicenseRecord | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
@@ -522,6 +523,18 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
                 </span>
               )}
             </button>
+
+            <button
+              onClick={() => setActiveTab('marketing')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-space font-bold transition cursor-pointer border-0 ${
+                activeTab === 'marketing'
+                  ? 'bg-[#071d19] text-[#d9ff4f] shadow-xs'
+                  : 'bg-transparent text-[#7a8982] hover:text-[#071d19] hover:bg-[#f3f5ed]'
+              }`}
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Material & Folder (QR Code)</span>
+            </button>
           </div>
 
           <div className="text-xs text-[#7a8982] font-dm">
@@ -534,6 +547,42 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
         {/* ========================================================================= */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
+                        {/* BANNER DO FOLDER DE DIVULGAÇÃO COM QR CODE */}
+            <div className="bg-gradient-to-r from-[#071d19] via-[#0c3129] to-[#071d19] border border-[#d9ff4f]/30 rounded-2xl p-4 sm:p-5 text-white flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-14 h-20 sm:w-16 sm:h-24 rounded-lg overflow-hidden border-2 border-[#d9ff4f] shrink-0 bg-black shadow-sm cursor-pointer"
+                  onClick={() => setActiveTab('marketing')}
+                >
+                  <img src="/folder-goorno.png" alt="Folder GoOrNo" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-[#d9ff4f] text-[#071d19] text-[10px] font-space font-black px-2 py-0.5 rounded-full uppercase">Material de Apoio</span>
+                    <h4 className="text-white font-space font-bold text-sm sm:text-base m-0">Folder Oficial com QR Code Pronto!</h4>
+                  </div>
+                  <p className="text-[#b8ccc3] font-dm text-xs m-0 max-w-xl">
+                    Material profissional pronto para imprimir ou enviar no WhatsApp dos motoristas. O QR Code direciona automaticamente para <strong>https://goorno-app.vercel.app/</strong> com 7 dias grátis.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                <a
+                  href="/folder-goorno.png"
+                  download="Folder-Oficial-GoOrNo.png"
+                  className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-bold text-xs px-3.5 py-2 rounded-xl transition inline-flex items-center gap-1.5 no-underline shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" /> Baixar PNG
+                </a>
+                <button
+                  onClick={() => setActiveTab('marketing')}
+                  className="bg-white/10 hover:bg-white/20 text-white font-space font-bold text-xs px-3.5 py-2 rounded-xl transition cursor-pointer border border-white/20 inline-flex items-center gap-1.5"
+                >
+                  <Share2 className="w-3.5 h-3.5" /> Abrir Painel do Folder
+                </button>
+              </div>
+            </div>
+
             {/* GRID DE CARDS NO ESTILO REDESIGN */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
               {/* Card 1: MRR */}
