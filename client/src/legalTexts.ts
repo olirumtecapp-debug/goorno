@@ -16,20 +16,32 @@ export const LEGAL_METADATA = {
 };
 
 export const INDEPENDENCE_DISCLAIMER = {
-  title: "Aviso de Independência e Ausência de Vínculo",
+  title: "Natureza Jurídica, Independência e Funcionamento do GoOrNo",
   shortBadge: "Aplicativo Independente",
   summary:
-    "O GoOrNo é um aplicativo independente de apoio à análise de rentabilidade para motoristas de aplicativos. Não somos a Uber, a 99 nem seus representantes. Não afirmamos possuir vínculo, patrocínio ou endosso dessas plataformas. As marcas mencionadas pertencem aos respectivos titulares e são utilizadas apenas para identificar os serviços com os quais o aplicativo pode ser utilizado.",
-  fullText: `O GoOrNo é uma ferramenta de produtividade e cálculo financeiro desenvolvida de forma 100% autônoma e independente.
+    "O GoOrNo é uma ferramenta independente de apoio à análise de rentabilidade de corridas para motoristas de aplicativos. Sua finalidade é auxiliar o motorista na avaliação econômica de uma oferta, utilizando métricas configuradas por ele e as informações necessárias à análise.",
+  fullText: `NATUREZA JURÍDICA, INDEPENDÊNCIA E FUNCIONAMENTO DO GOORNO
 
-1. AUSÊNCIA DE VÍNCULO CORPORATIVO
-O GoOrNo e seus desenvolvedores NÃO possuem qualquer afiliação, parceria comercial, patrocínio, chancela, autorização ou vínculo societário com a UBER TECHNOLOGIES, INC., UBER DO BRASIL TECNOLOGIA LTDA., 99 TECNOLOGIA LTDA., DIDI CHUXING ou qualquer uma de suas subsidiárias e afiliadas.
+1. NATUREZA DO SERVIÇO
+O GoOrNo é uma ferramenta independente de apoio à análise de rentabilidade de corridas para motoristas de aplicativos. Sua finalidade é auxiliar o motorista na avaliação econômica de uma oferta, utilizando métricas configuradas por ele e as informações necessárias à análise.
 
-2. USO DE MARCAS E NOMINATIVOS DE TERCEIROS
-As marcas nominais "Uber", "Uber Driver", "99", "99 Motorista" e seus respectivos logotipos ou sinais distintivos pertencem exclusivamente aos seus respectivos titulares de direito. A sua menção no aplicativo, no site e nos materiais de apoio ocorre estritamente a título de indicação de compatibilidade e finalidade operacional (identificação do aplicativo-alvo cuja tela pública de ofertas é analisada pelo motorista), em estrita conformidade com o artigo 132, inciso II, da Lei de Propriedade Industrial (Lei nº 9.279/1996).
+2. FUNCIONAMENTO E AUTONOMIA DO MOTORISTA
+Mediante a autorização de acesso concedida pelo usuário no dispositivo, o GoOrNo interpreta informações da oferta de corrida exibida na tela para produzir uma classificação indicativa: compensa, merece análise ou não compensa.
+O resultado é uma estimativa baseada nas informações disponíveis e nas configurações do motorista. Não representa garantia de lucro, recomendação infalível ou avaliação definitiva das condições da viagem.
+O GoOrNo não aceita nem recusa corridas automaticamente. Não realiza cliques de aceitação ou recusa em nome do motorista. A decisão final e a eventual interação com a plataforma de transporte permanecem sob responsabilidade do próprio motorista.
 
-3. INEXISTÊNCIA DE INTERFERÊNCIA TÉCNICA
-O GoOrNo não modifica, descompila, adultera ou injeta código nos aplicativos da Uber ou da 99. Ele opera como um aplicativo auxiliar independente no sistema operacional Android, processando pixels e textos visíveis na tela do aparelho autorizados expressamente pelo titular do dispositivo.`,
+3. INDEPENDÊNCIA EM RELAÇÃO A PLATAFORMAS DE TERCEIROS
+O GoOrNo é um produto independente e não se apresenta como representante, parceiro oficial, patrocinador ou produto aprovado pela Uber ou pela 99, salvo se houver autorização formal comprovável.
+As referências a essas marcas têm a finalidade estrita de identificar as plataformas com as quais o GoOrNo se propõe a funcionar (uso nominativo conforme o Art. 132, IV da Lei de Propriedade Industrial nº 9.279/1996). As marcas e os respectivos aplicativos permanecem sujeitos aos direitos de seus titulares.
+
+4. ACESSO ÀS INFORMAÇÕES E SEGURANÇA
+O GoOrNo foi concebido para analisar as informações necessárias à avaliação econômica da oferta, sem solicitar as senhas ou credenciais de acesso às contas Uber ou 99.
+A leitura das ofertas ocorre localmente no dispositivo mediante as permissões do sistema Android (Acessibilidade e captura de tela/OCR) concedidas pelo usuário. Os dados cadastrais (número de telefone, PIN de segurança e placa do veículo) são tratados com transparência e protegidos conforme a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018), sendo utilizados exclusivamente para identificação da conta e preservação de backups.
+
+5. REFERÊNCIA JURÍDICA E LIMITES DA DECLARAÇÃO
+A existência de ferramentas independentes para cálculo de rentabilidade e apoio à tomada de decisão deve ser avaliada considerando suas funcionalidades concretas, o método de obtenção das informações, a legislação brasileira e os termos aplicáveis às plataformas envolvidas.
+A decisão do Tribunal de Justiça de São Paulo no Agravo de Instrumento nº 2207360-65.2023.8.26.0000 constitui precedente relevante para essa discussão no âmbito da livre concorrência e direito de informação do trabalhador autônomo, mas não deve ser apresentada como autorização judicial específica para o GoOrNo ou como garantia de ausência de responsabilidade jurídica.
+Estas informações explicam a finalidade e o funcionamento do produto. Não constituem declaração de aprovação pela Uber ou pela 99 nem substituem a análise jurídica das condições concretas de uso.`,
 };
 
 export const HOW_OFFER_READING_WORKS = {

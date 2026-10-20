@@ -1327,6 +1327,188 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
           </div>
         </div>
       )}
+
+      {/* MODAL JURÍDICO & LGPD (TERMOS, PRIVACIDADE, INDEPENDÊNCIA E EXCLUSÃO) */}
+      {legalModalType && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-fadeIn"
+          onClick={() => setLegalModalType(null)}
+        >
+          <div
+            className="bg-white text-slate-800 rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* CABEÇALHO DO MODAL */}
+            <div className="p-5 sm:p-6 bg-[#071d19] text-white flex items-center justify-between border-b border-emerald-950 shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">
+                  {legalModalType === 'terms' && '📜'}
+                  {legalModalType === 'privacy' && '🛡️'}
+                  {legalModalType === 'independence' && '⚖️'}
+                  {legalModalType === 'delete' && '⚠️'}
+                </span>
+                <div>
+                  <h3 className="font-space font-bold text-lg sm:text-xl text-white m-0">
+                    {legalModalType === 'terms' && 'Termos de Uso do GoOrNo'}
+                    {legalModalType === 'privacy' && 'Política de Privacidade & LGPD'}
+                    {legalModalType === 'independence' && 'Natureza Jurídica, Independência e Funcionamento'}
+                    {legalModalType === 'delete' && 'Solicitação de Exclusão de Conta e Dados (LGPD)'}
+                  </h3>
+                  <span className="text-xs text-[#a2b5ac] font-dm">
+                    {legalModalType === 'delete'
+                      ? 'Direito de Eliminação - Art. 18 da Lei 13.709/2018'
+                      : 'Transparência, Legalidade e Autonomia do Motorista'}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setLegalModalType(null)}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer border-0"
+                title="Fechar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* CORPO DO TEXTO SCROLLÁVEL */}
+            <div className="p-6 sm:p-8 overflow-y-auto font-dm text-sm leading-relaxed text-slate-700 space-y-4">
+              {legalModalType === 'terms' && (
+                <div className="whitespace-pre-line text-xs sm:text-sm font-sans text-slate-800 leading-relaxed bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200">
+                  {TERMS_OF_USE_TEXT}
+                </div>
+              )}
+
+              {legalModalType === 'privacy' && (
+                <div className="whitespace-pre-line text-xs sm:text-sm font-sans text-slate-800 leading-relaxed bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200">
+                  {PRIVACY_POLICY_TEXT}
+                </div>
+              )}
+
+              {legalModalType === 'independence' && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm leading-relaxed">
+                    <strong>Resumo Executivo:</strong> {INDEPENDENCE_DISCLAIMER.summary}
+                  </div>
+                  <div className="whitespace-pre-line text-xs sm:text-sm font-sans text-slate-800 leading-relaxed bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200">
+                    {INDEPENDENCE_DISCLAIMER.fullText}
+                  </div>
+                </div>
+              )}
+
+              {legalModalType === 'delete' && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm leading-relaxed">
+                    <strong>Atenção:</strong> Conforme o Artigo 18 da LGPD, a exclusão da sua conta remove permanentemente sua licença, seu vínculo de telefone/placa e todos os backups das suas metas na nuvem. Esta operação é irreversível.
+                  </div>
+
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setDeleteLoading(true);
+                      setDeleteFeedback(null);
+                      try {
+                        const res = await fetch('/api/license/delete-account', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            phone: deletePhone,
+                            pin: deletePin,
+                            secret: deleteSecret,
+                          }),
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                          setDeleteFeedback('Conta e dados pessoais excluídos com sucesso do banco de dados do GoOrNo.');
+                          setDeletePhone('');
+                          setDeletePin('');
+                          setDeleteSecret('');
+                        } else {
+                          setDeleteFeedback(data.message || 'Erro ao processar exclusão. Verifique os dados informados.');
+                        }
+                      } catch (err: any) {
+                        setDeleteFeedback('Erro de conexão ao solicitar exclusão. Tente novamente mais tarde.');
+                      } finally {
+                        setDeleteLoading(false);
+                      }
+                    }}
+                    className="space-y-3 bg-slate-50 p-5 rounded-2xl border border-slate-200"
+                  >
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Número de Telefone / WhatsApp (ex: 11999999999)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={deletePhone}
+                        onChange={(e) => setDeletePhone(e.target.value)}
+                        placeholder="Seu telefone cadastrado"
+                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-emerald-600"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          PIN de 4 dígitos
+                        </label>
+                        <input
+                          type="password"
+                          maxLength={6}
+                          value={deletePin}
+                          onChange={(e) => setDeletePin(e.target.value)}
+                          placeholder="Seu PIN de acesso"
+                          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Placa do Carro ou Palavra-Chave
+                        </label>
+                        <input
+                          type="text"
+                          value={deleteSecret}
+                          onChange={(e) => setDeleteSecret(e.target.value)}
+                          placeholder="Placa cadastrada"
+                          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                    </div>
+
+                    {deleteFeedback && (
+                      <div className="p-3 rounded-xl bg-slate-200 text-xs text-slate-800 font-medium">
+                        {deleteFeedback}
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={deleteLoading}
+                        className="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-space font-bold text-xs transition cursor-pointer border-0 shadow-sm disabled:opacity-50"
+                      >
+                        {deleteLoading ? 'Processando exclusão...' : 'Confirmar Exclusão Definitiva (LGPD)'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            {/* RODAPÉ DO MODAL */}
+            <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+              <span>Canal Oficial de Privacidade: {LEGAL_METADATA.contactEmail}</span>
+              <button
+                onClick={() => setLegalModalType(null)}
+                className="px-4 py-2 rounded-xl bg-[#071d19] text-white hover:bg-[#0c3128] font-space font-bold text-xs transition cursor-pointer border-0"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
