@@ -37,6 +37,8 @@ object CloudSyncManager {
             put("fixedExtraCostPerRide", config.fixedExtraCostPerRide)
             put("targetGrossPerKm", config.targetGrossPerKm)
             put("targetGrossPerHour", config.targetGrossPerHour)
+            put("minGrossPerKm", config.minGrossPerKm)
+            put("minGrossPerHour", config.minGrossPerHour)
             put("targetNetPerKm", config.targetNetPerKm)
             put("targetNetPerHour", config.targetNetPerHour)
             put("yellowToleranceRatio", config.yellowToleranceRatio)
@@ -48,6 +50,7 @@ object CloudSyncManager {
             put("forceRedOnBadPassengerRating", config.forceRedOnBadPassengerRating)
             put("targetGoodPassengerRating", config.targetGoodPassengerRating)
             put("minAcceptablePassengerRating", config.minAcceptablePassengerRating)
+            put("minConfidenceThreshold", config.minConfidenceThreshold)
             put("riskAlertEnabled", config.riskAlertEnabled)
             put("forceRedOnRiskArea", config.forceRedOnRiskArea)
             put("useDefaultRiskKeywords", config.useDefaultRiskKeywords)
@@ -56,6 +59,14 @@ object CloudSyncManager {
             put("customFavoriteZones", config.customFavoriteZones)
             put("overlayOpacityPercent", config.overlayOpacityPercent)
             put("overlayAutoMinimizeSec", config.overlayAutoMinimizeSec)
+            put("overlayDisplayStyle", config.overlayDisplayStyle)
+            put("overlayTheme", config.overlayTheme)
+            put("overlayBubblePosition", config.overlayBubblePosition)
+            put("overlayHorizontalPosition", config.overlayHorizontalPosition)
+            put("showFloatingShortcutBubble", config.showFloatingShortcutBubble)
+            put("showProfitOnOverlay", config.showProfitOnOverlay)
+            put("showCostOnOverlay", config.showCostOnOverlay)
+            put("copilotMonitoringEnabled", config.copilotMonitoringEnabled)
             put("saveHistoryEnabled", config.saveHistoryEnabled)
             put("cloudBackupConsent", config.cloudBackupConsent)
             put("driverRecoveryCode", config.driverRecoveryCode)
@@ -106,8 +117,10 @@ object CloudSyncManager {
                 fuelPricePerLiter = c.optDouble("fuelPricePerLiter", 5.89),
                 maintenanceCostPerKm = c.optDouble("maintenanceCostPerKm", 0.25),
                 fixedExtraCostPerRide = c.optDouble("fixedExtraCostPerRide", 0.0),
-                targetGrossPerKm = c.optDouble("targetGrossPerKm", 2.0),
-                targetGrossPerHour = c.optDouble("targetGrossPerHour", 40.0),
+                targetGrossPerKm = c.optDouble("targetGrossPerKm", 2.50),
+                targetGrossPerHour = c.optDouble("targetGrossPerHour", 50.0),
+                minGrossPerKm = c.optDouble("minGrossPerKm", 1.80),
+                minGrossPerHour = c.optDouble("minGrossPerHour", 35.0),
                 targetNetPerKm = c.optDouble("targetNetPerKm", 1.3),
                 targetNetPerHour = c.optDouble("targetNetPerHour", 28.0),
                 yellowToleranceRatio = c.optDouble("yellowToleranceRatio", 0.8),
@@ -119,14 +132,23 @@ object CloudSyncManager {
                 forceRedOnBadPassengerRating = c.optBoolean("forceRedOnBadPassengerRating", true),
                 targetGoodPassengerRating = c.optDouble("targetGoodPassengerRating", 4.85),
                 minAcceptablePassengerRating = c.optDouble("minAcceptablePassengerRating", 4.70),
+                minConfidenceThreshold = c.optDouble("minConfidenceThreshold", 0.65),
                 riskAlertEnabled = c.optBoolean("riskAlertEnabled", true),
                 forceRedOnRiskArea = c.optBoolean("forceRedOnRiskArea", true),
                 useDefaultRiskKeywords = c.optBoolean("useDefaultRiskKeywords", true),
                 customRiskZones = c.optString("customRiskZones", ""),
                 favoriteZonesEnabled = c.optBoolean("favoriteZonesEnabled", true),
                 customFavoriteZones = c.optString("customFavoriteZones", ""),
-                overlayOpacityPercent = c.optInt("overlayOpacityPercent", 90),
-                overlayAutoMinimizeSec = c.optInt("overlayAutoMinimizeSec", 12),
+                overlayOpacityPercent = c.optInt("overlayOpacityPercent", 92),
+                overlayAutoMinimizeSec = c.optInt("overlayAutoMinimizeSec", 5),
+                overlayDisplayStyle = c.optString("overlayDisplayStyle", "BANNER_PRO_STREETVIEW"),
+                overlayTheme = c.optString("overlayTheme", "DARK"),
+                overlayBubblePosition = c.optString("overlayBubblePosition", "BELOW"),
+                overlayHorizontalPosition = c.optString("overlayHorizontalPosition", "RIGHT"),
+                showFloatingShortcutBubble = c.optBoolean("showFloatingShortcutBubble", true),
+                showProfitOnOverlay = c.optBoolean("showProfitOnOverlay", false),
+                showCostOnOverlay = c.optBoolean("showCostOnOverlay", false),
+                copilotMonitoringEnabled = c.optBoolean("copilotMonitoringEnabled", true),
                 saveHistoryEnabled = c.optBoolean("saveHistoryEnabled", true),
                 cloudBackupConsent = c.optBoolean("cloudBackupConsent", true),
                 driverRecoveryCode = c.optString("driverRecoveryCode", "")

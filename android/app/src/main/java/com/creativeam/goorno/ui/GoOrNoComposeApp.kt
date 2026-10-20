@@ -159,6 +159,7 @@ fun GoOrNoComposeApp(
     var showAdjustFaixasDialog by remember { mutableStateOf(false) }
     var pendingRiskAddressToConfirm by remember { mutableStateOf<String?>(null) }
     var pendingFavoriteAddressToConfirm by remember { mutableStateOf<String?>(null) }
+    var securitySelectedTab by remember { mutableStateOf(0) }
 
     val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
         val cleanTerm = RiskAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
@@ -987,10 +988,25 @@ fun GoOrNoComposeApp(
                                 QuickHubListActionRow(
                                     icon = "🛡️",
                                     title = "Áreas de Risco",
-                                    subtitle = "Bairros e ruas perigosas com aviso sonoro",
+                                    subtitle = "Bairros e ruas perigosas com aviso sonoro e bloqueio",
                                     badge = if (config.riskAlertEnabled) "Ativo" else "Off",
                                     badgeColor = if (config.riskAlertEnabled) TrafficRed else MutedText,
-                                    onClick = { currentScreen = GoOrNoScreen.SECURITY }
+                                    onClick = {
+                                        securitySelectedTab = 0
+                                        currentScreen = GoOrNoScreen.SECURITY
+                                    }
+                                )
+
+                                QuickHubListActionRow(
+                                    icon = "⭐",
+                                    title = "Regiões Favoritas",
+                                    subtitle = "Bairros e destinos preferidos com destaque prioritário",
+                                    badge = if (config.favoriteZonesEnabled) "Ativo" else "Off",
+                                    badgeColor = if (config.favoriteZonesEnabled) TrafficGreen else MutedText,
+                                    onClick = {
+                                        securitySelectedTab = 1
+                                        currentScreen = GoOrNoScreen.SECURITY
+                                    }
                                 )
 
                                 val isPermsReady = hasOverlayPermission && hasAccessibilityPermission
@@ -1942,72 +1958,7 @@ fun GoOrNoComposeApp(
                                     }
                                 }
 
-                                HorizontalDivider(color = CleanCardBorder)
 
-                                // Posição Horizontal na Tela (Esquerda, Centro ou Direita)
-                                Text(
-                                    text = "Alinhamento na Tela (Esquerda, Centro ou Direita)",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 13.5.sp,
-                                    color = PetrolHeader
-                                )
-                                Text(
-                                    text = "Escolha onde o card deve se posicionar na tela (ideal para o Widget Compacto ou Banner não tampar os botões):",
-                                    fontSize = 11.5.sp,
-                                    color = MutedText
-                                )
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    listOf(
-                                        Pair("LEFT", "⬅️ Esquerda"),
-                                        Pair("CENTER", "⏹️ Centro"),
-                                        Pair("RIGHT", "➡️ Direita")
-                                    ).forEach { (posKey, label) ->
-                                        val isSel = horizontalPosition == posKey
-                                        Surface(
-                                            color = if (isSel) PetrolHeader else SoftSurfaceVariant,
-                                            shape = RoundedCornerShape(12.dp),
-                                            border = BorderStroke(1.5.dp, if (isSel) PetrolHeader else CleanCardBorder),
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .clickable {
-                                                    horizontalPosition = posKey
-                                                    savedFlag = false
-                                                    val updated = config.copy(overlayHorizontalPosition = posKey)
-                                                    scope.launch {
-                                                        app.preferencesRepository.saveConfig(updated)
-                                                        app.overlayPanel.applyConfig(updated)
-                                                        notifyUser("Alinhamento: $label")
-                                                    }
-                                                }
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 11.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = if (isSel) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                                                    contentDescription = null,
-                                                    tint = if (isSel) LimeBright else MutedText,
-                                                    modifier = Modifier.size(15.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = label,
-                                                    color = if (isSel) Color.White else PetrolDarkText,
-                                                    fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
-                                                    fontSize = 11.sp,
-                                                    maxLines = 1,
-                                                    softWrap = false
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
 
                                 HorizontalDivider(color = CleanCardBorder)
 
@@ -3622,6 +3573,73 @@ fun GoOrNoComposeApp(
                 // =====================================================
                 GoOrNoScreen.SECURITY -> {
                     item {
+                        // Seletor Superior de Abas (Áreas de Risco vs Regiões Favoritas)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                color = if (securitySelectedTab == 0) TrafficRed else SoftSurfaceVariant,
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.5.dp, if (securitySelectedTab == 0) TrafficRed else CleanCardBorder),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { securitySelectedTab = 0 }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Security,
+                                        contentDescription = null,
+                                        tint = if (securitySelectedTab == 0) Color.White else TrafficRed,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Áreas de Risco",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.5.sp,
+                                        color = if (securitySelectedTab == 0) Color.White else PetrolDarkText
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                color = if (securitySelectedTab == 1) Color(0xFF059669) else SoftSurfaceVariant,
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.5.dp, if (securitySelectedTab == 1) Color(0xFF059669) else CleanCardBorder),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { securitySelectedTab = 1 }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        tint = if (securitySelectedTab == 1) Color.White else Color(0xFF059669),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Regiões Favoritas",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.5.sp,
+                                        color = if (securitySelectedTab == 1) Color.White else PetrolDarkText
+                                    )
+                                }
+                            }
+                        }
+
+                        if (securitySelectedTab == 0) {
                         var searchAddressQuery by remember { mutableStateOf("") }
                         var isSearchingPlace by remember { mutableStateOf(false) }
                         var searchResults by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
@@ -4231,9 +4249,7 @@ fun GoOrNoComposeApp(
                                 }
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
+                        } else {
                         var searchFavQuery by remember { mutableStateOf("") }
                         var isSearchingFavPlace by remember { mutableStateOf(false) }
                         var searchFavResults by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
@@ -4756,6 +4772,7 @@ fun GoOrNoComposeApp(
                                     )
                                 }
                             }
+                        }
                         }
                     }
                 }

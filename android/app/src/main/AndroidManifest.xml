@@ -45,6 +45,13 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".activity.StreetViewTrampolineActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:noHistory="true" />
+
         <!-- Serviço Principal de Leitura de Ofertas via Acessibilidade -->
         <service
             android:name=".service.GoOrNoAccessibilityService"

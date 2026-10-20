@@ -55,6 +55,23 @@ object NinetyNineOfferReader {
         val cleanedLines = rawNodes.map { it.trim() }.filter { it.isNotEmpty() }
         val joinedLower = cleanedLines.joinToString(" | ").lowercase(Locale.getDefault())
 
+        // 0. Rejeição total de telas do próprio GoOrNo (Histórico, Ganhos, Janela, Ajustes)
+        if (joinedLower.contains("goorno") ||
+            joinedLower.contains("histórico") ||
+            joinedLower.contains("lucro estim") ||
+            joinedLower.contains("km bruto") ||
+            joinedLower.contains("hora bruta") ||
+            joinedLower.contains("auditoria de chamadas") ||
+            joinedLower.contains("janela histórico ajustes")
+        ) {
+            return StandardRideOffer(
+                sourceApp = SourceApp.NINETY_NINE_DRIVER,
+                captureMethod = captureMethod,
+                timestampMillis = timestampMillis,
+                screenClassification = ScreenClassification.NON_OFFER
+            )
+        }
+
         // 1. Verifica se é viagem em andamento
         if (ONGOING_TRIP_KEYWORDS.any { joinedLower.contains(it) }) {
             return StandardRideOffer(

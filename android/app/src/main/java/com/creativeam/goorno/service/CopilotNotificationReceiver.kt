@@ -299,13 +299,13 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                         .setContentText(shortText)
                         .setStyle(NotificationCompat.BigTextStyle().bigText(expandedText))
 
-                    // Botão 1 na Notificação: Abrir Street View 360° da Origem (sempre que persistido)
+                    // Botão 1 na Notificação: Abrir Street View 360° da Origem (recolhe cortina e abre na hora)
                     if (origAddress.isNotBlank()) {
-                        val origIntent = Intent(context, CopilotNotificationReceiver::class.java).apply {
-                            action = ACTION_OPEN_ORIGIN_STREET_VIEW
-                            putExtra(EXTRA_ADDRESS, origAddress)
+                        val origIntent = Intent(context, com.creativeam.goorno.activity.StreetViewTrampolineActivity::class.java).apply {
+                            putExtra("EXTRA_ADDRESS", origAddress)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }
-                        val origPending = PendingIntent.getBroadcast(
+                        val origPending = PendingIntent.getActivity(
                             context,
                             201,
                             origIntent,
@@ -318,13 +318,13 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                         )
                     }
 
-                    // Botão 2 na Notificação: Abrir Street View 360° do Destino (sempre que persistido)
+                    // Botão 2 na Notificação: Abrir Street View 360° do Destino (recolhe cortina e abre na hora)
                     if (destAddress.isNotBlank()) {
-                        val destIntent = Intent(context, CopilotNotificationReceiver::class.java).apply {
-                            action = ACTION_OPEN_DEST_STREET_VIEW
-                            putExtra(EXTRA_ADDRESS, destAddress)
+                        val destIntent = Intent(context, com.creativeam.goorno.activity.StreetViewTrampolineActivity::class.java).apply {
+                            putExtra("EXTRA_ADDRESS", destAddress)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }
-                        val destPending = PendingIntent.getBroadcast(
+                        val destPending = PendingIntent.getActivity(
                             context,
                             202,
                             destIntent,

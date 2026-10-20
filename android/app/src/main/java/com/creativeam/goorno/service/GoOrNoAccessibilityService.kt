@@ -170,6 +170,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         val evtPkg = event?.packageName?.toString() ?: ""
+        // Se o evento for do próprio GoOrNo, atualiza o foreground e sai imediatamente para nunca ler o próprio app
+        if (evtPkg == packageName || evtPkg.contains("com.creativeam.goorno")) {
+            lastKnownForegroundPkg = packageName
+            return
+        }
         if (evtPkg.isNotBlank() &&
             evtPkg != packageName &&
             evtPkg != "com.android.systemui" &&
@@ -203,6 +208,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (now - lastCardClosedTimeMillis < 1100L) return
         lastScanTimeMillis = now
 
+        // Bloqueio estrito se o próprio GoOrNo estiver na tela
+        if (lastKnownForegroundPkg == packageName || eventPkg == packageName || eventPkg?.contains("com.creativeam.goorno") == true) {
+            return
+        }
+
         val candidateWindows = mutableListOf<Pair<String, AccessibilityNodeInfo>>()
         var isOurOwnAppVisible = false
 
@@ -213,7 +223,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 for (win in allWindows) {
                     val root = win.root ?: continue
                     val pkg = root.packageName?.toString() ?: ""
-                    if (pkg == packageName) {
+                    if (pkg == packageName || pkg.contains("com.creativeam.goorno")) {
                         isOurOwnAppVisible = true
                         continue
                     }
@@ -233,7 +243,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     // Usuário está com o painel de notificações aberto; não escaneia para não capturar textos do sistema
                     return
                 }
-                if (activePkg == packageName) {
+                if (activePkg == packageName || activePkg.contains("com.creativeam.goorno")) {
                     isOurOwnAppVisible = true
                 } else if (activePkg.isNotBlank()) {
                     if (candidateWindows.none { it.second == activeRoot }) {
@@ -245,7 +255,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         // Se o motorista está com a tela do próprio GoOrNo aberta (ajustando configurações), não escaneia
-        if (isOurOwnAppVisible && candidateWindows.none { SourceApp.fromPackageName(it.first) != SourceApp.UNKNOWN }) {
+        if (isOurOwnAppVisible || lastKnownForegroundPkg == packageName) {
             return
         }
 
@@ -355,6 +365,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private fun isSocialMediaApp(pkg: String?): Boolean {
         if (pkg.isNullOrBlank()) return false
         val p = pkg.lowercase(Locale.ROOT)
+        if (p == packageName.lowercase(Locale.ROOT) || p.contains("com.creativeam.goorno")) return true
         return p.contains("instagram") ||
             p.contains("zhiliaoapp") ||
             p.contains("musically") ||
@@ -397,6 +408,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        if (targetPkg == packageName || targetPkg.contains("com.creativeam.goorno") || lastKnownForegroundPkg == packageName) {
+            isTakingAutoScreenshot = false
+            return
+        }
 
         // Watchdog anti-travamento: se o Android descartou um callback durante a troca de app (ex: abrir WhatsApp),
         // libera o semáforo após 2.4 segundos para nunca parar de ler!
@@ -496,6 +511,20 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
                         mlKitRecognizer.process(inputImage)
                             .addOnSuccessListener { visionText ->
+                                val fullOcrText = visionText.text
+                                if (fullOcrText.contains("GoOrNo", ignoreCase = true) ||
+                                    fullOcrText.contains("Histórico", ignoreCase = true) ||
+                                    fullOcrText.contains("Início Ganhos", ignoreCase = true) ||
+                                    fullOcrText.contains("KM BRUTO", ignoreCase = true) ||
+                                    fullOcrText.contains("HORA BRUTA", ignoreCase = true) ||
+                                    fullOcrText.contains("LUCRO ESTIM", ignoreCase = true) ||
+                                    fullOcrText.contains("Auditoria de chamadas", ignoreCase = true) ||
+                                    fullOcrText.contains("Total de ofertas", ignoreCase = true)
+                                ) {
+                                    try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
+                                    isTakingAutoScreenshot = false
+                                    return@addOnSuccessListener
+                                }
                                 val positionedOcr = mutableListOf<PositionedText>()
                                 for (block in visionText.textBlocks) {
                                     for (line in block.lines) {

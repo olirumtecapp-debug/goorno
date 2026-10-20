@@ -395,12 +395,15 @@ class FloatingOverlayPanel(private val context: Context) {
     ): View {
         val offer = result.offer
         val (badgeHex, _, _) = verdictPalette(result.verdict)
+        val isDarkMini = lastKnownConfig?.overlayTheme != "LIGHT"
+        val miniBgHex = if (isDarkMini) "#0D1714" else "#FFFFFF"
+        val miniTextHex = if (isDarkMini) "#FFFFFF" else "#111827"
 
         val miniPill = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(12), dp(8), dp(10), dp(8))
-            background = roundedCardBg("#0D1714", badgeHex, 18f, 2)
+            background = roundedCardBg(miniBgHex, badgeHex, 18f, 2)
             layoutParams = LinearLayout.LayoutParams(dp(340), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
@@ -543,16 +546,21 @@ class FloatingOverlayPanel(private val context: Context) {
             TrafficLightVerdict.GRAY_NEUTRAL -> Triple("#475569", "⚪ INDEFINIDO", "#64748B")
         }
 
+        val isDark = lastKnownConfig?.overlayTheme != "LIGHT"
+        val cardBgHex = if (isDark) "#0D0D0E" else "#FFFFFF"
+        val primaryTextHex = if (isDark) "#FFFFFF" else "#111827"
+        val secondaryTextHex = if (isDark) "#94A3B8" else "#4B5563"
+
         val rootLayout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setOnTouchListener(createDragOrTapTouchListener())
         }
 
-        // Card Container Preto com Borda Luminosa do Veredito (R$ Gigante + Barra Inferior Sólida)
+        // Card Container com Borda Luminosa do Veredito (R$ Gigante + Barra Inferior Sólida)
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = roundedCardBg("#0D0D0E", verdictBorderColor, 14f, 2)
+            background = roundedCardBg(cardBgHex, verdictBorderColor, 14f, 2)
             layoutParams = LinearLayout.LayoutParams(dp(310), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
@@ -628,7 +636,7 @@ class FloatingOverlayPanel(private val context: Context) {
         // 2. Valor Gigante da Corrida (ex: R$ 9,00 ou R$ 18,40)
         val tvPrice = TextView(context).apply {
             text = formatCurrency(price)
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor(primaryTextHex))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 38f)
             try {
                 typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)

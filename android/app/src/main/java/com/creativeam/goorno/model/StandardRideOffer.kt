@@ -136,10 +136,6 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
         title = "Card Clássico (Tradicional)",
         subtitle = "Formato tradicional com métricas completas e suporte a tema claro ou escuro"
     ),
-    CLASSIC_DARK(
-        title = "Card Clássico Fundo Escuro",
-        subtitle = "Formato tradicional com valor grande e fundo escuro translúcido"
-    ),
     MINI_BALL(
         title = "Bolinha Semáforo (Discreto)",
         subtitle = "Pílula horizontal limpa com bolinha semáforo e métricas completas sem cortar"
@@ -150,8 +146,7 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
             return when (name?.uppercase()) {
                 "BANNER_PRO_STREETVIEW", "BANNER_PRO", "BANNER", "FULL_CARD", "MODERN" -> BANNER_PRO_STREETVIEW
                 "PIRULITO_SIDEBAR", "PIRULITO", "SIDEBAR", "WIDGET_COMPACTO", "LATERAL_COMPACTO", "COMPACTO_SIDEBAR", "THREE_PILLARS", "CARD_3_PILARES" -> PIRULITO_SIDEBAR
-                "CLASSIC_LIGHT", "CLASSIC_V334", "CLASSIC" -> CLASSIC_LIGHT
-                "CLASSIC_DARK" -> CLASSIC_DARK
+                "CLASSIC_LIGHT", "CLASSIC_V334", "CLASSIC", "CLASSIC_DARK" -> CLASSIC_LIGHT
                 "MINI_BALL", "SEMAFORO_COMPACT", "COMPACT" -> MINI_BALL
                 else -> entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: BANNER_PRO_STREETVIEW
             }

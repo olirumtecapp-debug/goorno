@@ -50,6 +50,28 @@ object UberOfferReader {
         val cleanedLines = rawNodes.map { it.trim() }.filter { it.isNotEmpty() }
         val joinedLower = cleanedLines.joinToString(" | ").lowercase(Locale.getDefault())
 
+        // 0. Rejeição total de telas do próprio GoOrNo (Histórico, Ganhos, Janela, Ajustes)
+        if (joinedLower.contains("goorno") ||
+            joinedLower.contains("histórico") ||
+            joinedLower.contains("lucro estim") ||
+            joinedLower.contains("km bruto") ||
+            joinedLower.contains("hora bruta") ||
+            joinedLower.contains("auditoria de chamadas") ||
+            joinedLower.contains("janela histórico ajustes")
+        ) {
+            return StandardRideOffer(
+                offerId = UUID.randomUUID().toString(),
+                sourceApp = if (isSimulated) SourceApp.SIMULATION else SourceApp.UBER_DRIVER,
+                captureMethod = captureMethod,
+                screenClassification = ScreenClassification.NON_OFFER,
+                timestampMillis = timestampMillis,
+                offeredPriceField = ExtractedField.Missing,
+                confidenceScore = 0.0,
+                rawCapturedTexts = cleanedLines,
+                isSimulated = isSimulated
+            )
+        }
+
         if (ONGOING_TRIP_KEYWORDS.any { joinedLower.contains(it) } && !joinedLower.contains("radar")) {
             return StandardRideOffer(
                 offerId = UUID.randomUUID().toString(),

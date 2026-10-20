@@ -227,17 +227,8 @@ object LicenseManager {
                 whatsapp = phone
             )
 
-            // Restauração Automática das Configurações do Motorista na Nuvem (se existirem)
-            if (allowed) {
-                try {
-                    val restoreRes = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, phone)
-                    restoreRes.onSuccess { (restoredCfg, _) ->
-                        com.creativeam.goorno.data.preferences.DriverPreferencesRepository(context).saveConfig(restoredCfg)
-                    }
-                } catch (_: Exception) {
-                    // Silencioso se não houver backup prévio ou se estiver offline
-                }
-            }
+            // Não sobrescreve silenciosamente os dados locais do motorista na validação de licença.
+            // A restauração de backup na nuvem só é executada se solicitada expressamente pelo motorista.
 
             Result.success(state)
         } catch (e: Exception) {
