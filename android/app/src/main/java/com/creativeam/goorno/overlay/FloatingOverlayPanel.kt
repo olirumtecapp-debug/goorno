@@ -1000,7 +1000,6 @@ class FloatingOverlayPanel(private val context: Context) {
         rootLayout.addView(card)
         return rootLayout
     }
-    }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun buildModernSpeechBubbleCardView(
