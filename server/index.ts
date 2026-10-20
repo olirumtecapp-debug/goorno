@@ -993,14 +993,15 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.31",
-    versionCode: 52,
+    versionName: "3.3.32",
+    versionCode: 53,
     releaseDate: "2026-10-20",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.31.apk",
-    directDownload: "/GoOrNo-v3.3.31.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.32.apk",
+    directDownload: "/GoOrNo-v3.3.32.apk",
     fileSizeBytes: 55500000,
     fileSizeFormatted: "53.0 MB",
     changelog: [
+      "⚖️ Seção Jurídica & Precedente TJSP: Informações completas de autonomia, independência e jurisprudência diretamente no menu Ajustes e Backup.",
       "Card 3 Pilares Oficial: Novo modelo com resumo no topo (R$, tempo, km), 3 colunas e barras verticais coloridas (R$/km, R$/hora e Nota).",
       "Suporte a Tema Claro e Escuro: Seleção de fundo claro ou escuro tanto para o Card 3 Pilares quanto para o Card Clássico.",
       "Card Impacto Pro Refinado: Distância e tempo no cabeçalho superior, valor gigante no centro e ganho por km e por hora logo abaixo.",

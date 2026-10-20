@@ -1071,6 +1071,15 @@ fun GoOrNoComposeApp(
                                     badgeColor = PetrolHeader,
                                     onClick = { currentScreen = GoOrNoScreen.PRIVACY_BACKUP }
                                 )
+
+                                QuickHubListActionRow(
+                                    icon = "⚖️",
+                                    title = "Natureza Jurídica & Precedente",
+                                    subtitle = "Independência Uber/99 e jurisprudência TJSP",
+                                    badge = "Legal",
+                                    badgeColor = PetrolHeader,
+                                    onClick = { showLegalNatureDialog = true }
+                                )
                             }
                         }
                     }
@@ -5935,16 +5944,21 @@ fun GoOrNoComposeApp(
                     onClick = {
                         isDeletingAccount = true
                         scope.launch {
+                            val savedWhatsApp = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
+                            val savedPin = com.creativeam.goorno.data.license.LicenseManager.getSavedPin(context)
+                            val savedRecovery = com.creativeam.goorno.data.license.LicenseManager.getSavedRecovery(context)
                             val res = com.creativeam.goorno.data.license.LicenseManager.deleteAccountOnline(
                                 context = context,
-                                whatsapp = config.driverWhatsapp,
-                                pin = config.driverPin,
-                                recoverySecret = config.driverRecoveryCode
+                                whatsapp = savedWhatsApp,
+                                pin = savedPin,
+                                recoverySecret = savedRecovery
                             )
                             isDeletingAccount = false
                             showDeleteAccountConfirmDialog = false
                             res.onSuccess {
-                                app.preferencesRepository.saveConfig(com.creativeam.goorno.domain.model.DriverFinancialConfig())
+                                app.preferencesRepository.saveConfig(DriverFinancialConfig())
+                                com.creativeam.goorno.data.license.LicenseManager.saveWhatsApp(context, "")
+                                com.creativeam.goorno.data.license.LicenseManager.savePin(context, "")
                                 notifyUser("Conta e dados excluídos com sucesso.")
                             }.onFailure { err ->
                                 notifyUser("Erro ao excluir conta: ${err.message}")
