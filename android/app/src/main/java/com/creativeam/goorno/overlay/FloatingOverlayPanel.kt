@@ -57,7 +57,7 @@ class FloatingOverlayPanel(private val context: Context) {
     private var displayDurationSec: Int = 7
     private var displayStyle: OverlayDisplayStyle = OverlayDisplayStyle.BANNER_PRO_STREETVIEW
     private var overlayBubblePosition: String = "BELOW"
-    private var overlayHorizontalPosition: String = "RIGHT"
+    private var overlayHorizontalPosition: String = "CENTER"
     private var showFloatingShortcutBubble: Boolean = true
     private var showProfitOnOverlay: Boolean = false
     private var showCostOnOverlay: Boolean = false
@@ -140,6 +140,9 @@ class FloatingOverlayPanel(private val context: Context) {
 
             // Se o usuário mudou o alinhamento horizontal (Esquerda, Centro ou Direita)
             // ou a posição do balão (Acima ou Abaixo), reposiciona imediatamente a janela na tela!
+            if (overlayHorizontalPosition == "CENTER" && previousHorizontalPos != "CENTER") {
+                posPrefs.edit().remove("saved_x").apply()
+            }
             if (previousHorizontalPos != overlayHorizontalPosition || previousBubblePos != overlayBubblePosition) {
                 posPrefs.edit().remove("saved_x").remove("saved_y").apply()
                 val (newGravity, newX) = when (overlayHorizontalPosition) {
@@ -414,7 +417,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val dragHandle = TextView(context).apply {
             text = "⠿"
-            setTextColor(Color.parseColor("#64748B"))
+            setTextColor(Color.parseColor(if (isDarkMini) "#64748B" else "#9CA3AF"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setPadding(0, 0, dp(4), 0)
         }
@@ -464,7 +467,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val tvLine1 = TextView(context).apply {
             text = "$seqTag$zoneTag$appShort · $distStr · $minStr"
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor(miniTextHex))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setTypeface(typeface, Typeface.BOLD)
             setSingleLine(true)
@@ -472,10 +475,10 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val line2Color = when (result.verdict) {
-            TrafficLightVerdict.GREEN -> "#4ADE80"
-            TrafficLightVerdict.YELLOW -> "#FDE047"
-            TrafficLightVerdict.RED -> "#FCA5A5"
-            TrafficLightVerdict.GRAY_NEUTRAL -> "#CBD5E1"
+            TrafficLightVerdict.GREEN -> if (isDarkMini) "#4ADE80" else "#16A34A"
+            TrafficLightVerdict.YELLOW -> if (isDarkMini) "#FDE047" else "#D97706"
+            TrafficLightVerdict.RED -> if (isDarkMini) "#FCA5A5" else "#DC2626"
+            TrafficLightVerdict.GRAY_NEUTRAL -> if (isDarkMini) "#CBD5E1" else "#475569"
         }
 
         val tvLine2 = TextView(context).apply {
@@ -492,7 +495,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val tvTimer = TextView(context).apply {
             text = "${remainingSeconds}s"
-            setTextColor(Color.parseColor("#94A3B8"))
+            setTextColor(Color.parseColor(if (isDarkMini) "#94A3B8" else "#6B7280"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTypeface(typeface, Typeface.BOLD)
             setPadding(dp(2), 0, dp(4), 0)
@@ -549,6 +552,8 @@ class FloatingOverlayPanel(private val context: Context) {
         val cardBgHex = if (isDark) "#0D0D0E" else "#FFFFFF"
         val primaryTextHex = if (isDark) "#FFFFFF" else "#111827"
         val secondaryTextHex = if (isDark) "#94A3B8" else "#4B5563"
+        val metricsColorHex = if (isDark) "#D1D5DB" else "#374151"
+        val timerBgHex = if (isDark) "#1E1E22" else "#E5E7EB"
 
         val rootLayout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -600,7 +605,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val tvHeader = TextView(context).apply {
             text = headerLabel
-            setTextColor(Color.parseColor("#9CA3AF"))
+            setTextColor(Color.parseColor(secondaryTextHex))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setTypeface(typeface, Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -610,11 +615,11 @@ class FloatingOverlayPanel(private val context: Context) {
         // Temporizador Regressivo
         val tvTimer = TextView(context).apply {
             text = "${remainingSeconds}s"
-            setTextColor(Color.parseColor("#9CA3AF"))
+            setTextColor(Color.parseColor(secondaryTextHex))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTypeface(typeface, Typeface.BOLD)
             setPadding(dp(6), dp(2), dp(6), dp(2))
-            background = roundedBg("#1E1E22", 6f)
+            background = roundedBg(timerBgHex, 6f)
         }
         activeTimerLabel = tvTimer
         topRow.addView(tvTimer)
@@ -622,7 +627,7 @@ class FloatingOverlayPanel(private val context: Context) {
         // Botão Fechar ✕
         val btnClose = TextView(context).apply {
             text = "✕"
-            setTextColor(Color.parseColor("#9CA3AF"))
+            setTextColor(Color.parseColor(secondaryTextHex))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setTypeface(typeface, Typeface.BOLD)
             setPadding(dp(8), dp(2), dp(2), dp(2))
@@ -664,7 +669,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val tvMetrics = TextView(context).apply {
             text = "$grossKmStr · $grossHrStr$ratingTag"
-            setTextColor(Color.parseColor("#D1D5DB"))
+            setTextColor(Color.parseColor(metricsColorHex))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
             setTypeface(typeface, Typeface.BOLD)
             setSingleLine(true)
@@ -2544,7 +2549,7 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         val defaultY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(210)
 
-        val savedX = posPrefs.getInt("saved_x", defaultX)
+        val savedX = if (overlayHorizontalPosition == "CENTER" && !posPrefs.contains("saved_x")) 0 else posPrefs.getInt("saved_x", defaultX)
         val savedY = posPrefs.getInt("saved_y", defaultY)
 
         layoutParams = WindowManager.LayoutParams(

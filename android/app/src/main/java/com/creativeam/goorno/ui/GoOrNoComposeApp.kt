@@ -1204,9 +1204,16 @@ fun GoOrNoComposeApp(
                                         ) {
                                             when (selectedStyle) {
                                                 OverlayDisplayStyle.BANNER_PRO_STREETVIEW -> {
-                                                    // FORMATO: CARD IMPACTO PRO - CORRIDA TOCOU (NOVO PADRÃO DE ALTO CONTRASTE)
+                                                    // FORMATO: CARD IMPACTO PRO - CORRIDA TOCOU (DINÂMICO CLARO/ESCURO)
+                                                    val isDarkBanner = overlayTheme != "LIGHT"
+                                                    val bannerCardBg = if (isDarkBanner) Color(0xFF0D0D0E) else Color.White
+                                                    val bannerPrimaryText = if (isDarkBanner) Color.White else Color(0xFF111827)
+                                                    val bannerSecondaryText = if (isDarkBanner) Color(0xFF9CA3AF) else Color(0xFF4B5563)
+                                                    val bannerMetricsText = if (isDarkBanner) Color(0xFFD1D5DB) else Color(0xFF374151)
+                                                    val bannerTimerBg = if (isDarkBanner) Color(0xFF1E1E22) else Color(0xFFE5E7EB)
+
                                                     Surface(
-                                                        color = Color(0xFF0D0D0E),
+                                                        color = bannerCardBg,
                                                         shape = RoundedCornerShape(14.dp),
                                                         border = BorderStroke(2.dp, vColor),
                                                         shadowElevation = 8.dp,
@@ -1221,18 +1228,18 @@ fun GoOrNoComposeApp(
                                                                 ) {
                                                                     Text(
                                                                         text = "8 km · 15 min",
-                                                                        color = Color(0xFF9CA3AF),
+                                                                        color = bannerSecondaryText,
                                                                         fontSize = 13.sp,
                                                                         fontWeight = FontWeight.Bold
                                                                     )
                                                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                                                         Surface(
-                                                                            color = Color(0xFF1E1E22),
+                                                                            color = bannerTimerBg,
                                                                             shape = RoundedCornerShape(6.dp)
                                                                         ) {
                                                                             Text(
                                                                                 text = "15s",
-                                                                                color = Color(0xFF9CA3AF),
+                                                                                color = bannerSecondaryText,
                                                                                 fontSize = 11.sp,
                                                                                 fontWeight = FontWeight.Bold,
                                                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -1241,7 +1248,7 @@ fun GoOrNoComposeApp(
                                                                         Spacer(modifier = Modifier.width(6.dp))
                                                                         Text(
                                                                             text = "✕",
-                                                                            color = Color(0xFF9CA3AF),
+                                                                            color = bannerSecondaryText,
                                                                             fontSize = 13.sp,
                                                                             fontWeight = FontWeight.Bold
                                                                         )
@@ -1252,7 +1259,7 @@ fun GoOrNoComposeApp(
 
                                                                 Text(
                                                                     text = "R$ 18,40",
-                                                                    color = Color.White,
+                                                                    color = bannerPrimaryText,
                                                                     fontSize = 34.sp,
                                                                     fontWeight = FontWeight.Black
                                                                 )
@@ -1261,7 +1268,7 @@ fun GoOrNoComposeApp(
 
                                                                 Text(
                                                                     text = "R$ 2,30/km · R$ 43,00/h",
-                                                                    color = Color(0xFFD1D5DB),
+                                                                    color = bannerMetricsText,
                                                                     fontSize = 13.5.sp,
                                                                     fontWeight = FontWeight.Bold
                                                                 )
@@ -1367,9 +1374,19 @@ fun GoOrNoComposeApp(
                                                 }
 
                                                 OverlayDisplayStyle.CLASSIC_LIGHT -> {
-                                                    // FORMATO 2: CLÁSSICO FUNDO CLARO (TRADICIONAL)
+                                                    // FORMATO 2: CLÁSSICO TRADICIONAL (DINÂMICO CLARO/ESCURO)
+                                                    val isDarkClassic = overlayTheme == "DARK"
+                                                    val classicCardBg = if (isDarkClassic) Color(0xFF111F1A) else Color.White
+                                                    val classicDragTitle = if (isDarkClassic) Color(0xFF94A3B8) else Color(0xFF334155)
+                                                    val classicTimerColor = if (isDarkClassic) Color(0xFFCBD5E1) else Color(0xFF64748B)
+                                                    val classicInnerPriceBg = if (isDarkClassic) Color(0xFF0D1714) else Color(0xFFF8FAF9)
+                                                    val classicPriceColor = if (isDarkClassic) Color(0xFF4ADE80) else Color(0xFF073B32)
+                                                    val classicDistColor = if (isDarkClassic) Color(0xFFCBD5E1) else Color(0xFF334155)
+                                                    val classicMetricPillBg = if (isDarkClassic) Color(0xFF0D1F19) else Color(0xFFDCFCE7)
+                                                    val classicMetricPillText = if (isDarkClassic) Color(0xFF4ADE80) else Color(0xFF166534)
+
                                                     Surface(
-                                                        color = Color.White,
+                                                        color = classicCardBg,
                                                         shape = RoundedCornerShape(18.dp),
                                                         border = BorderStroke(1.5.dp, vColor),
                                                         shadowElevation = 8.dp,
@@ -1383,14 +1400,14 @@ fun GoOrNoComposeApp(
                                                             ) {
                                                                 Text(
                                                                     text = "⠿ Uber (arraste)",
-                                                                    color = Color(0xFF334155),
+                                                                    color = classicDragTitle,
                                                                     fontSize = 12.sp,
                                                                     fontWeight = FontWeight.Bold
                                                                 )
                                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                                     Text(
                                                                         text = "7s",
-                                                                        color = Color(0xFF64748B),
+                                                                        color = classicTimerColor,
                                                                         fontSize = 11.sp,
                                                                         fontWeight = FontWeight.Bold,
                                                                         modifier = Modifier.padding(end = 6.dp)
@@ -1413,7 +1430,7 @@ fun GoOrNoComposeApp(
                                                             Spacer(modifier = Modifier.height(8.dp))
 
                                                             Surface(
-                                                                color = Color(0xFFF8FAF9),
+                                                                color = classicInnerPriceBg,
                                                                 shape = RoundedCornerShape(12.dp),
                                                                 border = BorderStroke(1.dp, vColor.copy(alpha = 0.5f)),
                                                                 modifier = Modifier.fillMaxWidth()
@@ -1426,7 +1443,7 @@ fun GoOrNoComposeApp(
                                                                     ) {
                                                                         Text(
                                                                             text = "R$ 14,01",
-                                                                            color = Color(0xFF073B32),
+                                                                            color = classicPriceColor,
                                                                             fontSize = 18.sp,
                                                                             fontWeight = FontWeight.Black,
                                                                             maxLines = 1,
@@ -1452,7 +1469,7 @@ fun GoOrNoComposeApp(
                                                                         }
                                                                         Text(
                                                                             text = "6,3 km · 17 min",
-                                                                            color = Color(0xFF334155),
+                                                                            color = classicDistColor,
                                                                             fontSize = 11.5.sp,
                                                                             fontWeight = FontWeight.Bold,
                                                                             maxLines = 1,
@@ -1467,14 +1484,14 @@ fun GoOrNoComposeApp(
                                                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                                     ) {
                                                                         Surface(
-                                                                            color = Color(0xFFDCFCE7),
+                                                                            color = classicMetricPillBg,
                                                                             shape = RoundedCornerShape(8.dp),
                                                                             border = BorderStroke(1.dp, vColor),
                                                                             modifier = Modifier.weight(1f)
                                                                         ) {
                                                                             Text(
                                                                                 text = "R$ 2,22/km",
-                                                                                color = Color(0xFF166534),
+                                                                                color = classicMetricPillText,
                                                                                 fontSize = 11.sp,
                                                                                 fontWeight = FontWeight.Bold,
                                                                                 textAlign = TextAlign.Center,
@@ -1484,14 +1501,14 @@ fun GoOrNoComposeApp(
                                                                             )
                                                                         }
                                                                         Surface(
-                                                                            color = Color(0xFFDCFCE7),
+                                                                            color = classicMetricPillBg,
                                                                             shape = RoundedCornerShape(8.dp),
                                                                             border = BorderStroke(1.dp, vColor),
                                                                             modifier = Modifier.weight(1f)
                                                                         ) {
                                                                             Text(
                                                                                 text = "R$ 49/h",
-                                                                                color = Color(0xFF166534),
+                                                                                color = classicMetricPillText,
                                                                                 fontSize = 11.sp,
                                                                                 fontWeight = FontWeight.Bold,
                                                                                 textAlign = TextAlign.Center,
@@ -1524,9 +1541,14 @@ fun GoOrNoComposeApp(
                                                 }
 
                                                 OverlayDisplayStyle.MINI_BALL -> {
-                                                    // FORMATO 3: BOLINHA SEMÁFORO ULTRA DISCRETO (SEM ENCAVALAR)
+                                                    // FORMATO 3: BOLINHA SEMÁFORO ULTRA DISCRETO (DINÂMICO CLARO/ESCURO)
+                                                    val isDarkMini = overlayTheme != "LIGHT"
+                                                    val miniCardBg = if (isDarkMini) Color(0xFF0D1714) else Color.White
+                                                    val miniPrimaryText = if (isDarkMini) Color.White else Color(0xFF111827)
+                                                    val miniSecondaryText = if (isDarkMini) Color(0xFF94A3B8) else Color(0xFF6B7280)
+
                                                     Surface(
-                                                        color = Color(0xFF0D1714),
+                                                        color = miniCardBg,
                                                         shape = RoundedCornerShape(18.dp),
                                                         border = BorderStroke(1.5.dp, vColor),
                                                         shadowElevation = 8.dp,
@@ -1538,7 +1560,7 @@ fun GoOrNoComposeApp(
                                                         ) {
                                                             Text(
                                                                 text = "⠿",
-                                                                color = Color(0xFF64748B),
+                                                                color = miniSecondaryText,
                                                                 fontSize = 13.sp,
                                                                 modifier = Modifier.padding(end = 4.dp)
                                                             )
@@ -1551,7 +1573,7 @@ fun GoOrNoComposeApp(
                                                             Column(modifier = Modifier.weight(1f)) {
                                                                 Text(
                                                                     text = "Uber · 6,3 km · 17 min",
-                                                                    color = Color.White,
+                                                                    color = miniPrimaryText,
                                                                     fontSize = 12.sp,
                                                                     fontWeight = FontWeight.Bold,
                                                                     maxLines = 1
@@ -1567,7 +1589,7 @@ fun GoOrNoComposeApp(
                                                             Spacer(modifier = Modifier.width(6.dp))
                                                             Text(
                                                                 text = "7s",
-                                                                color = Color(0xFF94A3B8),
+                                                                color = miniSecondaryText,
                                                                 fontSize = 11.sp,
                                                                 fontWeight = FontWeight.Bold,
                                                                 modifier = Modifier.padding(end = 6.dp)
@@ -1768,7 +1790,10 @@ fun GoOrNoComposeApp(
                                                 .clickable {
                                                     overlayTheme = themeKey
                                                     savedFlag = false
-                                                    val updated = config.copy(overlayTheme = themeKey)
+                                                    val updated = config.copy(
+                                                        overlayTheme = themeKey,
+                                                        overlayHorizontalPosition = "CENTER"
+                                                    )
                                                     scope.launch {
                                                         app.preferencesRepository.saveConfig(updated)
                                                         app.overlayPanel.applyConfig(updated)
@@ -2015,7 +2040,7 @@ fun GoOrNoComposeApp(
                                             overlayDisplayStyle = selectedStyle.name,
                                             overlayTheme = overlayTheme,
                                             overlayBubblePosition = bubblePosition,
-                                            overlayHorizontalPosition = horizontalPosition,
+                                            overlayHorizontalPosition = "CENTER",
                                             showFloatingShortcutBubble = showShortcutBubble,
                                             showProfitOnOverlay = showProfitOnOverlay,
                                             showCostOnOverlay = showCostOnOverlay,
@@ -6095,6 +6120,38 @@ private fun HistoricalOfferCardContent(
                         maxLines = 1,
                         softWrap = false
                     )
+                }
+            }
+        }
+
+        // Exibe o motivo financeiro ou alerta de segurança quando o veredito for Atenção ou Recusar
+        val finReasons = entity.reasonsSummary.split("|")
+            .map { it.trim() }
+            .filter { it.isNotBlank() && !it.contains("Passageiro Nota", ignoreCase = true) }
+        if (finReasons.isNotEmpty()) {
+            val isRedVerd = entity.verdict.contains("RED", ignoreCase = true) || entity.verdict.contains("Recusar", ignoreCase = true)
+            val isYellowVerd = entity.verdict.contains("YELLOW", ignoreCase = true) || entity.verdict.contains("Atenção", ignoreCase = true) || entity.verdict.contains("Avaliar", ignoreCase = true)
+            if (isRedVerd || isYellowVerd) {
+                val bColor = if (isRedVerd) TrafficRed else TrafficYellow
+                Surface(
+                    color = bColor.copy(alpha = 0.10f),
+                    border = BorderStroke(1.dp, bColor.copy(alpha = 0.40f)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                        finReasons.take(2).forEach { rMsg ->
+                            val icn = if (rMsg.contains("risco", ignoreCase = true)) "⚠️" else if (isRedVerd) "🔴" else "🟡"
+                            Text(
+                                text = "$icn $rMsg",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = bColor,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
                 }
             }
         }

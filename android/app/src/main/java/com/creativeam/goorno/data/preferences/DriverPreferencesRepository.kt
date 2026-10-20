@@ -110,7 +110,7 @@ class DriverPreferencesRepository(private val context: Context) {
                 overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: b.getString("overlay_display_style", null) ?: "BANNER_PRO_STREETVIEW",
                 overlayTheme = prefs[Keys.OVERLAY_THEME] ?: b.getString("overlay_theme", null) ?: "DARK",
                 overlayBubblePosition = prefs[Keys.OVERLAY_BUBBLE_POSITION] ?: b.getString("overlay_bubble_position", null) ?: "BELOW",
-                overlayHorizontalPosition = prefs[Keys.OVERLAY_HORIZONTAL_POSITION] ?: b.getString("overlay_horizontal_position", null) ?: "RIGHT",
+                overlayHorizontalPosition = prefs[Keys.OVERLAY_HORIZONTAL_POSITION] ?: b.getString("overlay_horizontal_position", null) ?: "CENTER",
                 showFloatingShortcutBubble = prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] ?: b.getBoolean("show_floating_shortcut_bubble", true),
                 showProfitOnOverlay = prefs[Keys.SHOW_PROFIT_ON_OVERLAY] ?: b.getBoolean("show_profit_on_overlay", false),
                 showCostOnOverlay = prefs[Keys.SHOW_COST_ON_OVERLAY] ?: b.getBoolean("show_cost_on_overlay", false),

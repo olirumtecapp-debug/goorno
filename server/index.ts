@@ -967,8 +967,8 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.30",
-    versionCode: 51,
+    versionName: "3.3.31",
+    versionCode: 52,
     releaseDate: "2026-10-20",
     apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.30.apk",
     directDownload: "/GoOrNo-v3.3.30.apk",

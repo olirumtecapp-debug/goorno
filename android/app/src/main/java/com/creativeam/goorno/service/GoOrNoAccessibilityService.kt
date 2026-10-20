@@ -170,9 +170,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         val evtPkg = event?.packageName?.toString() ?: ""
-        // Se o evento for do próprio GoOrNo, atualiza o foreground e sai imediatamente para nunca ler o próprio app
+        // Se o evento for do próprio GoOrNo (timer, arrasto, etc), sai imediatamente para não reprocessar
         if (evtPkg == packageName || evtPkg.contains("com.creativeam.goorno")) {
-            lastKnownForegroundPkg = packageName
             return
         }
         if (evtPkg.isNotBlank() &&
@@ -208,8 +207,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (now - lastCardClosedTimeMillis < 1100L) return
         lastScanTimeMillis = now
 
-        // Bloqueio estrito se o próprio GoOrNo estiver na tela
-        if (lastKnownForegroundPkg == packageName || eventPkg == packageName || eventPkg?.contains("com.creativeam.goorno") == true) {
+        // Se o evento for do próprio GoOrNo, ignora
+        if (eventPkg == packageName || eventPkg?.contains("com.creativeam.goorno") == true) {
             return
         }
 
@@ -254,8 +253,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         } catch (_: Exception) {
         }
 
-        // Se o motorista está com a tela do próprio GoOrNo aberta (ajustando configurações), não escaneia
-        if (isOurOwnAppVisible || lastKnownForegroundPkg == packageName) {
+        // Se o motorista está com a tela do próprio GoOrNo aberta (ajustando configurações) e nenhum app de corrida está visível, não escaneia
+        if (isOurOwnAppVisible && candidateWindows.none { SourceApp.fromPackageName(it.first) != SourceApp.UNKNOWN }) {
             return
         }
 
@@ -365,7 +364,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private fun isSocialMediaApp(pkg: String?): Boolean {
         if (pkg.isNullOrBlank()) return false
         val p = pkg.lowercase(Locale.ROOT)
-        if (p == packageName.lowercase(Locale.ROOT) || p.contains("com.creativeam.goorno")) return true
         return p.contains("instagram") ||
             p.contains("zhiliaoapp") ||
             p.contains("musically") ||
@@ -408,7 +406,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        if (targetPkg == packageName || targetPkg.contains("com.creativeam.goorno") || lastKnownForegroundPkg == packageName) {
+        if (targetPkg == packageName || targetPkg.contains("com.creativeam.goorno")) {
             isTakingAutoScreenshot = false
             return
         }
@@ -512,15 +510,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                         mlKitRecognizer.process(inputImage)
                             .addOnSuccessListener { visionText ->
                                 val fullOcrText = visionText.text
-                                if (fullOcrText.contains("GoOrNo", ignoreCase = true) ||
-                                    fullOcrText.contains("Histórico", ignoreCase = true) ||
-                                    fullOcrText.contains("Início Ganhos", ignoreCase = true) ||
-                                    fullOcrText.contains("KM BRUTO", ignoreCase = true) ||
-                                    fullOcrText.contains("HORA BRUTA", ignoreCase = true) ||
-                                    fullOcrText.contains("LUCRO ESTIM", ignoreCase = true) ||
-                                    fullOcrText.contains("Auditoria de chamadas", ignoreCase = true) ||
-                                    fullOcrText.contains("Total de ofertas", ignoreCase = true)
-                                ) {
+                                val hasGoOrNoScreenSignature = fullOcrText.contains("Início Ganhos Janela Histórico", ignoreCase = true) ||
+                                    (fullOcrText.contains("Histórico de Corridas", ignoreCase = true) && fullOcrText.contains("GoOrNo", ignoreCase = true)) ||
+                                    (fullOcrText.contains("Auditoria de chamadas", ignoreCase = true) && fullOcrText.contains("Total de ofertas", ignoreCase = true))
+                                if (hasGoOrNoScreenSignature) {
                                     try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
                                     isTakingAutoScreenshot = false
                                     return@addOnSuccessListener
