@@ -822,7 +822,7 @@ object BrazilianOfferParser {
             if (clusters.isNotEmpty()) return clusters
         }
 
-        // 3. Fatiamento por categorias da 99 ou preços para outras telas com múltiplas ofertas
+        // 3. Fatiamento por cabeçalhos de cartão (Pgto. no app, categorias ou preços) para múltiplas ofertas
         val offerHeaderIndices = mutableListOf<Int>()
         for (i in cleaned.indices) {
             val line = cleaned[i]
@@ -841,9 +841,23 @@ object BrazilianOfferParser {
             ) {
                 continue
             }
-            val pricesInLine = extractAllCurrencies(listOf(line))
-            if (pricesInLine.isNotEmpty()) {
-                offerHeaderIndices.add(i)
+            if (
+                lower.contains("pgto. no app") ||
+                lower.contains("pagamento no app") ||
+                lower.contains("pop") ||
+                lower.contains("99pop") ||
+                lower.contains("99plus") ||
+                lower.contains("99negocia") ||
+                lower.contains("99moto") ||
+                lower.contains("uberx") ||
+                lower.contains("comfort") ||
+                lower.contains("black") ||
+                lower.contains("flash") ||
+                extractAllCurrencies(listOf(line)).isNotEmpty()
+            ) {
+                if (offerHeaderIndices.isEmpty() || i > offerHeaderIndices.last() + 1) {
+                    offerHeaderIndices.add(i)
+                }
             }
         }
 
@@ -853,7 +867,7 @@ object BrazilianOfferParser {
 
         val clusters = mutableListOf<List<String>>()
         for (idxPos in offerHeaderIndices.indices) {
-            val startIdx = (offerHeaderIndices[idxPos] - 1).coerceAtLeast(0)
+            val startIdx = offerHeaderIndices[idxPos]
             val endIdx = if (idxPos + 1 < offerHeaderIndices.size) {
                 offerHeaderIndices[idxPos + 1]
             } else {

@@ -36,8 +36,9 @@ object NinetyNineOfferReader {
         val clusters = BrazilianOfferParser.splitIntoMultipleOfferClusters(rawNodes)
         if (clusters.isEmpty()) return emptyList()
 
+        val isMultiCluster = clusters.size > 1
         val validOffers = clusters.map { cluster ->
-            parseScreenNodes(cluster, captureMethod, timestampMillis, isSimulated)
+            parseScreenNodes(cluster, captureMethod, timestampMillis, isSimulated, isMultiOfferCard = isMultiCluster)
         }.filter {
             it.screenClassification == ScreenClassification.NEW_OFFER ||
                 it.screenClassification == ScreenClassification.UPDATED_OFFER
@@ -50,7 +51,8 @@ object NinetyNineOfferReader {
         rawNodes: List<String>,
         captureMethod: CaptureMethod = CaptureMethod.ACCESSIBILITY,
         timestampMillis: Long = System.currentTimeMillis(),
-        isSimulated: Boolean = false
+        isSimulated: Boolean = false,
+        isMultiOfferCard: Boolean = false
     ): StandardRideOffer {
         val cleanedLines = rawNodes.map { it.trim() }.filter { it.isNotEmpty() }
         val joinedLower = cleanedLines.joinToString(" | ").lowercase(Locale.getDefault())
@@ -107,12 +109,12 @@ object NinetyNineOfferReader {
             )
         }
 
-        // 2. Preço oferecido principal (prioriza o preço associado à categoria Pop / 99Plus / Negocia e descarta saldo/números soltos)
+        // 2. Preço oferecido principal (prioriza o preço associado à categoria Pop / 99Plus / Negocia e descarta saldo/ganhos de carteira)
         val candidatePrices = mutableListOf<Double>()
         for (line in cleanedLines) {
             val l = line.lowercase(Locale.getDefault())
-            // Ignora linhas que são de saldo do motorista, ganhos do dia, corridas realizadas ou km unitário
-            if (l.contains("saldo") || l.contains("ganhos") || l.contains("carteira") || l.contains("corridas") || l.contains("r$/km") || l.contains("por deslocamento")) {
+            // Ignora linhas que são exclusivamente saldo ou ganhos acumulados de carteira
+            if (l.contains("saldo") || l.contains("ganhos") || l.contains("carteira")) {
                 continue
             }
             val extracted = BrazilianOfferParser.extractAllCurrencies(listOf(line))
@@ -125,14 +127,14 @@ object NinetyNineOfferReader {
             val l = line.lowercase(Locale.getDefault())
             if (l.contains("pop") || l.contains("99pop") || l.contains("plus") || l.contains("negocia") || l.contains("express")) {
                 val p = BrazilianOfferParser.extractAllCurrencies(listOf(line)).firstOrNull()
-                if (p != null && p in 4.0..250.0) {
+                if (p != null && p in 4.0..350.0) {
                     primaryPrice = p
                     break
                 }
             }
         }
 
-        val finalPriceVal = primaryPrice ?: candidatePrices.firstOrNull { it in 4.0..250.0 } ?: candidatePrices.firstOrNull()
+        val finalPriceVal = primaryPrice ?: candidatePrices.firstOrNull { it in 4.0..350.0 } ?: candidatePrices.firstOrNull()
 
         val priceField: ExtractedField<Double> = when {
             finalPriceVal != null -> ExtractedField.Present(finalPriceVal)
@@ -224,7 +226,7 @@ object NinetyNineOfferReader {
         if (captureMethod == CaptureMethod.OCR) confidence *= 0.90
         if (conflictNotes.isNotEmpty()) confidence *= 0.50
 
-        val has99RideTrigger = cleanedLines.any { line ->
+        val has99RideTrigger = isMultiOfferCard || cleanedLines.any { line ->
             NINETY_NINE_CATEGORIES.any { cat -> line.contains(cat, ignoreCase = true) } ||
                 line.contains("Aceitar", ignoreCase = true) ||
                 line.contains("Recusar", ignoreCase = true) ||
@@ -234,7 +236,8 @@ object NinetyNineOfferReader {
                 line.contains("Pgto. no app", ignoreCase = true) ||
                 line.contains("Pagamento no app", ignoreCase = true) ||
                 line.contains("Embarque", ignoreCase = true) ||
-                line.contains("Desembarque", ignoreCase = true)
+                line.contains("Desembarque", ignoreCase = true) ||
+                line.contains("corridas", ignoreCase = true)
         }
 
         val isSelfReadingGoOrNo = cleanedLines.any { line ->
