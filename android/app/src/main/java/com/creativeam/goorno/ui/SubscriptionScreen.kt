@@ -277,6 +277,33 @@ fun SubscriptionScreenCard(
                     color = MutedText
                 )
 
+                if (LicenseManager.isSuspiciousOrFakePhone(LicenseManager.getSavedWhatsApp(context))) {
+                    Surface(
+                        color = PetrolHeader.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = PetrolHeader, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Atualize seu WhatsApp de Segurança",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.5.sp,
+                                    color = PetrolHeader
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Para garantir seu backup na nuvem e suporte VIP aos motoristas, confirme seu número real com DDD.",
+                                    fontSize = 11.sp,
+                                    color = MutedText
+                                )
+                            }
+                        }
+                    }
+                }
+
                 if (licenseState.requiresPin || licenseState.pinInvalid) {
                     Surface(
                         color = TrafficRedSoft,
@@ -323,8 +350,9 @@ fun SubscriptionScreenCard(
                 ) {
                     Button(
                         onClick = {
-                            if (whatsappInput.length < 10) {
-                                onNotify("Informe seu WhatsApp completo com DDD.")
+                            val (valid, errorMsg) = LicenseManager.validateBrazilianPhone(whatsappInput)
+                            if (!valid) {
+                                onNotify(errorMsg)
                                 return@Button
                             }
                             isLoading = true
@@ -649,8 +677,9 @@ fun SubscriptionScreenCard(
                 // Button to Generate PIX
                 Button(
                     onClick = {
-                        if (whatsappInput.length < 10) {
-                            onNotify("Informe seu WhatsApp antes de gerar o PIX.")
+                        val (valid, errorMsg) = LicenseManager.validateBrazilianPhone(whatsappInput)
+                        if (!valid) {
+                            onNotify(errorMsg)
                             return@Button
                         }
                         isLoading = true

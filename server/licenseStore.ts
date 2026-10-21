@@ -149,6 +149,50 @@ function firestoreUrl(collection: string, docId?: string): string {
   return FIREBASE_API_KEY ? `${pathUrl}?key=${encodeURIComponent(FIREBASE_API_KEY)}` : pathUrl;
 }
 
+export const VALID_BRAZILIAN_DDDS = new Set([
+  11, 12, 13, 14, 15, 16, 17, 18, 19,
+  21, 22, 24, 27, 28,
+  31, 32, 33, 34, 35, 37, 38,
+  41, 42, 43, 44, 45, 46,
+  47, 48, 49,
+  51, 53, 54, 55,
+  61, 62, 63, 64, 65, 66, 67, 68, 69,
+  71, 73, 74, 75, 77, 79,
+  81, 82, 83, 84, 87,
+  85, 86, 88, 89,
+  91, 92, 93, 94, 95, 96, 97, 98, 99
+]);
+
+export function validateBrazilianPhone(phone: string): { valid: boolean; error?: string } {
+  const digits = cleanPhone(phone);
+  if (digits.length !== 11) {
+    return { valid: false, error: "O WhatsApp deve conter DDD + 9 dígitos (ex: 11985052148)." };
+  }
+  const ddd = parseInt(digits.slice(0, 2), 10);
+  if (!VALID_BRAZILIAN_DDDS.has(ddd)) {
+    return { valid: false, error: `DDD (${ddd}) inválido para o Brasil.` };
+  }
+  if (digits[2] !== "9") {
+    return { valid: false, error: "Número de celular inválido (o 9º dígito deve começar com 9)." };
+  }
+  if (!["6", "7", "8", "9"].includes(digits[3])) {
+    return { valid: false, error: "Prefixo móvel inválido para celulares no Brasil." };
+  }
+  const uniqueAll = new Set(digits.split("")).size;
+  if (uniqueAll <= 2) {
+    return { valid: false, error: "Número de telefone genérico ou repetido inválido." };
+  }
+  const uniqueBody = new Set(digits.slice(3).split("")).size;
+  if (uniqueBody === 1) {
+    return { valid: false, error: "Número de celular genérico com dígitos repetidos." };
+  }
+  const body = digits.slice(2);
+  if (["912345678", "987654321", "900000000", "911111111"].includes(body)) {
+    return { valid: false, error: "Número em sequência ou genérico não permitido." };
+  }
+  return { valid: true };
+}
+
 export function cleanPhone(phone: string): string {
   if (!phone) return "";
   let digits = phone.replace(/\D/g, "");
@@ -307,14 +351,15 @@ export async function checkOrActivateLicense(params: {
   termsAcceptedVersion?: string;
 }): Promise<CheckLicenseResult> {
   const phone = cleanPhone(params.whatsapp);
-  if (phone.length < 10) {
+  const phoneVal = validateBrazilianPhone(phone);
+  if (!phoneVal.valid) {
     return {
       allowed: false,
       status: "expired",
       plano: "trial",
       trialDaysRemaining: 0,
       validoAte: "",
-      message: "Número de WhatsApp inválido (informe DDD + 9 dígitos).",
+      message: phoneVal.error || "Número de WhatsApp inválido (informe DDD + celular com 9 dígitos).",
     };
   }
 
@@ -843,8 +888,9 @@ export async function redeemVoucher(params: {
   }
 
   const phone = cleanPhone(params.phone);
-  if (!phone) {
-    return { ok: false, message: "Informe seu número de WhatsApp para resgatar." };
+  const phoneVal = validateBrazilianPhone(phone);
+  if (!phoneVal.valid) {
+    return { ok: false, message: phoneVal.error || "Informe um número de WhatsApp válido para resgatar." };
   }
 
   let record = await getLicense(phone);

@@ -316,7 +316,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         if (isIdleSearchingScreen) {
             // Se a tela da 99/Uber estÃ¡ ociosa/sem chamadas, fecha qualquer card residual aberto na hora!
-            app?.overlayPanel?.hideOfferCardOnly()
+            (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
             shownOfferTimestamps.clear()
             lastScreenContextMode = ""
             consecutiveScansWithoutOffers++

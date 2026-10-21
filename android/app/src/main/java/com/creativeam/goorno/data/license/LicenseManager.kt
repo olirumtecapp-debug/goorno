@@ -114,6 +114,50 @@ object LicenseManager {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(KEY_SAVED_RECOVERY, secret.trim().uppercase()).apply()
     }
 
+    private val VALID_DDDS = setOf(
+        11, 12, 13, 14, 15, 16, 17, 18, 19,
+        21, 22, 24, 27, 28,
+        31, 32, 33, 34, 35, 37, 38,
+        41, 42, 43, 44, 45, 46,
+        47, 48, 49,
+        51, 53, 54, 55,
+        61, 62, 63, 64, 65, 66, 67, 68, 69,
+        71, 73, 74, 75, 77, 79,
+        81, 82, 83, 84, 87,
+        85, 86, 88, 89,
+        91, 92, 93, 94, 95, 96, 97, 98, 99
+    )
+
+    fun validateBrazilianPhone(phone: String): Pair<Boolean, String> {
+        val digits = cleanPhone(phone)
+        if (digits.length != 11) {
+            return false to "Informe o DDD + seu celular com 9 dígitos (ex: 11985052148)."
+        }
+        val ddd = digits.substring(0, 2).toIntOrNull() ?: 0
+        if (!VALID_DDDS.contains(ddd)) {
+            return false to "DDD ($ddd) inválido para o Brasil."
+        }
+        if (digits[2] != '9') {
+            return false to "Número de celular inválido (o 9º dígito deve começar com 9)."
+        }
+        if (digits[3] !in '6'..'9') {
+            return false to "Prefixo móvel inválido para celulares no Brasil."
+        }
+        if (digits.toSet().size <= 2 || digits.substring(3).toSet().size == 1) {
+            return false to "Número de telefone genérico ou repetido inválido."
+        }
+        val body = digits.substring(2)
+        if (body in listOf("912345678", "987654321", "900000000", "911111111")) {
+            return false to "Número em sequência ou genérico não permitido."
+        }
+        return true to "OK"
+    }
+
+    fun isSuspiciousOrFakePhone(phone: String): Boolean {
+        if (phone.isBlank()) return false
+        return !validateBrazilianPhone(phone).first
+    }
+
     fun cleanPhone(phone: String): String {
         var digits = phone.replace(Regex("\\D"), "")
         if (digits.startsWith("55") && (digits.length == 12 || digits.length == 13)) {
@@ -150,8 +194,9 @@ object LicenseManager {
         recoverySecret: String? = null
     ): Result<LicenseState> = withContext(Dispatchers.IO) {
         val phone = cleanPhone(whatsapp)
-        if (phone.length < 10) {
-            return@withContext Result.failure(IllegalArgumentException("Informe o WhatsApp com DDD e pelo menos 10 dígitos."))
+        val (valid, errorMsg) = validateBrazilianPhone(phone)
+        if (!valid) {
+            return@withContext Result.failure(IllegalArgumentException(errorMsg))
         }
 
         saveWhatsApp(context, phone)
