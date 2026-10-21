@@ -671,7 +671,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         serviceScope.launch {
-            val config = app.preferencesRepository.getConfigOnce()
+            val config = app.preferencesRepository.getInMemoryConfig()
             val evaluations = unshownOffers
                 .map { offer -> FinancialEngine.evaluate(offer, config) }
                 .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }

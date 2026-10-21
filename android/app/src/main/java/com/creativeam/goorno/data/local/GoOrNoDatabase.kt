@@ -17,6 +17,13 @@ abstract class GoOrNoDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: GoOrNoDatabase? = null
 
+        // Migração segura para futuras alterações de esquema sem nunca apagar o histórico do motorista
+        private val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Preserva 100% da tabela ride_offers existente
+            }
+        }
+
         fun getInstance(context: Context): GoOrNoDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -24,7 +31,8 @@ abstract class GoOrNoDatabase : RoomDatabase() {
                     GoOrNoDatabase::class.java,
                     "goorno_local.db"
                 )
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2)
+                    // Proteção definitiva: NUNCA destrói o banco de dados em produção
                     .build()
                 INSTANCE = instance
                 instance

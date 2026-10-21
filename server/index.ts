@@ -993,11 +993,11 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.34",
-    versionCode: 55,
+    versionName: "3.3.35",
+    versionCode: 56,
     releaseDate: "2026-10-21",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.34.apk",
-    directDownload: "/GoOrNo-v3.3.34.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.35.apk",
+    directDownload: "/GoOrNo-v3.3.35.apk",
     fileSizeBytes: 55320024,
     fileSizeFormatted: "55.3 MB",
     changelog: [
@@ -1140,7 +1140,7 @@ app.get([
   "/GoOrNo-v3.3.4.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
-  "/download/GoOrNo-v3.3.34.apk",
+  "/download/GoOrNo-v3.3.35.apk",
   "/download/GoOrNo-v3.3.32.apk",
   "/download/GoOrNo-v3.3.31.apk",
   "/download/GoOrNo-v3.3.28.apk"
@@ -1149,9 +1149,9 @@ app.get([
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.34.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.34.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.34.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.35.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.35.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.35.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.32.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.32.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.32.apk"),

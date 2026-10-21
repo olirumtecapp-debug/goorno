@@ -8,16 +8,33 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.preferencesDataStore
 import com.creativeam.goorno.model.DriverFinancialConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import androidx.datastore.preferences.core.emptyPreferences
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import androidx.datastore.preferences.core.emptyPreferences
+import kotlinx.coroutines.launch
 import java.io.IOException
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "goorno_driver_settings")
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "goorno_driver_settings",
+    corruptionHandler = ReplaceFileCorruptionHandler(
+        produceNewData = {
+            // Em caso de corrupção física do arquivo por encerramento forçado do SO,
+            // emite preferências vazias para que o sistema se auto-recupere sem travar futuros .edit()
+            emptyPreferences()
+        }
+    )
+)
 
 /**
  * Repositório DataStore para persistência local das configurações financeiras e de privacidade do motorista.
@@ -72,6 +89,81 @@ class DriverPreferencesRepository(private val context: Context) {
         context.getSharedPreferences("goorno_local_prefs_backup", Context.MODE_PRIVATE)
     }
 
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // Snapshot em memória RAM (Single Source of Truth) para leitura com 0ms de latência
+    @Volatile
+    private var inMemoryConfigSnapshot: DriverFinancialConfig = DriverFinancialConfig()
+
+    private val _configStateFlow = MutableStateFlow<DriverFinancialConfig>(DriverFinancialConfig())
+    val configStateFlow: StateFlow<DriverFinancialConfig> = _configStateFlow.asStateFlow()
+
+    init {
+        // 1. Carrega imediatamente o snapshot local para garantir que a RAM nunca inicie com zeros
+        try {
+            val b = backupPrefs
+            if (b.contains("fuel_km_per_liter") || b.contains("target_gross_km")) {
+                inMemoryConfigSnapshot = DriverFinancialConfig(
+                    driverName = b.getString("driver_name", null) ?: "Motorista",
+                    vehicleModel = b.getString("vehicle_model", null) ?: "Carro Padrão",
+                    fuelConsumptionKmPerLiter = if (b.contains("fuel_km_per_liter")) b.getFloat("fuel_km_per_liter", 10.5f).toDouble() else 10.5,
+                    fuelPricePerLiter = if (b.contains("fuel_price")) b.getFloat("fuel_price", 5.89f).toDouble() else 5.89,
+                    maintenanceCostPerKm = if (b.contains("maintenance_per_km")) b.getFloat("maintenance_per_km", 0.25f).toDouble() else 0.25,
+                    fixedExtraCostPerRide = if (b.contains("fixed_extra_cost")) b.getFloat("fixed_extra_cost", 0.0f).toDouble() else 0.0,
+                    targetGrossPerKm = if (b.contains("target_gross_km")) b.getFloat("target_gross_km", 2.50f).toDouble() else 2.50,
+                    targetGrossPerHour = if (b.contains("target_gross_hour")) b.getFloat("target_gross_hour", 50.00f).toDouble() else 50.00,
+                    minGrossPerKm = if (b.contains("min_gross_km")) b.getFloat("min_gross_km", 1.80f).toDouble() else 1.80,
+                    minGrossPerHour = if (b.contains("min_gross_hour")) b.getFloat("min_gross_hour", 35.00f).toDouble() else 35.00,
+                    targetNetPerKm = if (b.contains("target_net_km")) b.getFloat("target_net_km", 1.30f).toDouble() else 1.30,
+                    targetNetPerHour = if (b.contains("target_net_hour")) b.getFloat("target_net_hour", 28.00f).toDouble() else 28.00,
+                    yellowToleranceRatio = if (b.contains("yellow_tolerance")) b.getFloat("yellow_tolerance", 0.80f).toDouble() else 0.80,
+                    requireGrossPerKm = b.getBoolean("req_gross_km", true),
+                    requireGrossPerHour = b.getBoolean("req_gross_hour", true),
+                    requireNetPerKm = b.getBoolean("req_net_km", false),
+                    requireNetPerHour = b.getBoolean("req_net_hour", false),
+                    requirePassengerRating = b.getBoolean("req_passenger_rating", true),
+                    forceRedOnBadPassengerRating = b.getBoolean("force_red_on_bad_rating", true),
+                    targetGoodPassengerRating = if (b.contains("target_good_passenger_rating")) b.getFloat("target_good_passenger_rating", 4.85f).toDouble() else 4.85,
+                    minAcceptablePassengerRating = if (b.contains("min_acceptable_passenger_rating")) b.getFloat("min_acceptable_passenger_rating", 4.70f).toDouble() else 4.70,
+                    minConfidenceThreshold = if (b.contains("min_confidence")) b.getFloat("min_confidence", 0.65f).toDouble() else 0.65,
+                    overlayOpacityPercent = b.getInt("overlay_opacity", 92),
+                    overlayAutoMinimizeSec = b.getInt("overlay_auto_min_sec", 5).coerceIn(3, 7),
+                    overlayDisplayStyle = b.getString("overlay_display_style", null) ?: "BANNER_PRO_STREETVIEW",
+                    overlayTheme = b.getString("overlay_theme", null) ?: "DARK",
+                    overlayBubblePosition = b.getString("overlay_bubble_position", null) ?: "BELOW",
+                    overlayHorizontalPosition = b.getString("overlay_horizontal_position", null) ?: "CENTER",
+                    showFloatingShortcutBubble = b.getBoolean("show_floating_shortcut_bubble", true),
+                    showProfitOnOverlay = b.getBoolean("show_profit_on_overlay", false),
+                    showCostOnOverlay = b.getBoolean("show_cost_on_overlay", false),
+                    riskAlertEnabled = b.getBoolean("risk_alert_enabled", true),
+                    forceRedOnRiskArea = b.getBoolean("force_red_on_risk_area", true),
+                    useDefaultRiskKeywords = b.getBoolean("use_default_risk_keywords", true),
+                    customRiskZones = b.getString("custom_risk_zones", null) ?: "",
+                    favoriteZonesEnabled = b.getBoolean("favorite_zones_enabled", true),
+                    customFavoriteZones = b.getString("custom_favorite_zones", null) ?: "",
+                    copilotMonitoringEnabled = b.getBoolean("copilot_monitoring_enabled", true),
+                    saveHistoryEnabled = b.getBoolean("save_history", true),
+                    cloudBackupConsent = b.getBoolean("cloud_backup_consent", false),
+                    driverRecoveryCode = b.getString("driver_recovery_code", null) ?: ""
+                )
+                _configStateFlow.value = inMemoryConfigSnapshot
+            }
+        } catch (_: Throwable) {}
+
+        // 2. Observa continuamente o DataStore oficial para manter a RAM 100% atualizada
+        repositoryScope.launch {
+            configFlow.collect { freshConfig ->
+                inMemoryConfigSnapshot = freshConfig
+                _configStateFlow.value = freshConfig
+            }
+        }
+    }
+
+    /**
+     * Consulta ultrarrápida em memória (0ms de latência), perfeita para o AccessibilityService.
+     */
+    fun getInMemoryConfig(): DriverFinancialConfig = inMemoryConfigSnapshot
+
     val configFlow: Flow<DriverFinancialConfig> = context.dataStore.data
         .catch { _ ->
             // Blindagem total contra corrupção do DataStore: emite preferências vazias
@@ -125,9 +217,13 @@ class DriverPreferencesRepository(private val context: Context) {
             )
         }
 
-    suspend fun getConfigOnce(): DriverFinancialConfig = configFlow.first()
+    suspend fun getConfigOnce(): DriverFinancialConfig {
+        return inMemoryConfigSnapshot
+    }
 
     suspend fun saveConfig(config: DriverFinancialConfig) {
+        inMemoryConfigSnapshot = config
+        _configStateFlow.value = config
         try {
             context.dataStore.edit { prefs ->
                 prefs[Keys.DRIVER_NAME] = config.driverName

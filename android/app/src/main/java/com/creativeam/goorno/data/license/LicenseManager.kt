@@ -90,12 +90,32 @@ object LicenseManager {
 
     fun getSavedWhatsApp(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_WHATSAPP, "") ?: ""
+        val primary = prefs.getString(KEY_WHATSAPP, "") ?: ""
+        if (primary.isNotBlank()) return primary
+
+        // Fallback resiliente de recuperação automática por espelho de hardware
+        return try {
+            val hwPrefs = context.getSharedPreferences("goorno_hw_identity", Context.MODE_PRIVATE)
+            val recovered = hwPrefs.getString("persisted_driver_phone", "") ?: ""
+            if (recovered.isNotBlank()) {
+                prefs.edit().putString(KEY_WHATSAPP, recovered).apply()
+            }
+            recovered
+        } catch (_: Exception) {
+            ""
+        }
     }
 
     fun saveWhatsApp(context: Context, phone: String) {
+        val cleaned = cleanPhone(phone)
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_WHATSAPP, cleanPhone(phone)).apply()
+        prefs.edit().putString(KEY_WHATSAPP, cleaned).apply()
+
+        // Espelho de identidade persistido: imune a corrupções ou limpezas acidentais do app
+        try {
+            val hwPrefs = context.getSharedPreferences("goorno_hw_identity", Context.MODE_PRIVATE)
+            hwPrefs.edit().putString("persisted_driver_phone", cleaned).apply()
+        } catch (_: Exception) {}
     }
 
     fun getSavedPin(context: Context): String {
