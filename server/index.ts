@@ -993,21 +993,20 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.32",
-    versionCode: 53,
-    releaseDate: "2026-10-20",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.32.apk",
-    directDownload: "/GoOrNo-v3.3.32.apk",
-    fileSizeBytes: 55500000,
-    fileSizeFormatted: "53.0 MB",
+    versionName: "3.3.33",
+    versionCode: 54,
+    releaseDate: "2026-10-21",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.33.apk",
+    directDownload: "/GoOrNo-v3.3.33.apk",
+    fileSizeBytes: 55320024,
+    fileSizeFormatted: "55.3 MB",
     changelog: [
-      "⚖️ Seção Jurídica & Precedente TJSP: Informações completas de autonomia, independência e jurisprudência diretamente no menu Ajustes e Backup.",
-      "Card 3 Pilares Oficial: Novo modelo com resumo no topo (R$, tempo, km), 3 colunas e barras verticais coloridas (R$/km, R$/hora e Nota).",
-      "Suporte a Tema Claro e Escuro: Seleção de fundo claro ou escuro tanto para o Card 3 Pilares quanto para o Card Clássico.",
-      "Card Impacto Pro Refinado: Distância e tempo no cabeçalho superior, valor gigante no centro e ganho por km e por hora logo abaixo.",
-      "Alertas de Segurança Destacados: Linhas dedicadas para Zona de Risco e Região Favorita de alto contraste.",
-      "Botão Discreto Sem Cortes: Formatação compacta (R$ 1,70 | 43,00) evitando corte de texto.",
-      "Limpeza Visual nos Menus: Remoção de 'Suas Faixas' e itens duplicados de estilo/histórico nos ajustes."
+      "🛡️ Blindagem de Zona de Risco: Mauá x São Caetano do Sul separados cirurgicamente (Avenida Guido Aliberti protegida contra falso positivo).",
+      "🔒 Leitura Restrita: Bloqueio rigoroso de leitura fora da Uber Driver e 99 Motorista (WhatsApp, bancos e outros apps 100% ignorados).",
+      "⚡ Auto-Fechamento Ocioso: Eliminação de cards residuais/fantasmas em telas ociosas da 99 ('Buscando solicitações').",
+      "🎯 Multi-Ofertas 99 Refinada: Fatiamento independente de cards por corrida e sanidade total de valores e tempos.",
+      "💾 Persistência Inabalável: Fallback com blindagem dupla sem risco de perda de dados.",
+      "📱 Validação Anti-Fake de Celular: Proteção de segurança contra números genéricos ou irreais no cadastro."
     ],
     mandatory: false,
   });
