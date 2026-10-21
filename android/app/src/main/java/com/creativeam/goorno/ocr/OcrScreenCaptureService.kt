@@ -290,7 +290,14 @@ class OcrScreenCaptureService : Service() {
             if (config.saveHistoryEnabled) {
                 for (evaluation in evaluations) {
                     val parsed = evaluation.offer
-                    if (parsed.offeredPrice != null) {
+                    val isSanePrice = (parsed.offeredPrice ?: 0.0) >= 4.50
+                    val totalKm = evaluation.totalConsideredDistanceKm ?: 0.0
+                    val totalMin = evaluation.totalConsideredDurationMin ?: 0
+                    val hasAddresses = !parsed.originAddress.isNullOrBlank() || !parsed.destinationAddress.isNullOrBlank()
+                    val isLegitOffer = isSanePrice && totalKm >= 0.2 && totalMin > 0 && hasAddresses && !parsed.hasFieldConflict
+
+                    // Blindagem absoluta de persistência: NUNCA grava leituras parciais, saldos ou lixo de OCR
+                    if (!parsed.isSimulated && isLegitOffer) {
                         app.database.rideOfferDao().insertOffer(
                             RideOfferEntity(
                                 id = parsed.offerId,

@@ -16,6 +16,7 @@ import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.engine.FinancialEngine
 import com.creativeam.goorno.model.CaptureMethod
 import com.creativeam.goorno.model.SourceApp
+import com.creativeam.goorno.model.OfferLifecycleState
 import com.creativeam.goorno.model.StandardRideOffer
 import com.creativeam.goorno.reader.BrazilianOfferParser
 import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
@@ -50,6 +51,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var pollingJob: Job? = null
 
     private val shownOfferTimestamps = LinkedHashMap<String, Long>()
+    private var currentLifecycleState: OfferLifecycleState = OfferLifecycleState.OUTSIDE_ALLOWED_APP
     private var lastScreenContextMode: String = ""
     private var lastKnownForegroundPkg: String = ""
     private var lastScanTimeMillis: Long = 0L
@@ -170,27 +172,45 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         val evtPkg = event?.packageName?.toString() ?: ""
-        // Se o evento for do próprio GoOrNo (timer, arrasto, etc), sai imediatamente para não reprocessar
+        // Se o evento for do próprio GoOrNo (timer, arrasto, UI), ignora
         if (evtPkg == packageName || evtPkg.contains("com.creativeam.goorno")) {
             return
         }
-        if (evtPkg.isNotBlank() &&
-            evtPkg != packageName &&
-            evtPkg != "com.android.systemui" &&
-            !evtPkg.contains("inputmethod", ignoreCase = true) &&
-            !evtPkg.contains("keyboard", ignoreCase = true)
-        ) {
-            val wasKnownRide = SourceApp.fromPackageName(lastKnownForegroundPkg) != SourceApp.UNKNOWN
-            val isNowKnownRide = SourceApp.fromPackageName(evtPkg) != SourceApp.UNKNOWN
 
-            // Se o motorista trocou de app (ex: abriu Instagram/WhatsApp ou voltou de lá para a 99/Uber),
-            // limpamos imediatamente o histórico de repetição para reabrir chamadas instantaneamente!
-            if (evtPkg != lastKnownForegroundPkg && (wasKnownRide || isNowKnownRide)) {
+        // Se o evento for de teclado ou painel de notificações, não processa
+        if (evtPkg == "com.android.systemui" ||
+            evtPkg.contains("inputmethod", ignoreCase = true) ||
+            evtPkg.contains("keyboard", ignoreCase = true)
+        ) {
+            return
+        }
+
+        // TRAVA RIGOROSA DE PACOTE:
+        // Se o evento não for de um app de motorista permitido (Uber Driver ou 99 Motorista):
+        val isEventDriverPkg = SourceApp.isAllowedDriverPackage(evtPkg)
+        val activeRootPkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Exception) { null }
+        val isActiveDriverPkg = SourceApp.isAllowedDriverPackage(activeRootPkg)
+
+        if (!isEventDriverPkg && !isActiveDriverPkg) {
+            // O usuário está em outro app (WhatsApp, Navegador, etc.) ou na tela inicial:
+            if (currentLifecycleState != OfferLifecycleState.OUTSIDE_ALLOWED_APP) {
+                currentLifecycleState = OfferLifecycleState.OUTSIDE_ALLOWED_APP
+                isTakingAutoScreenshot = false
                 shownOfferTimestamps.clear()
                 lastScreenContextMode = ""
                 consecutiveScansWithoutOffers = 0
                 app?.overlayPanel?.clearRecentlyDismissed()
+                app?.overlayPanel?.hideOfferCardOnly()
             }
+            lastKnownForegroundPkg = evtPkg
+            return
+        }
+
+        if (evtPkg.isNotBlank() && evtPkg != lastKnownForegroundPkg) {
+            shownOfferTimestamps.clear()
+            lastScreenContextMode = ""
+            consecutiveScansWithoutOffers = 0
+            app?.overlayPanel?.clearRecentlyDismissed()
             lastKnownForegroundPkg = evtPkg
         }
 
@@ -207,97 +227,61 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (now - lastCardClosedTimeMillis < 1100L) return
         lastScanTimeMillis = now
 
-        // Se o evento for do próprio GoOrNo, ignora
-        if (eventPkg == packageName || eventPkg?.contains("com.creativeam.goorno") == true) {
+        // 1. Identifica estritamente a janela ativa em primeiro plano
+        val activeRoot = try { rootInActiveWindow } catch (_: Exception) { null }
+        val activePkg = activeRoot?.packageName?.toString()
+            ?: eventPkg?.takeIf { SourceApp.isAllowedDriverPackage(it) }
+            ?: lastKnownForegroundPkg.takeIf { SourceApp.isAllowedDriverPackage(it) }
+            ?: ""
+
+        // Se a tela ativa não pertence a um aplicativo de motorista permitido, aborta imediatamente
+        if (!SourceApp.isAllowedDriverPackage(activePkg)) {
+            currentLifecycleState = OfferLifecycleState.OUTSIDE_ALLOWED_APP
+            isTakingAutoScreenshot = false
             return
         }
 
-        val candidateWindows = mutableListOf<Pair<String, AccessibilityNodeInfo>>()
-        var isOurOwnAppVisible = false
-
-        // 1. Coleta todas as janelas visíveis na tela
-        try {
-            val allWindows = windows
-            if (!allWindows.isNullOrEmpty()) {
-                for (win in allWindows) {
-                    val root = win.root ?: continue
-                    val pkg = root.packageName?.toString() ?: ""
-                    if (pkg == packageName || pkg.contains("com.creativeam.goorno")) {
-                        isOurOwnAppVisible = true
-                        continue
-                    }
-                    if (pkg.isBlank() || pkg == "com.android.systemui") continue
-                    candidateWindows.add(Pair(pkg, root))
-                }
-            }
-        } catch (_: Exception) {
-        }
-
-        // 2. Fallback/complemento com rootInActiveWindow
-        try {
-            val activeRoot = rootInActiveWindow
-            if (activeRoot != null) {
-                val activePkg = activeRoot.packageName?.toString() ?: eventPkg ?: lastKnownForegroundPkg
-                if (activePkg == "com.android.systemui") {
-                    // Usuário está com o painel de notificações aberto; não escaneia para não capturar textos do sistema
-                    return
-                }
-                if (activePkg == packageName || activePkg.contains("com.creativeam.goorno")) {
-                    isOurOwnAppVisible = true
-                } else if (activePkg.isNotBlank()) {
-                    if (candidateWindows.none { it.second == activeRoot }) {
-                        candidateWindows.add(0, Pair(activePkg, activeRoot))
-                    }
-                }
-            }
-        } catch (_: Exception) {
-        }
-
-        // Se o motorista está com a tela do próprio GoOrNo aberta (ajustando configurações) e nenhum app de corrida está visível, não escaneia
-        if (isOurOwnAppVisible && candidateWindows.none { SourceApp.fromPackageName(it.first) != SourceApp.UNKNOWN }) {
+        val targetPkg = activePkg
+        val targetApp = SourceApp.fromPackageName(targetPkg)
+        if (targetApp == SourceApp.UNKNOWN || targetApp == SourceApp.SIMULATION) {
+            currentLifecycleState = OfferLifecycleState.OUTSIDE_ALLOWED_APP
+            isTakingAutoScreenshot = false
             return
         }
 
-        // 3. TRAVA RIGOROSA DE PACOTE:
-        // O GoOrNo sÃ³ pode ler se uma janela ativa da Uber Driver ou da 99 Motorista estiver visÃ­vel.
-        // Se o usuÃ¡rio estiver no WhatsApp, Waze, YouTube, banco ou tela inicial, ABORTA IMEDIATAMENTE!
-        val rideWindow = candidateWindows.firstOrNull { (pkg, _) ->
-            SourceApp.fromPackageName(pkg) != SourceApp.UNKNOWN
-        }
-
-        val targetPkg = when {
-            rideWindow != null -> rideWindow.first
-            SourceApp.fromPackageName(eventPkg) != SourceApp.UNKNOWN -> eventPkg
-            SourceApp.fromPackageName(lastKnownForegroundPkg) != SourceApp.UNKNOWN -> lastKnownForegroundPkg
-            else -> null
-        }
-
-        if (targetPkg == null || SourceApp.fromPackageName(targetPkg) == SourceApp.UNKNOWN) {
-            // App desconhecido / nÃ£o Ã© app de motorista: garante que o overlay seja fechado e sai imediatamente!
-            return
-        }
-
+        // 2. Coleta nós ESTRITAMENTE da janela do pacote alvo (nunca de outras janelas)
         val positionedNodes = mutableListOf<PositionedText>()
-        for ((pkg, rootNode) in candidateWindows) {
-            if (pkg == targetPkg || SourceApp.fromPackageName(pkg) != SourceApp.UNKNOWN) {
-                collectPositionedTexts(rootNode, positionedNodes, depth = 0, requireVisible = true)
+        if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
+            collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = true)
+            if (positionedNodes.size < 3) {
+                positionedNodes.clear()
+                collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
             }
-        }
-        // Fallback caso alguma ROM customize isVisibleToUser como false em toda a janela
-        if (positionedNodes.size < 3) {
-            positionedNodes.clear()
-            for ((pkg, rootNode) in candidateWindows) {
-                if (rideWindow == null || pkg == targetPkg || SourceApp.fromPackageName(pkg) != SourceApp.UNKNOWN) {
-                    collectPositionedTexts(rootNode, positionedNodes, depth = 0, requireVisible = false)
+        } else {
+            try {
+                val allWindows = windows
+                if (!allWindows.isNullOrEmpty()) {
+                    for (win in allWindows) {
+                        val root = win.root ?: continue
+                        if (root.packageName?.toString() == targetPkg) {
+                            collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = true)
+                        }
+                    }
                 }
-            }
+            } catch (_: Exception) {}
+        }
+
+        if (positionedNodes.isEmpty()) {
+            currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
+            // Fallback OCR automático apenas se o pacote em primeiro plano for comprovadamente o motorista
+            triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
+            return
         }
 
         val mergedLines = mergeSameRowNodes(positionedNodes)
         val normalizedTexts = BrazilianOfferParser.normalizeFragmentedNodes(mergedLines)
-        val detectedApp = BrazilianOfferParser.inferSourceAppFromScreenContent(targetPkg, normalizedTexts)
 
-        // 4. DETECÃ‡ÃƒO DE OCIOSIDADE E AUTO-FECHAMENTO DE CARD FANTASMA:
+        // 3. DETECÇÃO DE OCIOSIDADE E FECHAMENTO DE CARDS RESIDUAIS (ALLOWED_NO_OFFER):
         val joinedScreenLower = normalizedTexts.joinToString(" ").lowercase(Locale.ROOT)
         val hasRideActionBtn = joinedScreenLower.contains("escolher") ||
             joinedScreenLower.contains("aceitar") ||
@@ -305,17 +289,17 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             joinedScreenLower.contains("deslize") ||
             joinedScreenLower.contains("nova corrida")
 
-        val isIdleSearchingScreen = (joinedScreenLower.contains("buscando solicitaÃ§Ãµes") ||
+        val isIdleSearchingScreen = (joinedScreenLower.contains("buscando solicitações") ||
             joinedScreenLower.contains("buscando solicitacoes") ||
             joinedScreenLower.contains("ainda buscando") ||
             joinedScreenLower.contains("mapa de chamadas") ||
             joinedScreenLower.contains("aguarde ou veja o mapa") ||
             joinedScreenLower.contains("procurando viagens") ||
-            joinedScreenLower.contains("vocÃª estÃ¡ online") ||
+            joinedScreenLower.contains("você está online") ||
             joinedScreenLower.contains("voce esta online")) && !hasRideActionBtn
 
-        if (isIdleSearchingScreen) {
-            // Se a tela da 99/Uber estÃ¡ ociosa/sem chamadas, fecha qualquer card residual aberto na hora!
+        if (isIdleSearchingScreen || (!hasRideActionBtn && normalizedTexts.none { it.contains("R$") })) {
+            currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
             (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
             shownOfferTimestamps.clear()
             lastScreenContextMode = ""
@@ -328,64 +312,47 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 AccessibilitySnapshot(
                     timestampMillis = now,
                     packageName = targetPkg,
-                    detectedApp = detectedApp,
+                    detectedApp = targetApp,
                     nodeCount = normalizedTexts.size,
                     extractedTexts = normalizedTexts.take(90)
                 )
             )
         }
 
-        val isKnownRidePackage = SourceApp.fromPackageName(targetPkg) != SourceApp.UNKNOWN
-        val effectiveApp = when {
-            detectedApp != SourceApp.UNKNOWN -> detectedApp
-            isKnownRidePackage -> SourceApp.fromPackageName(targetPkg)
-            else -> SourceApp.UNKNOWN
+        // 4. EXTRAÇÃO EXCLUSIVA PARA O APLICATIVO ALVO (OFFER_CANDIDATE):
+        currentLifecycleState = OfferLifecycleState.OFFER_CANDIDATE
+        val parsedOffers = extractOffersForApp(targetApp, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
+        if (parsedOffers.isEmpty()) {
+            if (hasRideActionBtn) {
+                triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
+            }
+            return
         }
 
-        // 1º Tentativa: extrair ofertas diretamente pelos nós de Acessibilidade (testando Uber e 99)
-        var parsedOffers = if (effectiveApp != SourceApp.UNKNOWN) {
-            extractOffersForApp(effectiveApp, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
-        } else {
-            emptyList()
-        }
-        if (parsedOffers.isEmpty() && normalizedTexts.isNotEmpty()) {
-            parsedOffers = extractOffersForApp(SourceApp.NINETY_NINE_DRIVER, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
-                .ifEmpty { extractOffersForApp(SourceApp.UBER_DRIVER, normalizedTexts, CaptureMethod.ACCESSIBILITY, now) }
-        }
-
-        // Exige que a oferta extraída por Acessibilidade tenha Preço + Distância (km) + Tempo (min).
-        // Se no Radar de Viagens da Uber (ou Solicitações da 99) a árvore de Acessibilidade ocultar as distâncias
-        // ou os tempos, prosseguimos imediatamente para a 2ª Tentativa (Leitura Visual via takeScreenshot + OCR)!
+        // 5. VALIDAÇÃO RIGOROSA E ESTABILIZAÇÃO (VALIDATING_OFFER -> OFFER_ACTIVE):
+        currentLifecycleState = OfferLifecycleState.VALIDATING_OFFER
         val completeAccessibilityOffers = parsedOffers.filter { offer ->
+            val price = offer.offeredPrice ?: 0.0
             val km = offer.totalDistanceKmExplicit ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
             val min = offer.totalDurationMinExplicit ?: ((offer.pickupDurationMin ?: 0) + (offer.tripDurationMin ?: 0))
-            (offer.offeredPrice ?: 0.0) > 0.0 && km > 0.0 && min > 0
+            val hasAddresses = !offer.originAddress.isNullOrBlank() || !offer.destinationAddress.isNullOrBlank()
+
+            val isSanePrice = price in 4.50..350.0 || (km >= 60.0 && price <= 1500.0)
+            val isSaneDuration = min in 1..240
+            val isSaneKm = km in 0.2..300.0
+
+            isSanePrice && isSaneKm && isSaneDuration && hasAddresses && !offer.hasFieldConflict
         }
 
         if (completeAccessibilityOffers.isNotEmpty()) {
+            currentLifecycleState = OfferLifecycleState.OFFER_ACTIVE
             consecutiveScansWithoutOffers = 0
             processAndShowOffers(completeAccessibilityOffers, normalizedTexts, now)
             return
         }
 
-        // Se houver qualquer oferta com Preço e KM válidos extraídos via acessibilidade:
-        val usableAccessibilityOffers = parsedOffers.filter { offer ->
-            val km = offer.totalDistanceKmExplicit ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
-            (offer.offeredPrice ?: 0.0) > 0.0 && km > 0.0
-        }
-        if (usableAccessibilityOffers.isNotEmpty()) {
-            consecutiveScansWithoutOffers = 0
-            processAndShowOffers(usableAccessibilityOffers, normalizedTexts, now)
-            return
-        }
-
-        // 2º Tentativa Automática (Leitura Visual Silenciosa via takeScreenshot + ML Kit OCR):
-        // SÓ dispara screenshot OCR se o pacote em primeiro plano for comprovadamente Uber ou 99!
-        if (effectiveApp != SourceApp.UNKNOWN) {
-            triggerAutomaticAccessibilityOcrIfNeeded(effectiveApp, targetPkg, now)
-        } else {
-            isTakingAutoScreenshot = false
-        }
+        // Se a árvore de acessibilidade contém oferta mas ocultou valores ou distâncias (ex: canvas 99):
+        triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
     }
 
     private fun isSocialMediaApp(pkg: String?): Boolean {

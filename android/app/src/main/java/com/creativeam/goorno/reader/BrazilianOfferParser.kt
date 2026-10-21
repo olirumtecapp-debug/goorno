@@ -891,16 +891,14 @@ object BrazilianOfferParser {
         val byPkg = SourceApp.fromPackageName(packageName)
         if (byPkg != SourceApp.UNKNOWN) return byPkg
 
-        val pkgLower = packageName?.lowercase(Locale.ROOT) ?: ""
-        if (pkgLower.contains("com.creativeam.goorno") ||
-            pkgLower.contains("systemui") ||
-            pkgLower.contains("settings") ||
-            pkgLower.contains("whatsapp") ||
-            pkgLower.contains("launcher")
-        ) {
+        // BLOQUEIO ESTRITO DE SEGURANÇA:
+        // Se o pacote foi informado e NÃO é Uber Driver nem 99 Motorista legítimos,
+        // NUNCA tenta adivinhar pelo conteúdo da tela (evita falsas leituras em WhatsApp, Navegador, etc.)!
+        if (!packageName.isNullOrBlank()) {
             return SourceApp.UNKNOWN
         }
 
+        // Apenas para testes unitários ou simulações onde packageName é nulo:
         val normalized = normalizeFragmentedNodes(lines)
         val joined = normalized.joinToString(" | ").lowercase(Locale.getDefault())
 
@@ -919,18 +917,9 @@ object BrazilianOfferParser {
             joined.contains("uber comfort") ||
             joined.contains("uber black") ||
             joined.contains("uber flash") ||
-            joined.contains("radar de viagens") ||
-            joined.contains("selecionar")
+            joined.contains("radar de viagens")
         ) {
             return SourceApp.UBER_DRIVER
-        }
-
-        // SÓ infere 99 se houver botões ou termos inequívocos de corrida do app 99
-        val has99Action = joined.contains("escolher") || joined.contains("pop") || joined.contains("99pop") || joined.contains("perfil essencial")
-        val hasKm = extractAllDistancesKm(normalized).isNotEmpty()
-        val hasPrice = extractAllCurrencies(normalized).isNotEmpty()
-        if (has99Action && hasKm && hasPrice) {
-            return SourceApp.NINETY_NINE_DRIVER
         }
 
         return SourceApp.UNKNOWN

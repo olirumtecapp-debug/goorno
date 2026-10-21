@@ -604,7 +604,103 @@ class GoOrNoEngineAndParserTest {
         assertEquals("Rua Barão de Ladário, 770 - Brás", offer.originAddress)
         assertEquals("Rua da Cantareira, 306 - Centro", offer.destinationAddress)
     }
+    // 26. TESTE DE BLOQUEIO RIGOROSO DE PACOTES:
+    // Garante que o app de passageiros da DiDi (com.didiglobal.passenger) e apps aleatórios com '99' sejam 100% REJEITADOS
+    @Test
+    fun `test package filtering strictly blocks DiDi passenger and non-driver packages`() {
+        // App de passageiro DiDi / 99
+        assertEquals(SourceApp.UNKNOWN, SourceApp.fromPackageName("com.didiglobal.passenger"))
+        assertFalse(SourceApp.isAllowedDriverPackage("com.didiglobal.passenger"))
+
+        // Apps genéricos que possuem '99' ou 'didi' no pacote (não devem ser reconhecidos como motorista)
+        assertEquals(SourceApp.UNKNOWN, SourceApp.fromPackageName("com.sec.android.app.calculator99"))
+        assertFalse(SourceApp.isAllowedDriverPackage("com.sec.android.app.calculator99"))
+        assertEquals(SourceApp.UNKNOWN, SourceApp.fromPackageName("com.whatsapp"))
+        assertFalse(SourceApp.isAllowedDriverPackage("com.whatsapp"))
+        assertEquals(SourceApp.UNKNOWN, SourceApp.fromPackageName("com.android.chrome"))
+        assertFalse(SourceApp.isAllowedDriverPackage("com.android.chrome"))
+
+        // Pacotes Oficiais e Legítimos de Motorista
+        assertEquals(SourceApp.UBER_DRIVER, SourceApp.fromPackageName("com.ubercab.driver"))
+        assertTrue(SourceApp.isAllowedDriverPackage("com.ubercab.driver"))
+
+        assertEquals(SourceApp.NINETY_NINE_DRIVER, SourceApp.fromPackageName("com.taxis99"))
+        assertTrue(SourceApp.isAllowedDriverPackage("com.taxis99"))
+
+        assertEquals(SourceApp.NINETY_NINE_DRIVER, SourceApp.fromPackageName("com.taxis99.driver"))
+        assertTrue(SourceApp.isAllowedDriverPackage("com.taxis99.driver"))
+
+        assertEquals(SourceApp.NINETY_NINE_DRIVER, SourceApp.fromPackageName("com.app99.driver"))
+        assertTrue(SourceApp.isAllowedDriverPackage("com.app99.driver"))
+
+        assertEquals(SourceApp.NINETY_NINE_DRIVER, SourceApp.fromPackageName("com.didiglobal.driver"))
+        assertTrue(SourceApp.isAllowedDriverPackage("com.didiglobal.driver"))
+    }
+
+    // 27. TESTE DE BLINDAGEM DE CONTEÚDO FORA DE APPS PERMITIDOS:
+    // Se o pacote for do WhatsApp ou navegador, NUNCA tenta adivinhar pelo conteúdo da tela mesmo se houver palavras de corrida
+    @Test
+    fun `test inferSourceAppFromScreenContent rejects non-driver packages even if text contains ride keywords`() {
+        val whatsappChatWithRideText = listOf(
+            "Oi fulano, peguei um 99Pop ontem",
+            "Foi R$ 15,00",
+            "Escolher motorista",
+            "Rua das Flores, 100"
+        )
+        val inferred = BrazilianOfferParser.inferSourceAppFromScreenContent("com.whatsapp", whatsappChatWithRideText)
+        assertEquals(SourceApp.UNKNOWN, inferred)
+
+        val chromeScreen = BrazilianOfferParser.inferSourceAppFromScreenContent("com.android.chrome", whatsappChatWithRideText)
+        assertEquals(SourceApp.UNKNOWN, chromeScreen)
+    }
+
+    // 28. TESTE DE TELA OCIOSA DA 99 E UBER:
+    // Telas de busca ("Ainda buscando solicitações") sem botões de corrida devem retornar 0 ofertas
+    @Test
+    fun `test idle screen without action buttons produces 0 offers`() {
+        val idle99Screen = listOf(
+            "Ainda buscando solicitações...",
+            "Aguarde ou veja o mapa de chamadas",
+            "Você está online",
+            "Saldo R$ 180,50"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(idle99Screen)
+        assertEquals(0, offers.size)
+    }
+
+    // 29. TESTE DE ISOLAMENTO DE CARTÃO CONTRA SALDO DA CARTEIRA DO MOTORISTA:
+    // Se a tela contiver saldo no topo (ex: R$ 254,00) e uma corrida de R$ 12,00, a corrida deve capturar R$ 12,00
+    @Test
+    fun `test multi-offer separation does not leak driver balance or adjacent cards`() {
+        val screenWithBalanceAndOffer = listOf(
+            "Saldo R$ 254,00",
+            "Ganhos de hoje",
+            "Pgto. no app",
+            "99Pop",
+            "R$ 12,00",
+            "5 min (1,5 km)",
+            "Rua Amazonas, 50, São Caetano",
+            "8 min (3,2 km)",
+            "Rua Alegre, 200, Santa Paula",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(screenWithBalanceAndOffer)
+        assertEquals(1, offers.size)
+
+        val offer = offers.first()
+        assertEquals(12.00, offer.offeredPrice!!, 0.001)
+        assertEquals(1.5, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(3.2, offer.tripDistanceKm!!, 0.001)
+    }
+
+    // 30. TESTE DA MÁQUINA DE ESTADOS (OfferLifecycleState):
+    @Test
+    fun `test offer lifecycle state integrity`() {
+        assertEquals("Fora dos Apps Permitidos", OfferLifecycleState.OUTSIDE_ALLOWED_APP.label)
+        assertEquals("No App Permitido (Sem Oferta / Ocioso)", OfferLifecycleState.ALLOWED_NO_OFFER.label)
+        assertEquals("Candidato de Oferta Detectado", OfferLifecycleState.OFFER_CANDIDATE.label)
+        assertEquals("Validando Estabilidade e Campos", OfferLifecycleState.VALIDATING_OFFER.label)
+        assertEquals("Oferta Ativa e Confirmada", OfferLifecycleState.OFFER_ACTIVE.label)
+        assertEquals("Oferta Encerrada ou Rejeitada", OfferLifecycleState.OFFER_DISMISSED.label)
+    }
 }
-
-
-

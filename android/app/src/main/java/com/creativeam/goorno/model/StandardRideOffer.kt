@@ -6,16 +6,17 @@ package com.creativeam.goorno.model
 enum class SourceApp(val displayName: String, val knownPackages: List<String>) {
     UBER_DRIVER(
         displayName = "Uber Driver",
-        knownPackages = listOf("com.ubercab.driver", "com.ubercab")
+        knownPackages = listOf("com.ubercab.driver")
     ),
     NINETY_NINE_DRIVER(
         displayName = "99 Motorista",
         knownPackages = listOf(
+            "com.taxis99",
             "com.taxis99.driver",
+            "com.app99.driver",
             "com.didiglobal.driver",
             "com.didi.brazil.driver",
-            "com.xiaojukeji.didi.brazil.driver",
-            "com.taxis99"
+            "com.xiaojukeji.didi.brazil.driver"
         )
     ),
     SIMULATION(
@@ -28,17 +29,47 @@ enum class SourceApp(val displayName: String, val knownPackages: List<String>) {
     );
 
     companion object {
+        fun isAllowedDriverPackage(pkg: String?): Boolean {
+            val app = fromPackageName(pkg)
+            return app == UBER_DRIVER || app == NINETY_NINE_DRIVER
+        }
+
         fun fromPackageName(pkg: String?): SourceApp {
             if (pkg.isNullOrBlank()) return UNKNOWN
             val normalized = pkg.trim().lowercase()
+
+            // Bloqueio explícito e absoluto de aplicativos de passageiros ou outros apps
+            if (normalized == "com.didiglobal.passenger" ||
+                normalized.contains(".passenger") ||
+                normalized.contains(".passageiro")
+            ) {
+                return UNKNOWN
+            }
+
             return when {
-                UBER_DRIVER.knownPackages.any { it.lowercase() == normalized } || normalized.contains("ubercab") -> UBER_DRIVER
+                UBER_DRIVER.knownPackages.any { it.lowercase() == normalized } ||
+                    normalized.startsWith("com.ubercab.driver") -> UBER_DRIVER
                 NINETY_NINE_DRIVER.knownPackages.any { it.lowercase() == normalized } ||
-                    normalized.contains("taxis99") || normalized.contains("didi") || normalized.contains("99") -> NINETY_NINE_DRIVER
+                    normalized.startsWith("com.taxis99.driver") ||
+                    normalized.startsWith("com.app99.driver") ||
+                    normalized.startsWith("com.didiglobal.driver") -> NINETY_NINE_DRIVER
                 else -> UNKNOWN
             }
         }
     }
+}
+
+/**
+ * Ciclo de Vida Formal da Oferta (State Machine) para garantir estabilidade,
+ * impedindo leituras espúrias e garantindo que apenas ofertas ativas sejam processadas e salvas.
+ */
+enum class OfferLifecycleState(val label: String) {
+    OUTSIDE_ALLOWED_APP("Fora dos Apps Permitidos"),
+    ALLOWED_NO_OFFER("No App Permitido (Sem Oferta / Ocioso)"),
+    OFFER_CANDIDATE("Candidato de Oferta Detectado"),
+    VALIDATING_OFFER("Validando Estabilidade e Campos"),
+    OFFER_ACTIVE("Oferta Ativa e Confirmada"),
+    OFFER_DISMISSED("Oferta Encerrada ou Rejeitada")
 }
 
 /**
