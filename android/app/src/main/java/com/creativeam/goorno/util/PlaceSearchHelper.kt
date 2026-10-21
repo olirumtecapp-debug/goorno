@@ -66,10 +66,14 @@ object PlaceSearchHelper {
                     }
                     val subtitle = if (subList.isNotEmpty()) subList.joinToString(" - ") else "Brasil"
 
-                    // Bloqueia SOMENTE o termo específico pesquisado (nunca concatena rua e bairro com vírgula)
+                    // Se for um município/cidade selecionado pelo Google Geocoder sem rua ou bairro específico:
+                    val isCityOnly = cleanStreet.isNullOrBlank() && cleanDistrict.isNullOrBlank() && !locality.isNullOrBlank()
+
+                    // Bloqueia SOMENTE o termo específico pesquisado (com qualificador de Cidade quando for município inteiro)
                     val termToBlock = when {
                         !cleanStreet.isNullOrBlank() -> cleanStreet
                         !cleanDistrict.isNullOrBlank() -> cleanDistrict
+                        isCityOnly -> "Cidade: $locality"
                         !addr.featureName.isNullOrBlank() -> addr.featureName.trim().replace(",", "")
                         else -> cleanQuery.replace(",", "")
                     }

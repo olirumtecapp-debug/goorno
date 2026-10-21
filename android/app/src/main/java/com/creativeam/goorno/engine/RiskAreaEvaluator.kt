@@ -189,13 +189,38 @@ object RiskAreaEvaluator {
 
     private fun findMatchingTerm(normalizedAddress: String, candidateTerms: List<String>): String? {
         if (normalizedAddress.isBlank()) return null
-        for (term in candidateTerms) {
-            val normTerm = normalizeText(term)
+
+        // 1. Exceção de Segurança: Avenida Guido Aliberti (e vias centrais de São Caetano do Sul).
+        // Embora o bairro oficial ali se chame 'Mauá' (São Caetano do Sul), a região é tranquila e
+        // NÃO deve ser confundida com a Cidade de Mauá!
+        val isSaoCaetanoGuidoAliberti = normalizedAddress.contains("guido aliberti") ||
+            (normalizedAddress.contains("sao caetano") && normalizedAddress.contains("maua"))
+
+        for (rawTerm in candidateTerms) {
+            val cleanRaw = rawTerm.trim()
+            val isCityFilter = cleanRaw.startsWith("cidade:", ignoreCase = true) || cleanRaw.startsWith("municipio:", ignoreCase = true)
+            val termText = if (isCityFilter) cleanRaw.substringAfter(":").trim() else cleanRaw
+
+            val normTerm = normalizeText(termText)
             if (normTerm.length < 3) continue
+
+            // Se o filtro for de 'Mauá' (cidade ou genérico) e o endereço for na Guido Aliberti / São Caetano, ignora falso positivo!
+            if (normTerm == "maua" && isSaoCaetanoGuidoAliberti) {
+                continue
+            }
+
+            // Se foi cadastrado expressamente como 'Cidade: Mauá':
+            // Só dá match se a cidade no endereço for Mauá (não dá match se 'Mauá' estiver no início/meio como nome de rua ou bairro de São Caetano)
+            if (isCityFilter && normTerm == "maua") {
+                if (isSaoCaetanoGuidoAliberti || normalizedAddress.contains("sao caetano do sul")) {
+                    continue
+                }
+            }
+
             // Verifica palavra/trecho inteiro para evitar falsos positivos em palavras curtas
             val regex = Regex("""\b${Regex.escape(normTerm)}\b""")
             if (regex.containsMatchIn(normalizedAddress) || (normTerm.length >= 6 && normalizedAddress.contains(normTerm))) {
-                return term
+                return cleanRaw
             }
         }
         return null

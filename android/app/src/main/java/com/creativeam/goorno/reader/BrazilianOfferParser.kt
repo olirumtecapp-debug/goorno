@@ -777,8 +777,16 @@ object BrazilianOfferParser {
         val normalized = normalizeFragmentedNodes(rawNodes)
         if (normalized.isEmpty()) return emptyList()
 
-        // Se a tela possui o cabeçalho "Radar de viagens" ou "Solicitações", ignora qualquer texto de mapa/ganhos
-        // do fundo que tenha aparecido antes do cabeçalho!
+        val joinedAll = normalized.joinToString(" ").lowercase(Locale.getDefault())
+
+        // 1. Rejeição imediata se for tela ociosa da 99 ("Ainda buscando solicitações") sem botões de oferta
+        val hasAction = joinedAll.contains("escolher") || joinedAll.contains("aceitar") || joinedAll.contains("selecionar")
+        if ((joinedAll.contains("buscando solicitações") || joinedAll.contains("buscando solicitacoes") ||
+             joinedAll.contains("ainda buscando") || joinedAll.contains("mapa de chamadas")) && !hasAction) {
+            return emptyList()
+        }
+
+        // Se a tela possui o cabeçalho "Radar de viagens" ou "Solicitações", ignora qualquer texto de mapa/ganhos do fundo
         val listHeaderIdx = normalized.indexOfFirst { line ->
             val l = line.lowercase(Locale.getDefault())
             l.contains("radar de viagens") || l == "solicitações" || l == "solicitacoes"
@@ -789,6 +797,32 @@ object BrazilianOfferParser {
             normalized
         }
 
+        // 2. Fatiamento de ALTA PRECISÃO para lista de solicitações da 99 usando o delimitador "Escolher"
+        val chooseIndices = mutableListOf<Int>()
+        for (i in cleaned.indices) {
+            val l = cleaned[i].trim().lowercase(Locale.getDefault())
+            if (l == "escolher" || l.startsWith("escolher")) {
+                chooseIndices.add(i)
+            }
+        }
+
+        if (chooseIndices.size >= 1) {
+            val clusters = mutableListOf<List<String>>()
+            var start = 0
+            for (chooseIdx in chooseIndices) {
+                val end = chooseIdx + 1
+                if (end > start) {
+                    val slice = cleaned.subList(start, end)
+                    if (extractAllDistancesKm(slice).isNotEmpty() && extractAllCurrencies(slice).isNotEmpty()) {
+                        clusters.add(slice)
+                    }
+                }
+                start = end
+            }
+            if (clusters.isNotEmpty()) return clusters
+        }
+
+        // 3. Fatiamento por categorias da 99 ou preços para outras telas com múltiplas ofertas
         val offerHeaderIndices = mutableListOf<Int>()
         for (i in cleaned.indices) {
             val line = cleaned[i]
@@ -802,7 +836,8 @@ object BrazilianOfferParser {
                 lower.contains("a mais por corrida") ||
                 lower.contains("meta") ||
                 lower.contains("saldo") ||
-                lower.contains("ganhos")
+                lower.contains("ganhos") ||
+                lower.contains("carteira")
             ) {
                 continue
             }
@@ -826,8 +861,6 @@ object BrazilianOfferParser {
             }
             if (startIdx < endIdx) {
                 val slice = cleaned.subList(startIdx, endIdx)
-                // Toda oferta real (Uber ou 99) possui obrigatoriamente distância em km/m!
-                // Isso descarta falsos positivos do mapa (ex: saldo/dinâmico R$ 6,25 + "5 min" sem km).
                 if (extractAllDistancesKm(slice).isNotEmpty()) {
                     clusters.add(slice)
                 }
@@ -878,10 +911,11 @@ object BrazilianOfferParser {
             return SourceApp.UBER_DRIVER
         }
 
-        // Qualquer tela que apresente R$ + km é tratada como oferta válida de corrida!
-        val hasPrice = extractAllCurrencies(normalized).isNotEmpty()
+        // SÓ infere 99 se houver botões ou termos inequívocos de corrida do app 99
+        val has99Action = joined.contains("escolher") || joined.contains("pop") || joined.contains("99pop") || joined.contains("perfil essencial")
         val hasKm = extractAllDistancesKm(normalized).isNotEmpty()
-        if (hasPrice && hasKm) {
+        val hasPrice = extractAllCurrencies(normalized).isNotEmpty()
+        if (has99Action && hasKm && hasPrice) {
             return SourceApp.NINETY_NINE_DRIVER
         }
 

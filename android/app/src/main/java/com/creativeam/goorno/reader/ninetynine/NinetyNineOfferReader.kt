@@ -107,15 +107,36 @@ object NinetyNineOfferReader {
             )
         }
 
-        // 2. Preço oferecido principal (ignorando R$/km, bônus de dinâmica e deslocamento incl.)
-        val prices = BrazilianOfferParser.extractAllCurrencies(cleanedLines)
-        val hasInvalidCurrency = cleanedLines.any {
-            it.contains("R$", ignoreCase = true) && BrazilianOfferParser.parseCurrencyBr(it).isUnrecognized
+        // 2. Preço oferecido principal (prioriza o preço associado à categoria Pop / 99Plus / Negocia e descarta saldo/números soltos)
+        val candidatePrices = mutableListOf<Double>()
+        for (line in cleanedLines) {
+            val l = line.lowercase(Locale.getDefault())
+            // Ignora linhas que são de saldo do motorista, ganhos do dia, corridas realizadas ou km unitário
+            if (l.contains("saldo") || l.contains("ganhos") || l.contains("carteira") || l.contains("corridas") || l.contains("r$/km") || l.contains("por deslocamento")) {
+                continue
+            }
+            val extracted = BrazilianOfferParser.extractAllCurrencies(listOf(line))
+            candidatePrices.addAll(extracted)
         }
+
+        // Se houver linha com 'Pop' ou 'Pop Expresso' com preço, esse é o valor oficial prioritário
+        var primaryPrice: Double? = null
+        for (line in cleanedLines) {
+            val l = line.lowercase(Locale.getDefault())
+            if (l.contains("pop") || l.contains("99pop") || l.contains("plus") || l.contains("negocia") || l.contains("express")) {
+                val p = BrazilianOfferParser.extractAllCurrencies(listOf(line)).firstOrNull()
+                if (p != null && p in 4.0..250.0) {
+                    primaryPrice = p
+                    break
+                }
+            }
+        }
+
+        val finalPriceVal = primaryPrice ?: candidatePrices.firstOrNull { it in 4.0..250.0 } ?: candidatePrices.firstOrNull()
+
         val priceField: ExtractedField<Double> = when {
-            // Na 99 selecionamos o valor principal total da corrida (sempre o maior valor, descartando sub-tarifas e bônus)
-            prices.isNotEmpty() -> ExtractedField.Present(prices.maxOrNull() ?: prices.first())
-            hasInvalidCurrency -> ExtractedField.Unrecognized("R$ inválido")
+            finalPriceVal != null -> ExtractedField.Present(finalPriceVal)
+            cleanedLines.any { it.contains("R$", ignoreCase = true) } -> ExtractedField.Unrecognized("R$ inválido")
             else -> ExtractedField.Missing
         }
 
@@ -213,8 +234,7 @@ object NinetyNineOfferReader {
                 line.contains("Pgto. no app", ignoreCase = true) ||
                 line.contains("Pagamento no app", ignoreCase = true) ||
                 line.contains("Embarque", ignoreCase = true) ||
-                line.contains("Desembarque", ignoreCase = true) ||
-                line.contains("corridas", ignoreCase = true)
+                line.contains("Desembarque", ignoreCase = true)
         }
 
         val isSelfReadingGoOrNo = cleanedLines.any { line ->
@@ -224,9 +244,12 @@ object NinetyNineOfferReader {
                 line.contains("Suas Faixas", ignoreCase = true)
         } && !cleanedLines.any { it.contains("Aceitar", ignoreCase = true) || it.contains("Escolher", ignoreCase = true) }
 
-        val isSanePrice = (priceField.valueOrNull() ?: 0.0) >= 4.50
+        // Trava de Sanidade Rigorosa (rejeita saldos do motorista como R$ 254 em corridas curtas ou durações absurdas como 974 min)
+        val rawPrice = priceField.valueOrNull() ?: 0.0
+        val isSanePrice = (rawPrice in 4.50..350.0) || (totalKmVal != null && totalKmVal >= 60.0 && rawPrice <= 1500.0)
+        val isSaneDuration = totalMinVal == null || totalMinVal in 1..240
 
-        val isOffer = isSanePrice && priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
+        val isOffer = isSanePrice && isSaneDuration && priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
             has99RideTrigger && !isSelfReadingGoOrNo &&
             !BrazilianOfferParser.isNonRideAdOrService(cleanedLines)
         val classification = if (isOffer) {

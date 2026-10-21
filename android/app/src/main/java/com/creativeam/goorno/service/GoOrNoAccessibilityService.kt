@@ -1,4 +1,4 @@
-package com.creativeam.goorno.service
+﻿package com.creativeam.goorno.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
@@ -258,18 +258,28 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
+        // 3. TRAVA RIGOROSA DE PACOTE:
+        // O GoOrNo sÃ³ pode ler se uma janela ativa da Uber Driver ou da 99 Motorista estiver visÃ­vel.
+        // Se o usuÃ¡rio estiver no WhatsApp, Waze, YouTube, banco ou tela inicial, ABORTA IMEDIATAMENTE!
         val rideWindow = candidateWindows.firstOrNull { (pkg, _) ->
             SourceApp.fromPackageName(pkg) != SourceApp.UNKNOWN
         }
-        val targetPkg = rideWindow?.first
-            ?: candidateWindows.firstOrNull()?.first
-            ?: eventPkg?.takeIf { it.isNotBlank() && it != packageName && it != "com.android.systemui" }
-            ?: lastKnownForegroundPkg.takeIf { it.isNotBlank() && it != packageName }
-            ?: "com.taxis99.driver"
+
+        val targetPkg = when {
+            rideWindow != null -> rideWindow.first
+            SourceApp.fromPackageName(eventPkg) != SourceApp.UNKNOWN -> eventPkg
+            SourceApp.fromPackageName(lastKnownForegroundPkg) != SourceApp.UNKNOWN -> lastKnownForegroundPkg
+            else -> null
+        }
+
+        if (targetPkg == null || SourceApp.fromPackageName(targetPkg) == SourceApp.UNKNOWN) {
+            // App desconhecido / nÃ£o Ã© app de motorista: garante que o overlay seja fechado e sai imediatamente!
+            return
+        }
 
         val positionedNodes = mutableListOf<PositionedText>()
         for ((pkg, rootNode) in candidateWindows) {
-            if (rideWindow == null || pkg == targetPkg || SourceApp.fromPackageName(pkg) != SourceApp.UNKNOWN) {
+            if (pkg == targetPkg || SourceApp.fromPackageName(pkg) != SourceApp.UNKNOWN) {
                 collectPositionedTexts(rootNode, positionedNodes, depth = 0, requireVisible = true)
             }
         }
@@ -286,6 +296,32 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val mergedLines = mergeSameRowNodes(positionedNodes)
         val normalizedTexts = BrazilianOfferParser.normalizeFragmentedNodes(mergedLines)
         val detectedApp = BrazilianOfferParser.inferSourceAppFromScreenContent(targetPkg, normalizedTexts)
+
+        // 4. DETECÃ‡ÃƒO DE OCIOSIDADE E AUTO-FECHAMENTO DE CARD FANTASMA:
+        val joinedScreenLower = normalizedTexts.joinToString(" ").lowercase(Locale.ROOT)
+        val hasRideActionBtn = joinedScreenLower.contains("escolher") ||
+            joinedScreenLower.contains("aceitar") ||
+            joinedScreenLower.contains("selecionar") ||
+            joinedScreenLower.contains("deslize") ||
+            joinedScreenLower.contains("nova corrida")
+
+        val isIdleSearchingScreen = (joinedScreenLower.contains("buscando solicitaÃ§Ãµes") ||
+            joinedScreenLower.contains("buscando solicitacoes") ||
+            joinedScreenLower.contains("ainda buscando") ||
+            joinedScreenLower.contains("mapa de chamadas") ||
+            joinedScreenLower.contains("aguarde ou veja o mapa") ||
+            joinedScreenLower.contains("procurando viagens") ||
+            joinedScreenLower.contains("vocÃª estÃ¡ online") ||
+            joinedScreenLower.contains("voce esta online")) && !hasRideActionBtn
+
+        if (isIdleSearchingScreen) {
+            // Se a tela da 99/Uber estÃ¡ ociosa/sem chamadas, fecha qualquer card residual aberto na hora!
+            app?.overlayPanel?.hideOfferCardOnly()
+            shownOfferTimestamps.clear()
+            lastScreenContextMode = ""
+            consecutiveScansWithoutOffers++
+            return
+        }
 
         if (normalizedTexts.isNotEmpty()) {
             RuntimeDiagnosticsBus.recordAccessibilitySnapshot(
@@ -344,18 +380,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         // 2º Tentativa Automática (Leitura Visual Silenciosa via takeScreenshot + ML Kit OCR):
-        // Só bloqueia OCR se o aplicativo for expressamente rede social ou streaming de vídeo (Instagram, TikTok, YouTube)
-        // para não consumir memória desnecessária. Em todos os demais casos (Uber, 99, popups, launchers), roda normalmente!
-        val isBlockedApp = isSocialMediaApp(targetPkg) || isSocialMediaApp(eventPkg) || isSocialMediaApp(lastKnownForegroundPkg)
-        if (!isBlockedApp) {
-            val appToScan = if (effectiveApp != SourceApp.UNKNOWN) {
-                effectiveApp
-            } else if (rideWindow != null) {
-                SourceApp.fromPackageName(rideWindow.first)
-            } else {
-                SourceApp.NINETY_NINE_DRIVER
-            }
-            triggerAutomaticAccessibilityOcrIfNeeded(appToScan, targetPkg, now)
+        // SÓ dispara screenshot OCR se o pacote em primeiro plano for comprovadamente Uber ou 99!
+        if (effectiveApp != SourceApp.UNKNOWN) {
+            triggerAutomaticAccessibilityOcrIfNeeded(effectiveApp, targetPkg, now)
         } else {
             isTakingAutoScreenshot = false
         }

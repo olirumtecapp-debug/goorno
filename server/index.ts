@@ -1141,6 +1141,8 @@ app.get([
   "/GoOrNo-v3.3.4.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
+  "/download/GoOrNo-v3.3.33.apk",
+  "/download/GoOrNo-v3.3.32.apk",
   "/download/GoOrNo-v3.3.31.apk",
   "/download/GoOrNo-v3.3.28.apk"
 ], (_req, res) => {
@@ -1148,7 +1150,13 @@ app.get([
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.29.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.33.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.33.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.33.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.32.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.32.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.32.apk"),
+    path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.31.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.31.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),

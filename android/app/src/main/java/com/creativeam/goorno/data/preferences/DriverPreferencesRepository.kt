@@ -73,12 +73,10 @@ class DriverPreferencesRepository(private val context: Context) {
     }
 
     val configFlow: Flow<DriverFinancialConfig> = context.dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
+        .catch { _ ->
+            // Blindagem total contra corrupção do DataStore: emite preferências vazias
+            // para que o fallback automático carregue os dados das SharedPreferences (backupPrefs) sem crashar!
+            emit(emptyPreferences())
         }
         .map { prefs ->
             val b = backupPrefs
@@ -130,48 +128,52 @@ class DriverPreferencesRepository(private val context: Context) {
     suspend fun getConfigOnce(): DriverFinancialConfig = configFlow.first()
 
     suspend fun saveConfig(config: DriverFinancialConfig) {
-        context.dataStore.edit { prefs ->
-            prefs[Keys.DRIVER_NAME] = config.driverName
-            prefs[Keys.VEHICLE_MODEL] = config.vehicleModel
-            prefs[Keys.FUEL_KM_PER_LITER] = config.fuelConsumptionKmPerLiter
-            prefs[Keys.FUEL_PRICE] = config.fuelPricePerLiter
-            prefs[Keys.MAINTENANCE_PER_KM] = config.maintenanceCostPerKm
-            prefs[Keys.FIXED_EXTRA_COST] = config.fixedExtraCostPerRide
-            prefs[Keys.TARGET_GROSS_KM] = config.targetGrossPerKm
-            prefs[Keys.TARGET_GROSS_HOUR] = config.targetGrossPerHour
-            prefs[Keys.MIN_GROSS_KM] = config.minGrossPerKm
-            prefs[Keys.MIN_GROSS_HOUR] = config.minGrossPerHour
-            prefs[Keys.TARGET_NET_KM] = config.targetNetPerKm
-            prefs[Keys.TARGET_NET_HOUR] = config.targetNetPerHour
-            prefs[Keys.YELLOW_TOLERANCE] = config.yellowToleranceRatio
-            prefs[Keys.REQ_GROSS_KM] = config.requireGrossPerKm
-            prefs[Keys.REQ_GROSS_HOUR] = config.requireGrossPerHour
-            prefs[Keys.REQ_NET_KM] = config.requireNetPerKm
-            prefs[Keys.REQ_NET_HOUR] = config.requireNetPerHour
-            prefs[Keys.REQ_PASSENGER_RATING] = config.requirePassengerRating
-            prefs[Keys.FORCE_RED_ON_BAD_RATING] = config.forceRedOnBadPassengerRating
-            prefs[Keys.TARGET_GOOD_PASSENGER_RATING] = config.targetGoodPassengerRating.coerceIn(3.0, 5.0)
-            prefs[Keys.MIN_ACCEPTABLE_PASSENGER_RATING] = config.minAcceptablePassengerRating.coerceIn(3.0, 5.0)
-            prefs[Keys.MIN_CONFIDENCE] = config.minConfidenceThreshold
-            prefs[Keys.OVERLAY_OPACITY] = config.overlayOpacityPercent.coerceIn(25, 100)
-            prefs[Keys.OVERLAY_AUTO_MIN_SEC] = config.overlayAutoMinimizeSec.coerceIn(3, 60)
-            prefs[Keys.OVERLAY_DISPLAY_STYLE] = config.overlayDisplayStyle
-            prefs[Keys.OVERLAY_THEME] = config.overlayTheme
-            prefs[Keys.OVERLAY_BUBBLE_POSITION] = config.overlayBubblePosition
-            prefs[Keys.OVERLAY_HORIZONTAL_POSITION] = config.overlayHorizontalPosition
-            prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] = config.showFloatingShortcutBubble
-            prefs[Keys.SHOW_PROFIT_ON_OVERLAY] = config.showProfitOnOverlay
-            prefs[Keys.SHOW_COST_ON_OVERLAY] = config.showCostOnOverlay
-            prefs[Keys.RISK_ALERT_ENABLED] = config.riskAlertEnabled
-            prefs[Keys.FORCE_RED_ON_RISK_AREA] = config.forceRedOnRiskArea
-            prefs[Keys.USE_DEFAULT_RISK_KEYWORDS] = config.useDefaultRiskKeywords
-            prefs[Keys.CUSTOM_RISK_ZONES] = config.customRiskZones
-            prefs[Keys.FAVORITE_ZONES_ENABLED] = config.favoriteZonesEnabled
-            prefs[Keys.CUSTOM_FAVORITE_ZONES] = config.customFavoriteZones
-            prefs[Keys.COPILOT_MONITORING_ENABLED] = config.copilotMonitoringEnabled
-            prefs[Keys.SAVE_HISTORY] = config.saveHistoryEnabled
-            prefs[Keys.CLOUD_BACKUP_CONSENT] = config.cloudBackupConsent
-            prefs[Keys.DRIVER_RECOVERY_CODE] = config.driverRecoveryCode.trim()
+        try {
+            context.dataStore.edit { prefs ->
+                prefs[Keys.DRIVER_NAME] = config.driverName
+                prefs[Keys.VEHICLE_MODEL] = config.vehicleModel
+                prefs[Keys.FUEL_KM_PER_LITER] = config.fuelConsumptionKmPerLiter
+                prefs[Keys.FUEL_PRICE] = config.fuelPricePerLiter
+                prefs[Keys.MAINTENANCE_PER_KM] = config.maintenanceCostPerKm
+                prefs[Keys.FIXED_EXTRA_COST] = config.fixedExtraCostPerRide
+                prefs[Keys.TARGET_GROSS_KM] = config.targetGrossPerKm
+                prefs[Keys.TARGET_GROSS_HOUR] = config.targetGrossPerHour
+                prefs[Keys.MIN_GROSS_KM] = config.minGrossPerKm
+                prefs[Keys.MIN_GROSS_HOUR] = config.minGrossPerHour
+                prefs[Keys.TARGET_NET_KM] = config.targetNetPerKm
+                prefs[Keys.TARGET_NET_HOUR] = config.targetNetPerHour
+                prefs[Keys.YELLOW_TOLERANCE] = config.yellowToleranceRatio
+                prefs[Keys.REQ_GROSS_KM] = config.requireGrossPerKm
+                prefs[Keys.REQ_GROSS_HOUR] = config.requireGrossPerHour
+                prefs[Keys.REQ_NET_KM] = config.requireNetPerKm
+                prefs[Keys.REQ_NET_HOUR] = config.requireNetPerHour
+                prefs[Keys.REQ_PASSENGER_RATING] = config.requirePassengerRating
+                prefs[Keys.FORCE_RED_ON_BAD_RATING] = config.forceRedOnBadPassengerRating
+                prefs[Keys.TARGET_GOOD_PASSENGER_RATING] = config.targetGoodPassengerRating.coerceIn(3.0, 5.0)
+                prefs[Keys.MIN_ACCEPTABLE_PASSENGER_RATING] = config.minAcceptablePassengerRating.coerceIn(3.0, 5.0)
+                prefs[Keys.MIN_CONFIDENCE] = config.minConfidenceThreshold
+                prefs[Keys.OVERLAY_OPACITY] = config.overlayOpacityPercent.coerceIn(25, 100)
+                prefs[Keys.OVERLAY_AUTO_MIN_SEC] = config.overlayAutoMinimizeSec.coerceIn(3, 60)
+                prefs[Keys.OVERLAY_DISPLAY_STYLE] = config.overlayDisplayStyle
+                prefs[Keys.OVERLAY_THEME] = config.overlayTheme
+                prefs[Keys.OVERLAY_BUBBLE_POSITION] = config.overlayBubblePosition
+                prefs[Keys.OVERLAY_HORIZONTAL_POSITION] = config.overlayHorizontalPosition
+                prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] = config.showFloatingShortcutBubble
+                prefs[Keys.SHOW_PROFIT_ON_OVERLAY] = config.showProfitOnOverlay
+                prefs[Keys.SHOW_COST_ON_OVERLAY] = config.showCostOnOverlay
+                prefs[Keys.RISK_ALERT_ENABLED] = config.riskAlertEnabled
+                prefs[Keys.FORCE_RED_ON_RISK_AREA] = config.forceRedOnRiskArea
+                prefs[Keys.USE_DEFAULT_RISK_KEYWORDS] = config.useDefaultRiskKeywords
+                prefs[Keys.CUSTOM_RISK_ZONES] = config.customRiskZones
+                prefs[Keys.FAVORITE_ZONES_ENABLED] = config.favoriteZonesEnabled
+                prefs[Keys.CUSTOM_FAVORITE_ZONES] = config.customFavoriteZones
+                prefs[Keys.COPILOT_MONITORING_ENABLED] = config.copilotMonitoringEnabled
+                prefs[Keys.SAVE_HISTORY] = config.saveHistoryEnabled
+                prefs[Keys.CLOUD_BACKUP_CONSENT] = config.cloudBackupConsent
+                prefs[Keys.DRIVER_RECOVERY_CODE] = config.driverRecoveryCode.trim()
+            }
+        } catch (_: Throwable) {
+            // Se o DataStore estiver bloqueado, o espelho em SharedPreferences abaixo garante a persistência imediata
         }
 
         // Blindagem Local Dupla: espelho imediato em SharedPreferences para imunidade a atualizações de APK
