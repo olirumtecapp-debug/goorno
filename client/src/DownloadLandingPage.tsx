@@ -384,30 +384,260 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               Antes de sair acelerando, saiba se a corrida paga o seu tempo, combustível e desgaste do carro.
             </p>
           </div>
-          <div className="comparison-grid">
-            <article className="comparison-card good">
-              <div className="card-label">● VIAGEM BOA</div>
-              <div className="card-price">
-                R$ 2,17<span>/km</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto">
+            {/* CARD COMPENSA (VALE A PENA) */}
+            <article 
+              onClick={() => {
+                const item = SCREENSHOTS.find((s) => s.id === 'viagem-compensa');
+                if (item) setSelectedScreenshot(item);
+              }}
+              className="bg-[#f2fae8] border-2 border-[#a6d84a] rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full bg-[#166534] text-white tracking-wide font-space shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    ✓ COMPENSA
+                  </span>
+                  <span className="text-[11px] font-bold text-[#166534] bg-white/90 px-2.5 py-0.5 rounded-full border border-[#166534]/20">
+                    Aprovada em Verde
+                  </span>
+                </div>
+
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 2,42</span>
+                  <span className="text-sm font-bold text-[#365922]">/km · R$ 33,56/h</span>
+                </div>
+                <h3 className="font-space font-black text-lg text-[#071d19] mb-1">
+                  Vale a pena aceitar
+                </h3>
+                <p className="text-xs sm:text-sm text-[#3b5936] leading-relaxed mb-4">
+                  R$ 17,90 por 7,4 km (32 min). O GoOrNo calcula combustível + manutenção preventiva e confirma que sobra lucro líquido real no seu bolso.
+                </p>
+
+                {/* Smartphone Preview Mockup */}
+                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[26px] border-[2.5px] border-[#223530] shadow-md max-w-[190px] group-hover:scale-105 transition-transform duration-300">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[9/18.5] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
+                    <img
+                      src="/telas/ViagemCompensa.jpeg"
+                      alt="Corrida que compensa no GoOrNo"
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
               </div>
-              <h3>Vale a pena aceitar</h3>
-              <p>R$ 10,83 por 5 km totais. O GoOrNo aprova em verde.</p>
-              <div className="card-result">
-                ACEITAR <span>↗</span>
+
+              <div className="mt-4 pt-3 border-t border-[#166534]/15 flex items-center justify-between text-xs font-bold text-[#166534]">
+                <span className="flex items-center gap-1">Toque para ver a tela oficial ↗</span>
+                <span className="bg-[#166534] text-white px-3.5 py-1 rounded-full text-[11px] shadow-xs">ACEITAR</span>
               </div>
             </article>
 
-            <article className="comparison-card bad">
-              <div className="card-label">● VIAGEM RUIM</div>
-              <div className="card-price">
-                R$ 1,25<span>/km</span>
+            {/* CARD NÃO COMPENSA (MELHOR RECUSAR) */}
+            <article 
+              onClick={() => {
+                const item = SCREENSHOTS.find((s) => s.id === 'viagem-nao-compensa');
+                if (item) setSelectedScreenshot(item);
+              }}
+              className="bg-[#fef2f2] border-2 border-[#fca5a5] rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full bg-[#dc2626] text-white tracking-wide font-space shadow-xs">
+                    <XCircle className="w-3.5 h-3.5" />
+                    ✕ NÃO COMPENSA
+                  </span>
+                  <span className="text-[11px] font-bold text-[#dc2626] bg-white/90 px-2.5 py-0.5 rounded-full border border-[#dc2626]/20">
+                    Alerta Vermelho
+                  </span>
+                </div>
+
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 1,25</span>
+                  <span className="text-sm font-bold text-[#991b1b]">/km · R$ 56,25/h</span>
+                </div>
+                <h3 className="font-space font-black text-lg text-[#071d19] mb-1">
+                  Melhor recusar na hora
+                </h3>
+                <p className="text-xs sm:text-sm text-[#7f1d1d] leading-relaxed mb-4">
+                  R$ 11,25 por 9,0 km (23 min). O copiloto detecta busca longa (4,4 km) e avisa que você vai pagar para trabalhar se fizer essa corrida.
+                </p>
+
+                {/* Smartphone Preview Mockup */}
+                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[26px] border-[2.5px] border-[#223530] shadow-md max-w-[190px] group-hover:scale-105 transition-transform duration-300">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[9/18.5] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
+                    <img
+                      src="/telas/ViagemNaoCompensa.jpeg"
+                      alt="Corrida que não compensa no GoOrNo"
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
               </div>
-              <h3>Melhor recusar</h3>
-              <p>R$ 11,25 por 9 km totais. Não pague para trabalhar.</p>
-              <div className="card-result">
-                RECUSAR <span>↘</span>
+
+              <div className="mt-4 pt-3 border-t border-[#dc2626]/15 flex items-center justify-between text-xs font-bold text-[#dc2626]">
+                <span className="flex items-center gap-1">Toque para ver a tela oficial ↗</span>
+                <span className="bg-[#dc2626] text-white px-3.5 py-1 rounded-full text-[11px] shadow-xs">RECUSAR</span>
               </div>
             </article>
+          </div>
+        </section>
+
+        {/* SEÇÃO: 4 FORMATOS DE CARDS FLUTUANTES & PERSONALIZAÇÃO TOTAL */}
+        <section className="section-shell py-12" id="formatos-cards">
+          <div className="max-w-5xl mx-auto bg-[#071d19] text-white rounded-3xl p-6 sm:p-10 border border-white/10 shadow-xl relative overflow-hidden">
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <span className="font-space font-bold text-xs uppercase tracking-widest text-[#d9ff4f] bg-[#d9ff4f]/15 px-3.5 py-1 rounded-full border border-[#d9ff4f]/30 inline-flex items-center gap-1.5 mb-3">
+                <Sparkles className="w-3.5 h-3.5" />
+                Personalização Visual Exclusiva
+              </span>
+              <h2 className="font-space text-2xl sm:text-3xl font-bold tracking-tight mb-2 text-white">
+                4 Modelos de Janela Flutuante à Sua Escolha
+              </h2>
+              <p className="font-dm text-xs sm:text-sm text-[#c2d0ca] leading-relaxed">
+                Você escolhe o formato que mais combina com seu estilo de direção, com total liberdade para ajustar o modo claro ou escuro e a transparência do card.
+              </p>
+            </div>
+
+            {/* GRID DOS 4 TIPOS DE CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div 
+                onClick={() => {
+                  const item = SCREENSHOTS.find((s) => s.id === 'card-tipo-1');
+                  if (item) setSelectedScreenshot(item);
+                }}
+                className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-4 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-600 text-white font-space inline-block mb-2">
+                    MODELO 1 · RECOMENDADO
+                  </span>
+                  <h4 className="font-space font-bold text-sm text-white group-hover:text-[#d9ff4f] transition mb-1">
+                    Card Impacto Pro
+                  </h4>
+                  <p className="font-dm text-xs text-[#a9beb6] leading-relaxed mb-3">
+                    Km e tempo no topo, valor gigante no centro e faixa sólida com o veredito (Compensa / Analisar / Recusar).
+                  </p>
+                </div>
+                <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
+                  <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
+                    <img src="/telas/CarTipo1.jpeg" alt="Card Impacto Pro" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                  </div>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => {
+                  const item = SCREENSHOTS.find((s) => s.id === 'card-tipo-2');
+                  if (item) setSelectedScreenshot(item);
+                }}
+                className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-4 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-600 text-white font-space inline-block mb-2">
+                    MODELO 2 · COLUNAS
+                  </span>
+                  <h4 className="font-space font-bold text-sm text-white group-hover:text-[#d9ff4f] transition mb-1">
+                    Card 3 Pilares
+                  </h4>
+                  <p className="font-dm text-xs text-[#a9beb6] leading-relaxed mb-3">
+                    Resumo no cabeçalho e 3 colunas verticais com barras coloridas (R$/km, R$/hora e nota do passageiro).
+                  </p>
+                </div>
+                <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
+                  <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
+                    <img src="/telas/CarTipo2.jpeg" alt="Card 3 Pilares" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                  </div>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => {
+                  const item = SCREENSHOTS.find((s) => s.id === 'card-tipo-3');
+                  if (item) setSelectedScreenshot(item);
+                }}
+                className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-4 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-purple-700 text-white font-space inline-block mb-2">
+                    MODELO 3 · TRADICIONAL
+                  </span>
+                  <h4 className="font-space font-bold text-sm text-white group-hover:text-[#d9ff4f] transition mb-1">
+                    Card Clássico
+                  </h4>
+                  <p className="font-dm text-xs text-[#a9beb6] leading-relaxed mb-3">
+                    Layout completo com tags individuais de faturamento por hora, ganho por km e contagem regressiva.
+                  </p>
+                </div>
+                <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
+                  <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
+                    <img src="/telas/CarTipo3.jpeg" alt="Card Clássico" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                  </div>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => {
+                  const item = SCREENSHOTS.find((s) => s.id === 'card-tipo-4');
+                  if (item) setSelectedScreenshot(item);
+                }}
+                className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-4 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-600 text-white font-space inline-block mb-2">
+                    MODELO 4 · DISCRETO
+                  </span>
+                  <h4 className="font-space font-bold text-sm text-white group-hover:text-[#d9ff4f] transition mb-1">
+                    Bolinha Semáforo
+                  </h4>
+                  <p className="font-dm text-xs text-[#a9beb6] leading-relaxed mb-3">
+                    Pílula horizontal ultrafina que ocupa o mínimo de tela, sem tapar a rota do GPS ou o mapa da corrida.
+                  </p>
+                </div>
+                <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
+                  <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
+                    <img src="/telas/CarTipo4.jpeg" alt="Card Discreto" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3 PILARES DE CUSTOMIZAÇÃO */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-white/10">
+              <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10 flex items-start gap-3">
+                <span className="text-xl">☀️🌙</span>
+                <div>
+                  <h5 className="font-space font-bold text-xs text-white">Modo Claro e Modo Escuro</h5>
+                  <p className="font-dm text-[11px] text-[#c2d0ca] leading-relaxed">
+                    Alterne o tema do card para rodar no sol forte durante o dia ou com tema noturno sem cansar a vista.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10 flex items-start gap-3">
+                <span className="text-xl">👁️</span>
+                <div>
+                  <h5 className="font-space font-bold text-xs text-white">Transparência Ajustável</h5>
+                  <p className="font-dm text-[11px] text-[#c2d0ca] leading-relaxed">
+                    Ajuste a opacidade de 0% a 100% para ver o mapa de trânsito por trás da janela com total nitidez.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10 flex items-start gap-3">
+                <span className="text-xl">📍</span>
+                <div>
+                  <h5 className="font-space font-bold text-xs text-white">Posicionamento Livre</h5>
+                  <p className="font-dm text-[11px] text-[#c2d0ca] leading-relaxed">
+                    Fixe a janelinha no topo, centro, rodapé, esquerda ou direita da tela conforme a sua preferência.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -584,21 +814,22 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             </div>
           </div>
 
-          {/* FILTROS DE CATEGORIA DAS 21 TELAS */}
+          {/* FILTROS DE CATEGORIA DAS 22 TELAS */}
           <div className="mt-14 mb-8">
             <div className="text-center mb-5">
               <span className="font-space font-bold text-xs uppercase tracking-widest text-[#638076] bg-[#e6ebdf] px-3.5 py-1.5 rounded-full border border-[rgba(7,29,25,0.08)] inline-flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-[#799900]" />
-                Explore Todas as 21 Telas Oficiais por Categoria
+                Explore Todas as 22 Telas Oficiais por Categoria
               </span>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {[
-                { key: 'all', label: 'Todas as Telas (21)', icon: Sparkles },
-                { key: 'uber_99', label: '🚗 Uber & 99 na Prática (7)', icon: Car },
+                { key: 'all', label: 'Todas as Telas (22)', icon: Sparkles },
+                { key: 'cards_flutuantes', label: '🎛️ 4 Cards Flutuantes (7)', icon: Car },
                 { key: 'streetview', label: '📍 Notificação & Street View (3)', icon: MapPin },
-                { key: 'config', label: '⚙️ Metas & Calculadora (5)', icon: Sliders },
-                { key: 'safety', label: '🛡️ Segurança & Auditoria (6)', icon: ShieldCheck }
+                { key: 'atalhos', label: '⚡ Atalhos & Trânsito (4)', icon: Zap },
+                { key: 'safety', label: '🛡️ Segurança & Áreas de Risco (6)', icon: ShieldCheck },
+                { key: 'config', label: '⚙️ Metas & Custos (2)', icon: Sliders }
               ].map((cat) => {
                 const Icon = cat.icon;
                 const isSelected = activeCategory === cat.key;
@@ -621,28 +852,39 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
           </div>
 
           {/* GRID COM OS CARDS DAS TELAS REAIS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredScreenshots.map((item) => (
               <div
                 key={item.id}
                 onClick={() => setSelectedScreenshot(item)}
-                className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-200 cursor-pointer flex flex-col group hover:-translate-y-1"
+                className="bg-white border border-[rgba(7,29,25,0.12)] rounded-3xl p-3.5 shadow-xs hover:shadow-2xl transition-all duration-300 cursor-pointer flex flex-col justify-between group hover:-translate-y-1.5"
               >
-                {/* IMAGEM COM BADGE */}
-                <div className="relative aspect-[9/16] bg-[#fbfcf7] overflow-hidden flex items-center justify-center p-2.5 border-b border-[rgba(7,29,25,0.06)]">
-                  <img
-                    src={`/telas/${item.filename}`}
-                    alt={item.title}
-                    className="w-full h-full object-contain rounded-lg group-hover:scale-[1.02] transition-transform duration-300"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/assets/logo-goorno-clean.png';
-                    }}
-                  />
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                {/* MOLDURA DE SMARTPHONE REALISTA */}
+                <div className="relative mx-auto w-full pt-1 pb-2">
+                  <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[28px] border-[2.5px] border-[#20342f] shadow-lg max-w-[210px] group-hover:border-[#799900]/80 transition-colors">
+                    {/* Dynamic Island / Câmera */}
+                    <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
+                    </div>
+                    {/* Tela interna */}
+                    <div className="relative aspect-[9/18.5] rounded-[22px] overflow-hidden bg-black flex items-center justify-center">
+                      <img
+                        src={`/telas/${item.filename}`}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/assets/logo-goorno-clean.png';
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Badge Flutuante no Topo */}
+                  <div className="absolute top-3 left-2 right-2 flex items-center justify-between pointer-events-none z-10">
                     {item.badge && (
                       <span
-                        className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs backdrop-blur-xs ${
+                        className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full shadow-md backdrop-blur-xs ${
                           item.badgeType === 'green'
                             ? 'bg-emerald-600 text-white'
                             : item.badgeType === 'red'
@@ -657,19 +899,19 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                         {item.badge}
                       </span>
                     )}
-                    <span className="w-7 h-7 rounded-full bg-[#071d19]/80 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
-                      <ZoomIn className="w-4 h-4" />
+                    <span className="w-6 h-6 rounded-full bg-[#071d19]/80 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                      <ZoomIn className="w-3.5 h-3.5" />
                     </span>
                   </div>
                 </div>
 
                 {/* CONTEÚDO DO CARD */}
-                <div className="p-4 flex-1 flex flex-col justify-between">
+                <div className="pt-2 flex-1 flex flex-col justify-between">
                   <div>
                     <span className="text-[10px] font-bold text-[#7a8982] uppercase tracking-wider block mb-1">
                       {item.categoryLabel}
                     </span>
-                    <h3 className="font-space font-bold text-sm text-[#071d19] leading-snug mb-2 group-hover:text-emerald-800 transition">
+                    <h3 className="font-space font-bold text-sm text-[#071d19] leading-snug mb-1.5 group-hover:text-emerald-800 transition">
                       {item.title}
                     </h3>
                     <p className="font-dm text-xs text-[#63756b] line-clamp-2 leading-relaxed">
@@ -677,8 +919,8 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-[rgba(7,29,25,0.06)] flex items-center justify-between text-xs font-bold text-[#071d19]">
-                    <span>Toque para ampliar</span>
+                  <div className="mt-3 pt-2.5 border-t border-[rgba(7,29,25,0.06)] flex items-center justify-between text-xs font-bold text-[#071d19]">
+                    <span className="text-emerald-800">Toque para ampliar</span>
                     <ArrowRight className="w-4 h-4 text-[#7a8982] group-hover:translate-x-1 transition" />
                   </div>
                 </div>
@@ -1221,13 +1463,22 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            {/* ÁREA DA IMAGEM COM PROPORÇÃO CONTROLADA */}
-            <div className="w-full md:w-1/2 bg-black/50 flex items-center justify-center p-3 sm:p-4 md:p-5 relative shrink-0 min-h-[220px] sm:min-h-[280px] md:min-h-[460px] max-h-[40vh] md:max-h-[80vh]">
-              <img
-                src={`/telas/${selectedScreenshot.filename}`}
-                alt={selectedScreenshot.title}
-                className="max-h-[34vh] sm:max-h-[36vh] md:max-h-[68vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
-              />
+            {/* ÁREA DA IMAGEM COM MOLDURA DE SMARTPHONE */}
+            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 relative shrink-0 min-h-[300px] md:min-h-[520px]">
+              {/* Smartphone Frame Ampliado */}
+              <div className="relative p-2.5 bg-[#09110e] rounded-[38px] border-[3.5px] border-[#223530] shadow-2xl max-w-[260px] sm:max-w-[280px]">
+                {/* Dynamic Island */}
+                <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-16 h-3 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
+                </div>
+                <div className="relative aspect-[9/18.5] rounded-[30px] overflow-hidden bg-black flex items-center justify-center">
+                  <img
+                    src={`/telas/${selectedScreenshot.filename}`}
+                    alt={selectedScreenshot.title}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
               <button
                 onClick={handlePrevScreenshot}
                 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 hover:bg-black/95 text-white grid place-items-center transition cursor-pointer border border-white/20 z-10 shadow-md"

@@ -4,16 +4,14 @@ import {
   MapPin,
   Sliders,
   ShieldCheck,
-  Eye,
+  Zap,
   X,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   ZoomIn,
-  DollarSign,
   Maximize2
 } from 'lucide-react';
 
@@ -21,7 +19,7 @@ export interface ScreenshotItem {
   id: string;
   filename: string;
   title: string;
-  category: 'uber_99' | 'streetview' | 'config' | 'safety';
+  category: 'cards_flutuantes' | 'streetview' | 'atalhos' | 'safety' | 'config';
   categoryLabel: string;
   badge?: string;
   badgeType?: 'green' | 'red' | 'blue' | 'purple' | 'amber';
@@ -30,243 +28,256 @@ export interface ScreenshotItem {
 }
 
 export const SCREENSHOTS: ScreenshotItem[] = [
-  // --- UBER & 99 ---
+  // --- 1. CARDS FLUTUANTES & PRÁTICA ---
   {
-    id: 'uber-boa',
-    filename: 'UberBoa.jpeg',
-    title: 'Uber: Chamada Lucrativa (R$ 2,17/km)',
-    category: 'uber_99',
-    categoryLabel: 'Uber & 99 na Prática',
-    badge: '🟢 VIAGEM BOA',
+    id: 'card-tipo-1',
+    filename: 'CarTipo1.jpeg',
+    title: 'Card Impacto Pro (Recomendado)',
+    category: 'cards_flutuantes',
+    categoryLabel: 'Cards Flutuantes & Prática',
+    badge: '✨ MODELO 1: IMPACTO PRO',
     badgeType: 'green',
-    summary: 'Card flutuante GoOrNo em VERDE alertando que a corrida paga R$ 10,83 para 5,0 km totais (1,0 km busca + 4,0 km viagem em 15 min - R$ 162,45/h).',
-    highlightText: 'Em menos de 1 segundo você sabe que essa corrida coloca dinheiro no bolso com excelente ganho por km e por hora.'
+    summary: 'Design moderno com valor gigante no centro, km e tempo no topo e faixa sólida com o veredito instantâneo (✓ COMPENSA / ● ANALISAR / ✕ RECUSAR).',
+    highlightText: 'Permite ao motorista decidir em frações de segundo com contraste impecável e leitura visual imediata no trânsito.'
   },
   {
-    id: 'uber-ruim',
-    filename: 'UberRuim.jpeg',
-    title: 'Uber: Chamada com Prejuízo (R$ 1,25/km)',
-    category: 'uber_99',
-    categoryLabel: 'Uber & 99 na Prática',
-    badge: '🔴 VIAGEM RUIM',
+    id: 'card-tipo-2',
+    filename: 'CarTipo2.jpeg',
+    title: 'Card 3 Pilares (R$/Km, R$/Hora e Nota)',
+    category: 'cards_flutuantes',
+    categoryLabel: 'Cards Flutuantes & Prática',
+    badge: '📊 MODELO 2: 3 PILARES',
+    badgeType: 'blue',
+    summary: 'Resumo superior em linha única e 3 colunas verticais com barras coloridas destacando os 3 fatores decisivos de rentabilidade e nota do passageiro.',
+    highlightText: 'Equilíbrio perfeito de métricas em colunas limpas, com suporte a tema claro ou escuro e transparência ajustável.'
+  },
+  {
+    id: 'card-tipo-3',
+    filename: 'CarTipo3.jpeg',
+    title: 'Card Clássico (Tradicional)',
+    category: 'cards_flutuantes',
+    categoryLabel: 'Cards Flutuantes & Prática',
+    badge: '🏷️ MODELO 3: CLÁSSICO',
+    badgeType: 'purple',
+    summary: 'Layout consagrado com etiquetas completas de km, hora, contagem regressiva e classificação do passageiro.',
+    highlightText: 'Ideal para motoristas que preferem tags individuais e visualização detalhada de cada indicador financeiro.'
+  },
+  {
+    id: 'card-tipo-4',
+    filename: 'CarTipo4.jpeg',
+    title: 'Card Discreto (Bolinha Semáforo)',
+    category: 'cards_flutuantes',
+    categoryLabel: 'Cards Flutuantes & Prática',
+    badge: '🟢 MODELO 4: ULTRA COMPACTO',
+    badgeType: 'amber',
+    summary: 'Pílula horizontal ultrafina que não tapa o GPS nem o mapa de navegação, com sinalizador semáforo e métricas limpas sem cortes.',
+    highlightText: 'Design minimalista para quem quer máxima discrição na tela sem abrir mão dos números essenciais da corrida.'
+  },
+  {
+    id: 'viagem-compensa',
+    filename: 'ViagemCompensa.jpeg',
+    title: 'Chamada Lucrativa: ✓ COMPENSA',
+    category: 'cards_flutuantes',
+    categoryLabel: 'Cards Flutuantes & Prática',
+    badge: '🟢 CORRIDA APROVADA',
+    badgeType: 'green',
+    summary: 'Card verde indicando corrida com excelente margem financeira (R$ 2,42/km, R$ 33,56/h e passageiro nota 4,87).',
+    highlightText: 'Dinheiro no bolso garantido: cálculo automático descontando combustível e desgaste real do veículo.'
+  },
+  {
+    id: 'viagem-avaliar',
+    filename: 'ViagemAvaliar.jpeg',
+    title: 'Chamada Intermediária: ● AVALIAR',
+    category: 'cards_flutuantes',
+    categoryLabel: 'Cards Flutuantes & Prática',
+    badge: '🟡 MERECE ANÁLISE',
+    badgeType: 'amber',
+    summary: 'Card com alerta amarelo orientando o motorista a ponderar se a rota e o destino compensam no seu plano do dia.',
+    highlightText: 'Flexibilidade inteligente: você define os limites de valor por km e por hora para cada faixa do semáforo.'
+  },
+  {
+    id: 'viagem-nao-compensa',
+    filename: 'ViagemNaoCompensa.jpeg',
+    title: 'Chamada no Prejuízo: ✕ RECUSAR',
+    category: 'cards_flutuantes',
+    categoryLabel: 'Cards Flutuantes & Prática',
+    badge: '🔴 NÃO COMPENSA',
     badgeType: 'red',
-    summary: 'Card flutuante GoOrNo em VERMELHO indicando valor baixo por km (R$ 11,25 por 9,0 km totais - 4,4 km busca + 4,6 km viagem em 23 min - R$ 56,25/h).',
-    highlightText: 'Evita que o motorista pague para trabalhar! O GoOrNo calcula custo de gasolina + desgaste e avisa na hora.'
+    summary: 'Card com contorno vermelho destacando corrida com remuneração insuficiente para cobrir seus custos reais.',
+    highlightText: 'Proteja seu patrimônio e evite pagar para trabalhar! Recuse ofertas que geram prejuízo disfarçado.'
+  },
+
+  // --- 2. NOTIFICAÇÃO & STREET VIEW 360° ---
+  {
+    id: 'notificacao-streetview',
+    filename: 'Notificacao_Origem_Destino.jpeg',
+    title: 'Barra de Notificações com Street View 360°',
+    category: 'streetview',
+    categoryLabel: 'Notificação & Street View',
+    badge: '🔔 AÇÕES NA NOTIFICAÇÃO',
+    badgeType: 'purple',
+    summary: 'Puxe a barra de notificações do Android e encontre botões de 1 toque: [📍 Origem] e [🏁 Destino] para ver a foto 360° da rua antes de aceitar ou chegar.',
+    highlightText: 'Inovação exclusiva de segurança: veja o local real da chamada sem sair da rota e sem alternar aplicativos.'
   },
   {
-    id: '99-boa',
-    filename: '99Boa.jpeg',
-    title: '99 Pop: Chamada Aprovada com Alto Rendimento',
-    category: 'uber_99',
-    categoryLabel: 'Uber & 99 na Prática',
-    badge: '🟢 99 APROVADA',
+    id: 'streetview-origem',
+    filename: 'StreetViewOrigem.jpeg',
+    title: 'Street View 360° do Ponto de Embarque',
+    category: 'streetview',
+    categoryLabel: 'Notificação & Street View',
+    badge: '📍 FACHADA DO EMBARQUE',
+    badgeType: 'blue',
+    summary: 'Visualização fotográfica panorâmica da porta do passageiro (casas, condomínios, estabelecimentos e iluminação pública).',
+    highlightText: 'Saiba exatamente onde o passageiro está esperando e evite paradas arriscadas em locais escuros ou becos.'
+  },
+  {
+    id: 'streetview-destino',
+    filename: 'StreetViewDestino.jpeg',
+    title: 'Street View 360° do Ponto de Desembarque',
+    category: 'streetview',
+    categoryLabel: 'Notificação & Street View',
+    badge: '🏁 FACHADA DO DESEMBARQUE',
+    badgeType: 'blue',
+    summary: 'Inspeção visual da fachada e rua de destino antes de iniciar a corrida ou durante o deslocamento.',
+    highlightText: 'Chegue no endereço com total tranquilidade visualizando portarias, fachadas de prédios e características da rua.'
+  },
+
+  // --- 3. ATALHOS RÁPIDOS & TRÂNSITO ---
+  {
+    id: 'atalho-rapido',
+    filename: 'AtalhoRapido.jpeg',
+    title: 'Menu Flutuante de Atalhos Rápidos',
+    category: 'atalhos',
+    categoryLabel: 'Atalhos & Trânsito',
+    badge: '⚡ ATALHOS SOBRE O UBER/99',
     badgeType: 'green',
-    summary: 'Leitura instantânea da janela da 99 Pop sobreposta com dados mastigados de faturamento por hora.',
-    highlightText: 'Compatível tanto com a janela de chamada comum quanto com o modo de aceitação rápida da 99.'
+    summary: 'Botão flutuante discreto com acesso em 1 toque a Semáforo, Metas, Áreas de Risco, Histórico e Painel Completo.',
+    highlightText: 'Opere 100% das funções do GoOrNo sem precisar sair da tela do Uber ou da 99.'
   },
   {
-    id: 'uber-radar-1',
-    filename: 'UberRadar1.jpeg',
-    title: 'Uber Radar de Viagens: Análise Instantânea',
-    category: 'uber_99',
-    categoryLabel: 'Uber & 99 na Prática',
-    badge: '⚡ MODO RADAR',
-    badgeType: 'blue',
-    summary: 'O Radar de Viagens da Uber desaparece em poucos segundos. O GoOrNo lê e calcula antes que acabe.',
-    highlightText: 'Não perca tempo fazendo conta de cabeça no Radar. O card mostra direto se vale a pena clicar ou ignorar.'
-  },
-  {
-    id: 'uber-radar-2',
-    filename: 'UberRadar2.jpeg',
-    title: 'Uber Radar: Corrida Longa com Cálculo de Volta',
-    category: 'uber_99',
-    categoryLabel: 'Uber & 99 na Prática',
-    badge: '⚡ RADAR DINÂMICO',
-    badgeType: 'blue',
-    summary: 'Avaliação precisa de quilometragem de busca até o embarque somada com a rota final.',
-    highlightText: 'Soma automaticamente os km de busca + km da corrida para você nunca ser enganado pela distância real.'
-  },
-  {
-    id: '99-solicitacoes-1',
-    filename: '99Solicitacoes1.jpeg',
-    title: '99: Lista de Solicitações Simultâneas',
-    category: 'uber_99',
-    categoryLabel: 'Uber & 99 na Prática',
-    badge: '🚕 99 MOTORISTA',
+    id: 'semaforo-rapido',
+    filename: 'SemaforoRapido.jpeg',
+    title: 'Ajuste Rápido do Semáforo no Trânsito',
+    category: 'atalhos',
+    categoryLabel: 'Atalhos & Trânsito',
+    badge: '⏱️ AJUSTE EM 2 SEGUNDOS',
     badgeType: 'amber',
-    summary: 'A 99 lista chamadas em sequência. O GoOrNo lê a chamada ativa em foco na tela.',
-    highlightText: 'Precisão milimétrica que ignora ofertas secundárias de cupom e foca estritamente na chamada do passageiro.'
+    summary: 'Popup flutuante para aumentar ou diminuir R$/km mín, R$/hora mín e nota mínima do passageiro com botões [+] e [-] instantâneos.',
+    highlightText: 'Ajuste suas metas rapidamente na chuva, no horário de pico ou na dinâmica sem tirar a atenção da rua.'
   },
   {
-    id: '99-solicitacoes-2',
-    filename: '99Solicitacoes2.jpeg',
-    title: '99: Detalhamento de Rota e Embarque',
-    category: 'uber_99',
-    categoryLabel: 'Uber & 99 na Prática',
-    badge: '🚕 99 TARIFA',
-    badgeType: 'amber',
-    summary: 'Exibição dos endereços de embarque e desembarque capturados com precisão.',
-    highlightText: 'Verificação em tempo real da rentabilidade e do tempo estimado de deslocamento no trânsito.'
+    id: 'painel-inicial',
+    filename: 'TelaInicioUltimaCorridaLida.jpeg',
+    title: 'Painel Inicial & Última Corrida Capturada',
+    category: 'atalhos',
+    categoryLabel: 'Atalhos & Trânsito',
+    badge: '📱 MONITORAMENTO EM TEMPO REAL',
+    badgeType: 'blue',
+    summary: 'Tela inicial do app exibindo o status dos serviços, detector de chamadas ativo e os dados completos da última corrida analisada.',
+    highlightText: 'Controle total da operação com diagnóstico em tempo real e verificação dos motores de leitura OCR.'
+  },
+  {
+    id: 'historico-auditoria',
+    filename: 'DetalhesViagemOrigemDestino.jpeg',
+    title: 'Histórico de Corridas & Auditoria com Lucro Real',
+    category: 'atalhos',
+    categoryLabel: 'Atalhos & Trânsito',
+    badge: '📋 AUDITORIA COM LUCRO REAL',
+    badgeType: 'purple',
+    summary: 'Histórico auditado com centenas de chamadas salvas, indicando km bruto, hora bruta, lucro líquido estimado e botões rápidos (+Favorito, +Risco, 360° Maps).',
+    highlightText: 'Guarde o registro de todas as ofertas lidas na tela com conferência de ganhos reais e rotas.'
   },
 
-  // --- NOTIFICAÇÃO & STREET VIEW ---
+  // --- 4. SEGURANÇA & ÁREAS DE RISCO ---
   {
-    id: 'notificacoes-barra',
-    filename: 'Notificacoes.jpeg',
-    title: 'Barra de Notificações com Ícone & Botão Desativar',
-    category: 'streetview',
-    categoryLabel: 'Notificações & Street View',
-    badge: '🔔 STATUS BAR OFICIAL',
-    badgeType: 'purple',
-    summary: 'Notificação silenciosa com o ícone do GoOrNo ao lado do relógio e botão direto de "⏹️ Desativar".',
-    highlightText: 'Fica sempre disponível na bandeja do Android sem fazer barulho nem vibrar, e desliga em 1 toque quando você encerra o dia.'
-  },
-  {
-    id: 'notificacoes-origem',
-    filename: 'NotificacoesOrigem.jpeg',
-    title: 'Street View 360° da Origem (Embarque)',
-    category: 'streetview',
-    categoryLabel: 'Notificações & Street View',
-    badge: '📷 FOTO DA RUA (ORIGEM)',
-    badgeType: 'blue',
-    summary: 'Abra a foto real da rua do passageiro antes de se deslocar para conferir segurança e comércio.',
-    highlightText: 'Veja se o local é condomínio fechado, bar, ponto movimentado ou rua escura com 1 toque no card.'
-  },
-  {
-    id: 'notificacoes-destino',
-    filename: 'NotificacoesDestino.jpeg',
-    title: 'Street View 360° do Destino (Desembarque)',
-    category: 'streetview',
-    categoryLabel: 'Notificações & Street View',
-    badge: '📷 FOTO DA RUA (DESTINO)',
-    badgeType: 'blue',
-    summary: 'Inspeção visual do destino final para evitar vielas sem saída ou locais ermos à noite.',
-    highlightText: 'Segurança em primeiro lugar: saiba exatamente como é a fachada do destino antes de iniciar a viagem.'
-  },
-
-  // --- CONFIGURAÇÕES & METAS ---
-  {
-    id: 'tela-principal',
-    filename: 'TelaGoOrNoPrincipal.jpeg',
-    title: 'Painel Principal do GoOrNo',
-    category: 'config',
-    categoryLabel: 'Configurações & Metas',
-    badge: '⚙️ PAINEL COPILOTO',
-    badgeType: 'purple',
-    summary: 'Botão principal de Ativação, indicador de status dos serviços e atalhos rápidos.',
-    highlightText: 'Interface moderna e limpa no padrão MeuAutônomo com consumo levíssimo de bateria e memória.'
-  },
-  {
-    id: 'config-metas',
-    filename: 'TelaConfigMetas.jpeg',
-    title: 'Personalização de Metas Financeiras (R$/km e R$/h)',
-    category: 'config',
-    categoryLabel: 'Configurações & Metas',
-    badge: '🎯 SUAS REGRAS',
-    badgeType: 'green',
-    summary: 'Você escolhe quanto vale o seu km rodado e qual é o mínimo aceitável por hora trabalhada.',
-    highlightText: 'Configure por exemplo: Verde acima de R$ 2,20/km, Amarelo entre R$ 1,70 e R$ 2,20, Vermelho abaixo de R$ 1,70.'
-  },
-  {
-    id: 'config-custos',
-    filename: 'TelaConfigCustos.jpeg',
-    title: 'Calculadora de Custos Reais do Carro / Moto',
-    category: 'config',
-    categoryLabel: 'Configurações & Metas',
-    badge: '⛽ CUSTO REAL',
-    badgeType: 'amber',
-    summary: 'Informe o preço do litro de combustível, o consumo médio (km/l) e o custo de manutenção preventiva.',
-    highlightText: 'O GoOrNo desconta automaticamente os custos de cada corrida e exibe o Lucro Líquido Real que sobra no bolso.'
-  },
-  {
-    id: 'config-flutuante',
-    filename: 'TelaConfigFlutuante.jpeg',
-    title: 'Ajuste Fino do Card Flutuante',
-    category: 'config',
-    categoryLabel: 'Configurações & Metas',
-    badge: '🎛️ CUSTOMIZAÇÃO',
-    badgeType: 'blue',
-    summary: 'Personalize a opacidade do card, tamanho da fonte e quantos segundos ele permanece na tela.',
-    highlightText: 'Você pode deixar o card semitransparente para não cobrir informações importantes do mapa de navegação.'
-  },
-  {
-    id: 'apps-compativeis',
-    filename: 'TelaAppsCompativeis.jpeg',
-    title: 'Seletor de Apps Compatíveis',
-    category: 'config',
-    categoryLabel: 'Configurações & Metas',
-    badge: '📱 MULTI-PLATAFORMA',
-    badgeType: 'purple',
-    summary: 'Ative ou desative o monitoramento para Uber Driver, 99 Motorista ou InDrive individualmente.',
-    highlightText: 'Flexibilidade total: se você roda apenas na Uber ou apenas na 99, ative só o que precisa.'
-  },
-
-  // --- SEGURANÇA & AUDITORIA ---
-  {
-    id: 'seguranca-moto-1',
-    filename: 'TelaSeguracaMoto1.jpeg',
-    title: 'Módulo de Segurança, Áreas de Risco & Bairros Favoritos',
+    id: 'seguranca-area-risco',
+    filename: 'SegurancaAreaDeRisco.jpeg',
+    title: 'Central de Segurança & Áreas de Risco',
     category: 'safety',
-    categoryLabel: 'Segurança & Auditoria',
-    badge: '🛡️ ÁREAS DE RISCO & FAVORITOS',
+    categoryLabel: 'Segurança & Áreas de Risco',
+    badge: '🛡️ BLOQUEIO DE LOCAIS PERIGOSOS',
     badgeType: 'red',
-    summary: 'Cadastre suas Áreas de Risco para alerta vermelho imediato e seus Bairros Favoritos para rodar com tranquilidade na sua zona de conforto.',
-    highlightText: 'Controle total da sua operação: você decide onde quer trabalhar e recebe alerta visual na hora em que o passageiro chama.'
+    summary: 'Ative alertas sonoros e force semáforo VERMELHO automático para ruas ou bairros perigosos, mesmo se pagarem bem por km.',
+    highlightText: 'Sua vida e seu carro em primeiro lugar: o GoOrNo não deixa você entrar em furadas por engano.'
   },
   {
-    id: 'seguranca-moto-2',
-    filename: 'TelaSeguracaMoto2.jpeg',
-    title: 'Radar de Bairros & Alerta em Tempo Real',
+    id: 'seguranca-regiao-favorita',
+    filename: 'SegurancaRegiaoFavorita.jpeg',
+    title: 'Regiões Favoritas & Bairros Preferidos',
     category: 'safety',
-    categoryLabel: 'Segurança & Auditoria',
-    badge: '⭐ ZONA DE CONFORTO',
+    categoryLabel: 'Segurança & Áreas de Risco',
+    badge: '⭐ ROTAS FAVORITAS',
     badgeType: 'green',
-    summary: 'Sinalização visual imediata no card: estrela dourada para seus bairros preferidos e alerta vermelho para regiões perigosas.',
-    highlightText: 'Não seja pego de surpresa em bairros desconhecidos. O copiloto checa origem e destino instantaneamente antes do aceite.'
+    summary: 'Cadastre seus bairros seguros e destinos prioritários com identificação imediata na janela flutuante.',
+    highlightText: 'Priorize corridas que levam para onde você gosta de trabalhar, com aviso sonoro e visual diferenciado.'
   },
   {
-    id: 'metas-pax',
-    filename: 'TelaMetasAvaliacaoPax.jpeg',
-    title: 'Filtro por Nota Mínima do Passageiro',
+    id: 'adicionar-area-risco',
+    filename: 'AdicionarAreaDeRiscoManual.jpeg',
+    title: 'Busca e Bloqueio Geográfico no Mapa',
     category: 'safety',
-    categoryLabel: 'Segurança & Auditoria',
-    badge: '⭐ NOTA DO PASSAGEIRO',
+    categoryLabel: 'Segurança & Áreas de Risco',
+    badge: '🗺️ PESQUISA E BLOQUEIO NO MAPA',
+    badgeType: 'red',
+    summary: 'Pesquise qualquer bairro ou rua pelo nome e adicione à sua lista de bloqueio com apenas um clique.',
+    highlightText: 'Base flexível: integre com o banco nacional de zonas críticas ou monte sua própria lista de segurança da sua cidade.'
+  },
+  {
+    id: 'adicionar-regiao-favorita',
+    filename: 'AdicionarRegiaoFavoritaManual.jpeg',
+    title: 'Cadastro de Locais e Destinos Favoritos',
+    category: 'safety',
+    categoryLabel: 'Segurança & Áreas de Risco',
+    badge: '⭐ CADASTRO DE BAIRROS VIP',
+    badgeType: 'green',
+    summary: 'Localize áreas residenciais nobres, shoppings, centros comerciais ou aeroportos para receber destaque especial.',
+    highlightText: 'Aumente seu faturamento direcionando suas corridas para as melhores regiões da sua cidade.'
+  },
+  {
+    id: 'exemplo-area-risco-card',
+    filename: 'ExemploAreaDeRiscoNoCard.jpeg',
+    title: 'Alerta Ativo de Área de Risco no Card',
+    category: 'safety',
+    categoryLabel: 'Segurança & Áreas de Risco',
+    badge: '⚠️ AVISO VISUAL NO CARD',
+    badgeType: 'red',
+    summary: 'Quando a chamada toca para um local bloqueado, o card exibe uma faixa de alto contraste alertando "ÁREA DE RISCO".',
+    highlightText: 'Evite aceitar corridas por distração ou correria: o alerta surge no topo da tela antes de você clicar.'
+  },
+  {
+    id: 'exemplo-regiao-favorita-card',
+    filename: 'ExemploRegiaoFavoritaNoCard.jpeg',
+    title: 'Destaque de Região Favorita no Card',
+    category: 'safety',
+    categoryLabel: 'Segurança & Áreas de Risco',
+    badge: '⭐ AVISO DE REGIÃO FAVORITA',
     badgeType: 'amber',
-    summary: 'Defina a nota de corte (ex: passageiro com menos de 4.75 estrelas gera alerta amarelo/vermelho).',
-    highlightText: 'Evite passageiros problemáticos, calotes e situações desconfortáveis filtrando por histórico de pontuação.'
+    summary: 'Indicação dourada imediata no card avisando que a corrida vai em direção ao seu destino ou bairro preferido.',
+    highlightText: 'Aceite rapidamente as melhores corridas do dia com a segurança de estar indo para sua área favorita.'
   },
+
+  // --- 5. METAS & CUSTOS DO VEÍCULO ---
   {
-    id: 'historico-chamados',
-    filename: 'TelaHistoricoChamados.jpeg',
-    title: 'Histórico de Chamadas com 1 Toque (+Fav / +Risco)',
-    category: 'safety',
-    categoryLabel: 'Segurança & Auditoria',
-    badge: '📋 AUDITORIA & 1 TOQUE',
-    badgeType: 'purple',
-    summary: 'Registro automático de todas as corridas que tocaram no celular com atalhos de 1 toque para adicionar aos Favoritos (+Fav) ou Áreas de Risco (+Risco).',
-    highlightText: 'Gostou do bairro ou achou a rua perigosa? Com um simples toque no histórico o local é salvo nas suas regras personalizadas.'
-  },
-  {
-    id: 'seg-unico-usuario',
-    filename: 'TelaSegUnicoUsuario.jpeg',
-    title: 'Proteção de Dispositivo e Licença Vinculada',
-    category: 'safety',
-    categoryLabel: 'Segurança & Auditoria',
-    badge: '🔒 SEGURANÇA DA CONTA',
-    badgeType: 'blue',
-    summary: 'Sua assinatura fica vinculada ao seu WhatsApp com proteção criptográfica contra clonagem.',
-    highlightText: 'Se trocar de aparelho, você pode transferir sua chave de acesso pelo próprio aplicativo em 1 clique.'
-  },
-  {
-    id: 'freemium-7-dias',
-    filename: 'TelaFreemium7Dias.jpeg',
-    title: 'Acesso Grátis de 7 Dias para Todos os Motoristas',
-    category: 'safety',
-    categoryLabel: 'Segurança & Auditoria',
-    badge: '🎁 7 DIAS GRÁTIS',
+    id: 'tela-semaforo',
+    filename: 'TelaSemaforo.jpeg',
+    title: 'Configuração de Metas & Faixas do Semáforo',
+    category: 'config',
+    categoryLabel: 'Metas & Custos',
+    badge: '🚦 REGRAS DO SEMÁFORO FINANCEIRO',
     badgeType: 'green',
-    summary: 'Basta digitar o WhatsApp com DDD para liberar 7 dias completos com todas as funções desbloqueadas.',
-    highlightText: 'Teste na rua, compare seus ganhos e veja se o GoOrNo se paga no primeiro dia de trabalho.'
+    summary: 'Defina seus parâmetros mínimos de R$/km, R$/hora e nota mínima para os vereditos Verde, Amarelo e Vermelho.',
+    highlightText: 'Personalização absoluta: você no controle total dos seus critérios de rentabilidade.'
+  },
+  {
+    id: 'tela-custo-carro',
+    filename: 'TelaCustoCarro.jpeg',
+    title: 'Calculadora de Custos Reais do Veículo',
+    category: 'config',
+    categoryLabel: 'Metas & Custos',
+    badge: '⛽ GASOLINA & MANUTENÇÃO',
+    badgeType: 'amber',
+    summary: 'Insira o consumo de combustível (km/l), valor do litro e custo estimado de pneus, óleo e manutenção por km rodado.',
+    highlightText: 'Cálculo 100% honesto e transparente do seu custo real de rodagem por quilômetro.'
   }
 ];
 
@@ -340,7 +351,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               <span className="font-space font-bold text-lg text-white tracking-tight flex items-center gap-2">
                 GoOrNo
                 <small className="font-dm text-[10px] font-bold px-2 py-0.5 rounded bg-[#d9ff4f] text-[#071d19]">
-                  21 Telas Reais
+                  22 Telas Oficiais
                 </small>
               </span>
             </a>
@@ -356,10 +367,10 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               </button>
             )}
             <a
-              href="/download/apk"
+              href="/GoOrNo.apk"
               className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-bold text-xs px-4 py-2.5 rounded-full transition flex items-center gap-1.5 shadow-xs no-underline"
             >
-              Baixar APK v3.3.26 <span>↗</span>
+              Baixar APK Oficial <span>↗</span>
             </a>
           </div>
         </div>
@@ -377,14 +388,14 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               Como o GoOrNo Funciona na Prática
             </h1>
             <p className="font-dm text-sm sm:text-base text-[#c2d0ca] leading-relaxed mb-6">
-              Confira abaixo capturas reais do GoOrNo em ação: leitura de chamadas da <strong>Uber</strong> e <strong>99</strong>, comparação direta de <strong>Viagem Boa vs Viagem Ruim</strong>, <strong>Street View da origem e destino</strong>, notificação na barra e custos configuráveis.
+              Explore abaixo as capturas oficiais do GoOrNo: os <strong>4 modelos de cards flutuantes</strong>, comparação de <strong>Viagem Boa vs Viagem Ruim</strong>, <strong>Street View da origem e destino</strong>, menu de atalhos e calculadora de custos.
             </p>
 
-            {/* COMPARATIVO DESTAQUE: BOA VS RUIM */}
+            {/* COMPARATIVO DESTAQUE: COMPENSA VS NÃO COMPENSA */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div
                 onClick={() => {
-                  const item = SCREENSHOTS.find((s) => s.id === 'uber-boa');
+                  const item = SCREENSHOTS.find((s) => s.id === 'viagem-compensa');
                   if (item) openLightbox(item);
                 }}
                 className="bg-[#dff4af]/15 border border-[#dff4af]/30 hover:border-[#dff4af] p-4 rounded-2xl cursor-pointer transition group"
@@ -392,21 +403,21 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-[#d9ff4f] flex items-center gap-1.5 font-space">
                     <CheckCircle2 className="w-4 h-4 text-[#d9ff4f]" />
-                    VIAGEM BOA (CARD VERDE)
+                    ✓ COMPENSA (CARD VERDE)
                   </span>
                   <Maximize2 className="w-4 h-4 text-[#d9ff4f]/60 group-hover:text-[#d9ff4f] transition" />
                 </div>
                 <p className="text-xs text-white/90 leading-relaxed font-dm">
-                  R$ 10,83 por 5,0 km (R$ 2,17/km · R$ 162,45/h). O GoOrNo aprova na hora com card verde destacando alta rentabilidade.
+                  R$ 17,90 por 7,4 km (R$ 2,42/km · R$ 33,56/h). O GoOrNo aprova na hora com card verde destacando alta rentabilidade.
                 </p>
                 <div className="mt-3 text-[11px] font-bold text-[#d9ff4f] underline">
-                  Toque para ver a tela do UberBoa →
+                  Toque para ver o card Compensa →
                 </div>
               </div>
 
               <div
                 onClick={() => {
-                  const item = SCREENSHOTS.find((s) => s.id === 'uber-ruim');
+                  const item = SCREENSHOTS.find((s) => s.id === 'viagem-nao-compensa');
                   if (item) openLightbox(item);
                 }}
                 className="bg-[#ffe1d9]/15 border border-[#ff6e58]/30 hover:border-[#ff6e58] p-4 rounded-2xl cursor-pointer transition group"
@@ -414,7 +425,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-[#ff6e58] flex items-center gap-1.5 font-space">
                     <XCircle className="w-4 h-4 text-[#ff6e58]" />
-                    VIAGEM RUIM (CARD VERMELHO)
+                    ✕ NÃO COMPENSA (CARD VERMELHO)
                   </span>
                   <Maximize2 className="w-4 h-4 text-[#ff6e58]/60 group-hover:text-[#ff6e58] transition" />
                 </div>
@@ -422,7 +433,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   R$ 11,25 por 9,0 km (R$ 1,25/km · R$ 56,25/h). O GoOrNo avisa em vermelho que a busca longa (4,4 km) gera prejuízo real.
                 </p>
                 <div className="mt-3 text-[11px] font-bold text-[#ff6e58] underline">
-                  Toque para ver a tela do UberRuim →
+                  Toque para ver o card Não Compensa →
                 </div>
               </div>
             </div>
@@ -434,11 +445,12 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
       <section className="px-4 max-w-6xl mx-auto mb-8">
         <div className="flex flex-wrap items-center justify-center gap-2">
           {[
-            { key: 'all', label: 'Todas as Telas (21)', icon: Sparkles },
-            { key: 'uber_99', label: '🚗 Uber & 99 na Prática (7)', icon: Car },
+            { key: 'all', label: 'Todas as Telas (22)', icon: Sparkles },
+            { key: 'cards_flutuantes', label: '🎛️ 4 Cards Flutuantes (7)', icon: Car },
             { key: 'streetview', label: '📍 Notificação & Street View (3)', icon: MapPin },
-            { key: 'config', label: '⚙️ Metas & Calculadora (5)', icon: Sliders },
-            { key: 'safety', label: '🛡️ Segurança & Auditoria (6)', icon: ShieldCheck }
+            { key: 'atalhos', label: '⚡ Atalhos & Trânsito (4)', icon: Zap },
+            { key: 'safety', label: '🛡️ Segurança & Áreas de Risco (6)', icon: ShieldCheck },
+            { key: 'config', label: '⚙️ Metas & Custos (2)', icon: Sliders }
           ].map((cat) => {
             const Icon = cat.icon;
             const isSelected = activeCategory === cat.key;
@@ -460,30 +472,38 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
         </div>
       </section>
 
-      {/* GRID DE SCREENSHOTS */}
+      {/* GRID DE SCREENSHOTS COM MOLDURA DE SMARTPHONE */}
       <section className="px-4 max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredScreenshots.map((item) => (
             <div
               key={item.id}
               onClick={() => openLightbox(item)}
-              className="bg-white border border-[rgba(7,29,25,0.12)] rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-200 cursor-pointer flex flex-col group hover:-translate-y-1"
+              className="bg-white border border-[rgba(7,29,25,0.12)] rounded-3xl p-3.5 shadow-xs hover:shadow-2xl transition-all duration-300 cursor-pointer flex flex-col justify-between group hover:-translate-y-1.5"
             >
-              {/* IMAGEM COM BADGE */}
-              <div className="relative aspect-[9/16] bg-[#fbfcf7] overflow-hidden flex items-center justify-center p-2.5 border-b border-[rgba(7,29,25,0.06)]">
-                <img
-                  src={`/telas/${item.filename}`}
-                  alt={item.title}
-                  className="w-full h-full object-contain rounded-lg group-hover:scale-[1.02] transition-transform duration-300"
-                  loading="lazy"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/assets/logo-goorno-clean.png';
-                  }}
-                />
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+              {/* MOLDURA DE SMARTPHONE ULTRA REALISTA */}
+              <div className="relative mx-auto w-full pt-1 pb-2">
+                <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[28px] border-[2.5px] border-[#20342f] shadow-lg max-w-[210px] group-hover:border-[#799900]/80 transition-colors">
+                  {/* Dynamic Island / Front Camera */}
+                  <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
+                  </div>
+                  {/* Tela interna do smartphone */}
+                  <div className="relative aspect-[9/18.5] rounded-[22px] overflow-hidden bg-black flex items-center justify-center">
+                    <img
+                      src={`/telas/${item.filename}`}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+
+                {/* Badge Flutuante no Topo */}
+                <div className="absolute top-3 left-2 right-2 flex items-center justify-between pointer-events-none z-10">
                   {item.badge && (
                     <span
-                      className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs backdrop-blur-xs ${
+                      className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full shadow-md backdrop-blur-xs ${
                         item.badgeType === 'green'
                           ? 'bg-emerald-600 text-white'
                           : item.badgeType === 'red'
@@ -498,19 +518,19 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                       {item.badge}
                     </span>
                   )}
-                  <span className="w-7 h-7 rounded-full bg-[#071d19]/80 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
-                    <ZoomIn className="w-4 h-4" />
+                  <span className="w-6 h-6 rounded-full bg-[#071d19]/80 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                    <ZoomIn className="w-3.5 h-3.5" />
                   </span>
                 </div>
               </div>
 
-              {/* CONTEÚDO */}
-              <div className="p-4 flex-1 flex flex-col justify-between">
+              {/* CONTEÚDO DESCRITIVO */}
+              <div className="pt-2 flex-1 flex flex-col justify-between">
                 <div>
                   <span className="text-[10px] font-bold text-[#7a8982] uppercase tracking-wider block mb-1">
                     {item.categoryLabel}
                   </span>
-                  <h3 className="font-space font-bold text-sm text-[#071d19] leading-snug mb-2 group-hover:text-emerald-800 transition">
+                  <h3 className="font-space font-bold text-sm text-[#071d19] leading-snug mb-1.5 group-hover:text-emerald-800 transition">
                     {item.title}
                   </h3>
                   <p className="font-dm text-xs text-[#63756b] line-clamp-2 leading-relaxed">
@@ -518,8 +538,8 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   </p>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-[rgba(7,29,25,0.06)] flex items-center justify-between text-xs font-bold text-[#071d19]">
-                  <span>Toque para ampliar</span>
+                <div className="mt-3 pt-2.5 border-t border-[rgba(7,29,25,0.06)] flex items-center justify-between text-xs font-bold text-[#071d19]">
+                  <span className="text-emerald-800">Toque para ampliar</span>
                   <ChevronRight className="w-4 h-4 text-[#7a8982] group-hover:translate-x-1 transition" />
                 </div>
               </div>
@@ -528,14 +548,14 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
         </div>
       </section>
 
-      {/* LIGHTBOX MODAL */}
+      {/* LIGHTBOX MODAL COM SMARTPHONE EM TAMANHO GRANDE */}
       {selectedImage && (
         <div
           className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn"
           onClick={closeLightbox}
         >
           <div
-            className="bg-[#071d19] text-white border border-white/15 rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col md:flex-row shadow-2xl relative overflow-hidden no-scrollbar"
+            className="bg-[#071d19] text-white border border-white/15 rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col md:flex-row shadow-2xl relative overflow-hidden no-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
             {/* BOTÃO FECHAR */}
@@ -548,36 +568,45 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            {/* ÁREA DA IMAGEM */}
-            <div className="w-full md:w-1/2 bg-black/50 flex items-center justify-center p-3 sm:p-4 md:p-5 relative shrink-0 min-h-[220px] sm:min-h-[280px] md:min-h-[460px] max-h-[40vh] md:max-h-[80vh]">
-              <img
-                src={`/telas/${selectedImage.filename}`}
-                alt={selectedImage.title}
-                className="max-h-[34vh] sm:max-h-[36vh] md:max-h-[68vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
-              />
+            {/* ÁREA DO SMARTPHONE */}
+            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 relative shrink-0 min-h-[300px] md:min-h-[520px]">
+              {/* MOLDURA DE SMARTPHONE AMPLIADA */}
+              <div className="relative p-2.5 bg-[#09110e] rounded-[38px] border-[3.5px] border-[#223530] shadow-2xl max-w-[260px] sm:max-w-[280px]">
+                {/* Dynamic Island */}
+                <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-16 h-3 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
+                </div>
+                <div className="relative aspect-[9/18.5] rounded-[30px] overflow-hidden bg-black flex items-center justify-center">
+                  <img
+                    src={`/telas/${selectedImage.filename}`}
+                    alt={selectedImage.title}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
 
               {/* NAVEGAÇÃO ANTERIOR / PRÓXIMO */}
               <button
                 onClick={handlePrev}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 hover:bg-black/95 text-white grid place-items-center transition cursor-pointer border border-white/20 z-10 shadow-md"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/70 hover:bg-black/95 text-white grid place-items-center transition cursor-pointer border border-white/20 z-10 shadow-md"
                 title="Imagem anterior"
                 aria-label="Imagem anterior"
               >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={handleNext}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 hover:bg-black/95 text-white grid place-items-center transition cursor-pointer border border-white/20 z-10 shadow-md"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/70 hover:bg-black/95 text-white grid place-items-center transition cursor-pointer border border-white/20 z-10 shadow-md"
                 title="Próxima imagem"
                 aria-label="Próxima imagem"
               >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
 
             {/* DETALHES DA TELA */}
-            <div className="w-full md:w-1/2 p-4 sm:p-5 md:p-6 flex flex-col justify-between overflow-y-auto no-scrollbar">
-              <div className="space-y-2.5 sm:space-y-3">
+            <div className="w-full md:w-1/2 p-5 sm:p-6 flex flex-col justify-between overflow-y-auto no-scrollbar">
+              <div className="space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] sm:text-xs font-bold text-[#c2d0ca] uppercase tracking-wider font-dm">
                     {selectedImage.categoryLabel}
@@ -601,11 +630,11 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   )}
                 </div>
 
-                <h2 className="font-space text-lg sm:text-xl md:text-2xl font-bold text-white leading-tight">
+                <h2 className="font-space text-xl sm:text-2xl font-bold text-white leading-tight">
                   {selectedImage.title}
                 </h2>
 
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-3.5">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                   <h4 className="text-[10px] sm:text-[11px] font-bold text-[#d9ff4f] uppercase mb-1 font-space">
                     O que esta tela mostra:
                   </h4>
@@ -614,7 +643,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   </p>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-3.5">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                   <h4 className="text-[10px] sm:text-[11px] font-bold text-white uppercase mb-1 flex items-center gap-1.5 font-space">
                     <Sparkles className="w-3.5 h-3.5 text-[#d9ff4f]" />
                     Como isso protege o seu bolso:
@@ -625,12 +654,12 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                 </div>
               </div>
 
-              <div className="pt-3 sm:pt-4 mt-3 sm:mt-4 border-t border-white/10 flex items-center justify-between gap-3">
-                <span className="text-[11px] sm:text-xs text-[#7a8982] truncate">
+              <div className="pt-4 mt-4 border-t border-white/10 flex items-center justify-between gap-3">
+                <span className="text-xs text-[#7a8982] truncate">
                   {selectedImage.filename}
                 </span>
                 <a
-                  href="/download/apk"
+                  href="/GoOrNo.apk"
                   className="bg-[#d9ff4f] hover:bg-[#bfe72d] text-[#071d19] font-space font-bold text-xs px-4 py-2.5 rounded-full transition shadow-xs no-underline shrink-0"
                 >
                   Baixar APK Oficial ↗
