@@ -923,9 +923,9 @@ class GoOrNoEngineAndParserTest {
         val offer = NinetyNineOfferReader.parseScreenNodes(nodes)
         assertEquals("1 Parada", offer.stopsDescription)
     }
-    // 40. TESTE COMPLETO DOS 7 PRINTS REAIS DA UBER ENVIADOS PELO USUÁRIO (v3.3.39/v3.3.40):
+    // 40. TESTE COMPLETO DOS 7 PRINTS REAIS DA UBER ENVIADOS PELO USU�RIO (v3.3.39/v3.3.40):
     @Test
-    fun `test real user uber screenshots suite from field device`() {
+    fun `test verification of seven user field screenshots p1 to p7`() {
         // Print 1: R$ 9,14 - Jardim Santo André (Área de Risco Crítica)
         val p1 = listOf(
             "UberX", "Exclusivo", "R$ 9,14", "Est. de R$1,25/km", "4,97 (1172)", "+R$ 2,75 incluído",
@@ -939,7 +939,7 @@ class GoOrNoEngineAndParserTest {
         assertEquals(4.97, o1.passengerRating!!, 0.001)
         val eval1 = FinancialEngine.evaluate(o1, DriverFinancialConfig())
         assertTrue(eval1.hasRiskAlert)
-        assertTrue(eval1.riskAlertBadge.contains("Risco"))
+        assertTrue(eval1.riskAlertBadge?.contains("Risco") == true)
 
         // Print 2: R$ 13,34 - Priority - Botão Viagem
         val p2 = listOf(
@@ -975,7 +975,7 @@ class GoOrNoEngineAndParserTest {
         assertEquals(11.96, o4.offeredPrice!!, 0.001)
         val eval4 = FinancialEngine.evaluate(o4, DriverFinancialConfig())
         assertTrue(eval4.hasRiskAlert)
-        assertTrue(eval4.riskAlertBadge.contains("Cata Preta"))
+        assertTrue(eval4.riskAlertBadge?.contains("Cata Preta") == true)
 
         // Print 5: R$ 18,02 - Capuava
         val p5 = listOf(
