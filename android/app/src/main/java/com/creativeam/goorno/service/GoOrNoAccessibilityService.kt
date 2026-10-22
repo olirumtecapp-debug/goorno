@@ -156,13 +156,12 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     }
 
                     if (app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
+                        val now = System.currentTimeMillis()
                         if (app.overlayPanel.isCardCurrentlyVisible()) {
                             checkIfOfferDismissedAndCloseCard(activeRootPkg = null, eventPkg = null)
-                        } else {
-                            val now = System.currentTimeMillis()
-                            if (now - lastScanTimeMillis >= 800L) {
-                                scanCurrentScreen(eventPkg = null, forceThrottleBypass = false)
-                            }
+                        }
+                        if (now - lastScanTimeMillis >= 750L) {
+                            scanCurrentScreen(eventPkg = null, forceThrottleBypass = false)
                         }
                     }
                 } catch (_: Throwable) {
@@ -223,7 +222,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         if (app?.overlayPanel?.isCardCurrentlyVisible() == true) {
             checkIfOfferDismissedAndCloseCard(activeRootPkg = activeRootPkg, eventPkg = evtPkg)
-            return
         }
 
         scanCurrentScreen(eventPkg = evtPkg, forceThrottleBypass = false)
@@ -232,7 +230,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private fun scanCurrentScreen(eventPkg: String?, forceThrottleBypass: Boolean) {
         val now = System.currentTimeMillis()
         if (!forceThrottleBypass && now - lastScanTimeMillis < 260L) return
-        if (now - lastCardClosedTimeMillis < 1100L) return
+        if (now - lastCardClosedTimeMillis < 300L) return
         if (!isScanInProgress.compareAndSet(false, true)) return
         try {
             lastScanTimeMillis = now
@@ -287,10 +285,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         if (positionedNodes.isEmpty()) {
             currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
-            // Fallback OCR automático apenas se NÃO for Uber e houver ausência prolongada
-            if (targetApp != SourceApp.UBER_DRIVER) {
-                triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
-            }
+            // Fallback visual silencioso se a árvore de acessibilidade estiver vazia ou oculta
+            triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
             return
         }
 
@@ -670,9 +666,19 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         val app = applicationContext as? GoOrNoApplication ?: return
 
-        // Se o card já está atualmente aberto na tela do motorista, não reabre nem reinicia
+        // Se o card já está visível para a MESMA corrida, não recria para evitar flicker.
+        // Mas se a tela mudou para uma NOVA corrida, atualiza o card imediatamente sem travar!
         if (app.overlayPanel.isCardCurrentlyVisible()) {
-            return
+            val activeFp = app.overlayPanel.getActiveCardFingerprint()
+            val hasDifferentOffer = unshownOffers.any { offer ->
+                val price = offer.offeredPrice ?: 0.0
+                val km = offer.totalDistanceKmExplicit ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
+                val fp = "${offer.sourceApp.name}|${String.format(Locale.US, "%.2f", price)}|${String.format(Locale.US, "%.1f", km)}"
+                fp != activeFp
+            }
+            if (!hasDifferentOffer) {
+                return
+            }
         }
 
         // Remove apenas chaves que já expiraram há mais de 90 segundos

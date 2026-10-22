@@ -122,6 +122,8 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun isCardCurrentlyVisible(): Boolean = isAdded || isTransitioningBetweenOffers
 
+    fun getActiveCardFingerprint(): String = activeCardFingerprint
+
     fun applyConfig(config: DriverFinancialConfig) {
         mainHandler.post {
             val previousHorizontalPos = overlayHorizontalPosition
