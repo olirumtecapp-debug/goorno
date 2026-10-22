@@ -666,21 +666,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         val app = applicationContext as? GoOrNoApplication ?: return
 
-        // Se o card já está visível para a MESMA corrida, não recria para evitar flicker.
-        // Mas se a tela mudou para uma NOVA corrida, atualiza o card imediatamente sem travar!
-        if (app.overlayPanel.isCardCurrentlyVisible()) {
-            val activeFp = app.overlayPanel.getActiveCardFingerprint()
-            val hasDifferentOffer = unshownOffers.any { offer ->
-                val price = offer.offeredPrice ?: 0.0
-                val km = offer.totalDistanceKmExplicit ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
-                val fp = "${offer.sourceApp.name}|${String.format(Locale.US, "%.2f", price)}|${String.format(Locale.US, "%.1f", km)}"
-                fp != activeFp
-            }
-            if (!hasDifferentOffer) {
-                return
-            }
-        }
-
         // Remove apenas chaves que já expiraram há mais de 90 segundos
         val expiredKeys = shownOfferTimestamps.entries
             .filter { now - it.value > 90_000L }
@@ -697,6 +682,21 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (unshownOffers.isEmpty()) {
             // Todos os chamados já foram avaliados e exibidos recentemente; não repete para não incomodar o motorista!
             return
+        }
+
+        // Se o card já está visível para a MESMA corrida, não recria para evitar flicker.
+        // Mas se a tela mudou para uma NOVA corrida, atualiza o card imediatamente sem travar!
+        if (app.overlayPanel.isCardCurrentlyVisible()) {
+            val activeFp = app.overlayPanel.getActiveCardFingerprint()
+            val hasDifferentOffer = unshownOffers.any { offer ->
+                val price = offer.offeredPrice ?: 0.0
+                val km = offer.totalDistanceKmExplicit ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
+                val fp = "${offer.sourceApp.name}|${String.format(Locale.US, "%.2f", price)}|${String.format(Locale.US, "%.1f", km)}"
+                fp != activeFp
+            }
+            if (!hasDifferentOffer) {
+                return
+            }
         }
 
         serviceScope.launch {
