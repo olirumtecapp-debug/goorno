@@ -703,4 +703,61 @@ class GoOrNoEngineAndParserTest {
         assertEquals("Oferta Ativa e Confirmada", OfferLifecycleState.OFFER_ACTIVE.label)
         assertEquals("Oferta Encerrada ou Rejeitada", OfferLifecycleState.OFFER_DISMISSED.label)
     }
+
+    // 31. TESTE DAS OFERTAS REAIS DA UBER ENVIADAS PELO USUÁRIO (R$ 7,88 a R$ 56,47):
+    @Test
+    fun `test real user uber offers from screenshots 7_88 to 56_47`() {
+        val testCases = listOf(
+            Triple(listOf("UberX", "R$ 7,88", "1,2 km", "3,1 km", "4 min", "9 min", "Rua das Palmeiras, 100", "Av. Brasil, 250", "Aceitar"), 7.88, 4.3),
+            Triple(listOf("UberX", "R$ 9,14", "2,0 km", "4,5 km", "5 min", "12 min", "Rua da Paz, 50", "Rua do Sol, 300", "Aceitar"), 9.14, 6.5),
+            Triple(listOf("Exclusivo", "UberX", "R$ 11,96", "1,5 km", "5,2 km", "4 min", "14 min", "Rua A", "Rua B", "Aceitar"), 11.96, 6.7),
+            Triple(listOf("UberX", "R$ 13,34", "3,0 km", "6,0 km", "6 min", "15 min", "Rua X", "Rua Y", "Aceitar"), 13.34, 9.0),
+            Triple(listOf("Comfort", "R$ 14,90", "2,5 km", "7,0 km", "5 min", "18 min", "Rua 1", "Rua 2", "Aceitar"), 14.90, 9.5),
+            Triple(listOf("UberX", "R$ 18,02", "+R$ 2,50 incluído", "2,0 km", "8,5 km", "5 min", "20 min", "Rua Central", "Av. Norte", "Aceitar"), 18.02, 10.5),
+            Triple(listOf("Viagem longa", "UberX", "R$ 56,47", "5,0 km", "32,0 km", "10 min", "45 min", "Rua Alfa", "Rodovia dos Imigrantes", "Aceitar"), 56.47, 37.0)
+        )
+
+        for ((nodes, expectedPrice, expectedKm) in testCases) {
+            val offer = UberOfferReader.parseScreenNodes(nodes)
+            assertEquals(ScreenClassification.NEW_OFFER, offer.screenClassification)
+            assertEquals(expectedPrice, offer.offeredPrice!!, 0.01)
+            assertEquals(expectedKm, offer.totalDistanceKmExplicit!!, 0.01)
+        }
+    }
+
+    // 32. TESTE DE DETERMINISMO DE PREÇO COM BÔNUS E SEPARADORES DECIMAIS (PONTO E VÍRGULA):
+    @Test
+    fun `test uber deterministic price selection with bonus and period decimal separator`() {
+        val nodesWithPeriod = listOf(
+            "Prioridade",
+            "R$ 14.90",
+            "+R$ 3.00 incluído",
+            "2.1 km",
+            "5.4 km",
+            "6 min",
+            "14 min",
+            "Origem: Rua Teste, 10",
+            "Destino: Av Teste, 20",
+            "Aceitar"
+        )
+        val offer = UberOfferReader.parseScreenNodes(nodesWithPeriod)
+        assertEquals(14.90, offer.offeredPrice!!, 0.01)
+        assertEquals(7.5, offer.totalDistanceKmExplicit!!, 0.01)
+        assertEquals(20, offer.totalDurationMinExplicit)
+    }
+
+    // 33. TESTE DE ISOLAMENTO CONTRA NÚMEROS DE MAPA E REJEIÇÃO DE OFERTA INCOMPLETA:
+    @Test
+    fun `test rejection of incomplete screens or idle map numbers without ride trigger`() {
+        val mapWithRandomNumbers = listOf(
+            "12 min",
+            "50",
+            "80",
+            "Rua Vergueiro",
+            "Você está online"
+        )
+        val offer = UberOfferReader.parseScreenNodes(mapWithRandomNumbers)
+        assertEquals(ScreenClassification.NON_OFFER, offer.screenClassification)
+        assertNull(offer.offeredPrice)
+    }
 }

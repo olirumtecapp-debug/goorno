@@ -1,4 +1,4 @@
-﻿package com.creativeam.goorno.service
+package com.creativeam.goorno.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
@@ -256,7 +256,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // 2. Coleta nós ESTRITAMENTE da janela do pacote alvo (nunca de outras janelas)
         val positionedNodes = mutableListOf<PositionedText>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
-            if (targetApp == SourceApp.UBER_DRIVER || targetApp == SourceApp.UBER) {
+            if (targetApp == SourceApp.UBER_DRIVER) {
                 // Isolamento estrutural estrito do card da Uber: descarta 100% dos nós de mapa e status bar
                 val uberContainer = findUberCardContainer(activeRoot)
                 if (uberContainer != null) {
@@ -293,7 +293,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (positionedNodes.isEmpty()) {
             currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
             // Fallback OCR automático apenas se NÃO for Uber e houver ausência prolongada
-            if (targetApp != SourceApp.UBER_DRIVER && targetApp != SourceApp.UBER) {
+            if (targetApp != SourceApp.UBER_DRIVER) {
                 triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
             }
             return
@@ -423,7 +423,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
         // A Uber possui nós de acessibilidade 100% nativos e completos.
         // OCR na Uber causa duplicatas, perda de destino e valores irreais (R$ 149/h)!
-        if (targetApp == SourceApp.UBER_DRIVER || targetApp == SourceApp.UBER) {
+        if (targetApp == SourceApp.UBER_DRIVER) {
             isTakingAutoScreenshot = false
             return
         }
@@ -447,8 +447,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             }
         }
 
-        val app = applicationContext as? GoOrNoApplication
-        if (app?.overlayPanel?.isCardCurrentlyVisible() == true) return
         if (now - lastAutoScreenshotTimeMillis < 950L) return
 
         isTakingAutoScreenshot = true
