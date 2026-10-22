@@ -269,8 +269,8 @@ object FinancialEngine {
 
         val finalVerdict = if (riskAssessment.hasRisk) {
             warnings.add(0, riskAssessment.detailedMessage)
-            if (config.forceRedOnRiskArea) {
-                reasons.add(0, "${riskAssessment.shortBadge} — Semáforo bloqueado em VERMELHO por segurança")
+            if (config.forceRedOnRiskArea || riskAssessment.destinationMatchedZone != null) {
+                reasons.add(0, "${riskAssessment.shortBadge} — Semáforo bloqueado em VERMELHO por segurança no Destino")
                 TrafficLightVerdict.RED
             } else {
                 reasons.add(0, "${riskAssessment.shortBadge} — Atenção redobrada no endereço")
@@ -288,7 +288,11 @@ object FinancialEngine {
         )
 
         if (favoriteAssessment.isFavorite) {
-            reasons.add(0, "⭐ ${favoriteAssessment.shortBadge} — Região preferida de trabalho")
+            if (riskAssessment.hasRisk && riskAssessment.destinationMatchedZone != null) {
+                reasons.add("⭐ ${favoriteAssessment.shortBadge} (Origem preferida anulada pelo risco no destino)")
+            } else {
+                reasons.add(0, "⭐ ${favoriteAssessment.shortBadge} — Região preferida de trabalho")
+            }
         }
 
         val yellowRatio = config.yellowToleranceRatio.coerceIn(0.50, 0.99)

@@ -38,6 +38,15 @@ object RiskAreaEvaluator {
         "comunidade",
         "estrada de terra",
         "servidao",
+        // Grande SP / ABC Paulista (zonas críticas)
+        "montanhao",
+        "alvarenga",
+        "jardim silvina",
+        "vila sao pedro",
+        "parque sao bernardo",
+        "morro do kibon",
+        "sitio dos vianas",
+        "vila esperanca",
         // Grande SP / Capital (zonas de alta atenção relatadas por motoristas)
         "paraisopolis",
         "heliopolis",

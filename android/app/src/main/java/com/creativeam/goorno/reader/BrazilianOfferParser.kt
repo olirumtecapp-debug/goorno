@@ -478,11 +478,11 @@ object BrazilianOfferParser {
      */
     fun cleanAddressCandidate(rawText: String): String? {
         var clean = rawText.trim()
-        if (clean.length < 4) return null
+        if (clean.length < 3) return null
 
         val lower = clean.lowercase(Locale.getDefault())
 
-        // Descarta linhas puras de controle ou notificações de sistema do Android
+        // Descarta linhas puras de controle, botões de ação ou notificações de sistema
         if (lower.contains("silencioso está ativado") || lower.contains("retornar chamada") ||
             lower.contains("não afeta a ta") || lower.contains("nao afeta a ta") ||
             lower.contains("taxa de aceitação") || lower.contains("taxa de cancelamento") ||
@@ -492,14 +492,17 @@ object BrazilianOfferParser {
             lower.contains("segure p/ mover") || lower.contains("toque em qualquer") ||
             lower.contains("os empos das cardes") || lower.contains("tempo dos cards") ||
             lower.contains("solicitações") || lower.contains("solicitacoes") ||
-            lower.contains("radar de viagens")
+            lower.contains("radar de viagens") || lower.startsWith("viagem longa") ||
+            lower.startsWith("viagem ") || lower == "viagem" ||
+            lower.contains("higran") || lower.contains("canhaem") ||
+            lower.matches(Regex("""^\d{1,3}$"""))
         ) {
             return null
         }
 
-        // Se a linha tem um botão de ação no final (ex: "Zanela, 90, Centro Escolher R$9,60 1k" ou "Escolher"),
-        // corta o texto no início do botão para salvar o endereço real!
-        val actionMatch = Regex("""\b(escolher|selecionar|aceitar|recusar|rejeitar)\b""", RegexOption.IGNORE_CASE).find(clean)
+        // Se a linha tem um botão de ação ou tag colada no final (ex: "Zanela, 90, Centro Escolher", "Viagem hiGRAN", "Viagem longa..."),
+        // corta o texto no início do botão/tag para salvar o endereço real!
+        val actionMatch = Regex("""\b(escolher|selecionar|aceitar|recusar|rejeitar|viagem|radar|exclusivo|prioridade|higran|canhaem)\b""", RegexOption.IGNORE_CASE).find(clean)
         if (actionMatch != null) {
             clean = clean.substring(0, actionMatch.range.first).trim()
         }
@@ -507,6 +510,11 @@ object BrazilianOfferParser {
         // Remove resquícios de preços e distâncias coladas
         clean = clean.replace(Regex("""R\s*[\$5§]\s*\d+.*""", RegexOption.IGNORE_CASE), "").trim()
         clean = clean.replace(Regex("""\b\d+k\b""", RegexOption.IGNORE_CASE), "").trim()
+
+        // Remove placas de velocidade do mapa absorvidas no texto (ex: "... 50", "São Bernardo do 50 Campo")
+        clean = clean.replace(Regex("""\s+\b(30|40|50|60|70|80|90|100|110|120)\b\s*$"""), "").trim()
+        clean = clean.replace(Regex("""\s+\b(30|40|50|60|70|80|90|100|110|120)\b\s+"""), " ").trim()
+
         clean = clean.replace(Regex("""\s+"""), " ").trim()
         clean = clean.trimEnd(',', '-', '·', '•', ' ')
 
@@ -567,7 +575,25 @@ object BrazilianOfferParser {
                             nextLower.contains("verificado") ||
                             nextLower.contains("perfil") ||
                             nextLower.contains("corridas") ||
-                            nextLower.contains("deslocamento") ||
+                                                                                nextLower.contains("deslocamento") ||
+                        nextLower.contains("viagem") ||
+                        nextLower.contains("radar") ||
+                        nextLower.contains("exclusivo") ||
+                        nextLower.contains("prioridade") ||
+                        nextLower.contains("comfort") ||
+                        nextLower.contains("black") ||
+                        nextLower.contains("higran") ||
+                        nextLower.contains("canhaem") ||
+                        nextLower.matches(Regex("""^\d{1,3}$""")) ||
+                            nextLower.contains("viagem") ||
+                            nextLower.contains("radar") ||
+                            nextLower.contains("exclusivo") ||
+                            nextLower.contains("prioridade") ||
+                            nextLower.contains("comfort") ||
+                            nextLower.contains("black") ||
+                            nextLower.contains("higran") ||
+                            nextLower.contains("canhaem") ||
+                            nextLower.matches(Regex("""^\d{1,3}$""")) ||
                             STREET_PREFIX_REGEX.matches(nextLine)
 
                         if (isOfferBoundary) break
@@ -610,7 +636,16 @@ object BrazilianOfferParser {
                                 nextNextLower.contains("verificado") ||
                                 nextNextLower.contains("perfil") ||
                                 nextNextLower.contains("corridas") ||
-                                nextNextLower.contains("deslocamento") ||
+                                                                nextNextLower.contains("deslocamento") ||
+                                nextNextLower.contains("viagem") ||
+                                nextNextLower.contains("radar") ||
+                                nextNextLower.contains("exclusivo") ||
+                                nextNextLower.contains("prioridade") ||
+                                nextNextLower.contains("comfort") ||
+                                nextNextLower.contains("black") ||
+                                nextNextLower.contains("higran") ||
+                                nextNextLower.contains("canhaem") ||
+                                nextNextLower.matches(Regex("""^\d{1,3}$""")) ||
                                 STREET_PREFIX_REGEX.matches(nextNext)
 
                             if (isOfferBoundary) break

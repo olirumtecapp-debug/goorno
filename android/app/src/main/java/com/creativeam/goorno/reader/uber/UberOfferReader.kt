@@ -101,7 +101,15 @@ object UberOfferReader {
             )
         }
 
-        val prices = BrazilianOfferParser.extractAllCurrencies(cleanedLines)
+        // Descarta nós de mapa ou cabeçalhos soltos acima do card da Uber
+        val cardStartIdx = cleanedLines.indexOfFirst { line ->
+            val l = line.lowercase(Locale.getDefault())
+            l.contains("r$") || l.contains("exclusivo") || l.contains("radar") ||
+                UBER_CATEGORIES.any { cat -> l.contains(cat.lowercase(Locale.getDefault())) }
+        }
+        val cardLines = if (cardStartIdx > 0) cleanedLines.subList(cardStartIdx, cleanedLines.size) else cleanedLines
+
+        val prices = BrazilianOfferParser.extractAllCurrencies(cardLines)
         val hasInvalidCurrencyToken = cleanedLines.any {
             it.contains("R$", ignoreCase = true) && BrazilianOfferParser.parseCurrencyBr(it).isUnrecognized
         }
@@ -111,7 +119,7 @@ object UberOfferReader {
             else -> ExtractedField.Missing
         }
 
-        val distances = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
+        val distances = BrazilianOfferParser.extractAllDistancesKm(cardLines)
         var pickupKmField: ExtractedField<Double> = ExtractedField.Missing
         var tripKmField: ExtractedField<Double> = ExtractedField.Missing
         var totalKmField: ExtractedField<Double> = ExtractedField.Missing
@@ -123,7 +131,7 @@ object UberOfferReader {
             totalKmField = ExtractedField.Present(distances[0])
         }
 
-        val durations = BrazilianOfferParser.extractAllDurationsMinutes(cleanedLines)
+        val durations = BrazilianOfferParser.extractAllDurationsMinutes(cardLines)
         var pickupMinField: ExtractedField<Int> = ExtractedField.Missing
         var tripMinField: ExtractedField<Int> = ExtractedField.Missing
         var totalMinField: ExtractedField<Int> = ExtractedField.Missing
@@ -135,7 +143,7 @@ object UberOfferReader {
             totalMinField = ExtractedField.Present(durations[0])
         }
 
-        val legs = BrazilianOfferParser.extractRideLegs(cleanedLines)
+        val legs = BrazilianOfferParser.extractRideLegs(cardLines)
         if (legs.size >= 2) {
             if (!pickupKmField.isPresent) pickupKmField = ExtractedField.Present(legs[0].distanceKm)
             if (!tripKmField.isPresent) tripKmField = ExtractedField.Present(legs[1].distanceKm)
@@ -147,19 +155,36 @@ object UberOfferReader {
             cleanedLines.any { it.contains(cat, ignoreCase = true) }
         } ?: "Uber"
 
-        val (origin, destination) = BrazilianOfferParser.extractOriginAndDestination(cleanedLines)
+        val legsExplicit = BrazilianOfferParser.extractRideLegs(cardLines)
+        val (origin, destination) = if (legsExplicit.size >= 2 && !legsExplicit[0].address.isNullOrBlank() && !legsExplicit[1].address.isNullOrBlank()) {
+            Pair(legsExplicit[0].address, legsExplicit[1].address)
+        } else {
+            BrazilianOfferParser.extractOriginAndDestination(cardLines)
+        }
         val passengerRating = BrazilianOfferParser.extractPassengerRating(cleanedLines)
 
         val conflictNotes = mutableListOf<String>()
-        var totalKmVal = totalKmField.valueOrNull()
-            ?: if (pickupKmField.isPresent || tripKmField.isPresent) {
+        var totalKmVal = if (pickupKmField.isPresent && tripKmField.isPresent) {
+            (pickupKmField.valueOrNull() ?: 0.0) + (tripKmField.valueOrNull() ?: 0.0)
+        } else {
+            totalKmField.valueOrNull() ?: if (pickupKmField.isPresent || tripKmField.isPresent) {
                 (pickupKmField.valueOrNull() ?: 0.0) + (tripKmField.valueOrNull() ?: 0.0)
             } else null
+        }
+        if (totalKmVal != null) {
+            totalKmField = ExtractedField.Present(totalKmVal)
+        }
 
-        var totalMinVal = totalMinField.valueOrNull()
-            ?: if (pickupMinField.isPresent || tripMinField.isPresent) {
+        var totalMinVal = if (pickupMinField.isPresent && tripMinField.isPresent) {
+            (pickupMinField.valueOrNull() ?: 0) + (tripMinField.valueOrNull() ?: 0)
+        } else {
+            totalMinField.valueOrNull() ?: if (pickupMinField.isPresent || tripMinField.isPresent) {
                 (pickupMinField.valueOrNull() ?: 0) + (tripMinField.valueOrNull() ?: 0)
             } else null
+        }
+        if (totalMinVal != null) {
+            totalMinField = ExtractedField.Present(totalMinVal)
+        }
 
         // Proteção contra leitura parcial de tempo (ex: capturar apenas os minutos de embarque como se fosse a viagem toda):
         // Se a distância for >= 3.0 km e a duração der velocidade urbana > 48 km/h com apenas 1 token de duração:

@@ -276,8 +276,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         if (positionedNodes.isEmpty()) {
             currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
-            // Fallback OCR automático apenas se o pacote em primeiro plano for comprovadamente o motorista
-            triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
+            // Fallback OCR automático apenas se NÃO for Uber e houver ausência prolongada
+            if (targetApp != SourceApp.UBER_DRIVER && targetApp != SourceApp.UBER) {
+                triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
+            }
             return
         }
 
@@ -403,6 +405,17 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        // A Uber possui nós de acessibilidade 100% nativos e completos.
+        // OCR na Uber causa duplicatas, perda de destino e valores irreais (R$ 149/h)!
+        if (targetApp == SourceApp.UBER_DRIVER || targetApp == SourceApp.UBER) {
+            isTakingAutoScreenshot = false
+            return
+        }
+        val app = applicationContext as? GoOrNoApplication
+        if (app?.overlayPanel?.isCardCurrentlyVisible() == true || (now - lastOfferProcessedTimeMillis < 10_000L)) {
+            isTakingAutoScreenshot = false
+            return
+        }
         if (targetPkg == packageName || targetPkg.contains("com.creativeam.goorno")) {
             isTakingAutoScreenshot = false
             return
