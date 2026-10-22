@@ -152,6 +152,18 @@ fun GoOrNoComposeApp(
         }
     }
 
+    val versionPrefs = remember { context.getSharedPreferences("goorno_app_version_prefs", Context.MODE_PRIVATE) }
+    var showWhatsNewDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val lastSeenCode = versionPrefs.getInt("last_seen_version_code", 0)
+        if (lastSeenCode != 0 && currentAppVersionCode > lastSeenCode) {
+            showWhatsNewDialog = true
+        } else if (lastSeenCode == 0) {
+            versionPrefs.edit().putInt("last_seen_version_code", currentAppVersionCode).apply()
+        }
+    }
+
     var updateInfoState by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var isCheckingUpdates by remember { mutableStateOf(false) }
@@ -5458,45 +5470,21 @@ fun GoOrNoComposeApp(
             },
             text = {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Confira as melhorias desta versão:",
+                        text = "Uma nova versão com melhorias de velocidade, estabilidade e precisão foi disponibilizada para seu aplicativo.",
                         fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PetrolDarkText
+                        color = PetrolDarkText,
+                        lineHeight = 16.sp
                     )
-                    Surface(
-                        color = SoftSurfaceVariant,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, CleanCardBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                            verticalArrangement = Arrangement.spacedBy(3.dp)
-                        ) {
-                            if (info.changelog.isNotEmpty()) {
-                                info.changelog.forEach { item ->
-                                    Row(
-                                        verticalAlignment = Alignment.Top,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Text("✓", color = TrafficGreen, fontWeight = FontWeight.Black, fontSize = 10.5.sp)
-                                        Text(
-                                            text = item,
-                                            fontSize = 10.sp,
-                                            lineHeight = 12.5.sp,
-                                            color = PetrolDarkText
-                                        )
-                                    }
-                                }
-                            } else {
-                                Text("• Melhorias de estabilidade e precisão.", fontSize = 10.5.sp, color = PetrolDarkText)
-                            }
-                        }
-                    }
+                    Text(
+                        text = "Toque no botão abaixo para baixar e atualizar. As novidades completas serão exibidas assim que o aplicativo abrir após a instalação.",
+                        fontSize = 10.5.sp,
+                        color = MutedText,
+                        lineHeight = 14.5.sp
+                    )
                 }
             },
             confirmButton = {
@@ -5540,6 +5528,118 @@ fun GoOrNoComposeApp(
                         color = MutedText,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 11.5.sp
+                    )
+                }
+            }
+        )
+    }
+
+    // -------------------------------------------------------------
+    // DIALOG PÓS-ATUALIZAÇÃO: O QUE HÁ DE NOVO NA VERSÃO
+    // -------------------------------------------------------------
+    if (showWhatsNewDialog) {
+        val currentWhatsNewList = listOf(
+            "Alerta de Área de Risco 100% informativo: a decisão é sua e a região de risco não força mais card vermelho.",
+            "Distância de embarque respeita estritamente o seu limite configurado (ex: 2.0 km sem alertas precoces).",
+            "Identificação ampliada de paradas em viagens da 99 e Uber.",
+            "Trava anti-delay: bloqueia cards atrasados sobre o mapa vazio.",
+            "Blindagem contra fechamento ao usar WhatsApp ou outros aplicativos."
+        )
+
+        AlertDialog(
+            onDismissRequest = {
+                showWhatsNewDialog = false
+                versionPrefs.edit().putInt("last_seen_version_code", currentAppVersionCode).apply()
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = Color.White,
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = SoftSurfaceVariant,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("✨", fontSize = 18.sp)
+                        }
+                    }
+                    Column {
+                        Text(
+                            text = "Novidades da Versão",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.sp,
+                            color = PetrolDarkText
+                        )
+                        Text(
+                            text = "GoOrNo v$currentAppVersionName (Build $currentAppVersionCode)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = TrafficGreen
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Seu aplicativo foi atualizado com sucesso! Confira as melhorias ativas:",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = PetrolDarkText
+                    )
+                    Surface(
+                        color = SoftSurfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, CleanCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            currentWhatsNewList.forEach { item ->
+                                Row(
+                                    verticalAlignment = Alignment.Top,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text("✓", color = TrafficGreen, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                                    Text(
+                                        text = item,
+                                        fontSize = 10.5.sp,
+                                        lineHeight = 13.5.sp,
+                                        color = PetrolDarkText
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showWhatsNewDialog = false
+                        versionPrefs.edit().putInt("last_seen_version_code", currentAppVersionCode).apply()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = TrafficGreen,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Entendido, vamos rodar! 🚀",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp
                     )
                 }
             }
