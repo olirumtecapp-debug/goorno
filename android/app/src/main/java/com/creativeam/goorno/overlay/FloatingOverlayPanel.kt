@@ -452,12 +452,16 @@ class FloatingOverlayPanel(private val context: Context) {
             else -> offer.sourceApp.displayName
         }
 
-        val zoneTag = when {
-            result.hasRiskAlert -> "⚠️ ${result.riskAlertBadge.orEmpty().ifBlank { "Risco" }} · "
-            result.isFavoriteZone -> "⭐ ${result.favoriteZoneBadge.orEmpty().ifBlank { "Favorito" }} · "
-            !result.operationalBadge.isNullOrBlank() -> "${result.operationalBadge} · "
-            else -> ""
+        val alertTags = mutableListOf<String>()
+        if (result.hasRiskAlert) {
+            alertTags.add(result.riskAlertBadge.orEmpty().ifBlank { "⚠️ Área de risco" })
+        } else if (result.isFavoriteZone) {
+            alertTags.add("⭐ ${result.favoriteZoneBadge.orEmpty().ifBlank { "Favorito" }}")
         }
+        if (!result.operationalBadge.isNullOrBlank()) {
+            alertTags.add(result.operationalBadge)
+        }
+        val zoneTag = if (alertTags.isNotEmpty()) alertTags.joinToString(" · ") + " · " else ""
 
         val textCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -725,7 +729,9 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             favRow.addView(tvFav)
             contentArea.addView(favRow)
-        } else if (!result.operationalBadge.isNullOrBlank()) {
+        }
+
+        if (!result.operationalBadge.isNullOrBlank()) {
             val opRow = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -1033,7 +1039,9 @@ class FloatingOverlayPanel(private val context: Context) {
                 ellipsize = android.text.TextUtils.TruncateAt.END
             }
             card.addView(tvFav)
-        } else if (!result.operationalBadge.isNullOrBlank()) {
+        }
+
+        if (!result.operationalBadge.isNullOrBlank()) {
             val tvOp = TextView(context).apply {
                 text = result.operationalBadge
                 setTextColor(Color.parseColor(if (isDark) "#F59E0B" else "#D97706"))
@@ -1659,6 +1667,25 @@ class FloatingOverlayPanel(private val context: Context) {
             box.addView(tvFav)
         }
 
+        if (!result.operationalBadge.isNullOrBlank()) {
+            val tvOp = TextView(context).apply {
+                text = result.operationalBadge
+                setTextColor(Color.parseColor("#FDE047"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                background = roundedBg("#2E1E05", 6f)
+                maxLines = 2
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
+            }
+            box.addView(tvOp)
+        }
+
         card.addView(box)
         return card
     }
@@ -1939,6 +1966,25 @@ class FloatingOverlayPanel(private val context: Context) {
                 }
             }
             box.addView(tvFav)
+        }
+
+        if (!result.operationalBadge.isNullOrBlank()) {
+            val tvOp = TextView(context).apply {
+                text = result.operationalBadge
+                setTextColor(Color.parseColor("#B45309"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                background = roundedBg("#FEF3C7", 6f)
+                maxLines = 2
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
+            }
+            box.addView(tvOp)
         }
 
         card.addView(box)

@@ -495,6 +495,9 @@ object BrazilianOfferParser {
             lower.contains("radar de viagens") || lower.startsWith("viagem longa") ||
             lower.startsWith("viagem ") || lower == "viagem" ||
             lower.contains("higran") || lower.contains("canhaem") ||
+            lower.contains("espera longa") || lower.contains("taxa de parada") ||
+            lower.contains("por deslocamento") || lower.contains("deslocamento incl") ||
+            STOPS_REGEX.containsMatchIn(clean) ||
             lower.matches(Regex("""^\d{1,3}$"""))
         ) {
             return null
@@ -575,16 +578,9 @@ object BrazilianOfferParser {
                             nextLower.contains("verificado") ||
                             nextLower.contains("perfil") ||
                             nextLower.contains("corridas") ||
-                                                                                nextLower.contains("deslocamento") ||
-                        nextLower.contains("viagem") ||
-                        nextLower.contains("radar") ||
-                        nextLower.contains("exclusivo") ||
-                        nextLower.contains("prioridade") ||
-                        nextLower.contains("comfort") ||
-                        nextLower.contains("black") ||
-                        nextLower.contains("higran") ||
-                        nextLower.contains("canhaem") ||
-                        nextLower.matches(Regex("""^\d{1,3}$""")) ||
+                            nextLower.contains("deslocamento") ||
+                            nextLower.contains("parada") ||
+                            nextLower.contains("espera") ||
                             nextLower.contains("viagem") ||
                             nextLower.contains("radar") ||
                             nextLower.contains("exclusivo") ||
@@ -636,7 +632,9 @@ object BrazilianOfferParser {
                                 nextNextLower.contains("verificado") ||
                                 nextNextLower.contains("perfil") ||
                                 nextNextLower.contains("corridas") ||
-                                                                nextNextLower.contains("deslocamento") ||
+                                nextNextLower.contains("deslocamento") ||
+                                nextNextLower.contains("parada") ||
+                                nextNextLower.contains("espera") ||
                                 nextNextLower.contains("viagem") ||
                                 nextNextLower.contains("radar") ||
                                 nextNextLower.contains("exclusivo") ||
@@ -857,7 +855,7 @@ object BrazilianOfferParser {
             if (clusters.isNotEmpty()) return clusters
         }
 
-        // 3. Fatiamento por cabeçalhos de cartão (Pgto. no app, categorias ou preços) para múltiplas ofertas
+        // 3. Fatiamento por cabeçalhos de cartão (Pgto. no app ou categorias explícitas) para múltiplas ofertas
         val offerHeaderIndices = mutableListOf<Int>()
         for (i in cleaned.indices) {
             val line = cleaned[i]
@@ -869,6 +867,15 @@ object BrazilianOfferParser {
                 lower.contains("dinâmica incl") ||
                 lower.contains("dinamica incl") ||
                 lower.contains("a mais por corrida") ||
+                lower.contains("espera longa") ||
+                lower.contains("por espera longa") ||
+                lower.contains("taxa de parada") ||
+                lower.contains("parada de r$") ||
+                lower.contains("inclusa") ||
+                lower.contains("incluído") ||
+                lower.contains("garantidos") ||
+                lower.contains("recompensas") ||
+                lower.contains("ganhe até") ||
                 lower.contains("meta") ||
                 lower.contains("saldo") ||
                 lower.contains("ganhos") ||
@@ -876,20 +883,20 @@ object BrazilianOfferParser {
             ) {
                 continue
             }
-            if (
-                lower.contains("pgto. no app") ||
+            // Apenas cabeçalhos de cartão reais ou categorias separam ofertas na tela.
+            // NUNCA usamos números de preço isolados (R$) para fatiar, pois tarifas adicionais
+            // (espera longa, taxa de parada, etc.) quebram ofertas únicas em 2 cartões fantasmas!
+            val isExplicitHeader = lower.contains("pgto. no app") ||
                 lower.contains("pagamento no app") ||
-                lower.contains("pop") ||
-                lower.contains("99pop") ||
-                lower.contains("99plus") ||
-                lower.contains("99negocia") ||
-                lower.contains("99moto") ||
-                lower.contains("uberx") ||
-                lower.contains("comfort") ||
-                lower.contains("black") ||
-                lower.contains("flash") ||
-                extractAllCurrencies(listOf(line)).isNotEmpty()
-            ) {
+                lower.startsWith("99pop") || lower == "pop" ||
+                lower.startsWith("99plus") ||
+                lower.startsWith("99negocia") ||
+                lower.startsWith("99moto") ||
+                lower.startsWith("uberx") ||
+                lower.startsWith("comfort") ||
+                lower.startsWith("black") ||
+                lower.startsWith("flash")
+            if (isExplicitHeader) {
                 if (offerHeaderIndices.isEmpty() || i > offerHeaderIndices.last() + 1) {
                     offerHeaderIndices.add(i)
                 }
@@ -1110,7 +1117,10 @@ object BrazilianOfferParser {
             if (match != null) {
                 val group1 = match.groups[1]?.value
                 return when {
-                    group1 != null -> if (group1 == "1") "1 Parada" else "$group1 Paradas"
+                    group1 != null -> {
+                        val count = group1.toIntOrNull() ?: 1
+                        if (count == 1) "1 Parada" else "$count Paradas"
+                    }
                     line.contains("várias", ignoreCase = true) || line.contains("varias", ignoreCase = true) -> "Várias Paradas"
                     else -> "Com Parada"
                 }

@@ -11,5 +11,11 @@ export default defineConfig({
   },
   server: {
     port: 3008,
+    proxy: {
+      "/api": {
+        target: "https://goorno-app.vercel.app",
+        changeOrigin: true,
+      },
+    },
   },
 });
