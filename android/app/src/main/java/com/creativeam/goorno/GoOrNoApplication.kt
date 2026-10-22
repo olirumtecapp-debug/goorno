@@ -55,13 +55,14 @@ class GoOrNoApplication : Application() {
                     preferencesRepository.saveConfig(current.copy(showFloatingShortcutBubble = false))
                 }
             }
-            onUserUpdatedSemaforoQuickly = { minKm, minHr, minRating ->
+            onUserUpdatedSemaforoQuickly = { minKm, minHr, minRating, maxPickupKm ->
                 appScope.launch {
                     val current = preferencesRepository.getConfigOnce()
                     preferencesRepository.saveConfig(current.copy(
                         targetGrossPerKm = minKm,
                         targetGrossPerHour = minHr,
-                        targetGoodPassengerRating = minRating
+                        targetGoodPassengerRating = minRating,
+                        distantPickupKmThreshold = maxPickupKm
                     ))
                 }
             }

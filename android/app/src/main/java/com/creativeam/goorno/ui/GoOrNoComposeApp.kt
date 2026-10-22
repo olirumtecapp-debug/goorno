@@ -2555,6 +2555,98 @@ fun GoOrNoComposeApp(
                         Spacer(modifier = Modifier.height(14.dp))
 
                         // =========================================================
+                        // CARD DE EMBARQUE DISTANTE (CONFIGURÁVEL)
+                        // =========================================================
+                        var pickupDistThreshold by remember(config.distantPickupKmThreshold) {
+                            mutableStateOf(config.distantPickupKmThreshold.toFloat())
+                        }
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        color = PetrolHeader,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "⚠️ EMBARQUE",
+                                            color = LimeBright,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 10.sp,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "Limite de Embarque Distante",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 14.sp,
+                                        color = PetrolHeader
+                                    )
+                                }
+                                Text(
+                                    text = "Corridas com distância até o passageiro igual ou superior a este valor receberão o aviso de '⚠️ Emb. Longe':",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Distância máxima tolerada:",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = PetrolDarkText
+                                    )
+                                    Surface(
+                                        color = SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", pickupDistThreshold),
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 14.sp,
+                                            color = PetrolHeader,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                                Slider(
+                                    value = pickupDistThreshold,
+                                    onValueChange = {
+                                        val rounded = (Math.round(it * 10f) / 10f).coerceIn(0.5f, 8.0f)
+                                        pickupDistThreshold = rounded
+                                        val updated = config.copy(distantPickupKmThreshold = rounded.toDouble())
+                                        scope.launch {
+                                            app.preferencesRepository.saveConfig(updated)
+                                            app.overlayPanel.applyConfig(updated)
+                                        }
+                                    },
+                                    valueRange = 0.5f..8.0f,
+                                    steps = 14,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = PetrolHeader,
+                                        activeTrackColor = TrafficYellow
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // =========================================================
                         // CARD DE AVALIAÇÃO DO PASSAGEIRO (VERDE / AMARELA / VERMELHA)
                         // =========================================================
                         var goodRatingText by remember(config.targetGoodPassengerRating) {

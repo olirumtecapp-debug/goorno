@@ -310,7 +310,8 @@ object FinancialEngine {
             else -> TrafficLightVerdict.RED
         }
 
-        val isDistantPickup = pickupKm != null && (pickupKm >= 2.5 || (pickupMin != null && pickupMin >= 8))
+        val pickupThreshold = config.distantPickupKmThreshold.coerceIn(0.5, 10.0)
+        val isDistantPickup = pickupKm != null && (pickupKm >= pickupThreshold || (pickupMin != null && pickupMin >= 8))
         val isLongTrip = (totalDistanceKm != null && totalDistanceKm >= 25.0) || (totalDurationMin != null && totalDurationMin >= 45)
 
         val operationalAlertParts = mutableListOf<String>()

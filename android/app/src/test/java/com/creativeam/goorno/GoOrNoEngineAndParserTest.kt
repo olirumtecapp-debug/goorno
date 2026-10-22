@@ -864,6 +864,19 @@ class GoOrNoEngineAndParserTest {
         assertTrue(eval1.operationalBadge!!.contains("1 Parada"))
         assertTrue(eval1.operationalBadge!!.contains("Emb. Longe"))
 
+        // Verifica que o limiar de embarque distante é customizável pelo motorista (ex: 4.0 km tolerante vs 1.0 km rígido)
+        val configLenientPickup = config.copy(distantPickupKmThreshold = 4.0)
+        val evalLenient = FinancialEngine.evaluate(distantPickupOffer.copy(pickupDurationMinField = ExtractedField.Present(4)), configLenientPickup)
+        assertFalse(evalLenient.isDistantPickup)
+
+        val configStrictPickup = config.copy(distantPickupKmThreshold = 1.0)
+        val shortPickupOffer = distantPickupOffer.copy(
+            pickupDistanceKmField = ExtractedField.Present(1.2),
+            pickupDurationMinField = ExtractedField.Present(3)
+        )
+        val evalStrict = FinancialEngine.evaluate(shortPickupOffer, configStrictPickup)
+        assertTrue(evalStrict.isDistantPickup)
+
         // Caso com viagem longa (> 45 min)
         val longTripOffer = StandardRideOffer(
             offerId = "op2",

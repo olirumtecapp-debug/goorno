@@ -50,6 +50,7 @@ object CloudSyncManager {
             put("forceRedOnBadPassengerRating", config.forceRedOnBadPassengerRating)
             put("targetGoodPassengerRating", config.targetGoodPassengerRating)
             put("minAcceptablePassengerRating", config.minAcceptablePassengerRating)
+            put("distantPickupKmThreshold", config.distantPickupKmThreshold)
             put("minConfidenceThreshold", config.minConfidenceThreshold)
             put("riskAlertEnabled", config.riskAlertEnabled)
             put("forceRedOnRiskArea", config.forceRedOnRiskArea)
@@ -132,6 +133,7 @@ object CloudSyncManager {
                 forceRedOnBadPassengerRating = c.optBoolean("forceRedOnBadPassengerRating", true),
                 targetGoodPassengerRating = c.optDouble("targetGoodPassengerRating", 4.85),
                 minAcceptablePassengerRating = c.optDouble("minAcceptablePassengerRating", 4.70),
+                distantPickupKmThreshold = c.optDouble("distantPickupKmThreshold", 2.5),
                 minConfidenceThreshold = c.optDouble("minConfidenceThreshold", 0.65),
                 riskAlertEnabled = c.optBoolean("riskAlertEnabled", true),
                 forceRedOnRiskArea = c.optBoolean("forceRedOnRiskArea", true),

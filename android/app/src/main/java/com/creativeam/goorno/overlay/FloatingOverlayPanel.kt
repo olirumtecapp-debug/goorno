@@ -79,7 +79,7 @@ class FloatingOverlayPanel(private val context: Context) {
     var onUserRequestedDisableCopilot: (() -> Unit)? = null
     var onOfferCardClosed: (() -> Unit)? = null
     var onUserRequestedHideShortcutBubble: (() -> Unit)? = null
-    var onUserUpdatedSemaforoQuickly: ((minKm: Double, minHr: Double, minRating: Double) -> Unit)? = null
+    var onUserUpdatedSemaforoQuickly: ((minKm: Double, minHr: Double, minRating: Double, maxPickupKm: Double) -> Unit)? = null
 
     private val countdownRunnable = object : Runnable {
         override fun run() {
@@ -2374,6 +2374,7 @@ class FloatingOverlayPanel(private val context: Context) {
             var curKm = lastKnownConfig?.targetGrossPerKm ?: 2.0
             var curHr = lastKnownConfig?.targetGrossPerHour ?: 40.0
             var curRating = lastKnownConfig?.targetGoodPassengerRating ?: 4.85
+            var curPickup = lastKnownConfig?.distantPickupKmThreshold ?: 2.5
 
             fun createStepperRow(label: String, initialValueText: String, onMinus: () -> String, onPlus: () -> String): View {
                 val row = LinearLayout(context).apply {
@@ -2458,6 +2459,14 @@ class FloatingOverlayPanel(private val context: Context) {
                 String.format(Locale.forLanguageTag("pt-BR"), "%.2f", curRating)
             }))
 
+            editorLayout.addView(createStepperRow("Emb. Longe Máx:", String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", curPickup), {
+                curPickup = (curPickup - 0.5).coerceAtLeast(0.5)
+                String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", curPickup)
+            }, {
+                curPickup = (curPickup + 0.5).coerceAtMost(8.0)
+                String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", curPickup)
+            }))
+
             val actionsRow = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 layoutParams = LinearLayout.LayoutParams(
@@ -2493,8 +2502,8 @@ class FloatingOverlayPanel(private val context: Context) {
                 background = roundedBg("#10B981", 8f)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.5f)
                 setOnClickListener {
-                    onUserUpdatedSemaforoQuickly?.invoke(curKm, curHr, curRating)
-                    android.widget.Toast.makeText(context, "✓ Semáforo Atualizado!", android.widget.Toast.LENGTH_SHORT).show()
+                    onUserUpdatedSemaforoQuickly?.invoke(curKm, curHr, curRating, curPickup)
+                    android.widget.Toast.makeText(context, "✓ Semáforo e Embarque Atualizados!", android.widget.Toast.LENGTH_SHORT).show()
                     showHubView()
                 }
             }
