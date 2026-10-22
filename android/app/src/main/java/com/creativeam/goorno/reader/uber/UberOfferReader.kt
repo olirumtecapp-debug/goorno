@@ -135,6 +135,14 @@ object UberOfferReader {
             totalMinField = ExtractedField.Present(durations[0])
         }
 
+        val legs = BrazilianOfferParser.extractRideLegs(cleanedLines)
+        if (legs.size >= 2) {
+            if (!pickupKmField.isPresent) pickupKmField = ExtractedField.Present(legs[0].distanceKm)
+            if (!tripKmField.isPresent) tripKmField = ExtractedField.Present(legs[1].distanceKm)
+            if (!pickupMinField.isPresent) pickupMinField = ExtractedField.Present(legs[0].durationMin)
+            if (!tripMinField.isPresent) tripMinField = ExtractedField.Present(legs[1].durationMin)
+        }
+
         val detectedCategory = UBER_CATEGORIES.firstOrNull { cat ->
             cleanedLines.any { it.contains(cat, ignoreCase = true) }
         } ?: "Uber"
@@ -143,15 +151,30 @@ object UberOfferReader {
         val passengerRating = BrazilianOfferParser.extractPassengerRating(cleanedLines)
 
         val conflictNotes = mutableListOf<String>()
-        val totalKmVal = totalKmField.valueOrNull()
+        var totalKmVal = totalKmField.valueOrNull()
             ?: if (pickupKmField.isPresent || tripKmField.isPresent) {
                 (pickupKmField.valueOrNull() ?: 0.0) + (tripKmField.valueOrNull() ?: 0.0)
             } else null
 
-        val totalMinVal = totalMinField.valueOrNull()
+        var totalMinVal = totalMinField.valueOrNull()
             ?: if (pickupMinField.isPresent || tripMinField.isPresent) {
                 (pickupMinField.valueOrNull() ?: 0) + (tripMinField.valueOrNull() ?: 0)
             } else null
+
+        // Proteção contra leitura parcial de tempo (ex: capturar apenas os minutos de embarque como se fosse a viagem toda):
+        // Se a distância for >= 3.0 km e a duração der velocidade urbana > 48 km/h com apenas 1 token de duração:
+        if (totalKmVal != null && totalMinVal != null && totalKmVal >= 3.0 && totalMinVal > 0) {
+            val impliedSpeedKmH = totalKmVal / (totalMinVal / 60.0)
+            if (impliedSpeedKmH > 48.0) {
+                if (durations.size == 1 && (pickupMinField.isMissing || tripMinField.isMissing)) {
+                    val realisticTotalMin = (totalMinVal + (totalKmVal * 2.2).toInt()).coerceIn(12, 180)
+                    totalMinVal = realisticTotalMin
+                    totalMinField = ExtractedField.Present(realisticTotalMin)
+                } else if (impliedSpeedKmH > 85.0) {
+                    conflictNotes.add("Velocidade média (${impliedSpeedKmH.toInt()} km/h) inconsistente com corrida urbana")
+                }
+            }
+        }
 
         if (totalKmVal != null && totalKmVal <= 0.0) {
             conflictNotes.add("Distância igual ou menor que zero")

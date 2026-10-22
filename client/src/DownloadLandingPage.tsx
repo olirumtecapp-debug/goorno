@@ -405,14 +405,14 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </div>
 
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 2,42</span>
-                  <span className="text-sm font-bold text-[#365922]">/km · R$ 33,56/h</span>
+                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 4,60</span>
+                  <span className="text-sm font-bold text-[#365922]">/km · R$ 106,87/h</span>
                 </div>
                 <h3 className="font-space font-black text-lg text-[#071d19] mb-1">
                   Vale a pena aceitar
                 </h3>
                 <p className="text-xs sm:text-sm text-[#3b5936] leading-relaxed mb-4">
-                  R$ 17,90 por 7,4 km (32 min). O GoOrNo calcula combustível + manutenção preventiva e confirma que sobra lucro líquido real no seu bolso.
+                  R$ 28,50 por 6,2 km (16 min). O GoOrNo calcula combustível + manutenção preventiva e confirma que sobra lucro líquido real no seu bolso.
                 </p>
 
                 {/* Smartphone Preview Mockup */}
@@ -455,14 +455,14 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </div>
 
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 1,25</span>
-                  <span className="text-sm font-bold text-[#991b1b]">/km · R$ 56,25/h</span>
+                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 1,60</span>
+                  <span className="text-sm font-bold text-[#991b1b]">/km · R$ 39,11/h</span>
                 </div>
                 <h3 className="font-space font-black text-lg text-[#071d19] mb-1">
                   Melhor recusar na hora
                 </h3>
                 <p className="text-xs sm:text-sm text-[#7f1d1d] leading-relaxed mb-4">
-                  R$ 11,25 por 9,0 km (23 min). O copiloto detecta busca longa (4,4 km) e avisa que você vai pagar para trabalhar se fizer essa corrida.
+                  R$ 37,15 por 23,2 km (57 min). O copiloto detecta remuneração insuficiente e avisa que você vai pagar para trabalhar se fizer essa corrida.
                 </p>
 
                 {/* Smartphone Preview Mockup */}

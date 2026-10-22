@@ -153,10 +153,12 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                         continue
                     }
 
-                    if (app?.overlayPanel?.isCopilotMonitoringEnabled() == true &&
-                        app.overlayPanel.isCardCurrentlyVisible() == false
-                    ) {
-                        scanCurrentScreen(eventPkg = null, forceThrottleBypass = true)
+                    if (app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
+                        if (app.overlayPanel.isCardCurrentlyVisible()) {
+                            checkIfOfferDismissedAndCloseCard(activeRootPkg = null, eventPkg = null)
+                        } else {
+                            scanCurrentScreen(eventPkg = null, forceThrottleBypass = true)
+                        }
                     }
                 } catch (_: Throwable) {
                 }
@@ -215,6 +217,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         if (app?.overlayPanel?.isCardCurrentlyVisible() == true) {
+            checkIfOfferDismissedAndCloseCard(activeRootPkg = activeRootPkg, eventPkg = evtPkg)
             return
         }
 
@@ -844,5 +847,69 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         (applicationContext as? GoOrNoApplication)?.overlayPanel?.hidePanel()
         serviceScope.cancel()
         super.onDestroy()
+    }
+
+    private fun checkIfOfferDismissedAndCloseCard(activeRootPkg: String?, eventPkg: String?) {
+        val app = applicationContext as? GoOrNoApplication ?: return
+        if (!app.overlayPanel.isCardCurrentlyVisible()) return
+
+        val activeRoot = try { rootInActiveWindow } catch (_: Exception) { null }
+        val targetPkg = activeRoot?.packageName?.toString()
+            ?: activeRootPkg
+            ?: eventPkg
+            ?: ""
+
+        // Se o usuário saiu do app de motorista (foi pro WhatsApp, tela inicial, etc.), fecha o card imediatamente
+        if (targetPkg.isNotBlank() && !SourceApp.isAllowedDriverPackage(targetPkg)) {
+            app.overlayPanel.hideOfferCardOnly()
+            return
+        }
+
+        // Se está no app de motorista, coleta os textos visíveis rápidos
+        val texts = mutableListOf<String>()
+        if (activeRoot != null) {
+            collectFastTexts(activeRoot, texts, maxNodes = 50)
+        }
+
+        if (texts.isEmpty()) return
+
+        val screenJoined = texts.joinToString(" ").lowercase(Locale.ROOT)
+
+        // Se não tem nenhum "R$" na tela E não tem nenhum botão de ação ("aceitar", "escolher", "selecionar", "exclusivo", "radar"),
+        // significa que a oferta sumiu/expirou e o motorista está no mapa ocioso!
+        val hasCurrency = screenJoined.contains("r$")
+        val hasRideAction = screenJoined.contains("aceitar") ||
+            screenJoined.contains("escolher") ||
+            screenJoined.contains("selecionar") ||
+            screenJoined.contains("exclusivo") ||
+            screenJoined.contains("radar") ||
+            screenJoined.contains("deslize")
+
+        val isIdleMap = screenJoined.contains("buscando solicitações") ||
+            screenJoined.contains("buscando solicitacoes") ||
+            screenJoined.contains("procurando viagens") ||
+            screenJoined.contains("você está online") ||
+            screenJoined.contains("voce esta online") ||
+            screenJoined.contains("mapa de chamadas")
+
+        if ((!hasCurrency && !hasRideAction) || isIdleMap) {
+            app.overlayPanel.hideOfferCardOnly()
+        }
+    }
+
+    private fun collectFastTexts(node: AccessibilityNodeInfo, list: MutableList<String>, maxNodes: Int) {
+        if (list.size >= maxNodes) return
+        val t = node.text?.toString()?.trim()
+        if (!t.isNullOrEmpty()) list.add(t)
+        val cd = node.contentDescription?.toString()?.trim()
+        if (!cd.isNullOrEmpty()) list.add(cd)
+
+        val childCount = try { node.childCount } catch (_: Exception) { 0 }
+        for (i in 0 until childCount) {
+            val child = try { node.getChild(i) } catch (_: Exception) { null } ?: continue
+            collectFastTexts(child, list, maxNodes)
+            try { child.recycle() } catch (_: Exception) {}
+            if (list.size >= maxNodes) break
+        }
     }
 }

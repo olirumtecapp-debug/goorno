@@ -81,7 +81,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '🟢 CORRIDA APROVADA',
     badgeType: 'green',
-    summary: 'Card verde indicando corrida com excelente margem financeira (R$ 2,42/km, R$ 33,56/h e passageiro nota 4,87).',
+    summary: 'Card verde indicando corrida com excelente margem financeira (R$ 4,60/km, R$ 106,87/h e passageiro nota 4,95).',
     highlightText: 'Dinheiro no bolso garantido: cálculo automático descontando combustível e desgaste real do veículo.'
   },
   {
@@ -408,7 +408,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   <Maximize2 className="w-4 h-4 text-[#d9ff4f]/60 group-hover:text-[#d9ff4f] transition" />
                 </div>
                 <p className="text-xs text-white/90 leading-relaxed font-dm">
-                  R$ 17,90 por 7,4 km (R$ 2,42/km · R$ 33,56/h). O GoOrNo aprova na hora com card verde destacando alta rentabilidade.
+                  R$ 28,50 por 6,2 km (R$ 4,60/km · R$ 106,87/h). O GoOrNo aprova na hora com card verde destacando alta rentabilidade.
                 </p>
                 <div className="mt-3 text-[11px] font-bold text-[#d9ff4f] underline">
                   Toque para ver o card Compensa →
@@ -430,7 +430,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   <Maximize2 className="w-4 h-4 text-[#ff6e58]/60 group-hover:text-[#ff6e58] transition" />
                 </div>
                 <p className="text-xs text-white/90 leading-relaxed font-dm">
-                  R$ 11,25 por 9,0 km (R$ 1,25/km · R$ 56,25/h). O GoOrNo avisa em vermelho que a busca longa (4,4 km) gera prejuízo real.
+                  R$ 37,15 por 23,2 km (R$ 1,60/km · R$ 39,11/h). O GoOrNo avisa em vermelho que a remuneração por km e por hora geram prejuízo real.
                 </p>
                 <div className="mt-3 text-[11px] font-bold text-[#ff6e58] underline">
                   Toque para ver o card Não Compensa →
