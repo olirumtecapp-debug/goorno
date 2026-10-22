@@ -36,7 +36,12 @@ jobs:
       - name: Run Automated Unit Tests (JUnit) & Build APK
         run: |
           cd android
-          gradle testDebugUnitTest assembleDebug assembleRelease --stacktrace
+          gradle testDebugUnitTest --info || {
+            echo "=== TEST FAILURES XML ==="
+            find app/build/test-results -name "*.xml" -exec cat {} +
+            exit 1
+          }
+          gradle assembleDebug assembleRelease --stacktrace
 
       - name: Prepare APK for Artifact
         run: |
