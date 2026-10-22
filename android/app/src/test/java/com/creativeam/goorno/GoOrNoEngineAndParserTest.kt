@@ -760,4 +760,126 @@ class GoOrNoEngineAndParserTest {
         assertEquals(ScreenClassification.NON_OFFER, offer.screenClassification)
         assertNull(offer.offeredPrice)
     }
+
+    // 34. TESTE DE DETECÇÃO DE PARADAS NO TRAJETO (99 E UBER):
+    @Test
+    fun `test ride stops detection for 99 and uber offers`() {
+        // 99 com 1 parada(s)
+        val nodes99 = listOf(
+            "Dinheiro",
+            "R$ 16,20",
+            "Taxa de deslocamento R$1,11",
+            "8min (3,3km)",
+            "Terceira Rua, Rio do Ouro",
+            "1 parada(s)",
+            "22min (9,2km)",
+            "Rua Maj. Bezerra",
+            "Aceitar"
+        )
+        val offer99 = NinetyNineOfferReader.parseScreenNodes(nodes99)
+        assertEquals("1 Parada", offer99.stopsDescription)
+
+        // Uber com 2 paradas
+        val nodesUber2 = listOf(
+            "UberX",
+            "R$ 25,61",
+            "+R$ 2,50 incluído",
+            "4 minutos (0.7 km) de distância",
+            "Avenida Osvaldo Aranha",
+            "2 paradas",
+            "Viagem de 18 min (5.5 km)",
+            "Rua Teste, 100",
+            "Aceitar"
+        )
+        val offerUber2 = UberOfferReader.parseScreenNodes(nodesUber2)
+        assertEquals("2 Paradas", offerUber2.stopsDescription)
+
+        // Uber com Várias paradas
+        val nodesUberVarias = listOf(
+            "UberX",
+            "R$ 35,00",
+            "Várias paradas",
+            "3 min (0.6 km)",
+            "Av Paulista",
+            "15 min (4.0 km)",
+            "Rua Augusta",
+            "Aceitar"
+        )
+        val offerUberVarias = UberOfferReader.parseScreenNodes(nodesUberVarias)
+        assertEquals("Várias Paradas", offerUberVarias.stopsDescription)
+    }
+
+    // 35. TESTE DE DETECÇÃO DE SUPERMERCADOS E ATACADISTAS:
+    @Test
+    fun `test supermarket and wholesale detection in ride addresses`() {
+        val coopNodes = listOf(
+            "Pgto. no app",
+            "R$ 7,50",
+            "6 min (1,3 km)",
+            "Rua Demétrio Ghirardello, 530",
+            "4 min (1,8 km)",
+            "Supermercado Coop, Rua Carijós, 1843",
+            "Aceitar"
+        )
+        val offerCoop = NinetyNineOfferReader.parseScreenNodes(coopNodes)
+        assertTrue(offerCoop.isSupermarket)
+        assertEquals("Coop", offerCoop.supermarketName)
+
+        val carrefourNodes = listOf(
+            "UberX",
+            "R$ 11,60",
+            "10 min (3 km)",
+            "Carrefour Express, Shopping Metrópole",
+            "15 min (2,3 km)",
+            "Instituto Polígono de Ensino",
+            "Aceitar"
+        )
+        val offerCarrefour = UberOfferReader.parseScreenNodes(carrefourNodes)
+        assertTrue(offerCarrefour.isSupermarket)
+        assertEquals("Carrefour", offerCarrefour.supermarketName)
+    }
+
+    // 36. TESTE DE ALERTAS OPERACIONAIS NO MOTOR FINANCEIRO (EMBARQUE LONGE, VIAGEM LONGA, PARADAS):
+    @Test
+    fun `test operational badges for distant pickup long trip and stops`() {
+        val config = DriverFinancialConfig(targetGrossPerKm = 2.00, targetGrossPerHour = 40.00)
+
+        // Caso com parada e embarque distante (> 2.5 km)
+        val distantPickupOffer = StandardRideOffer(
+            offerId = "op1",
+            sourceApp = SourceApp.NINETY_NINE_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = 1000L,
+            offeredPriceField = ExtractedField.Present(16.20),
+            pickupDistanceKmField = ExtractedField.Present(3.3),
+            tripDistanceKmField = ExtractedField.Present(9.2),
+            pickupDurationMinField = ExtractedField.Present(8),
+            tripDurationMinField = ExtractedField.Present(22),
+            stopsDescription = "1 Parada"
+        )
+        val eval1 = FinancialEngine.evaluate(distantPickupOffer, config)
+        assertTrue(eval1.isDistantPickup)
+        assertNotNull(eval1.operationalBadge)
+        assertTrue(eval1.operationalBadge!!.contains("1 Parada"))
+        assertTrue(eval1.operationalBadge!!.contains("Emb. Longe"))
+
+        // Caso com viagem longa (> 45 min)
+        val longTripOffer = StandardRideOffer(
+            offerId = "op2",
+            sourceApp = SourceApp.UBER_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = 1000L,
+            offeredPriceField = ExtractedField.Present(74.23),
+            pickupDistanceKmField = ExtractedField.Present(2.4),
+            tripDistanceKmField = ExtractedField.Present(30.7),
+            pickupDurationMinField = ExtractedField.Present(7),
+            tripDurationMinField = ExtractedField.Present(83)
+        )
+        val eval2 = FinancialEngine.evaluate(longTripOffer, config)
+        assertTrue(eval2.isLongTrip)
+        assertNotNull(eval2.operationalBadge)
+        assertTrue(eval2.operationalBadge!!.contains("Viagem Longa"))
+    }
 }

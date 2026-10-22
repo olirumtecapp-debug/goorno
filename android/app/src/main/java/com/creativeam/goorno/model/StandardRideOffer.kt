@@ -130,7 +130,10 @@ data class StandardRideOffer(
     val conflictNotes: List<String> = emptyList(),
     val rawCapturedTexts: List<String> = emptyList(),
     val dedupFingerprint: String = "",
-    val isSimulated: Boolean = false
+    val isSimulated: Boolean = false,
+    val stopsDescription: String? = null,
+    val isSupermarket: Boolean = false,
+    val supermarketName: String? = null
 ) {
     val offeredPrice: Double? get() = offeredPriceField.valueOrNull()
     val pickupDistanceKm: Double? get() = pickupDistanceKmField.valueOrNull()
@@ -282,5 +285,11 @@ data class FinancialEvaluationResult(
     val hasRiskAlert: Boolean = false,
     val riskAlertBadge: String? = null,
     val isFavoriteZone: Boolean = false,
-    val favoriteZoneBadge: String? = null
+    val favoriteZoneBadge: String? = null,
+    val operationalBadge: String? = null,
+    val stopsDescription: String? = null,
+    val isSupermarket: Boolean = false,
+    val supermarketName: String? = null,
+    val isDistantPickup: Boolean = false,
+    val isLongTrip: Boolean = false
 )

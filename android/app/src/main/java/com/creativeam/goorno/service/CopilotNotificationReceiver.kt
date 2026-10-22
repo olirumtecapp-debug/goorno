@@ -196,6 +196,7 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     editor.putBoolean("has_risk", mergedHasRisk)
                     editor.putString("risk_badge", mergedRiskBadge)
                     editor.putString("passenger_rating_badge", mergedRatingBadge)
+                    editor.putString("operational_badge", latestEvaluation.operationalBadge ?: "")
                 }
 
                 editor.apply()
@@ -270,6 +271,8 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val minStr = if (totalMin > 0) "$totalMin min" else "-- min"
 
                     val extraParts = mutableListOf<String>()
+                    val opBadge = prefs.getString("operational_badge", "") ?: ""
+                    if (opBadge.isNotBlank()) extraParts.add(opBadge)
                     if (ratingBadge.isNotBlank()) extraParts.add(ratingBadge)
                     if (effectiveShowProfit) extraParts.add("Lucro: $netStr")
                     if (effectiveShowCost) extraParts.add("Custo: $costStr")

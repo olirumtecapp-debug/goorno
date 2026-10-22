@@ -1096,4 +1096,69 @@ object BrazilianOfferParser {
 
         return false
     }
+
+    // Detecção inteligente de paradas no trajeto (99 e Uber)
+    // Exemplos reais dos prints: "1 parada(s)", "2 paradas", "Várias paradas"
+    private val STOPS_REGEX = Regex(
+        pattern = """(\d+)\s*paradas?(?:\(s\))?|v[áa]rias\s+paradas""",
+        option = RegexOption.IGNORE_CASE
+    )
+
+    fun extractStopsDescription(lines: List<String>): String? {
+        for (line in lines) {
+            val match = STOPS_REGEX.find(line)
+            if (match != null) {
+                val group1 = match.groups[1]?.value
+                return when {
+                    group1 != null -> if (group1 == "1") "1 Parada" else "$group1 Paradas"
+                    line.contains("várias", ignoreCase = true) || line.contains("varias", ignoreCase = true) -> "Várias Paradas"
+                    else -> "Com Parada"
+                }
+            }
+        }
+        return null
+    }
+
+    // Detecção inteligente de supermercados, atacadistas e hipermercados
+    private val SUPERMARKET_BRANDS = listOf(
+        "supermercado", "hipermercado", "atacadão", "atacadao", "assai", "assaí",
+        "carrefour", "sonda", "pão de açúcar", "pao de acucar", "extra", "coop",
+        "bem barato", "roldão", "roldao", "tenda atacado", "spani", "nagumo",
+        "giga atacado", "mercado municipal", "sam's club", "sams club", "atacadista",
+        "mercado"
+    )
+
+    fun extractSupermarketInfo(lines: List<String>, origin: String?, dest: String?): Pair<Boolean, String?> {
+        val candidates = mutableListOf<String>()
+        if (!origin.isNullOrBlank()) candidates.add(origin)
+        if (!dest.isNullOrBlank()) candidates.add(dest)
+        candidates.addAll(lines)
+
+        for (text in candidates) {
+            val tLower = text.lowercase(Locale.ROOT)
+            for (brand in SUPERMARKET_BRANDS) {
+                if (brand == "mercado") {
+                    if (Regex("""\bmercado\b""", RegexOption.IGNORE_CASE).containsMatchIn(tLower)) {
+                        return Pair(true, "Supermercado")
+                    }
+                } else if (tLower.contains(brand)) {
+                    val displayName = when (brand) {
+                        "assai", "assaí" -> "Assaí"
+                        "atacadao", "atacadão" -> "Atacadão"
+                        "carrefour" -> "Carrefour"
+                        "sonda" -> "Sonda"
+                        "pão de açúcar", "pao de acucar" -> "Pão de Açúcar"
+                        "coop" -> "Coop"
+                        "bem barato" -> "Bem Barato"
+                        "roldão", "roldao" -> "Roldão"
+                        "tenda atacado" -> "Tenda"
+                        "extra" -> "Extra"
+                        else -> "Supermercado"
+                    }
+                    return Pair(true, displayName)
+                }
+            }
+        }
+        return Pair(false, null)
+    }
 }

@@ -261,6 +261,9 @@ object NinetyNineOfferReader {
             ScreenClassification.NON_OFFER
         }
 
+        val stopsDesc = BrazilianOfferParser.extractStopsDescription(cleanedLines)
+        val (isSupermarket, supermarketName) = BrazilianOfferParser.extractSupermarketInfo(cleanedLines, origin, destination)
+
         val fingerprint = BrazilianOfferParser.buildFingerprint(
             sourceAppName = "99",
             price = priceField.valueOrNull(),
@@ -292,7 +295,10 @@ object NinetyNineOfferReader {
             conflictNotes = conflictNotes,
             rawCapturedTexts = cleanedLines,
             dedupFingerprint = fingerprint,
-            isSimulated = isSimulated
+            isSimulated = isSimulated,
+            stopsDescription = stopsDesc,
+            isSupermarket = isSupermarket,
+            supermarketName = supermarketName
         )
     }
 }

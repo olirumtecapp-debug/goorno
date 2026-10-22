@@ -310,6 +310,40 @@ object FinancialEngine {
             else -> TrafficLightVerdict.RED
         }
 
+        val isDistantPickup = pickupKm != null && (pickupKm >= 2.5 || (pickupMin != null && pickupMin >= 8))
+        val isLongTrip = (totalDistanceKm != null && totalDistanceKm >= 25.0) || (totalDurationMin != null && totalDurationMin >= 45)
+
+        val operationalAlertParts = mutableListOf<String>()
+        if (!offer.stopsDescription.isNullOrBlank()) {
+            operationalAlertParts.add("🛑 ${offer.stopsDescription}")
+            reasons.add("🛑 Viagem com ${offer.stopsDescription}")
+        }
+        if (offer.isSupermarket) {
+            val sName = offer.supermarketName ?: "Supermercado"
+            operationalAlertParts.add("🛒 $sName")
+            reasons.add("🛒 Corrida em $sName (Atenção com compras)")
+        }
+        if (isDistantPickup) {
+            val kmText = pickupKm?.let { String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it) } ?: ""
+            operationalAlertParts.add("⚠️ Emb. Longe ($kmText)".trim())
+            warnings.add("⚠️ Embarque distante: $kmText até o passageiro.")
+        }
+        if (isLongTrip && operationalAlertParts.size < 2) {
+            val timeText = if (totalDurationMin != null && totalDurationMin >= 60) {
+                val h = totalDurationMin / 60
+                val m = totalDurationMin % 60
+                if (m > 0) "${h}h ${m}m" else "${h}h"
+            } else {
+                "${totalDurationMin ?: 0} min"
+            }
+            operationalAlertParts.add("⏱️ Viagem Longa ($timeText)")
+            warnings.add("⏱️ Viagem longa: duração estimada em $timeText.")
+        }
+
+        val operationalBadge = if (operationalAlertParts.isNotEmpty()) {
+            operationalAlertParts.take(2).joinToString("  •  ")
+        } else null
+
         return FinancialEvaluationResult(
             offer = offer,
             totalConsideredDistanceKm = totalDistanceKm?.let { round2(it) },
@@ -337,7 +371,13 @@ object FinancialEngine {
             hasRiskAlert = riskAssessment.hasRisk,
             riskAlertBadge = if (riskAssessment.hasRisk) riskAssessment.shortBadge else null,
             isFavoriteZone = favoriteAssessment.isFavorite,
-            favoriteZoneBadge = if (favoriteAssessment.isFavorite) favoriteAssessment.shortBadge else null
+            favoriteZoneBadge = if (favoriteAssessment.isFavorite) favoriteAssessment.shortBadge else null,
+            operationalBadge = operationalBadge,
+            stopsDescription = offer.stopsDescription,
+            isSupermarket = offer.isSupermarket,
+            supermarketName = offer.supermarketName,
+            isDistantPickup = isDistantPickup,
+            isLongTrip = isLongTrip
         )
     }
 
