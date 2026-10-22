@@ -47,6 +47,8 @@ object RiskAreaEvaluator {
         "morro do kibon",
         "sitio dos vianas",
         "vila esperanca",
+        "cata preta",
+        "jardim santo andre",
         // Grande SP / Capital (zonas de alta atenção relatadas por motoristas)
         "paraisopolis",
         "heliopolis",
