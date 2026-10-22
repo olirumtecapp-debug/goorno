@@ -110,11 +110,23 @@ object UberOfferReader {
         val cardLines = if (cardStartIdx > 0) cleanedLines.subList(cardStartIdx, cleanedLines.size) else cleanedLines
 
         val prices = BrazilianOfferParser.extractAllCurrencies(cardLines)
+        // Seleção determinística do preço da corrida: ignora taxas extras por km ou bônus incluídos
+        val mainOfferPrice = cardLines.firstNotNullOfOrNull { line ->
+            val l = line.lowercase(Locale.getDefault())
+            if (l.contains("/km") || l.contains("incluído") || l.contains("incluido") || l.contains("tarifa")) {
+                null
+            } else {
+                val extracted = BrazilianOfferParser.extractAllCurrencies(listOf(line))
+                extracted.firstOrNull { it in 4.50..2000.0 }
+            }
+        } ?: prices.firstOrNull()
+
         val hasInvalidCurrencyToken = cleanedLines.any {
             it.contains("R$", ignoreCase = true) && BrazilianOfferParser.parseCurrencyBr(it).isUnrecognized
         }
         val priceField: ExtractedField<Double> = when {
-            prices.isNotEmpty() -> ExtractedField.Present(prices.maxOrNull() ?: prices.first())
+            mainOfferPrice != null -> ExtractedField.Present(mainOfferPrice)
+            prices.isNotEmpty() -> ExtractedField.Present(prices.first())
             hasInvalidCurrencyToken -> ExtractedField.Unrecognized("R$ inválido")
             else -> ExtractedField.Missing
         }
