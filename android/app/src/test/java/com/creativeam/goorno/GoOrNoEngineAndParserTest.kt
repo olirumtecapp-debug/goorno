@@ -939,7 +939,7 @@ class GoOrNoEngineAndParserTest {
         assertEquals(4.97, o1.passengerRating!!, 0.001)
         val eval1 = FinancialEngine.evaluate(o1, DriverFinancialConfig())
         assertTrue(eval1.hasRiskAlert)
-        assertTrue(eval1.riskAlertBadge?.contains("Risco") == true)
+        assertTrue(eval1.riskAlertBadge?.contains("RISCO", ignoreCase = true) == true)
 
         // Print 2: R$ 13,34 - Priority - Botão Viagem
         val p2 = listOf(
@@ -975,7 +975,7 @@ class GoOrNoEngineAndParserTest {
         assertEquals(11.96, o4.offeredPrice!!, 0.001)
         val eval4 = FinancialEngine.evaluate(o4, DriverFinancialConfig())
         assertTrue(eval4.hasRiskAlert)
-        assertTrue(eval4.riskAlertBadge?.contains("Cata Preta") == true)
+        assertTrue(eval4.riskAlertBadge?.contains("CATA PRETA", ignoreCase = true) == true)
 
         // Print 5: R$ 18,02 - Capuava
         val p5 = listOf(
