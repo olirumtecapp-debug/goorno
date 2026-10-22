@@ -253,28 +253,13 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 2. Coleta nós ESTRITAMENTE da janela do pacote alvo (nunca de outras janelas)
+        // 2. Coleta nós ESTRITAMENTE da janela do pacote alvo (nunca de outras janelas) - Rápido e Direto sem atrasos
         val positionedNodes = mutableListOf<PositionedText>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
-            if (targetApp == SourceApp.UBER_DRIVER) {
-                // Isolamento estrutural estrito do card da Uber: descarta 100% dos nós de mapa e status bar
-                val uberContainer = findUberCardContainer(activeRoot)
-                if (uberContainer != null) {
-                    collectPositionedTexts(uberContainer, positionedNodes, depth = 0, requireVisible = true)
-                } else {
-                    // Fallback com filtro espacial da metade inferior da tela onde o card fica ancorado
-                    val tempNodes = mutableListOf<PositionedText>()
-                    collectPositionedTexts(activeRoot, tempNodes, depth = 0, requireVisible = true)
-                    val maxY = tempNodes.maxOfOrNull { it.centerY } ?: 0
-                    val minY = if (maxY > 0) maxY - 1200 else 0
-                    positionedNodes.addAll(tempNodes.filter { it.centerY >= minY })
-                }
-            } else {
-                collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = true)
-                if (positionedNodes.size < 3) {
-                    positionedNodes.clear()
-                    collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
-                }
+            collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = true)
+            if (positionedNodes.size < 3) {
+                positionedNodes.clear()
+                collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
             }
         } else {
             try {
@@ -284,6 +269,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                         val root = win.root ?: continue
                         if (root.packageName?.toString() == targetPkg) {
                             collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = true)
+                            if (positionedNodes.size < 3) {
+                                positionedNodes.clear()
+                                collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
+                            }
                         }
                     }
                 }
@@ -811,60 +800,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         return output.distinct()
     }
 
-    private fun findNodesMatching(
-        node: AccessibilityNodeInfo?,
-        outList: MutableList<AccessibilityNodeInfo>,
-        maxNodes: Int = 10,
-        predicate: (AccessibilityNodeInfo) -> Boolean
-    ) {
-        if (node == null || outList.size >= maxNodes) return
-        try {
-            if (predicate(node)) {
-                outList.add(node)
-            }
-            for (i in 0 until node.childCount) {
-                findNodesMatching(node.getChild(i), outList, maxNodes, predicate)
-            }
-        } catch (_: Throwable) {}
-    }
-
-    private fun findUberCardContainer(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        val actionNodes = mutableListOf<AccessibilityNodeInfo>()
-        findNodesMatching(root, actionNodes) { n ->
-            val txt = (n.text?.toString() ?: n.contentDescription?.toString() ?: "").trim()
-            txt.equals("Aceitar", ignoreCase = true) ||
-                txt.equals("Viagem", ignoreCase = true) ||
-                txt.equals("Selecionar", ignoreCase = true)
-        }
-        if (actionNodes.isEmpty()) {
-            findNodesMatching(root, actionNodes) { n ->
-                val txt = (n.text?.toString() ?: "").trim()
-                txt.startsWith("R$") && !txt.contains("/km") && !txt.contains("incluído")
-            }
-        }
-        if (actionNodes.isEmpty()) return null
-
-        val screenRect = Rect()
-        try { root.getBoundsInScreen(screenRect) } catch (_: Throwable) {}
-        val minWidth = if (screenRect.width() > 0) (screenRect.width() * 0.70).toInt() else 500
-
-        for (actionNode in actionNodes) {
-            var curr: AccessibilityNodeInfo? = actionNode
-            var depth = 0
-            while (curr != null && depth < 8) {
-                val r = Rect()
-                try { curr.getBoundsInScreen(r) } catch (_: Throwable) {}
-                if (r.width() >= minWidth && r.height() >= 250) {
-                    if (r.top > 80 || r.height() < screenRect.height() * 0.90) {
-                        return curr
-                    }
-                }
-                curr = try { curr.parent } catch (_: Throwable) { null }
-                depth++
-            }
-        }
-        return null
-    }
 
     private fun collectPositionedTexts(
         node: AccessibilityNodeInfo?,

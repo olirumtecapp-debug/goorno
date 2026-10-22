@@ -150,7 +150,7 @@ class FloatingOverlayPanel(private val context: Context) {
                     "RIGHT" -> Pair(Gravity.TOP or Gravity.END, dp(10))
                     else -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
                 }
-                val newY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(210)
+                val newY = dp(90)
                 layoutParams?.let { lp ->
                     lp.gravity = newGravity
                     lp.x = newX
@@ -183,7 +183,7 @@ class FloatingOverlayPanel(private val context: Context) {
                     "RIGHT" -> Pair(Gravity.TOP or Gravity.END, dp(10))
                     else -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
                 }
-                val defaultY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(210)
+                val defaultY = dp(90)
                 lp.gravity = defaultGravity
                 lp.x = defaultX
                 lp.y = defaultY
@@ -2571,7 +2571,7 @@ class FloatingOverlayPanel(private val context: Context) {
             "RIGHT" -> Pair(Gravity.TOP or Gravity.END, dp(10))
             else -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
         }
-        val defaultY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(210)
+        val defaultY = dp(90)
 
         val savedX = if (overlayHorizontalPosition == "CENTER" && !posPrefs.contains("saved_x")) 0 else posPrefs.getInt("saved_x", defaultX)
         val savedY = posPrefs.getInt("saved_y", defaultY)

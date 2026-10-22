@@ -126,7 +126,7 @@ object UberOfferReader {
         }
         val priceField: ExtractedField<Double> = when {
             mainOfferPrice != null -> ExtractedField.Present(mainOfferPrice)
-            prices.isNotEmpty() -> ExtractedField.Present(prices.first())
+            prices.isNotEmpty() -> ExtractedField.Present(prices.maxOrNull() ?: prices.first())
             hasInvalidCurrencyToken -> ExtractedField.Unrecognized("R$ inválido")
             else -> ExtractedField.Missing
         }
