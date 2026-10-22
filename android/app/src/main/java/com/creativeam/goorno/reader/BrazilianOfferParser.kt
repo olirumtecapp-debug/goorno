@@ -1120,12 +1120,15 @@ object BrazilianOfferParser {
     }
 
     // Detecção inteligente de supermercados, atacadistas e hipermercados
-    private val SUPERMARKET_BRANDS = listOf(
-        "supermercado", "hipermercado", "atacadão", "atacadao", "assai", "assaí",
-        "carrefour", "sonda", "pão de açúcar", "pao de acucar", "extra", "coop",
-        "bem barato", "roldão", "roldao", "tenda atacado", "spani", "nagumo",
-        "giga atacado", "mercado municipal", "sam's club", "sams club", "atacadista",
-        "mercado"
+    // Marcas específicas devem ter precedência sobre termos genéricos ("supermercado", "mercado")
+    private val SPECIFIC_SUPERMARKET_BRANDS = listOf(
+        "assai", "assaí", "atacadão", "atacadao", "carrefour", "sonda",
+        "pão de açúcar", "pao de acucar", "coop", "bem barato", "roldão", "roldao",
+        "tenda atacado", "spani", "nagumo", "giga atacado", "sam's club", "sams club", "extra"
+    )
+
+    private val GENERIC_SUPERMARKET_TERMS = listOf(
+        "supermercado", "hipermercado", "mercado municipal", "atacadista", "mercado"
     )
 
     fun extractSupermarketInfo(lines: List<String>, origin: String?, dest: String?): Pair<Boolean, String?> {
@@ -1134,14 +1137,11 @@ object BrazilianOfferParser {
         if (!dest.isNullOrBlank()) candidates.add(dest)
         candidates.addAll(lines)
 
+        // 1. Prioridade: Marcas específicas (ex: Coop, Carrefour, Assaí, Atacadão)
         for (text in candidates) {
             val tLower = text.lowercase(Locale.ROOT)
-            for (brand in SUPERMARKET_BRANDS) {
-                if (brand == "mercado") {
-                    if (Regex("""\bmercado\b""", RegexOption.IGNORE_CASE).containsMatchIn(tLower)) {
-                        return Pair(true, "Supermercado")
-                    }
-                } else if (tLower.contains(brand)) {
+            for (brand in SPECIFIC_SUPERMARKET_BRANDS) {
+                if (tLower.contains(brand)) {
                     val displayName = when (brand) {
                         "assai", "assaí" -> "Assaí"
                         "atacadao", "atacadão" -> "Atacadão"
@@ -1153,12 +1153,31 @@ object BrazilianOfferParser {
                         "roldão", "roldao" -> "Roldão"
                         "tenda atacado" -> "Tenda"
                         "extra" -> "Extra"
+                        "spani" -> "Spani"
+                        "nagumo" -> "Nagumo"
+                        "giga atacado" -> "Giga"
+                        "sam's club", "sams club" -> "Sam's Club"
                         else -> "Supermercado"
                     }
                     return Pair(true, displayName)
                 }
             }
         }
+
+        // 2. Fallback: Termos genéricos de supermercado
+        for (text in candidates) {
+            val tLower = text.lowercase(Locale.ROOT)
+            for (term in GENERIC_SUPERMARKET_TERMS) {
+                if (term == "mercado") {
+                    if (Regex("""\bmercado\b""", RegexOption.IGNORE_CASE).containsMatchIn(tLower)) {
+                        return Pair(true, "Supermercado")
+                    }
+                } else if (tLower.contains(term)) {
+                    return Pair(true, "Supermercado")
+                }
+            }
+        }
+
         return Pair(false, null)
     }
 }
