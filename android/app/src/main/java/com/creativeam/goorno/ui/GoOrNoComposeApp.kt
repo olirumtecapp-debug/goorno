@@ -6246,7 +6246,7 @@ private fun EvaluationDetailCardContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "🚨 ${result.riskAlertBadge}",
+                    text = result.riskAlertBadge ?: "⚠️ Área de risco",
                     fontWeight = FontWeight.Black,
                     fontSize = 12.sp,
                     color = TrafficRed,
@@ -6464,7 +6464,7 @@ private fun HistoricalOfferCardContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "🚨 ${riskCheck.shortBadge}",
+                    text = riskCheck.shortBadge,
                     fontWeight = FontWeight.Black,
                     fontSize = 11.5.sp,
                     color = TrafficRed,

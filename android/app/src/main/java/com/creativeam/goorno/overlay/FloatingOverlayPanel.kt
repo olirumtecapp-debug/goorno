@@ -602,7 +602,8 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
-        val headerLabel = "$seqTag$distStr · $minStr"
+        val repTag = if (result.isRepeatedOffer) " · 🔁 REPETIDO" else ""
+        val headerLabel = "$seqTag$distStr · $minStr$repTag"
 
         val tvHeader = TextView(context).apply {
             text = headerLabel
@@ -692,11 +693,11 @@ class FloatingOverlayPanel(private val context: Context) {
                 }
             }
             val tvRisk = TextView(context).apply {
-                text = "⚠️ ZONA DE RISCO: ${result.riskAlertBadge.orEmpty().ifBlank { "Área Perigosa" }}"
+                text = result.riskAlertBadge.orEmpty().ifBlank { "⚠️ Área de risco" }
                 setTextColor(Color.parseColor("#FCA5A5"))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 setTypeface(typeface, Typeface.BOLD)
-                setSingleLine(true)
+                maxLines = 2
                 ellipsize = android.text.TextUtils.TruncateAt.END
             }
             riskRow.addView(tvRisk)
@@ -742,7 +743,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 setTextColor(Color.parseColor(if (isDark) "#FDE047" else "#B45309"))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 setTypeface(typeface, Typeface.BOLD)
-                setSingleLine(true)
+                maxLines = 2
                 ellipsize = android.text.TextUtils.TruncateAt.END
             }
             opRow.addView(tvOp)
@@ -862,7 +863,8 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
-        val summaryText = "$seqTag${formatCurrency(price)} · $minStr · $distStr"
+        val repTag = if (result.isRepeatedOffer) " · 🔁 REPETIDO" else ""
+        val summaryText = "$seqTag${formatCurrency(price)} · $minStr · $distStr$repTag"
 
         val tvSummary = TextView(context).apply {
             text = summaryText
@@ -1009,13 +1011,13 @@ class FloatingOverlayPanel(private val context: Context) {
         // Alerta de Zona de Risco ou Região Favorita (se houver)
         if (result.hasRiskAlert) {
             val tvRisk = TextView(context).apply {
-                text = "⚠️ ZONA DE RISCO: ${result.riskAlertBadge.orEmpty().ifBlank { "Área Perigosa" }}"
+                text = result.riskAlertBadge.orEmpty().ifBlank { "⚠️ Área de risco" }
                 setTextColor(Color.parseColor("#EF4444"))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 setTypeface(typeface, Typeface.BOLD)
                 setPadding(0, dp(6), 0, 0)
                 gravity = Gravity.CENTER
-                setSingleLine(true)
+                maxLines = 2
                 ellipsize = android.text.TextUtils.TruncateAt.END
             }
             card.addView(tvRisk)
@@ -1031,6 +1033,18 @@ class FloatingOverlayPanel(private val context: Context) {
                 ellipsize = android.text.TextUtils.TruncateAt.END
             }
             card.addView(tvFav)
+        } else if (!result.operationalBadge.isNullOrBlank()) {
+            val tvOp = TextView(context).apply {
+                text = result.operationalBadge
+                setTextColor(Color.parseColor(if (isDark) "#F59E0B" else "#D97706"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(6), 0, 0)
+                gravity = Gravity.CENTER
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }
+            card.addView(tvOp)
         }
 
         rootLayout.addView(card)
@@ -1296,12 +1310,13 @@ class FloatingOverlayPanel(private val context: Context) {
         // Se houver alerta de Área de Risco:
         if (result.hasRiskAlert && !result.riskAlertBadge.isNullOrBlank()) {
             val tvRisk = TextView(context).apply {
-                text = "⚠️ ÁREA DE RISCO: ${result.riskAlertBadge}"
+                text = result.riskAlertBadge
                 setTextColor(Color.parseColor("#FDE047"))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 setTypeface(typeface, Typeface.BOLD)
                 setPadding(dp(8), dp(4), dp(8), dp(4))
                 background = roundedBg("#450A0A", 6f)
+                maxLines = 2
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -1608,12 +1623,13 @@ class FloatingOverlayPanel(private val context: Context) {
         // 4. ÁREA DE RISCO (se detectado)
         if (result.hasRiskAlert && !result.riskAlertBadge.isNullOrBlank()) {
             val tvRisk = TextView(context).apply {
-                text = "🚨 ${result.riskAlertBadge}"
+                text = result.riskAlertBadge
                 setTextColor(Color.parseColor("#FDE047"))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 setTypeface(typeface, Typeface.BOLD)
                 setPadding(dp(8), dp(4), dp(8), dp(4))
                 background = roundedBg("#450A0A", 6f)
+                maxLines = 2
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT

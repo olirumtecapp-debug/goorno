@@ -877,6 +877,13 @@ class GoOrNoEngineAndParserTest {
         val evalStrict = FinancialEngine.evaluate(shortPickupOffer, configStrictPickup)
         assertTrue(evalStrict.isDistantPickup)
 
+        // Teste de chamado repetido
+        val repOffer = distantPickupOffer.copy(isRepeatedOffer = true)
+        val evalRep = FinancialEngine.evaluate(repOffer, config)
+        assertTrue(evalRep.isRepeatedOffer)
+        assertTrue(evalRep.operationalBadge?.contains("Chamado Repetido") == true)
+        assertTrue(evalRep.reasons.any { it.contains("Chamado repetido", ignoreCase = true) })
+
         // Caso com viagem longa (> 45 min)
         val longTripOffer = StandardRideOffer(
             offerId = "op2",
@@ -988,7 +995,8 @@ class GoOrNoEngineAndParserTest {
         assertEquals(11.96, o4.offeredPrice!!, 0.001)
         val eval4 = FinancialEngine.evaluate(o4, DriverFinancialConfig())
         assertTrue(eval4.hasRiskAlert)
-        assertTrue(eval4.riskAlertBadge?.contains("CATA PRETA", ignoreCase = true) == true)
+        assertEquals("⚠️ Área de risco - Desembarque", eval4.riskAlertBadge)
+        assertTrue(eval4.reasons.any { it.contains("Cata Preta", ignoreCase = true) })
 
         // Print 5: R$ 18,02 - Capuava
         val p5 = listOf(

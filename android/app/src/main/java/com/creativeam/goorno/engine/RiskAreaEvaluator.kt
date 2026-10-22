@@ -137,11 +137,11 @@ object RiskAreaEvaluator {
 
         val shortBadge = when {
             matchedOrigin != null && matchedDest != null ->
-                "⚠️ RISCO Origem e Destino ($matchedDest)$nightTag"
+                "⚠️ Área de risco - Ambas"
             matchedDest != null ->
-                "⚠️ RISCO no Destino: ${ matchedDest.uppercase(Locale.getDefault()) }$nightTag"
+                "⚠️ Área de risco - Desembarque"
             else ->
-                "⚠️ RISCO na Origem: ${ matchedOrigin!!.uppercase(Locale.getDefault()) }$nightTag"
+                "⚠️ Área de risco - Embarque"
         }
 
         val detailedMessage = buildString {

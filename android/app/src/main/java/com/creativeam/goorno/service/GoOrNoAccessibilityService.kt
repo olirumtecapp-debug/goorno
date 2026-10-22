@@ -666,21 +666,30 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         val app = applicationContext as? GoOrNoApplication ?: return
 
-        // Remove apenas chaves que já expiraram há mais de 90 segundos
+        // Remove chaves que expiraram há mais de 120 segundos
         val expiredKeys = shownOfferTimestamps.entries
-            .filter { now - it.value > 90_000L }
+            .filter { now - it.value > 120_000L }
             .map { it.key }
         expiredKeys.forEach { shownOfferTimestamps.remove(it) }
 
-        // Filtra estritamente ofertas que ainda NÃO foram exibidas nos últimos 90 segundos
-        val unshownOffers = parsedOffers.filter { offer ->
+        // Identifica ofertas novas e ofertas repetidas (re-oferta após término ou recusa)
+        val validOffers = mutableListOf<StandardRideOffer>()
+        for (offer in parsedOffers) {
             val key = buildStableOfferKey(offer)
             val lastShown = shownOfferTimestamps[key]
-            lastShown == null || (now - lastShown > 90_000L)
+
+            if (lastShown == null) {
+                // Primeira vez que esta oferta toca
+                validOffers.add(offer.copy(isRepeatedOffer = false))
+            } else if (now - lastShown >= 15_000L && now - lastShown <= 120_000L) {
+                // Já tocou há mais de 15 segundos (nova chamada/re-oferta do app)
+                validOffers.add(offer.copy(isRepeatedOffer = true))
+            } else {
+                // Ainda está dentro dos 15 segundos do toque original; ignora para não repicar o card
+            }
         }
 
-        if (unshownOffers.isEmpty()) {
-            // Todos os chamados já foram avaliados e exibidos recentemente; não repete para não incomodar o motorista!
+        if (validOffers.isEmpty()) {
             return
         }
 
@@ -688,7 +697,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // Mas se a tela mudou para uma NOVA corrida, atualiza o card imediatamente sem travar!
         if (app.overlayPanel.isCardCurrentlyVisible()) {
             val activeFp = app.overlayPanel.getActiveCardFingerprint()
-            val hasDifferentOffer = unshownOffers.any { offer ->
+            val hasDifferentOffer = validOffers.any { offer ->
                 val price = offer.offeredPrice ?: 0.0
                 val km = offer.totalDistanceKmExplicit ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
                 val fp = "${offer.sourceApp.name}|${String.format(Locale.US, "%.2f", price)}|${String.format(Locale.US, "%.1f", km)}"
@@ -701,7 +710,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         serviceScope.launch {
             val config = app.preferencesRepository.getInMemoryConfig()
-            val evaluations = unshownOffers
+            val evaluations = validOffers
                 .map { offer -> FinancialEngine.evaluate(offer, config) }
                 .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
 

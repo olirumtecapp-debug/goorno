@@ -131,6 +131,7 @@ data class StandardRideOffer(
     val rawCapturedTexts: List<String> = emptyList(),
     val dedupFingerprint: String = "",
     val isSimulated: Boolean = false,
+    val isRepeatedOffer: Boolean = false,
     val stopsDescription: String? = null,
     val isSupermarket: Boolean = false,
     val supermarketName: String? = null
@@ -276,6 +277,7 @@ data class FinancialEvaluationResult(
     val netProfitPerKm: Double?,
     val netProfitPerHour: Double?,
     val verdict: TrafficLightVerdict,
+    val isRepeatedOffer: Boolean = false,
     val kmVerdict: TrafficLightVerdict = TrafficLightVerdict.GRAY_NEUTRAL,
     val hourVerdict: TrafficLightVerdict = TrafficLightVerdict.GRAY_NEUTRAL,
     val reasons: List<String>,

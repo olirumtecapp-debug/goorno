@@ -315,6 +315,10 @@ object FinancialEngine {
         val isLongTrip = (totalDistanceKm != null && totalDistanceKm >= 25.0) || (totalDurationMin != null && totalDurationMin >= 45)
 
         val operationalAlertParts = mutableListOf<String>()
+        if (offer.isRepeatedOffer) {
+            operationalAlertParts.add("🔁 Chamado Repetido")
+            reasons.add(0, "🔁 Chamado repetido: oferta reenviada pelo aplicativo.")
+        }
         if (!offer.stopsDescription.isNullOrBlank()) {
             operationalAlertParts.add("🛑 ${offer.stopsDescription}")
             reasons.add("🛑 Viagem com ${offer.stopsDescription}")
@@ -362,6 +366,7 @@ object FinancialEngine {
             netProfitPerKm = netPerKm,
             netProfitPerHour = netPerHour,
             verdict = finalVerdict,
+            isRepeatedOffer = offer.isRepeatedOffer,
             kmVerdict = kmVerdict,
             hourVerdict = hourVerdict,
             reasons = reasons,
