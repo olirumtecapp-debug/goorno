@@ -16,7 +16,7 @@ object UberOfferReader {
 
     private val UBER_CATEGORIES = listOf(
         "UberX", "Uber Comfort", "Comfort", "Uber Black", "Black",
-        "Uber Flash", "Flash", "Uber Promo", "Uber Bag", "Prioridade"
+        "Uber Flash", "Flash", "Uber Promo", "Uber Bag", "Prioridade", "Priority"
     )
 
     private val ONGOING_TRIP_KEYWORDS = listOf(
@@ -223,6 +223,7 @@ object UberOfferReader {
                 line.contains("Radar", ignoreCase = true) ||
                 line.contains("Viagem", ignoreCase = true) ||
                 line.contains("Corrida", ignoreCase = true) ||
+                line.contains("Selecionar", ignoreCase = true) ||
                 line.contains("Embarque", ignoreCase = true) ||
                 line.contains("Desembarque", ignoreCase = true)
         }
