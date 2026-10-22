@@ -706,7 +706,7 @@ class GoOrNoEngineAndParserTest {
 
     // 31. TESTE DAS OFERTAS REAIS DA UBER ENVIADAS PELO USUÁRIO (R$ 7,88 a R$ 56,47):
     @Test
-    fun `test real user uber offers from screenshots 7_88 to 56_47`() {
+    fun `test real user uber screenshots suite from field device`() {
         val testCases = listOf(
             Triple(listOf("UberX", "R$ 7,88", "1,2 km", "3,1 km", "4 min", "9 min", "Rua das Palmeiras, 100", "Av. Brasil, 250", "Aceitar"), 7.88, 4.3),
             Triple(listOf("UberX", "R$ 9,14", "2,0 km", "4,5 km", "5 min", "12 min", "Rua da Paz, 50", "Rua do Sol, 300", "Aceitar"), 9.14, 6.5),
@@ -925,10 +925,10 @@ class GoOrNoEngineAndParserTest {
     }
     // 40. TESTE COMPLETO DOS 7 PRINTS REAIS DA UBER ENVIADOS PELO USUÁRIO (v3.3.39/v3.3.40):
     @Test
-    fun 	est real user uber screenshots suite from field device() {
+    fun `test real user uber screenshots suite from field device`() {
         // Print 1: R$ 9,14 - Jardim Santo André (Área de Risco Crítica)
         val p1 = listOf(
-            "UberX", "Exclusivo", "R$ 9,14", "Est. de R,25/km", "4,97 (1172)", "+R$ 2,75 incluído",
+            "UberX", "Exclusivo", "R$ 9,14", "Est. de R$1,25/km", "4,97 (1172)", "+R$ 2,75 incluído",
             "12 min (5.3 km)", "R. Beth Carvalho, Jardim Santo André CDHU, Santo André",
             "6 minutos (2.0 km)", "Rua Diogo Álvares, 23A, Jardim João Ramalho, Santo André", "Aceitar"
         )
@@ -943,7 +943,7 @@ class GoOrNoEngineAndParserTest {
 
         // Print 2: R$ 13,34 - Priority - Botão Viagem
         val p2 = listOf(
-            "Priority", "R$ 13,34", "Est. de R,76/km", "4,85 (341)", "Verificado",
+            "Priority", "R$ 13,34", "Est. de R$1,76/km", "4,85 (341)", "Verificado",
             "+R$ 2,00 incluído", "+R$ 1,70 incluída para retirada",
             "10 min (4.4 km)", "Rua Marcondes Machado, Vila Junqueira, Santo André",
             "9 minutos (3.2 km)", "R. Monteiro Lobato, Vila Humaita, Santo André", "Viagem"
@@ -956,7 +956,7 @@ class GoOrNoEngineAndParserTest {
 
         // Print 3: R$ 7,88 - Vila Luzita para Jardim Guarará
         val p3 = listOf(
-            "UberX", "Exclusivo", "R$ 7,88", "Est. de R,83/km", "4,99 (71)", "Verificado", "+R$ 2,00 incluído",
+            "UberX", "Exclusivo", "R$ 7,88", "Est. de R$1,83/km", "4,99 (71)", "Verificado", "+R$ 2,00 incluído",
             "7 min (3.2 km)", "R. Calecute, Vila Luzita, Santo André",
             "4 minutos (1.1 km)", "Rua dos Jacintos, 594, Jardim Guarará, Santo André", "Aceitar"
         )
@@ -967,7 +967,7 @@ class GoOrNoEngineAndParserTest {
 
         // Print 4: R$ 11,96 - Cata Preta (Área de Risco Crítica)
         val p4 = listOf(
-            "UberX", "Exclusivo", "R$ 11,96", "Est. de R,96/km", "4,67 (27)", "+R$ 2,25 incluído",
+            "UberX", "Exclusivo", "R$ 11,96", "Est. de R$1,96/km", "4,67 (27)", "+R$ 2,25 incluído",
             "9 min (4.4 km)", "Est. Do Pedroso, São Paulo",
             "5 minutos (1.7 km)", "Rua da Maré, 116, Cata Preta, Santo André", "Aceitar"
         )
@@ -979,7 +979,7 @@ class GoOrNoEngineAndParserTest {
 
         // Print 5: R$ 18,02 - Capuava
         val p5 = listOf(
-            "UberX", "R$ 18,02", "Est. de R,24/km", "4,78 (50)", "Verificado",
+            "UberX", "R$ 18,02", "Est. de R$1,24/km", "4,78 (50)", "Verificado",
             "18 min (9.2 km)", "Avenida Antônio Cardoso, Bangú, Santo André",
             "11 minutos (5.3 km)", "Rua Carinhos, 16, Capuava, Santo André", "Viagem"
         )
@@ -990,7 +990,7 @@ class GoOrNoEngineAndParserTest {
 
         // Print 6: R$ 16,16 - Rua das Hortências para Bangú
         val p6 = listOf(
-            "UberX", "R$ 16,16", "Est. de R,50/km", "4,96 (208)", "Verificado", "+R$ 1,25 incluído",
+            "UberX", "R$ 16,16", "Est. de R$1,50/km", "4,96 (208)", "Verificado", "+R$ 1,25 incluído",
             "9 min (3.9 km)", "Rua das Hortênsias, Santo André, Santo André",
             "13 minutos (6.9 km)", "Avenida Antônio Cardoso, 319, Bangú, Santo André", "Viagem"
         )
@@ -1001,7 +1001,7 @@ class GoOrNoEngineAndParserTest {
 
         // Print 7: R$ 11,31 - Ferrazópolis
         val p7 = listOf(
-            "UberX", "R$ 11,31", "Est. de R,24/km", "4,91 (167)", "Verificado",
+            "UberX", "R$ 11,31", "Est. de R$1,24/km", "4,91 (167)", "Verificado",
             "14 min (7.2 km)", "R. Tanger, Ferrazópolis, São Bernardo do Campo",
             "6 minutos (1.9 km)", "Rua Paulino de Abreu, 71, Ferrazópolis, São Bernardo do Campo", "Viagem"
         )
