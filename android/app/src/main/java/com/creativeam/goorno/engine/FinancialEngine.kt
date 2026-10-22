@@ -269,11 +269,13 @@ object FinancialEngine {
 
         val finalVerdict = if (riskAssessment.hasRisk) {
             warnings.add(0, riskAssessment.detailedMessage)
+            val zoneName = (riskAssessment.destinationMatchedZone ?: riskAssessment.originMatchedZone).orEmpty()
+            val zoneTag = if (zoneName.isNotBlank()) " ($zoneName)" else ""
             if (config.forceRedOnRiskArea || riskAssessment.destinationMatchedZone != null) {
-                reasons.add(0, "${riskAssessment.shortBadge} — Semáforo bloqueado em VERMELHO por segurança no Destino")
+                reasons.add(0, "${riskAssessment.shortBadge}$zoneTag — Semáforo bloqueado em VERMELHO por segurança no Destino")
                 TrafficLightVerdict.RED
             } else {
-                reasons.add(0, "${riskAssessment.shortBadge} — Atenção redobrada no endereço")
+                reasons.add(0, "${riskAssessment.shortBadge}$zoneTag — Atenção redobrada no endereço")
                 if (verdictAfterRating == TrafficLightVerdict.GREEN) TrafficLightVerdict.YELLOW else verdictAfterRating
             }
         } else {
