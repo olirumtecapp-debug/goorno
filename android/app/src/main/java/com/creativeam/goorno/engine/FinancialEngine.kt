@@ -267,20 +267,13 @@ object FinancialEngine {
             config = config
         )
 
-        val finalVerdict = if (riskAssessment.hasRisk) {
+        if (riskAssessment.hasRisk) {
             warnings.add(0, riskAssessment.detailedMessage)
             val zoneName = (riskAssessment.destinationMatchedZone ?: riskAssessment.originMatchedZone).orEmpty()
             val zoneTag = if (zoneName.isNotBlank()) " ($zoneName)" else ""
-            if (config.forceRedOnRiskArea || riskAssessment.destinationMatchedZone != null) {
-                reasons.add(0, "${riskAssessment.shortBadge}$zoneTag — Semáforo bloqueado em VERMELHO por segurança no Destino")
-                TrafficLightVerdict.RED
-            } else {
-                reasons.add(0, "${riskAssessment.shortBadge}$zoneTag — Atenção redobrada no endereço")
-                if (verdictAfterRating == TrafficLightVerdict.GREEN) TrafficLightVerdict.YELLOW else verdictAfterRating
-            }
-        } else {
-            verdictAfterRating
+            reasons.add(0, "${riskAssessment.shortBadge}$zoneTag")
         }
+        val finalVerdict = verdictAfterRating
 
         // 7. Avaliação de Região Favorita (Origem / Destino)
         val favoriteAssessment = FavoriteAreaEvaluator.evaluate(
@@ -290,11 +283,7 @@ object FinancialEngine {
         )
 
         if (favoriteAssessment.isFavorite) {
-            if (riskAssessment.hasRisk && riskAssessment.destinationMatchedZone != null) {
-                reasons.add("⭐ ${favoriteAssessment.shortBadge} (Origem preferida anulada pelo risco no destino)")
-            } else {
-                reasons.add(0, "⭐ ${favoriteAssessment.shortBadge} — Região preferida de trabalho")
-            }
+            reasons.add(0, "⭐ ${favoriteAssessment.shortBadge} — Região preferida de trabalho")
         }
 
         val yellowRatio = config.yellowToleranceRatio.coerceIn(0.50, 0.99)
@@ -313,7 +302,13 @@ object FinancialEngine {
         }
 
         val pickupThreshold = config.distantPickupKmThreshold.coerceIn(0.5, 10.0)
-        val isDistantPickup = pickupKm != null && (pickupKm >= pickupThreshold || (pickupMin != null && pickupMin >= 8))
+        val isDistantPickup = if (pickupKm != null) {
+            pickupKm >= pickupThreshold
+        } else if (pickupMin != null) {
+            pickupMin >= (pickupThreshold * 3.5).toInt().coerceAtLeast(10)
+        } else {
+            false
+        }
         val isLongTrip = (totalDistanceKm != null && totalDistanceKm >= 25.0) || (totalDurationMin != null && totalDurationMin >= 45)
 
         val operationalAlertParts = mutableListOf<String>()

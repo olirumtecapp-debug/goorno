@@ -1069,4 +1069,78 @@ class GoOrNoEngineAndParserTest {
         assertNotNull(eval.operationalBadge)
         assertTrue("Badge deve conter alerta de parada", eval.operationalBadge!!.contains("1 Parada"))
     }
+
+    // 42. TESTE DE FEEDBACK DO USUÁRIO: EMBARQUE DISTANTE RESPEITA ESTRITAMENTE LIMIAR DO MOTORISTA (1.2 km NÃO é distante com meta de 2.0 km)
+    @Test
+    fun `test user feedback distant pickup strictly adheres to configured km threshold`() {
+        val config = DriverFinancialConfig(
+            targetGrossPerKm = 2.00,
+            targetGrossPerHour = 40.00,
+            distantPickupKmThreshold = 2.0
+        )
+
+        // Caso real enviado pelo motorista no print 2: 1.2 km de embarque com 8 min
+        val offer12km = StandardRideOffer(
+            offerId = "user_fb_1",
+            sourceApp = SourceApp.NINETY_NINE_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = 1000L,
+            offeredPriceField = ExtractedField.Present(18.00),
+            pickupDistanceKmField = ExtractedField.Present(1.2),
+            pickupDurationMinField = ExtractedField.Present(8),
+            tripDistanceKmField = ExtractedField.Present(6.0),
+            tripDurationMinField = ExtractedField.Present(15)
+        )
+
+        val eval12 = FinancialEngine.evaluate(offer12km, config)
+        assertFalse("1.2 km nunca deve acionar Emb. Longe quando o motorista configurou 2.0 km", eval12.isDistantPickup)
+        assertFalse(eval12.warnings.any { it.contains("Embarque distante", ignoreCase = true) })
+
+        // Caso com 1.9 km (ainda menor que o limiar de 2.0 km configurado)
+        val offer19km = offer12km.copy(pickupDistanceKmField = ExtractedField.Present(1.9))
+        val eval19 = FinancialEngine.evaluate(offer19km, config)
+        assertFalse("1.9 km nunca deve acionar Emb. Longe quando o motorista configurou 2.0 km", eval19.isDistantPickup)
+
+        // Caso com 2.1 km (acima do limiar de 2.0 km)
+        val offer21km = offer12km.copy(pickupDistanceKmField = ExtractedField.Present(2.1))
+        val eval21 = FinancialEngine.evaluate(offer21km, config)
+        assertTrue("2.1 km deve acionar Emb. Longe com limiar de 2.0 km", eval21.isDistantPickup)
+        assertTrue(eval21.warnings.any { it.contains("Embarque distante", ignoreCase = true) })
+    }
+
+    // 43. TESTE DE FEEDBACK DO USUÁRIO: ÁREA DE RISCO É ESTRITAMENTE INFORMATIVA E NUNCA FORÇA CARD VERMELHO
+    @Test
+    fun `test user feedback risk area is strictly informational and does not force red card`() {
+        // Viagem financeiramente muito boa: R$ 2,06/km e R$ 45,00/h
+        val config = DriverFinancialConfig(
+            targetGrossPerKm = 2.00,
+            targetGrossPerHour = 30.00
+        )
+
+        val profitableRiskOffer = StandardRideOffer(
+            offerId = "user_risk_fb",
+            sourceApp = SourceApp.NINETY_NINE_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = 1000L,
+            offeredPriceField = ExtractedField.Present(25.00),
+            pickupDistanceKmField = ExtractedField.Present(1.0),
+            pickupDurationMinField = ExtractedField.Present(3),
+            tripDistanceKmField = ExtractedField.Present(10.0),
+            tripDurationMinField = ExtractedField.Present(20),
+            originAddress = "Rua Marechal Deodoro, 100 - Centro, São Bernardo do Campo",
+            destinationAddress = "Estrada do Montanhão, 500 - Montanhão, São Bernardo do Campo" // Área de Risco conhecida
+        )
+
+        val eval = FinancialEngine.evaluate(profitableRiskOffer, config)
+
+        // 1. O alerta de risco DEVE existir para informar o motorista
+        assertTrue("Deve sinalizar risco para proteção do motorista", eval.hasRiskAlert)
+        assertNotNull("Deve conter badge de risco", eval.riskAlertBadge)
+        assertTrue("Deve mencionar área de risco", eval.riskAlertBadge!!.contains("Área de risco", ignoreCase = true))
+
+        // 2. O semáforo/veredito DEVE continuar VERDE (financeiro positivo) porque quem decide é o motorista!
+        assertEquals("Área de risco NÃO deve forçar card vermelho; quem decide é o motorista", TrafficLightVerdict.GREEN, eval.verdict)
+    }
 }

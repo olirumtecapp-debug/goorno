@@ -1104,15 +1104,19 @@ object BrazilianOfferParser {
         return false
     }
 
-    // Detecção inteligente de paradas no trajeto (99 e Uber)
-    // Exemplos reais dos prints: "1 parada(s)", "2 paradas", "Várias paradas"
+    // Deteccao inteligente de paradas no trajeto (99 e Uber)
+    // Exemplos reais dos prints: "1 parada(s)", "2 paradas", "Varias paradas"
     private val STOPS_REGEX = Regex(
-        pattern = """(\d+)\s*paradas?(?:\(s\))?|v[áa]rias\s+paradas""",
+        pattern = """(?:(\d+)\s*)?paradas?(?:\s*\(\s*s\s*\))?|v[aá]rias\s+paradas|m[uú]ltiplas\s+paradas""",
         option = RegexOption.IGNORE_CASE
     )
 
     fun extractStopsDescription(lines: List<String>): String? {
         for (line in lines) {
+            val lower = line.lowercase(Locale.getDefault())
+            if (lower.contains("taxa de parada") || lower.contains("parada de r$") || lower.contains("por parada")) {
+                continue
+            }
             val match = STOPS_REGEX.find(line)
             if (match != null) {
                 val group1 = match.groups[1]?.value
@@ -1121,7 +1125,8 @@ object BrazilianOfferParser {
                         val count = group1.toIntOrNull() ?: 1
                         if (count == 1) "1 Parada" else "$count Paradas"
                     }
-                    line.contains("várias", ignoreCase = true) || line.contains("varias", ignoreCase = true) -> "Várias Paradas"
+                    lower.contains("várias") || lower.contains("varias") || lower.contains("múltiplas") || lower.contains("multiplas") -> "Várias Paradas"
+                    lower.contains("parada") -> "1 Parada"
                     else -> "Com Parada"
                 }
             }
