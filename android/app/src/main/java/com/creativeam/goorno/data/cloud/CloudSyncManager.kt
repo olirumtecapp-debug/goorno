@@ -205,7 +205,25 @@ object CloudSyncManager {
             return@withContext Result.failure(IllegalArgumentException("Informe um código com pelo menos 4 caracteres."))
         }
         try {
-            val payloadJson = exportToJsonString(config.copy(driverRecoveryCode = sanitizedCode, cloudBackupConsent = true), offers)
+            // Blindagem: se as configurações locais estiverem com zonas vazias ou sem ofertas,
+            // verifica se a nuvem já possui dados salvos para nunca sobrescrever dados existentes com branco acidentalmente
+            var effectiveConfig = config
+            var effectiveOffers = offers
+            if (effectiveConfig.customRiskZones.isBlank() || effectiveConfig.customFavoriteZones.isBlank() || effectiveOffers.isEmpty()) {
+                val existing = restoreBackupByDriverCode(sanitizedCode).getOrNull()
+                if (existing != null) {
+                    val (cloudCfg, cloudOffers) = existing
+                    effectiveConfig = effectiveConfig.copy(
+                        customRiskZones = if (effectiveConfig.customRiskZones.isBlank() && cloudCfg.customRiskZones.isNotBlank()) cloudCfg.customRiskZones else effectiveConfig.customRiskZones,
+                        customFavoriteZones = if (effectiveConfig.customFavoriteZones.isBlank() && cloudCfg.customFavoriteZones.isNotBlank()) cloudCfg.customFavoriteZones else effectiveConfig.customFavoriteZones
+                    )
+                    if (effectiveOffers.isEmpty() && cloudOffers.isNotEmpty()) {
+                        effectiveOffers = cloudOffers
+                    }
+                }
+            }
+
+            val payloadJson = exportToJsonString(effectiveConfig.copy(driverRecoveryCode = sanitizedCode, cloudBackupConsent = true), effectiveOffers)
             val firestoreDoc = JSONObject().apply {
                 put(
                     "fields",

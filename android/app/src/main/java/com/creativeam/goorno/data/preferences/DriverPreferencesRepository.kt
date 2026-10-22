@@ -131,7 +131,7 @@ class DriverPreferencesRepository(private val context: Context) {
                     overlayDisplayStyle = b.getString("overlay_display_style", null) ?: "BANNER_PRO_STREETVIEW",
                     overlayTheme = b.getString("overlay_theme", null) ?: "DARK",
                     overlayBubblePosition = b.getString("overlay_bubble_position", null) ?: "BELOW",
-                    overlayHorizontalPosition = b.getString("overlay_horizontal_position", null) ?: "CENTER",
+                    overlayHorizontalPosition = b.getString("overlay_horizontal_position", null) ?: "RIGHT",
                     showFloatingShortcutBubble = b.getBoolean("show_floating_shortcut_bubble", true),
                     showProfitOnOverlay = b.getBoolean("show_profit_on_overlay", false),
                     showCostOnOverlay = b.getBoolean("show_cost_on_overlay", false),
@@ -200,7 +200,7 @@ class DriverPreferencesRepository(private val context: Context) {
                 overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: b.getString("overlay_display_style", null) ?: "BANNER_PRO_STREETVIEW",
                 overlayTheme = prefs[Keys.OVERLAY_THEME] ?: b.getString("overlay_theme", null) ?: "DARK",
                 overlayBubblePosition = prefs[Keys.OVERLAY_BUBBLE_POSITION] ?: b.getString("overlay_bubble_position", null) ?: "BELOW",
-                overlayHorizontalPosition = prefs[Keys.OVERLAY_HORIZONTAL_POSITION] ?: b.getString("overlay_horizontal_position", null) ?: "CENTER",
+                overlayHorizontalPosition = prefs[Keys.OVERLAY_HORIZONTAL_POSITION] ?: b.getString("overlay_horizontal_position", null) ?: "RIGHT",
                 showFloatingShortcutBubble = prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] ?: b.getBoolean("show_floating_shortcut_bubble", true),
                 showProfitOnOverlay = prefs[Keys.SHOW_PROFIT_ON_OVERLAY] ?: b.getBoolean("show_profit_on_overlay", false),
                 showCostOnOverlay = prefs[Keys.SHOW_COST_ON_OVERLAY] ?: b.getBoolean("show_cost_on_overlay", false),
@@ -322,17 +322,19 @@ class DriverPreferencesRepository(private val context: Context) {
         }
 
         // Sincronização automática e transparente na nuvem vinculada ao WhatsApp do motorista
-        try {
-            val phone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
-            if (phone.length >= 10) {
-                com.creativeam.goorno.data.cloud.CloudSyncManager.uploadBackupByDriverCode(
-                    driverCode = phone,
-                    config = config,
-                    offers = emptyList()
-                )
+        repositoryScope.launch(Dispatchers.IO) {
+            try {
+                val phone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
+                if (phone.length >= 10) {
+                    com.creativeam.goorno.data.cloud.CloudSyncManager.uploadBackupByDriverCode(
+                        driverCode = phone,
+                        config = config,
+                        offers = emptyList()
+                    )
+                }
+            } catch (_: Exception) {
+                // Silencioso se offline, garante que a persistência local nunca falhe
             }
-        } catch (_: Exception) {
-            // Silencioso se offline, garante que a persistência local nunca falhe
         }
     }
 }

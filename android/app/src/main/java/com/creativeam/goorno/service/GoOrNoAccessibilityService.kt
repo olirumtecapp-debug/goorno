@@ -55,6 +55,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var lastScreenContextMode: String = ""
     private var lastKnownForegroundPkg: String = ""
     private var lastScanTimeMillis: Long = 0L
+    private val isScanInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var lastAutoScreenshotTimeMillis: Long = 0L
     private var lastCardClosedTimeMillis: Long = 0L
     private var lastOfferProcessedTimeMillis: Long = 0L
@@ -158,7 +159,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                         if (app.overlayPanel.isCardCurrentlyVisible()) {
                             checkIfOfferDismissedAndCloseCard(activeRootPkg = null, eventPkg = null)
                         } else {
-                            scanCurrentScreen(eventPkg = null, forceThrottleBypass = true)
+                            val now = System.currentTimeMillis()
+                            if (now - lastScanTimeMillis >= 800L) {
+                                scanCurrentScreen(eventPkg = null, forceThrottleBypass = false)
+                            }
                         }
                     }
                 } catch (_: Throwable) {
@@ -229,7 +233,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val now = System.currentTimeMillis()
         if (!forceThrottleBypass && now - lastScanTimeMillis < 260L) return
         if (now - lastCardClosedTimeMillis < 1100L) return
-        lastScanTimeMillis = now
+        if (!isScanInProgress.compareAndSet(false, true)) return
+        try {
+            lastScanTimeMillis = now
 
         // 1. Identifica estritamente a janela ativa em primeiro plano
         val activeRoot = try { rootInActiveWindow } catch (_: Exception) { null }
@@ -363,6 +369,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // Se a árvore de acessibilidade contém oferta mas ocultou valores ou distâncias (ex: canvas 99):
         triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
+        } finally {
+            isScanInProgress.set(false)
+        }
     }
 
     private fun isSocialMediaApp(pkg: String?): Boolean {
@@ -410,14 +419,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        // A Uber possui nós de acessibilidade 100% nativos e completos.
-        // OCR na Uber causa duplicatas, perda de destino e valores irreais (R$ 149/h)!
-        if (targetApp == SourceApp.UBER_DRIVER) {
-            isTakingAutoScreenshot = false
-            return
-        }
         val app = applicationContext as? GoOrNoApplication
-        if (app?.overlayPanel?.isCardCurrentlyVisible() == true || (now - lastOfferProcessedTimeMillis < 10_000L)) {
+        if (app?.overlayPanel?.isCardCurrentlyVisible() == true || (now - lastOfferProcessedTimeMillis < 2_500L)) {
             isTakingAutoScreenshot = false
             return
         }
@@ -582,7 +585,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                     var ocrOffers = extractOffersForApp(
                                         appType = effectiveOcrApp,
                                         lines = normalizedOcr,
-                                        method = CaptureMethod.ACCESSIBILITY,
+                                        method = CaptureMethod.OCR,
                                         timestampMillis = System.currentTimeMillis()
                                     )
 

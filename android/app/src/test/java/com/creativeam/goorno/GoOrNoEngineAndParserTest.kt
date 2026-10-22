@@ -882,4 +882,132 @@ class GoOrNoEngineAndParserTest {
         assertNotNull(eval2.operationalBadge)
         assertTrue(eval2.operationalBadge!!.contains("Viagem Longa"))
     }
+    // 37. TESTE DE SELEÇÃO EXATA DE PREÇO NA UBER (IGNORA META DIÁRIA OU GANHOS NO CABEÇALHO):
+    @Test
+    fun `test uber price extraction ignores daily goal and gains in header`() {
+        val uberScreenWithDailyGoal = listOf(
+            "Ganhos de hoje: R$ 180,50",
+            "Meta diária: R$ 250,00",
+            "UberX",
+            "R$ 14,01",
+            "6,3 km · 17 min",
+            "5 min (1,8 km)",
+            "Rua Jurubatuba, Centro",
+            "12 min (4,5 km)",
+            "Av Kennedy, Parque São Diogo",
+            "Aceitar"
+        )
+        val offer = UberOfferReader.parseScreenNodes(uberScreenWithDailyGoal)
+        assertEquals(14.01, offer.offeredPrice!!, 0.001)
+    }
+
+    // 38. TESTE DE CONFIGURAÇÃO PADRÃO DE POSIÇÃO (RIGHT) E PRESERVAÇÃO:
+    @Test
+    fun `test default overlay horizontal position is RIGHT and bubble is BELOW`() {
+        val config = DriverFinancialConfig()
+        assertEquals("RIGHT", config.overlayHorizontalPosition)
+        assertEquals("BELOW", config.overlayBubblePosition)
+    }
+
+    // 39. TESTE DE PARADAS NO NOVO FORMATO COM PARENTESES:
+    @Test
+    fun `test stops regex with 1 parada parenteses`() {
+        val nodes = listOf(
+            "99Pop",
+            "R$ 12,50",
+            "1 parada(s)",
+            "2 km · 6 min",
+            "Rua das Flores, 100",
+            "Aceitar"
+        )
+        val offer = NinetyNineOfferReader.parseScreenNodes(nodes)
+        assertEquals("1 Parada", offer.stopsDescription)
+    }
+    // 40. TESTE COMPLETO DOS 7 PRINTS REAIS DA UBER ENVIADOS PELO USUÁRIO (v3.3.39/v3.3.40):
+    @Test
+    fun 	est real user uber screenshots suite from field device() {
+        // Print 1: R$ 9,14 - Jardim Santo André (Área de Risco Crítica)
+        val p1 = listOf(
+            "UberX", "Exclusivo", "R$ 9,14", "Est. de R,25/km", "4,97 (1172)", "+R$ 2,75 incluído",
+            "12 min (5.3 km)", "R. Beth Carvalho, Jardim Santo André CDHU, Santo André",
+            "6 minutos (2.0 km)", "Rua Diogo Álvares, 23A, Jardim João Ramalho, Santo André", "Aceitar"
+        )
+        val o1 = UberOfferReader.parseScreenNodes(p1)
+        assertEquals(9.14, o1.offeredPrice!!, 0.001)
+        assertEquals(5.3, o1.pickupDistanceKm!!, 0.001)
+        assertEquals(2.0, o1.tripDistanceKm!!, 0.001)
+        assertEquals(4.97, o1.passengerRating!!, 0.001)
+        val eval1 = FinancialEngine.evaluate(o1, DriverFinancialConfig())
+        assertTrue(eval1.hasRiskAlert)
+        assertTrue(eval1.riskAlertBadge.contains("Risco"))
+
+        // Print 2: R$ 13,34 - Priority - Botão Viagem
+        val p2 = listOf(
+            "Priority", "R$ 13,34", "Est. de R,76/km", "4,85 (341)", "Verificado",
+            "+R$ 2,00 incluído", "+R$ 1,70 incluída para retirada",
+            "10 min (4.4 km)", "Rua Marcondes Machado, Vila Junqueira, Santo André",
+            "9 minutos (3.2 km)", "R. Monteiro Lobato, Vila Humaita, Santo André", "Viagem"
+        )
+        val o2 = UberOfferReader.parseScreenNodes(p2)
+        assertEquals(13.34, o2.offeredPrice!!, 0.001)
+        assertEquals(4.4, o2.pickupDistanceKm!!, 0.001)
+        assertEquals(3.2, o2.tripDistanceKm!!, 0.001)
+        assertEquals("Priority", o2.rideCategory)
+
+        // Print 3: R$ 7,88 - Vila Luzita para Jardim Guarará
+        val p3 = listOf(
+            "UberX", "Exclusivo", "R$ 7,88", "Est. de R,83/km", "4,99 (71)", "Verificado", "+R$ 2,00 incluído",
+            "7 min (3.2 km)", "R. Calecute, Vila Luzita, Santo André",
+            "4 minutos (1.1 km)", "Rua dos Jacintos, 594, Jardim Guarará, Santo André", "Aceitar"
+        )
+        val o3 = UberOfferReader.parseScreenNodes(p3)
+        assertEquals(7.88, o3.offeredPrice!!, 0.001)
+        assertEquals(3.2, o3.pickupDistanceKm!!, 0.001)
+        assertEquals(1.1, o3.tripDistanceKm!!, 0.001)
+
+        // Print 4: R$ 11,96 - Cata Preta (Área de Risco Crítica)
+        val p4 = listOf(
+            "UberX", "Exclusivo", "R$ 11,96", "Est. de R,96/km", "4,67 (27)", "+R$ 2,25 incluído",
+            "9 min (4.4 km)", "Est. Do Pedroso, São Paulo",
+            "5 minutos (1.7 km)", "Rua da Maré, 116, Cata Preta, Santo André", "Aceitar"
+        )
+        val o4 = UberOfferReader.parseScreenNodes(p4)
+        assertEquals(11.96, o4.offeredPrice!!, 0.001)
+        val eval4 = FinancialEngine.evaluate(o4, DriverFinancialConfig())
+        assertTrue(eval4.hasRiskAlert)
+        assertTrue(eval4.riskAlertBadge.contains("Cata Preta"))
+
+        // Print 5: R$ 18,02 - Capuava
+        val p5 = listOf(
+            "UberX", "R$ 18,02", "Est. de R,24/km", "4,78 (50)", "Verificado",
+            "18 min (9.2 km)", "Avenida Antônio Cardoso, Bangú, Santo André",
+            "11 minutos (5.3 km)", "Rua Carinhos, 16, Capuava, Santo André", "Viagem"
+        )
+        val o5 = UberOfferReader.parseScreenNodes(p5)
+        assertEquals(18.02, o5.offeredPrice!!, 0.001)
+        assertEquals(9.2, o5.pickupDistanceKm!!, 0.001)
+        assertEquals(5.3, o5.tripDistanceKm!!, 0.001)
+
+        // Print 6: R$ 16,16 - Rua das Hortências para Bangú
+        val p6 = listOf(
+            "UberX", "R$ 16,16", "Est. de R,50/km", "4,96 (208)", "Verificado", "+R$ 1,25 incluído",
+            "9 min (3.9 km)", "Rua das Hortênsias, Santo André, Santo André",
+            "13 minutos (6.9 km)", "Avenida Antônio Cardoso, 319, Bangú, Santo André", "Viagem"
+        )
+        val o6 = UberOfferReader.parseScreenNodes(p6)
+        assertEquals(16.16, o6.offeredPrice!!, 0.001)
+        assertEquals(3.9, o6.pickupDistanceKm!!, 0.001)
+        assertEquals(6.9, o6.tripDistanceKm!!, 0.001)
+
+        // Print 7: R$ 11,31 - Ferrazópolis
+        val p7 = listOf(
+            "UberX", "R$ 11,31", "Est. de R,24/km", "4,91 (167)", "Verificado",
+            "14 min (7.2 km)", "R. Tanger, Ferrazópolis, São Bernardo do Campo",
+            "6 minutos (1.9 km)", "Rua Paulino de Abreu, 71, Ferrazópolis, São Bernardo do Campo", "Viagem"
+        )
+        val o7 = UberOfferReader.parseScreenNodes(p7)
+        assertEquals(11.31, o7.offeredPrice!!, 0.001)
+        assertEquals(7.2, o7.pickupDistanceKm!!, 0.001)
+        assertEquals(1.9, o7.tripDistanceKm!!, 0.001)
+    }
 }

@@ -219,7 +219,7 @@ data class DriverFinancialConfig(
     val overlayDisplayStyle: String = OverlayDisplayStyle.BANNER_PRO_STREETVIEW.name,
     val overlayTheme: String = "DARK", // "DARK" ou "LIGHT"
     val overlayBubblePosition: String = "BELOW",
-    val overlayHorizontalPosition: String = "CENTER",
+    val overlayHorizontalPosition: String = "RIGHT",
     val showFloatingShortcutBubble: Boolean = true,
     val showProfitOnOverlay: Boolean = false,
     val showCostOnOverlay: Boolean = false,

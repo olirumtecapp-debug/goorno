@@ -147,10 +147,10 @@ class FloatingOverlayPanel(private val context: Context) {
                 posPrefs.edit().remove("saved_x").remove("saved_y").apply()
                 val (newGravity, newX) = when (overlayHorizontalPosition) {
                     "LEFT" -> Pair(Gravity.TOP or Gravity.START, dp(10))
-                    "RIGHT" -> Pair(Gravity.TOP or Gravity.END, dp(10))
-                    else -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
+                    "CENTER" -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
+                    else -> Pair(Gravity.TOP or Gravity.END, dp(10))
                 }
-                val newY = dp(90)
+                val newY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(110)
                 layoutParams?.let { lp ->
                     lp.gravity = newGravity
                     lp.x = newX
@@ -180,10 +180,10 @@ class FloatingOverlayPanel(private val context: Context) {
             layoutParams?.let { lp ->
                 val (defaultGravity, defaultX) = when (overlayHorizontalPosition) {
                     "LEFT" -> Pair(Gravity.TOP or Gravity.START, dp(10))
-                    "RIGHT" -> Pair(Gravity.TOP or Gravity.END, dp(10))
-                    else -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
+                    "CENTER" -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
+                    else -> Pair(Gravity.TOP or Gravity.END, dp(10))
                 }
-                val defaultY = dp(90)
+                val defaultY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(110)
                 lp.gravity = defaultGravity
                 lp.x = defaultX
                 lp.y = defaultY
@@ -345,9 +345,7 @@ class FloatingOverlayPanel(private val context: Context) {
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
             isTransitioningBetweenOffers = false
             removeWindowViewOnly()
-            if (isMonitoringEnabled && showFloatingShortcutBubble) {
-                shortcutBubbleContainer?.visibility = View.VISIBLE
-            }
+            reconcileShortcutBubbleState()
         }
     }
 
@@ -1934,10 +1932,30 @@ class FloatingOverlayPanel(private val context: Context) {
     // Permanece na borda da tela e abre o Hub de Atalhos Rápidos ao ser tocado
     // =========================================================================
     fun updateShortcutBubbleVisibility() {
-        if (hasOverlayPermission() && isMonitoringEnabled && showFloatingShortcutBubble) {
-            showShortcutBubble()
+        mainHandler.post {
+            reconcileShortcutBubbleState()
+        }
+    }
+
+    fun reconcileShortcutBubbleState() {
+        val shouldShow = hasOverlayPermission() && isMonitoringEnabled && showFloatingShortcutBubble && !isCardCurrentlyVisible()
+        if (shouldShow) {
+            if (!isShortcutBubbleAdded || shortcutBubbleContainer == null) {
+                showShortcutBubble()
+            } else {
+                try {
+                    shortcutBubbleContainer?.visibility = View.VISIBLE
+                } catch (_: Throwable) {
+                    hideShortcutBubble()
+                    showShortcutBubble()
+                }
+            }
         } else {
-            hideShortcutBubble()
+            if (isCardCurrentlyVisible()) {
+                shortcutBubbleContainer?.visibility = View.GONE
+            } else {
+                hideShortcutBubble()
+            }
         }
     }
 
@@ -2568,10 +2586,10 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val (defaultGravity, defaultX) = when (overlayHorizontalPosition) {
             "LEFT" -> Pair(Gravity.TOP or Gravity.START, dp(10))
-            "RIGHT" -> Pair(Gravity.TOP or Gravity.END, dp(10))
-            else -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
+            "CENTER" -> Pair(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0)
+            else -> Pair(Gravity.TOP or Gravity.END, dp(10))
         }
-        val defaultY = dp(90)
+        val defaultY = if (overlayBubblePosition == "ABOVE") dp(50) else dp(110)
 
         val savedX = if (overlayHorizontalPosition == "CENTER" && !posPrefs.contains("saved_x")) 0 else posPrefs.getInt("saved_x", defaultX)
         val savedY = posPrefs.getInt("saved_y", defaultY)

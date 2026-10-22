@@ -255,6 +255,23 @@ fun GoOrNoComposeApp(
 
     LaunchedEffect(Unit) {
         checkForUpdates(false)
+        try {
+            val savedPhone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
+            if (savedPhone.length >= 10) {
+                val currentCfg = app.preferencesRepository.getConfigOnce()
+                if (currentCfg.customRiskZones.isBlank() && currentCfg.customFavoriteZones.isBlank()) {
+                    val res = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, savedPhone)
+                    res.onSuccess { (cloudCfg, cloudOffers) ->
+                        if (cloudCfg.customRiskZones.isNotBlank() || cloudCfg.customFavoriteZones.isNotBlank()) {
+                            app.preferencesRepository.saveConfig(cloudCfg)
+                            if (cloudOffers.isNotEmpty()) {
+                                app.database.rideOfferDao().insertAll(cloudOffers)
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (_: Throwable) {}
     }
 
     LaunchedEffect(initialRequestedScreen) {

@@ -368,6 +368,20 @@ fun SubscriptionScreenCard(
                                 res.onSuccess { state ->
                                     licenseState = state
                                     onNotify(state.message)
+                                    // Restauração Automática Imediata do Perfil e Zonas do Motorista
+                                    scope.launch {
+                                        try {
+                                            val restoreRes = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, whatsappInput)
+                                            restoreRes.onSuccess { (restoredCfg, restoredOffers) ->
+                                                val app = context.applicationContext as? com.creativeam.goorno.GoOrNoApplication
+                                                app?.preferencesRepository?.saveConfig(restoredCfg)
+                                                if (restoredOffers.isNotEmpty()) {
+                                                    app?.database?.rideOfferDao()?.insertAll(restoredOffers)
+                                                }
+                                                onNotify("Perfil e configurações restaurados da nuvem!")
+                                            }
+                                        } catch (_: Throwable) {}
+                                    }
                                 }.onFailure { err ->
                                     onNotify(err.message ?: "Erro ao validar.")
                                 }
@@ -401,6 +415,20 @@ fun SubscriptionScreenCard(
                                     res.onSuccess { state ->
                                         licenseState = state
                                         onNotify(state.message)
+                                        // Restauração Automática Imediata do Perfil e Zonas do Motorista
+                                        scope.launch {
+                                            try {
+                                                val restoreRes = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, whatsappInput)
+                                                restoreRes.onSuccess { (restoredCfg, restoredOffers) ->
+                                                    val app = context.applicationContext as? com.creativeam.goorno.GoOrNoApplication
+                                                    app?.preferencesRepository?.saveConfig(restoredCfg)
+                                                    if (restoredOffers.isNotEmpty()) {
+                                                        app?.database?.rideOfferDao()?.insertAll(restoredOffers)
+                                                    }
+                                                    onNotify("Perfil e configurações restaurados da nuvem!")
+                                                }
+                                            } catch (_: Throwable) {}
+                                        }
                                     }.onFailure { err ->
                                         onNotify(err.message ?: "Erro ao transferir.")
                                     }
