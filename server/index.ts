@@ -1112,71 +1112,30 @@ app.delete("/api/contact/:id", async (req, res) => {
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
-  "/GoOrNo-v3.3.47.apk",
+  "/GoOrNo-v3.3.48.apk",
   "/GoOrNo-v3.3.47.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
-  "/download/GoOrNo-v3.3.47.apk",
-  "/download/GoOrNo-v3.3.47.apk",
-  "/download/GoOrNo-v3.3.47.apk",
-  "/download/GoOrNo-v3.3.47.apk",
-  "/download/GoOrNo-v3.3.47.apk",
+  "/download/GoOrNo-v3.3.48.apk",
   "/download/GoOrNo-v3.3.47.apk"
 ], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "GoOrNo.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.47.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.48.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.48.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.48.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.47.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.47.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.47.apk"),
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.47.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.48.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");
