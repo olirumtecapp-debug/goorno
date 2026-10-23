@@ -147,10 +147,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             while (isActive) {
                 try {
                     val app = applicationContext as? GoOrNoApplication
-                    // Se o motorista estiver fora dos apps de motorista (ex: WhatsApp, tela inicial, Chrome, Spotify):
-                    // Suspende escaneamento ativo para poupar 100% de CPU/RAM e não interferir no uso normal do celular!
-                    if (!SourceApp.isAllowedDriverPackage(lastKnownForegroundPkg)) {
-                        delay(1500L)
+                    val isHeavyAppInFront = isHeavyMediaOrSocialApp(lastKnownForegroundPkg)
+                    if (isHeavyAppInFront) {
+                        // Motorista está no Spotify ou Instagram: suspende escaneamento ativo para poupar RAM e CPU
+                        System.gc()
+                        delay(2000L)
                         continue
                     }
 
@@ -171,64 +172,59 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        try {
-            if (event == null) return
-            val evtPkg = event.packageName?.toString() ?: return
+        val app = applicationContext as? GoOrNoApplication
+        if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
+            return
+        }
 
-            val app = applicationContext as? GoOrNoApplication
-            if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
-                return
-            }
+        val evtPkg = event?.packageName?.toString() ?: ""
+        // Se o evento for do próprio GoOrNo (timer, arrasto, UI), ignora
+        if (evtPkg == packageName || evtPkg.contains("com.creativeam.goorno")) {
+            return
+        }
 
-            // Se o evento for do próprio GoOrNo (timer, arrasto, UI), ignora
-            if (evtPkg == packageName || evtPkg.contains("com.creativeam.goorno")) {
-                return
-            }
+        // Se o evento for de teclado ou painel de notificações, não processa
+        if (evtPkg == "com.android.systemui" ||
+            evtPkg.contains("inputmethod", ignoreCase = true) ||
+            evtPkg.contains("keyboard", ignoreCase = true)
+        ) {
+            return
+        }
 
-            // Se o evento for de teclado ou painel de notificações, não processa
-            if (evtPkg == "com.android.systemui" ||
-                evtPkg.contains("inputmethod", ignoreCase = true) ||
-                evtPkg.contains("keyboard", ignoreCase = true)
-            ) {
-                return
-            }
+        // TRAVA RIGOROSA DE PACOTE:
+        // Se o evento não for de um app de motorista permitido (Uber Driver ou 99 Motorista):
+        val isEventDriverPkg = SourceApp.isAllowedDriverPackage(evtPkg)
+        val activeRootPkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Exception) { null }
+        val isActiveDriverPkg = SourceApp.isAllowedDriverPackage(activeRootPkg)
 
-            // 🛡️ FILTRO ULTRA-RÁPIDO ZERO-ALLOCATION:
-            // Se o evento NÃO veio de um app de motorista permitido (Uber Driver ou 99 Motorista):
-            val isDriverApp = SourceApp.isAllowedDriverPackage(evtPkg)
-            if (!isDriverApp) {
-                // O usuário está em outro app (WhatsApp, Navegador, etc.) ou na tela inicial:
-                if (currentLifecycleState != OfferLifecycleState.OUTSIDE_ALLOWED_APP) {
-                    currentLifecycleState = OfferLifecycleState.OUTSIDE_ALLOWED_APP
-                    isTakingAutoScreenshot = false
-                    shownOfferTimestamps.clear()
-                    lastScreenContextMode = ""
-                    consecutiveScansWithoutOffers = 0
-                    app?.overlayPanel?.clearRecentlyDismissed()
-                    app?.overlayPanel?.hideOfferCardOnly()
-                }
-                lastKnownForegroundPkg = evtPkg
-                // Aborta imediatamente em 0ms sem nenhuma chamada a rootInActiveWindow ou IPC!
-                return
-            }
-
-            // A partir daqui, TEMOS CERTEZA que o evento é de um app de motorista permitido!
-            if (evtPkg.isNotBlank() && evtPkg != lastKnownForegroundPkg) {
+        if (!isEventDriverPkg && !isActiveDriverPkg) {
+            // O usuário está em outro app (WhatsApp, Navegador, etc.) ou na tela inicial:
+            if (currentLifecycleState != OfferLifecycleState.OUTSIDE_ALLOWED_APP) {
+                currentLifecycleState = OfferLifecycleState.OUTSIDE_ALLOWED_APP
+                isTakingAutoScreenshot = false
                 shownOfferTimestamps.clear()
                 lastScreenContextMode = ""
                 consecutiveScansWithoutOffers = 0
                 app?.overlayPanel?.clearRecentlyDismissed()
-                lastKnownForegroundPkg = evtPkg
+                app?.overlayPanel?.hideOfferCardOnly()
             }
-
-            if (app?.overlayPanel?.isCardCurrentlyVisible() == true) {
-                checkIfOfferDismissedAndCloseCard(activeRootPkg = null, eventPkg = evtPkg)
-            }
-
-            scanCurrentScreen(eventPkg = evtPkg, forceThrottleBypass = false)
-        } catch (_: Throwable) {
-            // Blindagem total: absorve qualquer falha na thread de acessibilidade para nunca derrubar o serviço
+            lastKnownForegroundPkg = evtPkg
+            return
         }
+
+        if (evtPkg.isNotBlank() && evtPkg != lastKnownForegroundPkg) {
+            shownOfferTimestamps.clear()
+            lastScreenContextMode = ""
+            consecutiveScansWithoutOffers = 0
+            app?.overlayPanel?.clearRecentlyDismissed()
+            lastKnownForegroundPkg = evtPkg
+        }
+
+        if (app?.overlayPanel?.isCardCurrentlyVisible() == true) {
+            checkIfOfferDismissedAndCloseCard(activeRootPkg = activeRootPkg, eventPkg = evtPkg)
+        }
+
+        scanCurrentScreen(eventPkg = evtPkg, forceThrottleBypass = false)
     }
 
     private fun scanCurrentScreen(eventPkg: String?, forceThrottleBypass: Boolean) {
@@ -739,29 +735,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     (if (eval.totalConsideredDistanceKm != null) 1 else 0)
             } ?: evaluations.first()
 
-            // 🛡️ ANTI-DELAY / ANTI-OFERTA FANTASMA:
-            // Antes de abrir o card na tela, verifica se a chamada AINDA está viva na tela ativa.
-            // Se o app já voltou para o mapa ocioso ("Buscando solicitações", "foi aceita por outro motorista",
-            // ou tela sem nenhum botão de ação "Aceitar" / "Escolher" e sem "R$"), descarta o card imediatamente!
-            val currentRoot = try { rootInActiveWindow } catch (_: Throwable) { null }
-            if (currentRoot != null) {
-                val currentPkg = currentRoot.packageName?.toString() ?: ""
-                if (SourceApp.isAllowedDriverPackage(currentPkg)) {
-                    val quickTexts = mutableListOf<String>()
-                    collectQuickTexts(currentRoot, quickTexts, maxNodes = 30)
-                    val joinedQuick = quickTexts.joinToString(" ").lowercase(Locale.ROOT)
-                    val isStaleOrDismissed = joinedQuick.contains("buscando solicitações") ||
-                        joinedQuick.contains("buscando viagens") ||
-                        joinedQuick.contains("outro motorista") ||
-                        joinedQuick.contains("expirada") ||
-                        joinedQuick.contains("chamada expirou") ||
-                        (!joinedQuick.contains("r$") && !joinedQuick.contains("aceitar") && !joinedQuick.contains("escolher") && !joinedQuick.contains("selecionar"))
-                    if (isStaleOrDismissed) {
-                        return@launch
-                    }
-                }
-            }
-
             RuntimeDiagnosticsBus.publishEvaluation(richestEval)
             app.overlayPanel.applyConfig(config)
             app.overlayPanel.showEvaluations(evaluations)
@@ -845,23 +818,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         return output.distinct()
     }
 
-
-    private fun collectQuickTexts(node: AccessibilityNodeInfo?, output: MutableList<String>, maxNodes: Int = 30, depth: Int = 0) {
-        if (node == null || depth > 15 || output.size >= maxNodes) return
-        try {
-            node.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { output.add(it) }
-            node.contentDescription?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { output.add(it) }
-            val count = node.childCount
-            for (i in 0 until count) {
-                if (output.size >= maxNodes) break
-                val child = try { node.getChild(i) } catch (_: Throwable) { null }
-                if (child != null) {
-                    collectQuickTexts(child, output, maxNodes, depth + 1)
-                }
-            }
-        } catch (_: Throwable) {
-        }
-    }
 
     private fun collectPositionedTexts(
         node: AccessibilityNodeInfo?,
