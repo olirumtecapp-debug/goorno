@@ -993,20 +993,19 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.47",
-    versionCode: 68,
-    releaseDate: "2026-10-22",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.47.apk",
-    directDownload: "/GoOrNo-v3.3.47.apk",
+    versionName: "3.3.48",
+    versionCode: 69,
+    releaseDate: "2026-10-23",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.48.apk",
+    directDownload: "/GoOrNo-v3.3.48.apk",
     fileSizeBytes: 55336412,
     fileSizeFormatted: "55.3 MB",
     changelog: [
-      "🎨 Cards em Alta Definição: Bordas 4dp neon vibrantes e textos em negrito de alto contraste para leitura instantânea no suporte do carro.",
-      "📍 Limiar Rigoroso de Embarque: Respeito exato à distância configurada pelo motorista (ex: 2 km não dispara alerta com 1.2 km).",
-      "🛡️ Área de Risco Informativa: Apenas sinaliza a região sem forçar o card para vermelho, deixando a decisão soberana com você.",
-      "⚡ Proteção Anti-Delay: Bloqueio automático de ofertas expiradas ou fantasmas.",
-      "🛑 Paradas Notificadas: Sinalização clara de paradas na 99 e Uber.",
-      "🛡️ Blindagem de Memória & WhatsApp: Fim do congelamento ou sumiço do botão flutuante ao alternar de aplicativo."
+      "⚡ Resposta Ultra-Rápida na 99: Fim do atraso na leitura do card com bypass instantâneo sub-50ms.",
+      "💰 Correção de R$/Hora e Km na 99: Soma exata de embarque + trajeto (ex: 23 min e 8,2 km dando R$ 32/h correto).",
+      "⏱️ Suporte a Horas Compostas na Uber: Leitura precisa de viagens acima de 1 hora (ex: 1 h e 19 min somando 84 min total dando R$ 37/h correto).",
+      "🎨 Unificação de Nós em Telas Densas: Alinhamento vertical expandido para evitar quebras em fontes grandes.",
+      "🛡️ Estabilidade Total Preservada: Motor consolidado mantendo toda a robustez e segurança."
     ],
     mandatory: false,
   });
