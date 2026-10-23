@@ -167,14 +167,21 @@ object NinetyNineOfferReader {
             legDestination = legs[1].address
             totalKmField = ExtractedField.Present(legs[0].distanceKm + legs[1].distanceKm)
             totalMinField = ExtractedField.Present(legs[0].durationMin + legs[1].durationMin)
-        } else if (legs.size == 1 && allDistances.size >= 2 && allDurations.size >= 2) {
-            pickupKmField = ExtractedField.Present(allDistances[0])
-            tripKmField = ExtractedField.Present(allDistances[1])
-            pickupMinField = ExtractedField.Present(allDurations[0])
-            tripMinField = ExtractedField.Present(allDurations[1])
+        } else if (legs.size == 1 && allDistances.size >= 2) {
+            // Se apenas 1 trecho foi ancorado, mas a tela possui 2 distâncias (ex: 1,3 km e 11,8 km):
+            val pickKm = allDistances[0]
+            val trKm = allDistances[1]
+            pickupKmField = ExtractedField.Present(pickKm)
+            tripKmField = ExtractedField.Present(trKm)
+            totalKmField = ExtractedField.Present(pickKm + trKm)
+
+            val pickMin = allDurations.getOrNull(0) ?: legs[0].durationMin
+            val trMin = allDurations.getOrNull(1) ?: (trKm * 2.2).toInt().coerceAtLeast(3)
+            pickupMinField = ExtractedField.Present(pickMin)
+            tripMinField = ExtractedField.Present(trMin)
+            totalMinField = ExtractedField.Present(pickMin + trMin)
+
             legOrigin = legs[0].address
-            totalKmField = ExtractedField.Present(allDistances[0] + allDistances[1])
-            totalMinField = ExtractedField.Present(allDurations[0] + allDurations[1])
         } else if (legs.size == 1) {
             totalKmField = ExtractedField.Present(legs[0].distanceKm)
             totalMinField = ExtractedField.Present(legs[0].durationMin)
@@ -194,7 +201,17 @@ object NinetyNineOfferReader {
                 tripMinField = ExtractedField.Present(allDurations[1])
                 totalMinField = ExtractedField.Present(allDurations[0] + allDurations[1])
             } else if (allDurations.size == 1) {
-                totalMinField = ExtractedField.Present(allDurations[0])
+                val singleMin = allDurations[0]
+                val totKm = totalKmField.valueOrNull()
+                if (totKm != null && totKm > 5.0 && singleMin < 10) {
+                    // Se a distância total é grande (ex: 13 km) e temos só 7 min, 7 min é apenas o embarque!
+                    pickupMinField = ExtractedField.Present(singleMin)
+                    val estimatedTripMin = (totKm * 2.2).toInt().coerceAtLeast(5)
+                    tripMinField = ExtractedField.Present(estimatedTripMin)
+                    totalMinField = ExtractedField.Present(singleMin + estimatedTripMin)
+                } else {
+                    totalMinField = ExtractedField.Present(singleMin)
+                }
             }
         }
 

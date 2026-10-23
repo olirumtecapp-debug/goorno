@@ -1,16 +1,16 @@
 {
-  "versionName": "3.3.48",
-  "versionCode": 69,
+  "versionName": "3.3.49",
+  "versionCode": 70,
   "releaseDate": "2026-10-23",
-  "apkUrl": "https://goorno-app.vercel.app/GoOrNo-v3.3.48.apk",
-  "directDownload": "/GoOrNo-v3.3.48.apk",
+  "apkUrl": "https://goorno-app.vercel.app/GoOrNo-v3.3.49.apk",
+  "directDownload": "/GoOrNo-v3.3.49.apk",
   "fileSizeBytes": 55336412,
   "fileSizeFormatted": "55.3 MB",
   "changelog": [
-    "⚡ Resposta Ultra-Rápida na 99: Fim do atraso na leitura do card com bypass instantâneo sub-50ms.",
-    "💰 Correção de R$/Hora e Km na 99: Soma exata de embarque + trajeto (ex: 23 min e 8,2 km dando R$ 32/h correto).",
-    "⏱️ Suporte a Horas Compostas na Uber: Leitura precisa de viagens acima de 1 hora (ex: 1 h e 19 min somando 84 min total dando R$ 37/h correto).",
-    "🎨 Unificação de Nós em Telas Densas: Alinhamento vertical expandido para evitar quebras em fontes grandes.",
+    "🏬 Fim do Falso Positivo Coop: Bairro Cooperativa (SBC) e termos correlatos nunca mais confundidos com Supermercado.",
+    "💰 Correção de R$/h em Destinos Comerciais na 99: Soma total dos 13,1 km e 27 min (ex: OGGI Sorvetes calculando R$ 48/h real em vez dos R$ 188/h distorcidos).",
+    "⚡ Bloqueio Anti-Fatiamento de Cards na 99: Indicadores de taxa R$/km na tela não dividem mais uma corrida em [1/2].",
+    "🎯 Ancoragem Precisa de Estabelecimentos: Suporte nativo a nomes comerciais sem prefixo de rua na 99 e Uber.",
     "🛡️ Estabilidade Total Preservada: Motor consolidado mantendo toda a robustez e segurança."
   ],
   "mandatory": false

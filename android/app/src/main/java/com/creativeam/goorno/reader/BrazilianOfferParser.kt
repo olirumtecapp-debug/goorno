@@ -617,14 +617,26 @@ object BrazilianOfferParser {
                 durMin = extractAllDurationsMinutes(listOf(normalized[i + 1])).first()
                 i++
                 lineForAddress = normalized[i]
+            } else if (distances.isNotEmpty()) {
+                // Suporte a trecho que traz apenas a quilometragem (ex: "11,8 km OGGI SORVETES")
+                distKm = distances.first()
+                durMin = (distKm * 2.2).toInt().coerceAtLeast(3)
             }
 
-            if (durMin != null && distKm != null) {
+            if (distKm != null) {
+                if (durMin == null) durMin = (distKm * 2.2).toInt().coerceAtLeast(3)
                 // 1. Tenta pegar o endereço no restante da MESMA linha
                 val strippedPrefix = LEADING_DURATION_DISTANCE_PREFIX_REGEX.replace(lineForAddress, "").trim()
                 var legAddress: String? = null
 
-                if (strippedPrefix.length >= 5 && (STREET_PREFIX_REGEX.matches(strippedPrefix) || strippedPrefix.contains(","))) {
+                val isStreetOrComma = STREET_PREFIX_REGEX.matches(strippedPrefix) || strippedPrefix.contains(",")
+                val strippedLower = strippedPrefix.lowercase(Locale.getDefault())
+                val isBoundary = strippedLower.contains("pgto") || strippedLower.contains("uber") ||
+                    strippedLower.contains("99") || strippedLower.contains("r$") ||
+                    strippedLower.contains("escolher") || strippedLower.contains("aceitar") ||
+                    strippedLower.contains("recusar") || strippedLower.contains("perfil")
+
+                if (strippedPrefix.length >= 3 && (isStreetOrComma || !isBoundary)) {
                     var fullAddr = strippedPrefix
                     var rawLast = strippedPrefix
                     while (i + 1 < normalized.size) {
@@ -933,6 +945,9 @@ object BrazilianOfferParser {
                 lower.contains("dinâmica incl") ||
                 lower.contains("dinamica incl") ||
                 lower.contains("a mais por corrida") ||
+                lower.contains("/km") ||
+                lower.contains("/h") ||
+                lower.contains("/hora") ||
                 lower.contains("meta") ||
                 lower.contains("saldo") ||
                 lower.contains("ganhos") ||
@@ -952,7 +967,7 @@ object BrazilianOfferParser {
                 lower.contains("comfort") ||
                 lower.contains("black") ||
                 lower.contains("flash") ||
-                extractAllCurrencies(listOf(line)).isNotEmpty()
+                (extractAllCurrencies(listOf(line)).isNotEmpty() && !lower.contains("/km"))
             ) {
                 if (offerHeaderIndices.isEmpty() || i > offerHeaderIndices.last() + 1) {
                     offerHeaderIndices.add(i)
@@ -1205,7 +1220,19 @@ object BrazilianOfferParser {
         for (text in candidates) {
             val tLower = text.lowercase(Locale.ROOT)
             for (brand in SPECIFIC_SUPERMARKET_BRANDS) {
-                if (tLower.contains(brand)) {
+                // Exige correspondência exata de palavra inteira (\b) para evitar falsos positivos
+                // Exemplo clássico: o bairro "Cooperativa" em SBC NÃO pode virar "Coop"
+                val brandRegex = Regex("""\b${Regex.escape(brand)}\b""", RegexOption.IGNORE_CASE)
+                if (brandRegex.containsMatchIn(tLower)) {
+                    if (brand.equals("coop", ignoreCase = true)) {
+                        // Limpa ocorrências de "cooperativa", "cooperado", etc. e verifica se ainda sobra "coop" isolado
+                        val cleanedOfCooperativa = tLower
+                            .replace(Regex("""\bcooperativ\w*""", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("""\bcooperad\w*""", RegexOption.IGNORE_CASE), "")
+                        if (!brandRegex.containsMatchIn(cleanedOfCooperativa)) {
+                            continue
+                        }
+                    }
                     val displayName = when (brand) {
                         "assai", "assaí" -> "Assaí"
                         "atacadao", "atacadão" -> "Atacadão"

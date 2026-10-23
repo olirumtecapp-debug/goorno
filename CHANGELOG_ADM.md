@@ -4,6 +4,40 @@
 
 ---
 
+## 📌 Checkpoint #009 — Eliminação do Falso Positivo Coop (Bairro Cooperativa) e Correção Integral de Trechos Comerciais na 99
+- **Data/Hora:** 23/10/2026 - 14:40
+- **Versão:** `v3.3.49 (Build 70)`
+- **Ponto de Restauração Anterior:** `v3.3.48` (Base Segura Golden: `v3.3.47-ESTAVEL-GOLDEN`, Branch: `backup-v3.3.47-estavel`, Zip físico: `D:\GoOrNo\backups\GoOrNo_v3.3.47_ESTAVEL_FUNCIONANDO.zip`)
+- **Frase de Rollback Rápido:** `"Antigravity, deu ruim, volte para o ponto estável!"`
+
+### 🔍 Diagnóstico e Resoluções Implementadas:
+
+1. **Falso Positivo de Supermercado "Coop" no Bairro Cooperativa (SBC):**
+   - **Problema:** Destino no bairro tradicional "Cooperativa" em São Bernardo do Campo (ex: `OGGI SORVETES Makita Brasil, 201 - Cooperativa`) disparava o selo de supermercado `🛒 Coop` no card do motorista.
+   - **Causa:** A correspondência de marcas em `extractSupermarketInfo` usava `contains("coop")` genérico sem limite de palavra (`\b`). A palavra "Cooperativa" contém a substring "coop", causando o falso positivo.
+   - **Solução:**
+     - Aplicada correspondência estrita por palavra inteira com `\b` (`Regex("""\b${Regex.escape(brand)}\b""")`).
+     - Adicionada regra de exclusão específica: se o texto contiver derivações de "cooperativa", "cooperado" ou "cooperativismo", a palavra "Coop" só é aceita se ainda existir como termo autônomo na frase.
+     - **Resultado:** Bairros e empresas cooperativas são tratados como endereços normais, enquanto o legítimo Supermercado Coop continua sendo identificado perfeitamente.
+
+2. **Cálculo de R$/Hora Distorcido (R$ 188/h) e Fatiamento [1/2] na 99 Pop:**
+   - **Problema:** Oferta de R$ 21,90 com embarque `(7 min 1,3 km)` e viagem `(11,8 km)` até OGGI Sorvetes calculava R$ 16,85/km e R$ 188/h, aparecendo como card fatiado `[1/2]`.
+   - **Causa:**
+     - O divisor de ofertas múltiplas (`splitIntoMultipleOfferClusters`) interpretava a taxa `R$1,68/km` como início de uma segunda corrida na tela porque `/km` não estava na lista de ignorados de moedas. Isso dividia a chamada em 2 clusters `[1/2]` e `[2/2]`.
+     - Ao fatiar a chamada, o cluster 1 reteve apenas o trecho de embarque (1,3 km em 7 min). Com R$ 21,90 / 1,3 km e 7 min, o cálculo resultou nos R$ 188/h bizarros.
+     - Além disso, o segundo trecho possuía o nome comercial `"OGGI SORVETES"` sem prefixo de rua ("Rua/Av"), fazendo com que o parser de trechos descartasse a ancoragem direta.
+   - **Solução:**
+     - Em `splitIntoMultipleOfferClusters`, taxas por km (`/km`, `/h`, `/hora`) são explicitamente proibidas de disparar fatiamento de corrida.
+     - Em `extractRideLegs`, nomes comerciais e estabelecimentos com >= 3 caracteres são preservados integralmente mesmo sem prefixo de logradouro.
+     - Em `NinetyNineOfferReader.kt`, caso a tela possua 2 distâncias (ex: 1,3 km e 11,8 km), a soma integral (`13,1 km`) é SEMPRE computada para a viagem.
+     - **Resultado:** 1,3 km + 11,8 km = **13,1 km**; ~27 min total; Ganho/Km = **R$ 1,67/km**; Ganho/Hora = **R$ 48,67/h** (fim dos R$ 188/h).
+
+### 🧪 Testes Automatizados Validados:
+- `test real 99 sbc cooperativa oggi sorvetes parses full 13km and avoids coop false positive` ✅
+- `test word cooperativa never matches supermarket coop` ✅
+
+---
+
 ## 📌 Checkpoint #008 — Correções de Precisão de Leitura e Latência (Uber & 99)
 - **Data/Hora:** 23/10/2026 - 11:15
 - **Versão:** `v3.3.48` (Evolução a partir da Golden `v3.3.47-ESTAVEL-GOLDEN`)

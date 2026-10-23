@@ -1169,4 +1169,65 @@ class GoOrNoEngineAndParserTest {
         // 2. O semáforo/veredito DEVE continuar VERDE (financeiro positivo) porque quem decide é o motorista!
         assertEquals("Área de risco NÃO deve forçar card vermelho; quem decide é o motorista", TrafficLightVerdict.GREEN, eval.verdict)
     }
+
+    // 44. TESTE EXATO DO PRINT ENVIADO PELO USUÁRIO (SBC COOPERATIVA x OGGI SORVETES)
+    // Tela 99: R$21,90 | R$1,68/km | (7 min 1,3 km) Av. Luiz Pequini -> (20 min 11,8 km) OGGI SORVETES Makita Brasil, Cooperativa
+    @Test
+    fun `test real 99 sbc cooperativa oggi sorvetes parses full 13km and avoids coop false positive`() {
+        val sbcNodes = listOf(
+            "Pop Nova",
+            "R$21,90",
+            "R$1,68/km",
+            "4,96 • 27 corridas • Perfil Premium",
+            "(7 min 1,3 km) Avenida Luiz Pequini, 1454, Nova Petrópolis",
+            "(20 min 11,8 km) OGGI SORVETES",
+            "Makita Brasil, 201 - Cooperativa",
+            "Escolher"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(sbcNodes)
+        assertEquals("Não deve fatiar oferta única em múltiplas ofertas", 1, offers.size)
+
+        val offer = offers.first()
+        val config = DriverFinancialConfig()
+        val eval = FinancialEngine.evaluate(offer, config)
+
+        // 1. Preço e Distâncias Corretas
+        assertEquals(21.90, offer.offeredPrice!!, 0.01)
+        assertEquals(1.3, offer.pickupDistanceKm!!, 0.1)
+        assertEquals(11.8, offer.tripDistanceKm!!, 0.1)
+        assertEquals(13.1, eval.totalConsideredDistanceKm!!, 0.1)
+
+        // 2. R$/km e R$/h Coerentes com a Realidade (e NUNCA R$ 188/h distorcido)
+        assertEquals(1.67, eval.grossPerKm!!, 0.05)
+        assertTrue("R$/hora deve estar entre R$ 40/h e R$ 55/h, nunca R$ 188/h", eval.grossPerHour!! in 40.0..55.0)
+
+        // 3. O bairro 'Cooperativa' NÃO pode acionar supermercado 'Coop'
+        val (isSupermarket, supermarketName) = BrazilianOfferParser.extractSupermarketInfo(
+            sbcNodes,
+            offer.originAddress,
+            offer.destinationAddress
+        )
+        assertFalse("Bairro Cooperativa de SBC não deve ser classificado como supermercado Coop", isSupermarket)
+        assertNull("supermarketName deve ser nulo para bairro Cooperativa", supermarketName)
+    }
+
+    // 45. TESTE DE AUDITORIA: PALAVRA COOPERATIVA E COOPERADO ISOLADAS NUNCA CASAM COM COOP
+    @Test
+    fun `test word cooperativa never matches supermarket coop`() {
+        val testLines = listOf(
+            "Makita Brasil, 201 - Cooperativa, São Bernardo do Campo",
+            "Cooperativa de Habitação dos Bancários",
+            "Médico Cooperado Unimed"
+        )
+        val (isSupermarket, name) = BrazilianOfferParser.extractSupermarketInfo(testLines, "Rua Cooperativa, 100", "Bairro Cooperativa")
+        assertFalse("Não deve detectar supermercado em nomes derivados de cooperativa", isSupermarket)
+        assertNull(name)
+
+        // Mas se a palavra 'Coop' legítima aparecer isolada, deve reconhecer!
+        val legitCoopLines = listOf("Supermercado Coop - Drogaria e Alimentos", "Avenida Pereira Barreto")
+        val (isLegitSuper, legitName) = BrazilianOfferParser.extractSupermarketInfo(legitCoopLines, "Coop Pereira Barreto", null)
+        assertTrue("Coop isolado legítimo deve ser reconhecido", isLegitSuper)
+        assertEquals("Coop", legitName)
+    }
 }
