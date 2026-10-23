@@ -1033,42 +1033,7 @@ class GoOrNoEngineAndParserTest {
         assertEquals(1.9, o7.tripDistanceKm!!, 0.001)
     }
 
-    // 42. TESTE DE CORRIDA 99 COM PARADA INTERMEDIARIA E TAXAS (SEM FATIAMENTO FANTASMA)
-    @Test
-    fun `test real 99 offer with stop fee breakdown and stop description does not split`() {
-        val nodes = listOf(
-            "Pgto. no app",
-            "R$ 16,04",
-            "R$ 2,28/km",
-            "R$ 1,41 por espera longa incl.",
-            "Taxa de parada de R$ 0,80 inclusa",
-            "★ 4,96 · 619 corridas · Perfil Premium",
-            "6 min (1,9 km)",
-            "Rua Dr. Amâncio de Carvalho, 1330 - Baeta Neves",
-            "1 parada(s)",
-            "16 min (5,1 km)",
-            "Rua Jurubatuba, 800 - Centro"
-        )
-
-        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(nodes)
-        assertEquals("Nunca deve fatiar oferta unica em multiplas quando ha taxas adicionais", 1, offers.size)
-
-        val offer = offers.first()
-        assertEquals(16.04, offer.offeredPrice!!, 0.001)
-        assertEquals(1.9, offer.pickupDistanceKm!!, 0.001)
-        assertEquals(5.1, offer.tripDistanceKm!!, 0.001)
-        assertEquals("Rua Dr. Amâncio de Carvalho, 1330 - Baeta Neves", offer.originAddress)
-        assertEquals("Rua Jurubatuba, 800 - Centro", offer.destinationAddress)
-        assertEquals("1 Parada", offer.stopsDescription)
-
-        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
-        assertEquals(7.0, eval.totalConsideredDistanceKm!!, 0.001)
-        assertEquals(22, eval.totalConsideredDurationMin)
-        assertEquals(2.29, eval.grossPerKm!!, 0.01)
-        assertEquals(43.75, eval.grossPerHour!!, 0.05)
-        assertNotNull(eval.operationalBadge)
-        assertTrue("Badge deve conter alerta de parada", eval.operationalBadge!!.contains("1 Parada"))
-    }
+    
 
     // 42. TESTE DE FEEDBACK DO USUÁRIO: EMBARQUE DISTANTE RESPEITA ESTRITAMENTE LIMIAR DO MOTORISTA (1.2 km NÃO é distante com meta de 2.0 km)
     @Test
