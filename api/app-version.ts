@@ -1,0 +1,24 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+
+export default function handler(_req: VercelRequest, res: VercelResponse) {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.status(200).json({
+    versionName: "3.3.48",
+    versionCode: 69,
+    releaseDate: "2026-10-23",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.48.apk",
+    directDownload: "/GoOrNo-v3.3.48.apk",
+    fileSizeBytes: 55336412,
+    fileSizeFormatted: "55.3 MB",
+    changelog: [
+      "⚡ Resposta Ultra-Rápida na 99: Fim do atraso na leitura do card com bypass instantâneo sub-50ms.",
+      "💰 Correção de R$/Hora e Km na 99: Soma exata de embarque + trajeto (ex: 23 min e 8,2 km dando R$ 32/h correto).",
+      "⏱️ Suporte a Horas Compostas na Uber: Leitura precisa de viagens acima de 1 hora (ex: 1 h e 19 min somando 84 min total dando R$ 37/h correto).",
+      "🎨 Unificação de Nós em Telas Densas: Alinhamento vertical expandido para evitar quebras em fontes grandes.",
+      "🛡️ Estabilidade Total Preservada: Motor consolidado mantendo toda a robustez e segurança."
+    ],
+    mandatory: false,
+  });
+}
