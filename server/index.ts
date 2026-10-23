@@ -998,15 +998,15 @@ app.get("/api/app-version", (_req, res) => {
     releaseDate: "2026-10-22",
     apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.46.apk",
     directDownload: "/GoOrNo-v3.3.46.apk",
-    fileSizeBytes: 55320024,
+    fileSizeBytes: 55336412,
     fileSizeFormatted: "55.3 MB",
     changelog: [
-      "🛡️ Blindagem de Zona de Risco: Mauá x São Caetano do Sul separados cirurgicamente (Avenida Guido Aliberti protegida contra falso positivo).",
-      "🔒 Leitura Restrita: Bloqueio rigoroso de leitura fora da Uber Driver e 99 Motorista (WhatsApp, bancos e outros apps 100% ignorados).",
-      "⚡ Auto-Fechamento Ocioso: Eliminação de cards residuais/fantasmas em telas ociosas da 99 ('Buscando solicitações').",
-      "🎯 Multi-Ofertas 99 Refinada: Fatiamento independente de cards por corrida e sanidade total de valores e tempos.",
-      "💾 Persistência Inabalável: Fallback com blindagem dupla sem risco de perda de dados.",
-      "📱 Validação Anti-Fake de Celular: Proteção de segurança contra números genéricos ou irreais no cadastro."
+      "🎨 Cards em Alta Definição: Bordas 4dp neon vibrantes e textos em negrito de alto contraste para leitura instantânea no suporte do carro.",
+      "📍 Limiar Rigoroso de Embarque: Respeito exato à distância configurada pelo motorista (ex: 2 km não dispara alerta com 1.2 km).",
+      "🛡️ Área de Risco Informativa: Apenas sinaliza a região sem forçar o card para vermelho, deixando a decisão soberana com você.",
+      "⚡ Proteção Anti-Delay: Bloqueio automático de ofertas expiradas ou fantasmas.",
+      "🛑 Paradas Notificadas: Sinalização clara de paradas na 99 e Uber.",
+      "🛡️ Blindagem de Memória & WhatsApp: Fim do congelamento ou sumiço do botão flutuante ao alternar de aplicativo."
     ],
     mandatory: false,
   });
