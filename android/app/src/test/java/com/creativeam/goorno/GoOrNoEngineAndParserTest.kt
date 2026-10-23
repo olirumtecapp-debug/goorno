@@ -129,6 +129,67 @@ class GoOrNoEngineAndParserTest {
         assertEquals(12.0, BrazilianOfferParser.parseDistanceKm("Viagem de 12 km").valueOrNull()!!, 0.001)
         assertEquals(14, BrazilianOfferParser.parseDurationMinutes("14 min").valueOrNull())
         assertEquals(75, BrazilianOfferParser.parseDurationMinutes("1 h 15 min").valueOrNull())
+        assertEquals(79, BrazilianOfferParser.parseDurationMinutes("1 h e 19 min").valueOrNull())
+        assertEquals(60, BrazilianOfferParser.parseDurationMinutes("1 h").valueOrNull())
+    }
+
+    // 5b. TESTE DO CENÁRIO REAL DA IMAGEM 3 (99: 9 MIN 3,2 KM + 14 MIN 5 KM = 23 MIN E 8,2 KM)
+    @Test
+    fun `test real image 3 99 scenario R12_40 with 9 min 3_2 km and 14 min 5 km`() {
+        val image3Nodes = listOf(
+            "Pgto. no app",
+            "R$ 12,40",
+            "99Pop",
+            "(9 min 3,2 km) Rua Ingá, 15, Jardim Las Vegas",
+            "(14 min 5 km) Rua Gen. Glicério, 200, Centro",
+            "Escolher"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(image3Nodes)
+        assertEquals(1, offers.size)
+
+        val offer = offers.first()
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+
+        assertEquals(12.40, offer.offeredPrice!!, 0.001)
+        assertEquals(3.2, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(5.0, offer.tripDistanceKm!!, 0.001)
+        assertEquals(8.2, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(23, eval.totalConsideredDurationMin)
+        // R$ 12.40 / 8.2 km = R$ 1.51/km
+        assertEquals(1.51, eval.grossPerKm!!, 0.01)
+        // R$ 12.40 / (23/60 h) = R$ 32.35/h (NUNCA R$ 83/h!)
+        assertEquals(32.35, eval.grossPerHour!!, 0.05)
+    }
+
+    // 5c. TESTE DO CENÁRIO REAL DA IMAGEM 4 (UBER: 5 MIN 1,5 KM + 1 H E 19 MIN 28,3 KM = 84 MIN E 29,8 KM)
+    @Test
+    fun `test real image 4 uber scenario R52_32 with 5 min 1_5 km and 1 h e 19 min 28_3 km`() {
+        val image4Nodes = listOf(
+            "UberX",
+            "R$ 52,32",
+            "5 min (1.5 km)",
+            "1 h",
+            "e",
+            "19 min (28.3 km)",
+            "Av. Dom Pedro I, 500",
+            "Rodovia dos Imigrantes, km 30",
+            "Aceitar"
+        )
+
+        val offer = UberOfferReader.parseScreenNodes(image4Nodes)
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+
+        assertEquals(52.32, offer.offeredPrice!!, 0.001)
+        assertEquals(1.5, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(28.3, offer.tripDistanceKm!!, 0.001)
+        assertEquals(29.8, eval.totalConsideredDistanceKm!!, 0.001)
+        // 5 min + 79 min (1 h e 19 min) = 84 min (NUNCA 24 min!)
+        assertEquals(84, eval.totalConsideredDurationMin)
+        // R$ 52.32 / 29.8 km = R$ 1.76/km
+        assertEquals(1.76, eval.grossPerKm!!, 0.01)
+        // R$ 52.32 / (84/60 h = 1.4h) = R$ 37.37/h (NUNCA R$ 131/h!)
+        assertEquals(37.37, eval.grossPerHour!!, 0.05)
     }
 
     // 6. SOMA DE EMBARQUE + VIAGEM SEM DUPLICAR E EXTRAÇÃO DE ORIGEM/DESTINO

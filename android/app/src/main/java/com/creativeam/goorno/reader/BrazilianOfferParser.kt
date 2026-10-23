@@ -71,9 +71,9 @@ object BrazilianOfferParser {
         option = RegexOption.IGNORE_CASE
     )
 
-    // Ex: "1 hora", "2 horas" isoladas
+    // Ex: "1 hora", "2 horas", "1 h", "2h" isoladas
     private val HOURS_ONLY_REGEX = Regex(
-        pattern = """(\d{1,2})\s*horas?\b""",
+        pattern = """(?<![/\d.,])(\d{1,2})\s*(?:horas?|h\b)(?!\s*(?:/|km|m\b))""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -83,7 +83,7 @@ object BrazilianOfferParser {
     )
 
     private val LEADING_DURATION_DISTANCE_PREFIX_REGEX = Regex(
-        pattern = """^[\s•·🟢🟠⬆️⬇️\(\)]*(?:\d{1,3}\s*min(?:utos?|s)?[\s\(\)·•-]*)*(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)·•-]*)+""",
+        pattern = """^[\s•·🟢🟠⬆️⬇️\(\)]*(?:(?:\d{1,2}\s*h(?:oras?)?(?:\s*e\s*|\s+)?)?\d{1,3}\s*min(?:utos?|s)?[\s\(\)·•-]*)*(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)·•-]*)+""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -169,6 +169,35 @@ object BrazilianOfferParser {
                     (nextLower == "km" || nextLower == "km)" || nextLower == "m" || nextLower == "m)" ||
                         nextLower == "min" || nextLower == "min)" || nextLower == "minutos" || nextLower.startsWith("/km"))
                 ) {
+                    current = "$current $next"
+                    i++
+                }
+            }
+
+            // Caso 2b: Fragmentação de horas e minutos (ex: "1 h" + "e" + "19 min (28.3 km)" ou "1 h" + "19 min")
+            val hourOnlyMatch = Regex("""^(\d{1,2})\s*h(?:oras?)?$""", RegexOption.IGNORE_CASE).matchEntire(current)
+            if (hourOnlyMatch != null && i + 1 < flatTokens.size) {
+                val next1 = flatTokens[i + 1].trim()
+                if (next1.equals("e", ignoreCase = true) && i + 2 < flatTokens.size) {
+                    val next2 = flatTokens[i + 2].trim()
+                    if (next2.contains("min", ignoreCase = true) || PURE_NUMBER_START_REGEX.matches(next2)) {
+                        current = "$current e $next2"
+                        i += 2
+                    }
+                } else if (next1.startsWith("e ", ignoreCase = true) || next1.contains("min", ignoreCase = true)) {
+                    current = "$current $next1"
+                    i++
+                }
+            }
+
+            // Caso 2c: Duração em minutos imediatamente seguida de distância (ex: "5 min" + "(1,5 km)" ou "14 min" + "5 km")
+            if (i + 1 < flatTokens.size &&
+                (MINUTES_REGEX.matches(current) || HOURS_AND_MIN_REGEX.matches(current))
+            ) {
+                val next = flatTokens[i + 1].trim()
+                val nextLower = next.lowercase(Locale.getDefault())
+                val isDist = nextLower.contains("km") || (nextLower.contains("m") && !nextLower.contains("min"))
+                if (isDist && (next.startsWith("(") || PURE_NUMBER_START_REGEX.matches(next))) {
                     current = "$current $next"
                     i++
                 }
@@ -374,10 +403,21 @@ object BrazilianOfferParser {
                 }
                 continue
             }
-            MINUTES_REGEX.findAll(line).forEach { m ->
-                val v = m.groupValues[1].toIntOrNull()
-                if (v != null && v in 1..1440) {
-                    results.add(v)
+            val minMatches = MINUTES_REGEX.findAll(line).toList()
+            if (minMatches.isNotEmpty()) {
+                for (m in minMatches) {
+                    val v = m.groupValues[1].toIntOrNull()
+                    if (v != null && v in 1..1440) {
+                        results.add(v)
+                    }
+                }
+                continue
+            }
+            val hourOnlyMatches = HOURS_ONLY_REGEX.findAll(line).toList()
+            for (hMatch in hourOnlyMatches) {
+                val h = hMatch.groupValues[1].toIntOrNull()
+                if (h != null && h in 1..24) {
+                    results.add(h * 60)
                 }
             }
         }
@@ -500,6 +540,20 @@ object BrazilianOfferParser {
             return null
         }
 
+        // Descarta linhas que são puramente indicadores de tempo/distância de corrida (ex: "14 min", "5 km", "(14 min 5 km)", "1 h e 19 min")
+        val withoutTimeOrDist = clean
+            .replace(MIN_AND_KM_PAIR_REGEX, "")
+            .replace(HOURS_AND_MIN_REGEX, "")
+            .replace(MINUTES_REGEX, "")
+            .replace(HOURS_ONLY_REGEX, "")
+            .replace(KM_REGEX, "")
+            .replace(METERS_REGEX, "")
+            .replace(Regex("""^[\s•·🟢🟠⬆️⬇️\(\)\-,]+"""), "")
+            .trim()
+        if (withoutTimeOrDist.length < 3) {
+            return null
+        }
+
         // Se a linha tem um botão de ação ou tag colada no final (ex: "Zanela, 90, Centro Escolher", "Viagem hiGRAN", "Viagem longa..."),
         // corta o texto no início do botão/tag para salvar o endereço real!
         val actionMatch = Regex("""\b(escolher|selecionar|aceitar|recusar|rejeitar|viagem|radar|exclusivo|prioridade|higran|canhaem)\b""", RegexOption.IGNORE_CASE).find(clean)
@@ -546,12 +600,28 @@ object BrazilianOfferParser {
             val durations = extractAllDurationsMinutes(listOf(line))
             val distances = extractAllDistancesKm(listOf(line))
 
-            if (durations.isNotEmpty() && distances.isNotEmpty()) {
-                val durMin = durations.first()
-                val distKm = distances.first()
+            var durMin: Int? = null
+            var distKm: Double? = null
+            var lineForAddress = line
 
+            if (durations.isNotEmpty() && distances.isNotEmpty()) {
+                durMin = durations.first()
+                distKm = distances.first()
+            } else if (durations.isNotEmpty() && i + 1 < normalized.size && extractAllDistancesKm(listOf(normalized[i + 1])).isNotEmpty()) {
+                durMin = durations.first()
+                distKm = extractAllDistancesKm(listOf(normalized[i + 1])).first()
+                i++
+                lineForAddress = normalized[i]
+            } else if (distances.isNotEmpty() && i + 1 < normalized.size && extractAllDurationsMinutes(listOf(normalized[i + 1])).isNotEmpty()) {
+                distKm = distances.first()
+                durMin = extractAllDurationsMinutes(listOf(normalized[i + 1])).first()
+                i++
+                lineForAddress = normalized[i]
+            }
+
+            if (durMin != null && distKm != null) {
                 // 1. Tenta pegar o endereço no restante da MESMA linha
-                val strippedPrefix = LEADING_DURATION_DISTANCE_PREFIX_REGEX.replace(line, "").trim()
+                val strippedPrefix = LEADING_DURATION_DISTANCE_PREFIX_REGEX.replace(lineForAddress, "").trim()
                 var legAddress: String? = null
 
                 if (strippedPrefix.length >= 5 && (STREET_PREFIX_REGEX.matches(strippedPrefix) || strippedPrefix.contains(","))) {
@@ -560,8 +630,10 @@ object BrazilianOfferParser {
                     while (i + 1 < normalized.size) {
                         val nextLine = normalized[i + 1].trim()
                         val nextLower = nextLine.lowercase(Locale.getDefault())
-                        val isLegMarker = (extractAllDurationsMinutes(listOf(nextLine)).isNotEmpty() &&
-                            extractAllDistancesKm(listOf(nextLine)).isNotEmpty()) ||
+                        val nextDurs = extractAllDurationsMinutes(listOf(nextLine))
+                        val nextDists = extractAllDistancesKm(listOf(nextLine))
+                        val isLegMarker = nextDurs.isNotEmpty() ||
+                            nextDists.isNotEmpty() ||
                             LEADING_DURATION_DISTANCE_PREFIX_REGEX.containsMatchIn(nextLine)
                         val isOfferBoundary = isLegMarker ||
                             nextLower.contains("pgto") ||
@@ -575,16 +647,7 @@ object BrazilianOfferParser {
                             nextLower.contains("verificado") ||
                             nextLower.contains("perfil") ||
                             nextLower.contains("corridas") ||
-                                                                                nextLower.contains("deslocamento") ||
-                        nextLower.contains("viagem") ||
-                        nextLower.contains("radar") ||
-                        nextLower.contains("exclusivo") ||
-                        nextLower.contains("prioridade") ||
-                        nextLower.contains("comfort") ||
-                        nextLower.contains("black") ||
-                        nextLower.contains("higran") ||
-                        nextLower.contains("canhaem") ||
-                        nextLower.matches(Regex("""^\d{1,3}$""")) ||
+                            nextLower.contains("deslocamento") ||
                             nextLower.contains("viagem") ||
                             nextLower.contains("radar") ||
                             nextLower.contains("exclusivo") ||
@@ -610,19 +673,20 @@ object BrazilianOfferParser {
                     }
                     legAddress = cleanAddressCandidate(fullAddr)
                 } else if (i + 1 < normalized.size) {
-                    // 2. Se a linha era apenas "5 min (1,2 km)", o endereço está na PRÓXIMA linha!
+                    // 2. Se a linha era apenas tempo/distância, o endereço está na PRÓXIMA linha!
                     val rawNext = normalized[i + 1].trim()
                     val initialCand = cleanAddressCandidate(rawNext)
                     if (initialCand != null) {
                         var cand: String = initialCand
                         var rawLast = rawNext
                         i++
-                        // Verifica continuação na linha seguinte (bairro, complemento ou cidade)
                         while (i + 1 < normalized.size) {
                             val nextNext = normalized[i + 1].trim()
                             val nextNextLower = nextNext.lowercase(Locale.getDefault())
-                            val isLegMarker = (extractAllDurationsMinutes(listOf(nextNext)).isNotEmpty() &&
-                                extractAllDistancesKm(listOf(nextNext)).isNotEmpty()) ||
+                            val nextNextDurs = extractAllDurationsMinutes(listOf(nextNext))
+                            val nextNextDists = extractAllDistancesKm(listOf(nextNext))
+                            val isLegMarker = nextNextDurs.isNotEmpty() ||
+                                nextNextDists.isNotEmpty() ||
                                 LEADING_DURATION_DISTANCE_PREFIX_REGEX.containsMatchIn(nextNext)
                             val isOfferBoundary = isLegMarker ||
                                 nextNextLower.contains("pgto") ||
@@ -636,7 +700,7 @@ object BrazilianOfferParser {
                                 nextNextLower.contains("verificado") ||
                                 nextNextLower.contains("perfil") ||
                                 nextNextLower.contains("corridas") ||
-                                                                nextNextLower.contains("deslocamento") ||
+                                nextNextLower.contains("deslocamento") ||
                                 nextNextLower.contains("viagem") ||
                                 nextNextLower.contains("radar") ||
                                 nextNextLower.contains("exclusivo") ||

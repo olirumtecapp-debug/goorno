@@ -144,6 +144,9 @@ object NinetyNineOfferReader {
 
         // 3. Trechos de Viagem, Distâncias e Durações (Ex: "5 min (1,2 km)" + "10 min (2,4 km)")
         val legs = BrazilianOfferParser.extractRideLegs(cleanedLines)
+        val allDistances = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
+        val allDurations = BrazilianOfferParser.extractAllDurationsMinutes(cleanedLines)
+
         var pickupKmField: ExtractedField<Double> = ExtractedField.Missing
         var tripKmField: ExtractedField<Double> = ExtractedField.Missing
         var totalKmField: ExtractedField<Double> = ExtractedField.Missing
@@ -162,26 +165,36 @@ object NinetyNineOfferReader {
             tripMinField = ExtractedField.Present(legs[1].durationMin)
             legOrigin = legs[0].address
             legDestination = legs[1].address
+            totalKmField = ExtractedField.Present(legs[0].distanceKm + legs[1].distanceKm)
+            totalMinField = ExtractedField.Present(legs[0].durationMin + legs[1].durationMin)
+        } else if (legs.size == 1 && allDistances.size >= 2 && allDurations.size >= 2) {
+            pickupKmField = ExtractedField.Present(allDistances[0])
+            tripKmField = ExtractedField.Present(allDistances[1])
+            pickupMinField = ExtractedField.Present(allDurations[0])
+            tripMinField = ExtractedField.Present(allDurations[1])
+            legOrigin = legs[0].address
+            totalKmField = ExtractedField.Present(allDistances[0] + allDistances[1])
+            totalMinField = ExtractedField.Present(allDurations[0] + allDurations[1])
         } else if (legs.size == 1) {
             totalKmField = ExtractedField.Present(legs[0].distanceKm)
             totalMinField = ExtractedField.Present(legs[0].durationMin)
             legOrigin = legs[0].address
         } else {
             // Fallback para quando os dados de km e min vierem em nós separados
-            val distances = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
-            if (distances.size >= 2) {
-                pickupKmField = ExtractedField.Present(distances[0])
-                tripKmField = ExtractedField.Present(distances[1])
-            } else if (distances.size == 1) {
-                totalKmField = ExtractedField.Present(distances[0])
+            if (allDistances.size >= 2) {
+                pickupKmField = ExtractedField.Present(allDistances[0])
+                tripKmField = ExtractedField.Present(allDistances[1])
+                totalKmField = ExtractedField.Present(allDistances[0] + allDistances[1])
+            } else if (allDistances.size == 1) {
+                totalKmField = ExtractedField.Present(allDistances[0])
             }
 
-            val durations = BrazilianOfferParser.extractAllDurationsMinutes(cleanedLines)
-            if (durations.size >= 2) {
-                pickupMinField = ExtractedField.Present(durations[0])
-                tripMinField = ExtractedField.Present(durations[1])
-            } else if (durations.size == 1) {
-                totalMinField = ExtractedField.Present(durations[0])
+            if (allDurations.size >= 2) {
+                pickupMinField = ExtractedField.Present(allDurations[0])
+                tripMinField = ExtractedField.Present(allDurations[1])
+                totalMinField = ExtractedField.Present(allDurations[0] + allDurations[1])
+            } else if (allDurations.size == 1) {
+                totalMinField = ExtractedField.Present(allDurations[0])
             }
         }
 
@@ -202,11 +215,17 @@ object NinetyNineOfferReader {
             ?: if (pickupKmField.isPresent || tripKmField.isPresent) {
                 (pickupKmField.valueOrNull() ?: 0.0) + (tripKmField.valueOrNull() ?: 0.0)
             } else null
+        if (totalKmVal != null && !totalKmField.isPresent) {
+            totalKmField = ExtractedField.Present(totalKmVal)
+        }
 
         val totalMinVal = totalMinField.valueOrNull()
             ?: if (pickupMinField.isPresent || tripMinField.isPresent) {
                 (pickupMinField.valueOrNull() ?: 0) + (tripMinField.valueOrNull() ?: 0)
             } else null
+        if (totalMinVal != null && !totalMinField.isPresent) {
+            totalMinField = ExtractedField.Present(totalMinVal)
+        }
 
         if (totalKmVal != null && totalKmVal <= 0.0) {
             conflictNotes.add("Distância igual ou menor que zero")

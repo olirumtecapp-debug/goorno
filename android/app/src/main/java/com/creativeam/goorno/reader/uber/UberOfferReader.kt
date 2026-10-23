@@ -1,4 +1,4 @@
-package com.creativeam.goorno.reader.uber
+﻿package com.creativeam.goorno.reader.uber
 
 import com.creativeam.goorno.model.CaptureMethod
 import com.creativeam.goorno.model.ExtractedField

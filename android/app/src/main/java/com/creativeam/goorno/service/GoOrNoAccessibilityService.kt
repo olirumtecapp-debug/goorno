@@ -224,13 +224,23 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             checkIfOfferDismissedAndCloseCard(activeRootPkg = activeRootPkg, eventPkg = evtPkg)
         }
 
-        scanCurrentScreen(eventPkg = evtPkg, forceThrottleBypass = false)
+        val eventTexts = event?.text?.joinToString(" ") ?: ""
+        val eventContentDesc = event?.contentDescription?.toString() ?: ""
+        val eventCombined = "$eventTexts $eventContentDesc"
+        val isLikelyOfferEvent = eventCombined.contains("R$") ||
+            eventCombined.contains("Pop", ignoreCase = true) ||
+            eventCombined.contains("Aceitar", ignoreCase = true) ||
+            eventCombined.contains("Escolher", ignoreCase = true) ||
+            eventCombined.contains("Uber", ignoreCase = true) ||
+            eventCombined.contains("min", ignoreCase = true)
+
+        scanCurrentScreen(eventPkg = evtPkg, forceThrottleBypass = isLikelyOfferEvent)
     }
 
     private fun scanCurrentScreen(eventPkg: String?, forceThrottleBypass: Boolean) {
         val now = System.currentTimeMillis()
-        if (!forceThrottleBypass && now - lastScanTimeMillis < 260L) return
-        if (now - lastCardClosedTimeMillis < 300L) return
+        if (!forceThrottleBypass && now - lastScanTimeMillis < 180L) return
+        if (!forceThrottleBypass && now - lastCardClosedTimeMillis < 220L) return
         if (!isScanInProgress.compareAndSet(false, true)) return
         try {
             lastScanTimeMillis = now
@@ -798,7 +808,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val rows = mutableListOf<MutableList<PositionedText>>()
         for (item in sorted) {
             val lastRow = rows.lastOrNull()
-            if (lastRow != null && kotlin.math.abs(lastRow.first().centerY - item.centerY) <= 28) {
+            if (lastRow != null && kotlin.math.abs(lastRow.first().centerY - item.centerY) <= 38) {
                 if (lastRow.none { it.text == item.text }) {
                     lastRow.add(item)
                 }
