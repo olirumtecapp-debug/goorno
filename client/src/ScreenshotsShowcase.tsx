@@ -483,13 +483,13 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             >
               {/* MOLDURA DE SMARTPHONE ULTRA REALISTA */}
               <div className="relative mx-auto w-full pt-1 pb-2">
-                <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[24px] border-[2px] border-[#20342f] shadow-lg max-w-[160px] group-hover:border-[#799900]/80 transition-colors">
+                <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[22px] border-[2px] border-[#20342f] shadow-lg max-w-[135px] group-hover:border-[#799900]/80 transition-colors">
                   {/* Dynamic Island / Front Camera */}
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
                   </div>
                   {/* Tela interna do smartphone */}
-                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                  <div className="relative aspect-[1/2.22] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
                     <img
                       src={`/telas/${item.filename}`}
                       alt={item.title}
@@ -569,14 +569,14 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             </button>
 
             {/* ÁREA DO SMARTPHONE */}
-            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 relative shrink-0 min-h-[300px] md:min-h-[500px]">
-              {/* MOLDURA DE SMARTPHONE AMPLIADA */}
-              <div className="relative p-2 bg-[#09110e] rounded-[28px] border-[3px] border-[#223530] shadow-2xl max-w-[240px] sm:max-w-[250px] w-full">
+            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 sm:p-6 relative shrink-0 min-h-[320px] md:min-h-[460px]">
+              {/* MOLDURA DE SMARTPHONE ELEGANTE E COMPLETA */}
+              <div className="relative p-1.5 bg-[#09110e] rounded-[24px] border-[2.5px] border-[#223530] shadow-2xl max-w-[170px] sm:max-w-[180px] w-full my-auto">
                 {/* Dynamic Island */}
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
+                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
                 </div>
-                <div className="relative aspect-[1/2.22] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
                   <img
                     src={`/telas/${selectedImage.filename}`}
                     alt={selectedImage.title}

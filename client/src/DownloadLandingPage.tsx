@@ -416,9 +416,9 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </p>
 
                 {/* Smartphone Preview Mockup */}
-                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] shadow-md max-w-[160px] w-full group-hover:scale-105 transition-transform duration-300">
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
-                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[22px] border-[2px] border-[#223530] shadow-md max-w-[135px] w-full group-hover:scale-105 transition-transform duration-300">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
                     <img
                       src="/telas/ViagemCompensa.png"
                       alt="Corrida que compensa no GoOrNo"
@@ -466,9 +466,9 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </p>
 
                 {/* Smartphone Preview Mockup */}
-                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] shadow-md max-w-[160px] w-full group-hover:scale-105 transition-transform duration-300">
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
-                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[22px] border-[2px] border-[#223530] shadow-md max-w-[135px] w-full group-hover:scale-105 transition-transform duration-300">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
                     <img
                       src="/telas/ViagemNaoCompensa.png"
                       alt="Corrida que não compensa no GoOrNo"
@@ -523,9 +523,9 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     Km e tempo no topo, valor gigante no centro e faixa sólida com o veredito (Compensa / Analisar / Recusar).
                   </p>
                 </div>
-                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] max-w-[160px]">
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
-                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[22px] border-[2px] border-[#223530] max-w-[135px]">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
                     <img src="/telas/ViagemCompensa.png" alt="Card Impacto Pro" className="w-full h-full object-contain group-hover:scale-105 transition" />
                   </div>
                 </div>
@@ -549,9 +549,9 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     Resumo no cabeçalho e 3 colunas verticais com barras coloridas (R$/km, R$/hora e nota do passageiro).
                   </p>
                 </div>
-                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] max-w-[160px]">
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
-                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[22px] border-[2px] border-[#223530] max-w-[135px]">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
                     <img src="/telas/card-3-pilares-real.png" alt="Card 3 Pilares" className="w-full h-full object-contain group-hover:scale-105 transition" />
                   </div>
                 </div>
@@ -575,9 +575,9 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     Layout completo com tags individuais de faturamento por hora, ganho por km e contagem regressiva.
                   </p>
                 </div>
-                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] max-w-[160px]">
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
-                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[22px] border-[2px] border-[#223530] max-w-[135px]">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
                     <img src="/telas/CarTipo3.jpeg" alt="Card Clássico" className="w-full h-full object-contain group-hover:scale-105 transition" />
                   </div>
                 </div>
@@ -601,9 +601,9 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     Pílula horizontal ultrafina que ocupa o mínimo de tela, sem tapar a rota do GPS ou o mapa da corrida.
                   </p>
                 </div>
-                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] max-w-[160px]">
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
-                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[22px] border-[2px] border-[#223530] max-w-[135px]">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
                     <img src="/telas/CarTipo4.jpeg" alt="Card Discreto" className="w-full h-full object-contain group-hover:scale-105 transition" />
                   </div>
                 </div>
@@ -1042,13 +1042,13 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               >
                 {/* MOLDURA DE SMARTPHONE REALISTA */}
                 <div className="relative mx-auto w-full pt-1 pb-2">
-                  <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[24px] border-[2px] border-[#20342f] shadow-lg max-w-[160px] group-hover:border-[#799900]/80 transition-colors">
+                  <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[22px] border-[2px] border-[#20342f] shadow-lg max-w-[135px] group-hover:border-[#799900]/80 transition-colors">
                     {/* Dynamic Island / Câmera */}
-                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
                     </div>
                     {/* Tela interna */}
-                    <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                    <div className="relative aspect-[1/2.22] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
                       <img
                         src={`/telas/${item.filename}`}
                         alt={item.title}
@@ -1645,14 +1645,14 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             </button>
 
             {/* ÁREA DA IMAGEM COM MOLDURA DE SMARTPHONE */}
-            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 relative shrink-0 min-h-[300px] md:min-h-[500px]">
-              {/* Smartphone Frame Ampliado */}
-              <div className="relative p-2 bg-[#09110e] rounded-[28px] border-[3px] border-[#223530] shadow-2xl max-w-[240px] sm:max-w-[250px] w-full">
+            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 sm:p-6 relative shrink-0 min-h-[320px] md:min-h-[460px]">
+              {/* Smartphone Frame Elegante e Completo */}
+              <div className="relative p-1.5 bg-[#09110e] rounded-[24px] border-[2.5px] border-[#223530] shadow-2xl max-w-[170px] sm:max-w-[180px] w-full my-auto">
                 {/* Dynamic Island */}
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
+                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
                 </div>
-                <div className="relative aspect-[1/2.22] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
                   <img
                     src={`/telas/${selectedScreenshot.filename}`}
                     alt={selectedScreenshot.title}
