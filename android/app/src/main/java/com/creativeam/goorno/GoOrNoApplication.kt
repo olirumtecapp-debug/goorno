@@ -131,7 +131,5 @@ class GoOrNoApplication : Application() {
                 Log.e("GoOrNoHealth", "Falha interceptada no monitor da UI", t)
             }
         }
-            }
-        }
     }
 }
