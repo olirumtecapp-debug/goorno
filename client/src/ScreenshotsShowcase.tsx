@@ -92,7 +92,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '🟡 MERECE ANÁLISE',
     badgeType: 'amber',
-    summary: 'Card com alerta amarelo orientando o motorista a ponderar se a rota e o destino compensam (R$ 7,32 por 2,2 km em 8 min · R$ 3,33/km · R$ 54,90/h).',
+    summary: 'Card com alerta amarelo orientando o motorista a ponderar se a rota e o destino compensam (● AVALIAR: R$ 7,32 · 2,4 km em 12 min · R$ 3,05/km · R$ 36,60/h · ★ 4,89).',
     highlightText: 'Flexibilidade inteligente: você define os limites de valor por km e por hora para cada faixa do semáforo.'
   },
   {

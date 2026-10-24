@@ -169,9 +169,28 @@ export function App() {
     };
     window.addEventListener('hashchange', handleNav);
     window.addEventListener('popstate', handleNav);
+
+    // Atalho secreto Alt + Shift + M para abrir o Painel Administrativo
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.shiftKey && (e.key === 'M' || e.key === 'm' || e.code === 'KeyM')) {
+        e.preventDefault();
+        setIsAdminView((prev) => {
+          const next = !prev;
+          if (next) {
+            window.location.hash = 'admin';
+          } else {
+            window.location.hash = '';
+          }
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       window.removeEventListener('hashchange', handleNav);
       window.removeEventListener('popstate', handleNav);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -578,10 +597,6 @@ export function App() {
           window.location.hash = 'app';
           setShowDriverApp(true);
         }}
-        onOpenAdmin={() => {
-          window.location.hash = 'admin';
-          setIsAdminView(true);
-        }}
       />
     );
   }
@@ -626,18 +641,6 @@ export function App() {
                 <span className="hidden xs:inline">Baixar APK</span>
               </button>
             )}
-
-            {/* Quick Admin Access */}
-            <button
-              onClick={() => {
-                window.location.hash = 'admin';
-                setIsAdminView(true);
-              }}
-              className="p-2 rounded-xl border border-white/10 bg-[#04241E] hover:bg-[#0D4A3E] text-slate-300 hover:text-white transition"
-              title="Painel Admin Master"
-            >
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            </button>
 
             {/* Quick Voice Toggle */}
             <button

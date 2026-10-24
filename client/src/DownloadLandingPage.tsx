@@ -41,10 +41,9 @@ import { SCREENSHOTS, ScreenshotItem } from './ScreenshotsShowcase';
 
 interface DownloadLandingPageProps {
   onOpenSimulator?: () => void;
-  onOpenAdmin?: () => void;
 }
 
-export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLandingPageProps) {
+export function DownloadLandingPage({ onOpenSimulator }: DownloadLandingPageProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -1601,19 +1600,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             <Mail className="w-3.5 h-3.5" />
             <span>Contato</span>
           </button>
-          {onOpenAdmin && (
-            <>
-              <span className="text-slate-300">•</span>
-              <button
-                onClick={onOpenAdmin}
-                className="bg-transparent border-0 text-[#7a8982] hover:text-[#071d19] transition cursor-pointer flex items-center gap-1"
-                title="Acesso Administrativo"
-              >
-                <Lock className="w-3 h-3" />
-                <span>Painel</span>
-              </button>
-            </>
-          )}
+
         </div>
       </footer>
 
