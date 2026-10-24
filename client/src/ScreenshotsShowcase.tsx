@@ -103,8 +103,8 @@ export const SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '🔴 NÃO COMPENSA',
     badgeType: 'red',
-    summary: 'Card com contorno vermelho alertando corrida no prejuízo (✕ NÃO COMPENSA: R$ 56,47 · 34,9 km em 59 min · R$ 1,62/km · R$ 57,43/h · passageiro nota 4,89).',
-    highlightText: 'Proteja seu patrimônio e evite pagar para trabalhar! Recuse ofertas longas ou trânsito pesado que geram prejuízo disfarçado.'
+    summary: 'Card com contorno vermelho alertando corrida no prejuízo com embarque longe (✕ NÃO COMPENSA: R$ 33,82 · 20,8 km em 44 min · R$ 1,63/km · R$ 46,12/h · ★ 4,97 · Emb. Longe 2,8 km).',
+    highlightText: 'Proteja seu patrimônio e evite pagar para trabalhar! O GoOrNo avisa embarque distante e tarifa insuficiente para cobrir seus custos.'
   },
 
   // --- 2. NOTIFICAÇÃO & STREET VIEW 360° ---
@@ -483,17 +483,17 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             >
               {/* MOLDURA DE SMARTPHONE ULTRA REALISTA */}
               <div className="relative mx-auto w-full pt-1 pb-2">
-                <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[28px] border-[2.5px] border-[#20342f] shadow-lg max-w-[210px] group-hover:border-[#799900]/80 transition-colors">
+                <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[24px] border-[2px] border-[#20342f] shadow-lg max-w-[160px] group-hover:border-[#799900]/80 transition-colors">
                   {/* Dynamic Island / Front Camera */}
-                  <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
                   </div>
                   {/* Tela interna do smartphone */}
-                  <div className="relative aspect-[9/18.5] rounded-[22px] overflow-hidden bg-black flex items-center justify-center">
+                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
                     <img
                       src={`/telas/${item.filename}`}
                       alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
                   </div>
@@ -503,7 +503,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                 <div className="absolute top-3 left-2 right-2 flex items-center justify-between pointer-events-none z-10">
                   {item.badge && (
                     <span
-                      className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full shadow-md backdrop-blur-xs ${
+                      className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full shadow-md backdrop-blur-xs whitespace-nowrap shrink-0 ${
                         item.badgeType === 'green'
                           ? 'bg-emerald-600 text-white'
                           : item.badgeType === 'red'
@@ -569,14 +569,14 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
             </button>
 
             {/* ÁREA DO SMARTPHONE */}
-            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 relative shrink-0 min-h-[300px] md:min-h-[520px]">
+            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 relative shrink-0 min-h-[300px] md:min-h-[500px]">
               {/* MOLDURA DE SMARTPHONE AMPLIADA */}
-              <div className="relative p-2.5 bg-[#09110e] rounded-[38px] border-[3.5px] border-[#223530] shadow-2xl max-w-[260px] sm:max-w-[280px]">
+              <div className="relative p-2 bg-[#09110e] rounded-[28px] border-[3px] border-[#223530] shadow-2xl max-w-[240px] sm:max-w-[250px] w-full">
                 {/* Dynamic Island */}
-                <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-16 h-3 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
                 </div>
-                <div className="relative aspect-[9/18.5] rounded-[30px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative aspect-[1/2.22] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
                   <img
                     src={`/telas/${selectedImage.filename}`}
                     alt={selectedImage.title}
@@ -613,7 +613,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   </span>
                   {selectedImage.badge && (
                     <span
-                      className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                      className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0 ${
                         selectedImage.badgeType === 'green'
                           ? 'bg-emerald-600 text-white'
                           : selectedImage.badgeType === 'red'

@@ -416,13 +416,13 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </p>
 
                 {/* Smartphone Preview Mockup */}
-                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[26px] border-[2.5px] border-[#223530] shadow-md max-w-[190px] w-full group-hover:scale-105 transition-transform duration-300">
+                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] shadow-md max-w-[160px] w-full group-hover:scale-105 transition-transform duration-300">
                   <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
-                  <div className="relative aspect-[9/18.5] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
+                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
                     <img
                       src="/telas/ViagemCompensa.png"
                       alt="Corrida que compensa no GoOrNo"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       loading="lazy"
                     />
                   </div>
@@ -455,24 +455,24 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </div>
 
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight whitespace-nowrap">R$ 1,62</span>
-                  <span className="text-xs sm:text-sm font-bold text-[#991b1b] whitespace-nowrap">/km · R$ 57,43/h</span>
+                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight whitespace-nowrap">R$ 1,63</span>
+                  <span className="text-xs sm:text-sm font-bold text-[#991b1b] whitespace-nowrap">/km · R$ 46,12/h</span>
                 </div>
                 <h3 className="font-space font-black text-lg text-[#071d19] mb-1">
                   Melhor recusar na hora
                 </h3>
                 <p className="text-xs sm:text-sm text-[#7f1d1d] leading-relaxed mb-4 min-h-[40px] flex items-center">
-                  R$ 56,47 por 34,9 km (59 min). O copiloto detecta valor insuficiente por km e alerta para não pagar para trabalhar.
+                  R$ 33,82 por 20,8 km (44 min). O copiloto detecta embarque longe (2,8 km), remuneração abaixo da meta e avisa na hora.
                 </p>
 
                 {/* Smartphone Preview Mockup */}
-                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[26px] border-[2.5px] border-[#223530] shadow-md max-w-[190px] w-full group-hover:scale-105 transition-transform duration-300">
+                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] shadow-md max-w-[160px] w-full group-hover:scale-105 transition-transform duration-300">
                   <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
-                  <div className="relative aspect-[9/18.5] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
+                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
                     <img
                       src="/telas/ViagemNaoCompensa.png"
                       alt="Corrida que não compensa no GoOrNo"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       loading="lazy"
                     />
                   </div>
@@ -513,7 +513,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-4 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
               >
                 <div>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-600 text-white font-space inline-block mb-2">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-600 text-white font-space inline-block mb-2 whitespace-nowrap shrink-0">
                     MODELO 1 · RECOMENDADO
                   </span>
                   <h4 className="font-space font-bold text-sm text-white group-hover:text-[#d9ff4f] transition mb-1">
@@ -523,9 +523,10 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     Km e tempo no topo, valor gigante no centro e faixa sólida com o veredito (Compensa / Analisar / Recusar).
                   </p>
                 </div>
-                <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
-                  <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
-                    <img src="/telas/ViagemCompensa.png" alt="Card Impacto Pro" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] max-w-[160px]">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                    <img src="/telas/ViagemCompensa.png" alt="Card Impacto Pro" className="w-full h-full object-contain group-hover:scale-105 transition" />
                   </div>
                 </div>
               </div>
@@ -538,7 +539,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-4 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
               >
                 <div>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-600 text-white font-space inline-block mb-2">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-600 text-white font-space inline-block mb-2 whitespace-nowrap shrink-0">
                     MODELO 2 · COLUNAS
                   </span>
                   <h4 className="font-space font-bold text-sm text-white group-hover:text-[#d9ff4f] transition mb-1">
@@ -548,9 +549,10 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     Resumo no cabeçalho e 3 colunas verticais com barras coloridas (R$/km, R$/hora e nota do passageiro).
                   </p>
                 </div>
-                <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
-                  <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
-                    <img src="/telas/card-3-pilares-real.png" alt="Card 3 Pilares" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] max-w-[160px]">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                    <img src="/telas/card-3-pilares-real.png" alt="Card 3 Pilares" className="w-full h-full object-contain group-hover:scale-105 transition" />
                   </div>
                 </div>
               </div>
@@ -563,7 +565,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-4 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
               >
                 <div>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-purple-700 text-white font-space inline-block mb-2">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-purple-700 text-white font-space inline-block mb-2 whitespace-nowrap shrink-0">
                     MODELO 3 · TRADICIONAL
                   </span>
                   <h4 className="font-space font-bold text-sm text-white group-hover:text-[#d9ff4f] transition mb-1">
@@ -573,9 +575,10 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     Layout completo com tags individuais de faturamento por hora, ganho por km e contagem regressiva.
                   </p>
                 </div>
-                <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
-                  <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
-                    <img src="/telas/CarTipo3.jpeg" alt="Card Clássico" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] max-w-[160px]">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                    <img src="/telas/CarTipo3.jpeg" alt="Card Clássico" className="w-full h-full object-contain group-hover:scale-105 transition" />
                   </div>
                 </div>
               </div>
@@ -588,7 +591,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-4 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
               >
                 <div>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-600 text-white font-space inline-block mb-2">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-600 text-white font-space inline-block mb-2 whitespace-nowrap shrink-0">
                     MODELO 4 · DISCRETO
                   </span>
                   <h4 className="font-space font-bold text-sm text-white group-hover:text-[#d9ff4f] transition mb-1">
@@ -598,9 +601,10 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                     Pílula horizontal ultrafina que ocupa o mínimo de tela, sem tapar a rota do GPS ou o mapa da corrida.
                   </p>
                 </div>
-                <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
-                  <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
-                    <img src="/telas/CarTipo4.jpeg" alt="Card Discreto" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <div className="relative mx-auto w-full p-1.5 bg-[#09110e] rounded-[24px] border-[2px] border-[#223530] max-w-[160px]">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
+                  <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
+                    <img src="/telas/CarTipo4.jpeg" alt="Card Discreto" className="w-full h-full object-contain group-hover:scale-105 transition" />
                   </div>
                 </div>
               </div>
@@ -1038,17 +1042,17 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               >
                 {/* MOLDURA DE SMARTPHONE REALISTA */}
                 <div className="relative mx-auto w-full pt-1 pb-2">
-                  <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[28px] border-[2.5px] border-[#20342f] shadow-lg max-w-[210px] group-hover:border-[#799900]/80 transition-colors">
+                  <div className="relative mx-auto p-1.5 bg-[#0a110f] rounded-[24px] border-[2px] border-[#20342f] shadow-lg max-w-[160px] group-hover:border-[#799900]/80 transition-colors">
                     {/* Dynamic Island / Câmera */}
-                    <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 flex items-center justify-end pr-1 pointer-events-none">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
                     </div>
                     {/* Tela interna */}
-                    <div className="relative aspect-[9/18.5] rounded-[22px] overflow-hidden bg-black flex items-center justify-center">
+                    <div className="relative aspect-[1/2.22] rounded-[18px] overflow-hidden bg-black flex items-center justify-center">
                       <img
                         src={`/telas/${item.filename}`}
                         alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/assets/logo-goorno-clean.png';
@@ -1061,7 +1065,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                   <div className="absolute top-3 left-2 right-2 flex items-center justify-between pointer-events-none z-10">
                     {item.badge && (
                       <span
-                        className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full shadow-md backdrop-blur-xs ${
+                        className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full shadow-md backdrop-blur-xs whitespace-nowrap shrink-0 ${
                           item.badgeType === 'green'
                             ? 'bg-emerald-600 text-white'
                             : item.badgeType === 'red'
@@ -1641,14 +1645,14 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
             </button>
 
             {/* ÁREA DA IMAGEM COM MOLDURA DE SMARTPHONE */}
-            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 relative shrink-0 min-h-[300px] md:min-h-[520px]">
+            <div className="w-full md:w-1/2 bg-black/60 flex items-center justify-center p-4 relative shrink-0 min-h-[300px] md:min-h-[500px]">
               {/* Smartphone Frame Ampliado */}
-              <div className="relative p-2.5 bg-[#09110e] rounded-[38px] border-[3.5px] border-[#223530] shadow-2xl max-w-[260px] sm:max-w-[280px]">
+              <div className="relative p-2 bg-[#09110e] rounded-[28px] border-[3px] border-[#223530] shadow-2xl max-w-[240px] sm:max-w-[250px] w-full">
                 {/* Dynamic Island */}
-                <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-16 h-3 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-black rounded-full z-20 flex items-center justify-end pr-1 pointer-events-none">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#1b2220]"></div>
                 </div>
-                <div className="relative aspect-[9/18.5] rounded-[30px] overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative aspect-[1/2.22] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
                   <img
                     src={`/telas/${selectedScreenshot.filename}`}
                     alt={selectedScreenshot.title}
