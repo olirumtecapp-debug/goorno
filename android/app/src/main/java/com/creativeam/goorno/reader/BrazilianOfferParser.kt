@@ -203,6 +203,19 @@ object BrazilianOfferParser {
                 }
             }
 
+            // Caso 2d: Fragmentação de Nota do Passageiro (ex: "4,95" ou "5,00" seguido de "· 736 corridas", "• 105 corridas" ou "Perfil")
+            val ratingCandidate = Regex("""^[3-5][.,]\d{1,2}$""").matches(current)
+            if (ratingCandidate && i + 1 < flatTokens.size) {
+                val next = flatTokens[i + 1].trim()
+                val nextLower = next.lowercase(Locale.getDefault())
+                if (nextLower.startsWith("·") || nextLower.startsWith("•") || nextLower.startsWith("-") ||
+                    nextLower.contains("corrida") || nextLower.contains("viagen") || nextLower.contains("perfil")
+                ) {
+                    current = "$current $next"
+                    i++
+                }
+            }
+
             result.add(current)
             i++
         }
@@ -425,7 +438,7 @@ object BrazilianOfferParser {
     }
 
     private val EXPLICIT_STAR_RATING_REGEX = Regex(
-        pattern = """(?:[★⭐✪\*]|nota|avalia[çc][ãa]o)\s*[:\-]?\s*([34][.,]\d{1,2}|5[.,]0{1,2})\b|\b([34][.,]\d{1,2}|5[.,]0{1,2})\s*(?:[★⭐✪\*]|\(\d+\s*(?:corridas?|viagens?)?\)|[·•\-]\s*\d+\s*(?:corridas?|viagens?))""",
+        pattern = """(?:[★⭐✪\*]|nota|avalia[çc][ãa]o)\s*[:\-]?\s*([3-5][.,]\d{1,2})\b|\b([3-5][.,]\d{1,2})\s*(?:[★⭐✪\*]|\(\d+\s*(?:corridas?|viagens?)?\)|[·•∙‧\-–]\s*\d+\s*(?:corridas?|viagens?)|\d+\s*(?:corridas?|viagens?)|[·•∙‧\-–]\s*perfil)""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -440,14 +453,14 @@ object BrazilianOfferParser {
     )
 
     /**
-     * Extrai a Avaliação / Nota do Passageiro (ex: "★ 4,92", "4,85 (42 corridas)", "4.94", "⭐ 4,72")
+     * Extrai a Avaliação / Nota do Passageiro (ex: "★ 4,92", "4,85 (42 corridas)", "4,95 · 736 corridas", "5,00 · 105 corridas", "⭐ 4,72")
      * ignorando preços (R$), distâncias (km) e multiplicadores de dinâmico (ex: 1,2x).
      */
     fun extractPassengerRating(lines: List<String>): Double? {
         val normalized = normalizeFragmentedNodes(lines)
         if (normalized.isEmpty()) return null
 
-        // 1ª Passada: Padrão explícito com estrela (★ / ⭐), palavra "Nota" ou seguido de "(XX corridas)"
+        // 1ª Passada: Padrão explícito com estrela (★ / ⭐), palavra "Nota" ou seguido de corridas/perfil/bullets
         for (line in normalized) {
             val clean = stripNonOfferPriceNoise(line)
                 .replace(CURRENCY_REGEX, " ")
@@ -464,7 +477,21 @@ object BrazilianOfferParser {
             }
         }
 
-        // 2ª Passada: Número decimal típico de avaliação (ex: 4,92 / 4,85 / 4,68 / 5,00) fora de preço/km/dinâmico
+        // 2ª Passada: Linha contextual de passageiro ("corridas", "perfil", "viagens", "verificado", "passageiro", "usuário")
+        for (line in normalized) {
+            val lower = line.lowercase(Locale.getDefault())
+            if (lower.contains("corrida") || lower.contains("viagen") || lower.contains("perfil") || lower.contains("passageir") || lower.contains("usuári")) {
+                val match = Regex("""(?<![R\$\d.,/])([3-5][.,]\d{1,2})\b(?!\s*(?:km|m\b|min|h\b|x\b|/km|/h))""").find(line)
+                if (match != null) {
+                    val r = parseBrazilianDecimal(match.groupValues[1])
+                    if (r != null && r in 3.00..5.00) {
+                        return r
+                    }
+                }
+            }
+        }
+
+        // 3ª Passada: Número decimal típico de avaliação (ex: 4,92 / 4,85 / 4,68 / 5,00) fora de preço/km/dinâmico
         for (line in normalized) {
             val lineLower = line.lowercase(Locale.getDefault())
             if (line.contains("R$") ||
@@ -491,15 +518,8 @@ object BrazilianOfferParser {
                 }
             }
 
-            // Linha curta ou com contexto de passageiro ("corridas", "viagens", "verificado", "novo", "perfil") com 1 casa (ex: "4,9")
-            val lower = clean.lowercase(Locale.getDefault())
-            if (clean.trim().length <= 6 ||
-                lower.contains("corrida") ||
-                lower.contains("viagen") ||
-                lower.contains("verificad") ||
-                lower.contains("passageir") ||
-                lower.contains("usuári")
-            ) {
+            // Linha curta com 1 casa (ex: "4,9")
+            if (clean.trim().length <= 6) {
                 val oneDecMatch = ONE_DECIMAL_RATING_CONTEXT_REGEX.find(clean)
                 if (oneDecMatch != null) {
                     val rating = parseBrazilianDecimal(oneDecMatch.groupValues[1])
@@ -921,14 +941,25 @@ object BrazilianOfferParser {
             val clusters = mutableListOf<List<String>>()
             var start = 0
             for (chooseIdx in chooseIndices) {
-                val end = chooseIdx + 1
-                if (end > start) {
-                    val slice = cleaned.subList(start, end)
-                    if (extractAllDistancesKm(slice).isNotEmpty() && extractAllCurrencies(slice).isNotEmpty()) {
-                        clusters.add(slice)
-                    }
+                val candidateSlice = cleaned.subList(start, chooseIdx + 1)
+                // Localiza o cabeçalho legítimo deste cartão específico (ex: "Pgto. no app", "Pop", "99Pop" ou preço "R$")
+                // descartando resíduos e nós de ofertas anteriores que ficaram órfãos no scroll
+                val cardHeaderRelIdx = candidateSlice.indexOfFirst { line ->
+                    val lower = line.lowercase(Locale.getDefault())
+                    lower.contains("pgto. no app") ||
+                        lower.contains("pagamento no app") ||
+                        lower.contains("pop") ||
+                        lower.contains("99pop") ||
+                        lower.contains("plus") ||
+                        lower.contains("negocia") ||
+                        (extractAllCurrencies(listOf(line)).isNotEmpty() && !lower.contains("/km") && !lower.contains("/h"))
                 }
-                start = end
+                val actualStart = if (cardHeaderRelIdx != -1) start + cardHeaderRelIdx else start
+                val slice = cleaned.subList(actualStart, chooseIdx + 1)
+                if (extractAllDistancesKm(slice).isNotEmpty() && extractAllCurrencies(slice).isNotEmpty()) {
+                    clusters.add(slice)
+                }
+                start = chooseIdx + 1
             }
             if (clusters.isNotEmpty()) return clusters
         }

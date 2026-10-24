@@ -253,6 +253,10 @@ object NinetyNineOfferReader {
         if (totalKmVal != null && totalMinVal != null && totalKmVal > 80.0 && totalMinVal < 10) {
             conflictNotes.add("Distância (${totalKmVal} km) inconsistente com tempo (${totalMinVal} min)")
         }
+        val rawPrice = priceField.valueOrNull() ?: 0.0
+        if (totalKmVal != null && rawPrice > 0.0 && (rawPrice / totalKmVal) < 0.50 && totalKmVal > 15.0) {
+            conflictNotes.add("Relação Preço/Km absurda (R$ $rawPrice para ${totalKmVal} km)")
+        }
 
         var confidence = 0.0
         if (priceField.isPresent) confidence += 0.45

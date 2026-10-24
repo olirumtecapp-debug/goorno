@@ -1230,4 +1230,60 @@ class GoOrNoEngineAndParserTest {
         assertTrue("Coop isolado legítimo deve ser reconhecido", isLegitSuper)
         assertEquals("Coop", legitName)
     }
+
+    // 46. TESTE DE AVALIAÇÃO DO PASSAGEIRO NA 99 (4,95 e 5,00 COM MIDDLE DOT E CORRIDAS)
+    @Test
+    fun `test 99 passenger rating extraction with middle dot and corridas`() {
+        val lines1 = listOf("4,95 · 736 corridas · Perfil Premium")
+        val rating1 = BrazilianOfferParser.extractPassengerRating(lines1)
+        assertEquals(4.95, rating1!!, 0.01)
+
+        val lines2 = listOf("5,00 · 105 corridas · Perfil Premium")
+        val rating2 = BrazilianOfferParser.extractPassengerRating(lines2)
+        assertEquals(5.00, rating2!!, 0.01)
+
+        val fragmentedNodes = listOf("4,95", "·", "736 corridas", "Perfil Premium")
+        val ratingFrag = BrazilianOfferParser.extractPassengerRating(fragmentedNodes)
+        assertEquals(4.95, ratingFrag!!, 0.01)
+    }
+
+    // 47. TESTE DE FILTRAGEM DE RESÍDUO DE LISTA DA 99 E PREVENÇÃO DE PREÇO POR KM ABSURDO (0,22)
+    @Test
+    fun `test 99 list parsing discards orphan previous offer and prevents absurd rate`() {
+        val rawNodes = listOf(
+            "R$17,00", // Resíduo anterior de scroll sem Escolher
+            "75 km",   // Distância residual
+            "Pgto. no app",
+            "Pop Nova",
+            "R$9,10",
+            "4,95 · 736 corridas · Perfil Premium",
+            "5 min (1,2 km)",
+            "Rua Pereira Barreto, 100",
+            "10 min (2,6 km)",
+            "Vencedor Atacadista",
+            "Escolher",
+            "Pgto. no app",
+            "Pop",
+            "R$13,90",
+            "5,00 · 105 corridas · Perfil Premium",
+            "6 min (2,0 km)",
+            "Av Kennedy, 500",
+            "8 min (3,5 km)",
+            "Centro",
+            "Escolher"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(rawNodes)
+        assertEquals(2, offers.size)
+
+        val offer1 = offers[0]
+        assertEquals(9.10, offer1.offeredPrice!!, 0.01)
+        assertEquals(4.95, offer1.passengerRating!!, 0.01)
+        assertEquals("Vencedor Atacadista", offer1.supermarketName)
+        assertTrue(offer1.isSupermarket)
+
+        val offer2 = offers[1]
+        assertEquals(13.90, offer2.offeredPrice!!, 0.01)
+        assertEquals(5.00, offer2.passengerRating!!, 0.01)
+    }
 }

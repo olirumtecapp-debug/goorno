@@ -31,24 +31,24 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   // --- 1. CARDS FLUTUANTES & PRÁTICA ---
   {
     id: 'card-tipo-1',
-    filename: 'CarTipo1.jpeg',
+    filename: 'ViagemCompensa.png',
     title: 'Card Impacto Pro (Recomendado)',
     category: 'cards_flutuantes',
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '✨ MODELO 1: IMPACTO PRO',
     badgeType: 'green',
-    summary: 'Design moderno com valor gigante no centro, km e tempo no topo e faixa sólida com o veredito instantâneo (✓ COMPENSA / ● ANALISAR / ✕ RECUSAR).',
+    summary: 'Design moderno com valor gigante no centro, km e tempo no topo e faixa sólida com o veredito instantâneo (✓ COMPENSA: R$ 6,62 · 2,3 km · R$ 2,88/km · R$ 39,72/h).',
     highlightText: 'Permite ao motorista decidir em frações de segundo com contraste impecável e leitura visual imediata no trânsito.'
   },
   {
     id: 'card-tipo-2',
-    filename: 'CarTipo2.jpeg',
+    filename: 'card-3-pilares-real.png',
     title: 'Card 3 Pilares (R$/Km, R$/Hora e Nota)',
     category: 'cards_flutuantes',
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '📊 MODELO 2: 3 PILARES',
     badgeType: 'blue',
-    summary: 'Resumo superior em linha única e 3 colunas verticais com barras coloridas destacando os 3 fatores decisivos de rentabilidade e nota do passageiro.',
+    summary: 'Resumo superior em linha única e 3 colunas verticais com barras coloridas (R$ 9,10 · 2,6 km · 15 min) com tag inteligente de Supermercado detectada na hora.',
     highlightText: 'Equilíbrio perfeito de métricas em colunas limpas, com suporte a tema claro ou escuro e transparência ajustável.'
   },
   {
@@ -75,36 +75,36 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'viagem-compensa',
-    filename: 'ViagemCompensa.jpeg',
+    filename: 'corrida-aprovada-real.png',
     title: 'Chamada Lucrativa: ✓ COMPENSA',
     category: 'cards_flutuantes',
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '🟢 CORRIDA APROVADA',
     badgeType: 'green',
-    summary: 'Card verde indicando corrida com excelente margem financeira (R$ 4,60/km, R$ 106,87/h e passageiro nota 4,95).',
+    summary: 'Card verde indicando corrida com excelente margem financeira (R$ 11,58 por 2,7 km em 10 min · R$ 4,29/km · R$ 69,48/h e passageiro nota 4,95).',
     highlightText: 'Dinheiro no bolso garantido: cálculo automático descontando combustível e desgaste real do veículo.'
   },
   {
     id: 'viagem-avaliar',
-    filename: 'ViagemAvaliar.jpeg',
+    filename: 'merece-analise-real.png',
     title: 'Chamada Intermediária: ● AVALIAR',
     category: 'cards_flutuantes',
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '🟡 MERECE ANÁLISE',
     badgeType: 'amber',
-    summary: 'Card com alerta amarelo orientando o motorista a ponderar se a rota e o destino compensam no seu plano do dia.',
+    summary: 'Card com alerta amarelo orientando o motorista a ponderar se a rota e o destino compensam (R$ 7,32 por 2,2 km em 8 min · R$ 3,33/km · R$ 54,90/h).',
     highlightText: 'Flexibilidade inteligente: você define os limites de valor por km e por hora para cada faixa do semáforo.'
   },
   {
     id: 'viagem-nao-compensa',
-    filename: 'ViagemNaoCompensa.jpeg',
+    filename: 'ViagemNaoCompensa.png',
     title: 'Chamada no Prejuízo: ✕ RECUSAR',
     category: 'cards_flutuantes',
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '🔴 NÃO COMPENSA',
     badgeType: 'red',
-    summary: 'Card com contorno vermelho destacando corrida com remuneração insuficiente para cobrir seus custos reais.',
-    highlightText: 'Proteja seu patrimônio e evite pagar para trabalhar! Recuse ofertas que geram prejuízo disfarçado.'
+    summary: 'Card com contorno vermelho destacando corrida com remuneração insuficiente para cobrir seus custos reais (R$ 56,47 por 34,9 km em 59 min · R$ 1,62/km · R$ 57,43/h).',
+    highlightText: 'Proteja seu patrimônio e evite pagar para trabalhar! Recuse ofertas longas ou trânsito pesado que geram prejuízo disfarçado.'
   },
 
   // --- 2. NOTIFICAÇÃO & STREET VIEW 360° ---

@@ -405,14 +405,14 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </div>
 
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 4,60</span>
-                  <span className="text-sm font-bold text-[#365922]">/km · R$ 106,87/h</span>
+                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 2,88</span>
+                  <span className="text-sm font-bold text-[#365922]">/km · R$ 39,72/h</span>
                 </div>
                 <h3 className="font-space font-black text-lg text-[#071d19] mb-1">
                   Vale a pena aceitar
                 </h3>
                 <p className="text-xs sm:text-sm text-[#3b5936] leading-relaxed mb-4">
-                  R$ 28,50 por 6,2 km (16 min). O GoOrNo calcula combustível + manutenção preventiva e confirma que sobra lucro líquido real no seu bolso.
+                  R$ 6,62 por 2,3 km (10 min). O GoOrNo calcula combustível + manutenção preventiva e confirma que sobra lucro líquido real no seu bolso.
                 </p>
 
                 {/* Smartphone Preview Mockup */}
@@ -420,7 +420,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                   <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
                   <div className="relative aspect-[9/18.5] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
                     <img
-                      src="/telas/ViagemCompensa.jpeg"
+                      src="/telas/ViagemCompensa.png"
                       alt="Corrida que compensa no GoOrNo"
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -455,14 +455,14 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </div>
 
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 1,60</span>
-                  <span className="text-sm font-bold text-[#991b1b]">/km · R$ 39,11/h</span>
+                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 1,62</span>
+                  <span className="text-sm font-bold text-[#991b1b]">/km · R$ 57,43/h</span>
                 </div>
                 <h3 className="font-space font-black text-lg text-[#071d19] mb-1">
                   Melhor recusar na hora
                 </h3>
                 <p className="text-xs sm:text-sm text-[#7f1d1d] leading-relaxed mb-4">
-                  R$ 37,15 por 23,2 km (57 min). O copiloto detecta remuneração insuficiente e avisa que você vai pagar para trabalhar se fizer essa corrida.
+                  R$ 56,47 por 34,9 km (59 min). O copiloto detecta remuneração insuficiente e avisa que você vai pagar para trabalhar se fizer essa corrida.
                 </p>
 
                 {/* Smartphone Preview Mockup */}
@@ -470,7 +470,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                   <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
                   <div className="relative aspect-[9/18.5] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
                     <img
-                      src="/telas/ViagemNaoCompensa.jpeg"
+                      src="/telas/ViagemNaoCompensa.png"
                       alt="Corrida que não compensa no GoOrNo"
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -525,7 +525,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </div>
                 <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
                   <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
-                    <img src="/telas/CarTipo1.jpeg" alt="Card Impacto Pro" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                    <img src="/telas/ViagemCompensa.png" alt="Card Impacto Pro" className="w-full h-full object-cover group-hover:scale-105 transition" />
                   </div>
                 </div>
               </div>
@@ -550,7 +550,7 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 </div>
                 <div className="relative mx-auto w-full p-1 bg-[#09110e] rounded-[20px] border border-[#223530] max-w-[140px]">
                   <div className="aspect-[9/18.5] rounded-[16px] overflow-hidden bg-black flex items-center justify-center">
-                    <img src="/telas/CarTipo2.jpeg" alt="Card 3 Pilares" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                    <img src="/telas/card-3-pilares-real.png" alt="Card 3 Pilares" className="w-full h-full object-cover group-hover:scale-105 transition" />
                   </div>
                 </div>
               </div>
@@ -694,6 +694,198 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 <p>Alerta vermelho antecipado se o embarque ou destino for em local perigoso. Volte para casa com segurança.</p>
               </div>
             </article>
+          </div>
+        </section>
+
+        {/* SEÇÃO DESTAQUE: RECURSOS INTELIGENTES & RADAR DO COPILOTO */}
+        <section className="section-shell py-10" id="recursos-inteligentes">
+          <div className="bg-gradient-to-br from-[#051713] via-[#071f1a] to-[#0c3128] rounded-3xl p-6 sm:p-10 text-white border border-[#175244] shadow-2xl relative overflow-hidden">
+            {/* Header da Seção */}
+            <div className="text-center max-w-3xl mx-auto mb-10">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#d9ff4f]/15 text-[#d9ff4f] border border-[#d9ff4f]/30 font-space font-bold text-xs uppercase tracking-wider mb-3">
+                <Sparkles className="w-3.5 h-3.5" /> Inteligência em Tempo Real no Trânsito
+              </span>
+              <h2 className="font-space font-black text-2xl sm:text-4xl text-white mb-3 tracking-tight">
+                Recursos Inteligentes que <span className="text-[#d9ff4f]">Nenhum Outro App Tem</span>
+              </h2>
+              <p className="font-dm text-sm sm:text-base text-[#c2d5cd] leading-relaxed">
+                O GoOrNo não analisa apenas preço por km. Ele lê o contexto completo da chamada para proteger seu tempo, seu carro e a sua segurança na rua.
+              </p>
+            </div>
+
+            {/* Banner Ilustrado com Mapa Inteligente e Badges */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center mb-12 bg-white/5 rounded-3xl p-5 sm:p-8 border border-white/10">
+              <div className="lg:col-span-7 flex flex-col justify-center">
+                <span className="text-xs font-black font-space text-[#d9ff4f] uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" /> Filtros Ativos Automáticos
+                </span>
+                <h3 className="font-space font-bold text-xl sm:text-2xl text-white mb-3">
+                  Decisão Instantânea com Leitura Visual de Risco e Rentabilidade
+                </h3>
+                <p className="font-dm text-xs sm:text-sm text-[#b8ccc3] leading-relaxed mb-5">
+                  Enquanto a chamada toca na tela por apenas 10 a 15 segundos, o GoOrNo cruza o endereço de embarque e desembarque, verifica paradas intermediárias, alerta sobre atacadistas de compras e carimba os seus bairros prediletos.
+                </p>
+                <div className="rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-black/40 p-2">
+                  <img
+                    src="/assets/recursos-inteligentes-badges.png"
+                    alt="Badges inteligentes de recursos do GoOrNo"
+                    className="w-full h-auto rounded-xl object-contain hover:scale-[1.02] transition duration-300"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+
+              <div className="lg:col-span-5 flex justify-center">
+                <div className="relative rounded-3xl overflow-hidden border border-emerald-500/30 shadow-2xl max-w-[340px] group">
+                  <img
+                    src="/assets/mapa-inteligente-ilustracao.png"
+                    alt="Ilustração do App GoOrNo com Mapa Inteligente no Trânsito"
+                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none flex items-end p-4">
+                    <span className="text-xs font-bold text-white font-space bg-black/60 backdrop-blur-xs px-3 py-1.5 rounded-full border border-white/20">
+                      🛰️ Copiloto Ativo sobre Uber & 99
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Grid dos 6 Recursos Principais */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {/* Recurso 1: Supermercado */}
+              <div className="bg-[#092b24]/80 border border-emerald-500/30 rounded-2xl p-5 flex flex-col justify-between hover:border-[#d9ff4f]/50 transition">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl">🛒</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-space">
+                      Anti-Surpresas
+                    </span>
+                  </div>
+                  <h4 className="font-space font-bold text-base text-white mb-2">
+                    Detecta Supermercado & Atacados
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed mb-3">
+                    Identifica chamadas com origem em atacadistas e hipermercados (Atacadão, Assaí, Carrefour, Coop, Vencedor, etc.) para você não ser surpreendido com porta-malas lotado de compras pesadas sem aviso.
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#051915] border border-amber-500/30 text-[11px] font-mono text-amber-300 flex items-center gap-2">
+                  <span>🛒</span>
+                  <span><strong>SUPERMERCADO:</strong> Vencedor Atacadista</span>
+                </div>
+              </div>
+
+              {/* Recurso 2: Paradas Múltiplas */}
+              <div className="bg-[#092b24]/80 border border-emerald-500/30 rounded-2xl p-5 flex flex-col justify-between hover:border-[#d9ff4f]/50 transition">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl">🛑</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-space">
+                      Tempo Preservado
+                    </span>
+                  </div>
+                  <h4 className="font-space font-bold text-base text-white mb-2">
+                    Detector de Múltiplas Paradas
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed mb-3">
+                    Saiba antes de aceitar se o passageiro inseriu paradas intermediárias (farmácias, bancos, etc.) que costumam demorar 15 minutos e destroem o seu faturamento por hora.
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#051915] border border-blue-500/30 text-[11px] font-mono text-blue-300 flex items-center gap-2">
+                  <span>🛑</span>
+                  <span><strong>PARADAS:</strong> 2 paradas intermediárias</span>
+                </div>
+              </div>
+
+              {/* Recurso 3: Embarque Longe */}
+              <div className="bg-[#092b24]/80 border border-emerald-500/30 rounded-2xl p-5 flex flex-col justify-between hover:border-[#d9ff4f]/50 transition">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl">📍</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-space">
+                      Anti-Prejuízo
+                    </span>
+                  </div>
+                  <h4 className="font-space font-bold text-base text-white mb-2">
+                    Alerta de Embarque Longe
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed mb-3">
+                    Avisa quando a distância ou o tempo para buscar o passageiro devoram o valor da corrida, evitando deslocamento vazio e queima de combustível sem retorno.
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#051915] border border-rose-500/30 text-[11px] font-mono text-rose-300 flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span><strong>ALERTA:</strong> Buscar a 4,8 km (12 min)</span>
+                </div>
+              </div>
+
+              {/* Recurso 4: Bairros Favoritos */}
+              <div className="bg-[#092b24]/80 border border-emerald-500/30 rounded-2xl p-5 flex flex-col justify-between hover:border-[#d9ff4f]/50 transition">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl">⭐</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-space">
+                      Zona de Conforto
+                    </span>
+                  </div>
+                  <h4 className="font-space font-bold text-base text-white mb-2">
+                    Radar de Bairros Favoritos
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed mb-3">
+                    Cadastre suas regiões prediletas com 1 toque no histórico. Quando tocar uma corrida para esses bairros, o card carimba com destaque dourado na hora.
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#051915] border border-emerald-500/30 text-[11px] font-mono text-emerald-300 flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400" />
+                  <span><strong>⭐ REGIÃO FAVORITA:</strong> Centro / Jardins</span>
+                </div>
+              </div>
+
+              {/* Recurso 5: Áreas de Risco */}
+              <div className="bg-[#092b24]/80 border border-emerald-500/30 rounded-2xl p-5 flex flex-col justify-between hover:border-[#d9ff4f]/50 transition">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl">🚨</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-space">
+                      Escudo de Vida
+                    </span>
+                  </div>
+                  <h4 className="font-space font-bold text-base text-white mb-2">
+                    Escudo de Áreas de Risco
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed mb-3">
+                    Evite entrar em becos ou regiões perigosas. O GoOrNo avisa antes de você aceitar se a origem ou destino estiverem na sua lista de alerta preventivo.
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#051915] border border-rose-500/30 text-[11px] font-mono text-rose-300 flex items-center gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span><strong>🚨 ATENÇÃO:</strong> Destino em Área de Risco</span>
+                </div>
+              </div>
+
+              {/* Recurso 6: Street View 360 */}
+              <div className="bg-[#092b24]/80 border border-emerald-500/30 rounded-2xl p-5 flex flex-col justify-between hover:border-[#d9ff4f]/50 transition">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl">👁️</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-space">
+                      Visão Real da Rua
+                    </span>
+                  </div>
+                  <h4 className="font-space font-bold text-base text-white mb-2">
+                    Street View 360° em 1 Toque
+                  </h4>
+                  <p className="font-dm text-xs text-[#b8ccc3] leading-relaxed mb-3">
+                    Puxe a barra de notificações do Android e veja a fachada do embarque e do destino em 360° antes de chegar no local, identificando portarias e iluminação.
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#051915] border border-purple-500/30 text-[11px] font-mono text-purple-300 flex items-center gap-2">
+                  <span>📍</span>
+                  <span><strong>[Origem] e [Destino]</strong> na notificação</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
