@@ -942,9 +942,9 @@ object BrazilianOfferParser {
             var start = 0
             for (chooseIdx in chooseIndices) {
                 val candidateSlice = cleaned.subList(start, chooseIdx + 1)
-                // Localiza o cabeçalho legítimo deste cartão específico (ex: "Pgto. no app", "Pop", "99Pop" ou preço "R$")
-                // descartando resíduos e nós de ofertas anteriores que ficaram órfãos no scroll
-                val cardHeaderRelIdx = candidateSlice.indexOfFirst { line ->
+                // Localiza o cabeçalho legítimo deste cartão específico (prioriza "Pgto. no app" ou categoria),
+                // descartando resíduos órfãos deixados pelo scroll de chamadas antigas
+                var cardHeaderRelIdx = candidateSlice.indexOfFirst { line ->
                     val lower = line.lowercase(Locale.getDefault())
                     lower.contains("pgto. no app") ||
                         lower.contains("pagamento no app") ||
@@ -952,7 +952,13 @@ object BrazilianOfferParser {
                         lower.contains("99pop") ||
                         lower.contains("plus") ||
                         lower.contains("negocia") ||
-                        (extractAllCurrencies(listOf(line)).isNotEmpty() && !lower.contains("/km") && !lower.contains("/h"))
+                        lower.contains("99moto")
+                }
+                if (cardHeaderRelIdx == -1) {
+                    cardHeaderRelIdx = candidateSlice.indexOfFirst { line ->
+                        val lower = line.lowercase(Locale.getDefault())
+                        extractAllCurrencies(listOf(line)).isNotEmpty() && !lower.contains("/km") && !lower.contains("/h")
+                    }
                 }
                 val actualStart = if (cardHeaderRelIdx != -1) start + cardHeaderRelIdx else start
                 val slice = cleaned.subList(actualStart, chooseIdx + 1)
@@ -1234,7 +1240,8 @@ object BrazilianOfferParser {
     private val SPECIFIC_SUPERMARKET_BRANDS = listOf(
         "assai", "assaí", "atacadão", "atacadao", "carrefour", "sonda",
         "pão de açúcar", "pao de acucar", "coop", "bem barato", "roldão", "roldao",
-        "tenda atacado", "spani", "nagumo", "giga atacado", "sam's club", "sams club", "extra"
+        "tenda atacado", "spani", "nagumo", "giga atacado", "sam's club", "sams club", "extra",
+        "vencedor atacadista", "vencedor atacado", "vencedor"
     )
 
     private val GENERIC_SUPERMARKET_TERMS = listOf(
@@ -1279,6 +1286,7 @@ object BrazilianOfferParser {
                         "nagumo" -> "Nagumo"
                         "giga atacado" -> "Giga"
                         "sam's club", "sams club" -> "Sam's Club"
+                        "vencedor", "vencedor atacadista", "vencedor atacado" -> "Vencedor Atacadista"
                         else -> "Supermercado"
                     }
                     return Pair(true, displayName)
