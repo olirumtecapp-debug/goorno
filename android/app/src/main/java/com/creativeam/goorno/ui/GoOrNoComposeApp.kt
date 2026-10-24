@@ -99,7 +99,8 @@ enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: St
     SECURITY(9, "Segurança e Áreas de Risco", "Segurança"),
     DIAGNOSTICS_TESTS(10, "Diagnóstico e Simulador", "Testes"),
     PRIVACY_BACKUP(11, "Privacidade e Backup", "Backup"),
-    SUBSCRIPTION(12, "Assinatura Pro e Licença", "Plano Pro")
+    SUBSCRIPTION(12, "Assinatura Pro e Licença", "Plano Pro"),
+    CONTACT_SUPPORT(13, "Fale Conosco", "Suporte")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -300,6 +301,7 @@ fun GoOrNoComposeApp(
                 "DIAGNOSTICS_TESTS", "TESTES", "SIMULADOR" -> currentScreen = GoOrNoScreen.DIAGNOSTICS_TESTS
                 "PRIVACY_BACKUP", "BACKUP" -> currentScreen = GoOrNoScreen.PRIVACY_BACKUP
                 "HOME", "INICIO" -> currentScreen = GoOrNoScreen.HOME
+                "CONTACT", "CONTACT_SUPPORT", "SUPORTE", "FALE_CONOSCO" -> currentScreen = GoOrNoScreen.CONTACT_SUPPORT
                 else -> {}
             }
             onClearRequestedScreen()
@@ -446,9 +448,9 @@ fun GoOrNoComposeApp(
                         GoOrNoScreen.CONNECTION_STATUS,
                         GoOrNoScreen.DIAGNOSTICS_TESTS,
                         GoOrNoScreen.PRIVACY_BACKUP,
-                        GoOrNoScreen.SUBSCRIPTION
+                        GoOrNoScreen.SUBSCRIPTION,
+                        GoOrNoScreen.CONTACT_SUPPORT
                     )
-
                     // Barra Superior Contextual: Se estiver em uma subtela de Ajustes, mostra atalho limpo de retorno
                     if (isSubScreenOfSettings) {
                         Row(
@@ -567,7 +569,8 @@ fun GoOrNoComposeApp(
                             GoOrNoScreen.CONNECTION_STATUS,
                             GoOrNoScreen.DIAGNOSTICS_TESTS,
                             GoOrNoScreen.PRIVACY_BACKUP,
-                            GoOrNoScreen.SUBSCRIPTION
+                            GoOrNoScreen.SUBSCRIPTION,
+                            GoOrNoScreen.CONTACT_SUPPORT
                         )
                         val quickTabs = listOf(
                             Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
@@ -655,6 +658,7 @@ fun GoOrNoComposeApp(
                             GoOrNoScreen.DIAGNOSTICS_TESTS -> "Simulador de chamadas para testar o semáforo na tela"
                             GoOrNoScreen.PRIVACY_BACKUP -> "Exportar ou restaurar suas configurações salvas"
                             GoOrNoScreen.SUBSCRIPTION -> "Licença de uso, ativação e plano GoOrNo Pro"
+                            GoOrNoScreen.CONTACT_SUPPORT -> "Canal direto de Caixa Postal com o desenvolvedor"
                             else -> ""
                         }
                         if (screenSubtitle.isNotBlank()) {
@@ -1099,6 +1103,15 @@ fun GoOrNoComposeApp(
                                     badge = "Backup",
                                     badgeColor = PetrolHeader,
                                     onClick = { currentScreen = GoOrNoScreen.PRIVACY_BACKUP }
+                                )
+
+                                QuickHubListActionRow(
+                                    icon = "✉️",
+                                    title = "Fale Conosco / Suporte",
+                                    subtitle = "Caixa Postal direta com o desenvolvedor Murilo Ferreira",
+                                    badge = "Direto",
+                                    badgeColor = TrafficGreen,
+                                    onClick = { currentScreen = GoOrNoScreen.CONTACT_SUPPORT }
                                 )
 
                                 QuickHubListActionRow(
@@ -5410,6 +5423,18 @@ fun GoOrNoComposeApp(
                 GoOrNoScreen.SUBSCRIPTION -> {
                     item {
                         SubscriptionScreenCard(onNotify = notifyUser)
+                    }
+                }
+
+                // =====================================================
+                // TELA 13: FALE CONOSCO / CAIXA POSTAL DIRETA
+                // =====================================================
+                GoOrNoScreen.CONTACT_SUPPORT -> {
+                    item {
+                        ContactSupportScreenCard(
+                            onBackToSettings = { currentScreen = GoOrNoScreen.SETTINGS },
+                            onNotify = notifyUser
+                        )
                     }
                 }
             }

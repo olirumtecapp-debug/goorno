@@ -3,8 +3,10 @@ import { AdminDashboard } from './AdminDashboard';
 import { DownloadLandingPage } from './DownloadLandingPage';
 import { ScreenshotsShowcase } from './ScreenshotsShowcase';
 import { MaintenancePage } from './MaintenancePage';
+import { ContactModal } from './ContactModal';
 import {
   Power,
+  Mail,
   Sliders,
   History,
   MapPin,
@@ -204,6 +206,7 @@ export function App() {
   const [config, setConfig] = useState<DriverConfig>(DEFAULT_CONFIG);
   const [rides, setRides] = useState<RideRecord[]>([]);
   const [copilotActive, setCopilotActive] = useState<boolean>(false);
+  const [isDriverContactOpen, setIsDriverContactOpen] = useState<boolean>(false);
 
   // Native Android permissions state
   const [isNative, setIsNative] = useState<boolean>(() => typeof window !== 'undefined' && !!(window as any).AndroidBridge);
@@ -666,6 +669,15 @@ export function App() {
                 <span className="hidden xs:inline">Baixar APK</span>
               </button>
             )}
+
+            {/* Quick Contact Support Modal */}
+            <button
+              onClick={() => setIsDriverContactOpen(true)}
+              className="p-2 rounded-xl border border-white/15 bg-[#04241E] hover:bg-[#0D4A3E] text-emerald-200 transition flex items-center justify-center shadow-sm"
+              title="Fale Conosco / Caixa Postal de Suporte"
+            >
+              <Mail className="w-4 h-4 text-[#d9ff4f]" />
+            </button>
 
             {/* Quick Voice Toggle */}
             <button
@@ -2152,6 +2164,13 @@ export function App() {
             <span className="text-[11px] mt-0.5">Histórico</span>
           </button>
         </nav>
+
+        {/* Modal de Caixa Postal / Suporte no App */}
+        <ContactModal
+          isOpen={isDriverContactOpen}
+          onClose={() => setIsDriverContactOpen(false)}
+          source="app"
+        />
       </div>
     </div>
   );

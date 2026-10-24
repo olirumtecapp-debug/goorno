@@ -1,22 +1,23 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+type VercelRequest = any;
+type VercelResponse = any;
 
 export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.50",
-    versionCode: 71,
+    versionName: "3.3.51",
+    versionCode: 72,
     releaseDate: "2026-10-24",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.50.apk",
-    directDownload: "/GoOrNo-v3.3.50.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.51.apk",
+    directDownload: "/GoOrNo-v3.3.51.apk",
     fileSizeBytes: 55336412,
     fileSizeFormatted: "55.3 MB",
     changelog: [
-      "⭐ Correção da Nota do Passageiro na 99: Suporte completo a formato de avaliação com ponto e corridas (ex: 4,95 · 736 corridas, 5,00 · 105 corridas), eliminando o 'Nota: --'.",
-      "⚡ Correção do Fatiamento de Lista da 99: Fim do resíduo de chamadas anteriores, do falso split [1/2] e de taxas distorcidas (R$ 0,22/km).",
-      "🌐 Landing Page Oficial Atualizada: Novos cards comparativos reais e vitrine dos Recursos Inteligentes (Supermercado, Paradas, Bairros Favoritos, Risco).",
-      "🛡️ Estabilidade Total Preservada: Motor consolidado mantendo toda a robustez e segurança."
+      "✉️ Fale Conosco Integrado no App: Canal direto de Caixa Postal adicionado nas telas de Ajustes e no topo do app para envio de dúvidas, sugestões e suporte diretamente ao desenvolvedor.",
+      "🎨 Redesign Moderno da Caixa Postal no Site e no App: Modal totalmente reestilizado com a paleta escura obsidian, neon volt e bordas esmeralda do GoOrNo.",
+      "🛡️ Adequação Jurídica & LGPD v1.3: Termos, Privacidade, CDC Art. 49 (Direito de arrependimento em 7 dias com estorno PIX) e segurança de PIN com salt dinâmico e bloqueio anti-brute-force.",
+      "⚡ Estabilidade e Robustez: Preservação total de todo o leitor inteligente de ofertas Uber e 99."
     ],
     mandatory: false,
   });

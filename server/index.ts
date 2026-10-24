@@ -993,19 +993,18 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.49",
-    versionCode: 70,
-    releaseDate: "2026-10-23",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.49.apk",
-    directDownload: "/GoOrNo-v3.3.49.apk",
+    versionName: "3.3.51",
+    versionCode: 72,
+    releaseDate: "2026-10-24",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.51.apk",
+    directDownload: "/GoOrNo-v3.3.51.apk",
     fileSizeBytes: 55336412,
     fileSizeFormatted: "55.3 MB",
     changelog: [
-      "🏬 Fim do Falso Positivo Coop: Bairro Cooperativa (SBC) e termos correlatos nunca mais confundidos com Supermercado.",
-      "💰 Correção de R$/h em Destinos Comerciais na 99: Soma total dos 13,1 km e 27 min (ex: OGGI Sorvetes calculando R$ 48/h real em vez dos R$ 188/h distorcidos).",
-      "⚡ Bloqueio Anti-Fatiamento de Cards na 99: Indicadores de taxa R$/km na tela não dividem mais uma corrida em [1/2].",
-      "🎯 Ancoragem Precisa de Estabelecimentos: Suporte nativo a nomes comerciais sem prefixo de rua na 99 e Uber.",
-      "🛡️ Estabilidade Total Preservada: Motor consolidado mantendo toda a robustez e segurança."
+      "✉️ Fale Conosco Integrado no App: Canal direto de Caixa Postal adicionado nas telas de Ajustes e no topo do app para envio de dúvidas, sugestões e suporte diretamente ao desenvolvedor.",
+      "🎨 Redesign Moderno da Caixa Postal no Site e no App: Modal totalmente reestilizado com a paleta escura obsidian, neon volt e bordas esmeralda do GoOrNo.",
+      "🛡️ Adequação Jurídica & LGPD v1.3: Termos, Privacidade, CDC Art. 49 (Direito de arrependimento em 7 dias com estorno PIX) e segurança de PIN com salt dinâmico e bloqueio anti-brute-force.",
+      "⚡ Estabilidade e Robustez: Preservação total de todo o leitor inteligente de ofertas Uber e 99."
     ],
     mandatory: false,
   });
@@ -1112,6 +1111,9 @@ app.delete("/api/contact/:id", async (req, res) => {
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
+  "/GoOrNo-v3.3.51.apk",
+  "/GoOrNo-v3.3.50.apk",
+  "/GoOrNo-v3.3.49.apk",
   "/GoOrNo-v3.3.48.apk",
   "/GoOrNo-v3.3.47.apk",
   "/download/apk",
@@ -1123,6 +1125,10 @@ app.get([
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.51.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.51.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.51.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.50.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.48.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.48.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.48.apk"),
