@@ -288,7 +288,6 @@ object NinetyNineOfferReader {
         } && !cleanedLines.any { it.contains("Aceitar", ignoreCase = true) || it.contains("Escolher", ignoreCase = true) }
 
         // Trava de Sanidade Rigorosa (rejeita saldos do motorista como R$ 254 em corridas curtas ou durações absurdas como 974 min)
-        val rawPrice = priceField.valueOrNull() ?: 0.0
         val isSanePrice = (rawPrice in 4.50..350.0) || (totalKmVal != null && totalKmVal >= 60.0 && rawPrice <= 1500.0)
         val isSaneDuration = totalMinVal == null || totalMinVal in 1..240
 
