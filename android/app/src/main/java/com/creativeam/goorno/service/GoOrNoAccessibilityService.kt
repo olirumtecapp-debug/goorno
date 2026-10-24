@@ -160,13 +160,13 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                         if (app.overlayPanel.isCardCurrentlyVisible()) {
                             checkIfOfferDismissedAndCloseCard(activeRootPkg = null, eventPkg = null)
                         }
-                        if (now - lastScanTimeMillis >= 750L) {
+                        if (now - lastScanTimeMillis >= 380L) {
                             scanCurrentScreen(eventPkg = null, forceThrottleBypass = false)
                         }
                     }
                 } catch (_: Throwable) {
                 }
-                delay(900L)
+                delay(400L)
             }
         }
     }
@@ -212,6 +212,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
+        val isAppTransitionToDriver = (evtPkg.isNotBlank() && evtPkg != lastKnownForegroundPkg && (isEventDriverPkg || isActiveDriverPkg))
         if (evtPkg.isNotBlank() && evtPkg != lastKnownForegroundPkg) {
             shownOfferTimestamps.clear()
             lastScreenContextMode = ""
@@ -227,7 +228,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val eventTexts = event?.text?.joinToString(" ") ?: ""
         val eventContentDesc = event?.contentDescription?.toString() ?: ""
         val eventCombined = "$eventTexts $eventContentDesc"
-        val isLikelyOfferEvent = eventCombined.contains("R$") ||
+        val isLikelyOfferEvent = isAppTransitionToDriver ||
+            eventCombined.contains("R$") ||
             eventCombined.contains("Pop", ignoreCase = true) ||
             eventCombined.contains("Aceitar", ignoreCase = true) ||
             eventCombined.contains("Escolher", ignoreCase = true) ||
@@ -363,7 +365,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             val isSaneDuration = min in 1..240
             val isSaneKm = km in 0.2..300.0
 
-            isSanePrice && isSaneKm && isSaneDuration && hasAddresses && !offer.hasFieldConflict
+            // Se possui Preço, Km e Tempo consistentes, exibe a avaliação financeira de primeira (sem travar se os endereços ainda estiverem renderizando)
+            isSanePrice && isSaneKm && isSaneDuration && !offer.hasFieldConflict
         }
 
         if (completeAccessibilityOffers.isNotEmpty()) {
