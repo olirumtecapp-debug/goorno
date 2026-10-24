@@ -16,7 +16,7 @@ O aplicativo deverá oferecer exclusivamente estes quatro planos:
 
 ### Plano Mensal
 - Preço normal: R$ 7,99 por mês.
-- Preço promocional: R$ 3,99 no primeiro mês para usuários elegíveis à promoção.
+- Preço promocional: R$ 5,09 no primeiro mês para usuários elegíveis à promoção.
 - Depois do primeiro mês promocional, a renovação será de R$ 7,99 por mês.
 - Informar claramente o preço de renovação antes da confirmação da contratação.
 

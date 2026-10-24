@@ -705,7 +705,7 @@ app.get("/api/license/check-payment/:paymentId", async (req, res) => {
 });
 
 // 4. Asaas Webhook (Automated Payment Notifications)
-app.post("/api/goorno-webhook", async (req, res) => {
+app.post(["/api/goorno-webhook", "/api/webhook", "/api/webhook/asaas", "/api/webhooks/asaas"], async (req, res) => {
   try {
     const body = req.body || {};
     const event = String(body.event || "");
@@ -718,6 +718,8 @@ app.post("/api/goorno-webhook", async (req, res) => {
       let phone = "";
       if (payment.externalReference && payment.externalReference.startsWith("goorno_tel_")) {
         phone = payment.externalReference.replace("goorno_tel_", "");
+      } else if (payment.externalReference && /^[0-9]{10,11}$/.test(payment.externalReference.replace(/\D/g, ""))) {
+        phone = payment.externalReference.replace(/\D/g, "");
       } else if (payment.pixQrCodeId && getPendingPixPhone(payment.pixQrCodeId)) {
         phone = getPendingPixPhone(payment.pixQrCodeId)!;
       } else if (payment.customer) {

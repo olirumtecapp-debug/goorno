@@ -1,34 +1,24 @@
-# CHECKPOINT GOORNO — Checkpoint #015 (v3.3.51 - Build 72)
+# CHECKPOINT GOORNO — Checkpoint #016 (v3.3.51 - Build 72)
 **Data:** 24 de Outubro de 2026  
-**Status do Projeto:** ✅ Caixa Postal / Fale Conosco Integrado no App Android & Redesign Dark Premium no Web
+**Status do Projeto:** ✅ Mensalidade Promocional Adequada para R$ 5,09 (Mínimo Asaas) & Webhook de Pagamento Validado
 
 ---
 
-## 1. O que foi consolidado no Checkpoint #015:
+## 1. O que foi consolidado no Checkpoint #016:
 
-### A. Fale Conosco / Caixa Postal Integrado no Aplicativo Android (`ContactSupportScreen.kt` & `GoOrNoComposeApp.kt`)
-1. **Nova Tela Nativa no Jetpack Compose (`ContactSupportScreen.kt`):**
-   - Implementada tela completa de suporte e Caixa Postal diretamente no app nativo do motorista.
-   - Campos: Nome, WhatsApp/Telefone, E-mail, Preferência de Retorno (WhatsApp ou E-mail), Motivo do Contato (Dúvida, Sugestão, Problema, Elogio, Outro), Assunto e Mensagem (até 1000 caracteres com contador dinâmico).
-   - Envio assíncrono direto para a API oficial do GoOrNo (`https://goorno-app.vercel.app/api/contact`) com identificador `source: "app"`.
-   - Feedback em tempo real com número de protocolo gerado (`#TKT-XXXXXX`) e confirmação imediata.
-2. **Acesso Fácil na Navegação do App:**
-   - Adicionado item "Fale Conosco / Suporte" na Central de Configurações (`GoOrNoScreen.SETTINGS`) sob "RECURSOS & CONTA".
-   - Integrado ao fluxo de navegação com botão "Voltar para Ajustes".
-   - Botão rápido de suporte também incorporado no cabeçalho do Copiloto no app web/simulador (`App.tsx`).
+### A. Adequação da Mensalidade Promocional para R$ 5,09
+1. **Regra de Gateway Asaas (Valor Mínimo de R$ 5,00):**
+   - O preço promocional do primeiro mês foi reajustado de R$ 3,99 para **R$ 5,09** em todos os pontos do sistema (`server/licenseStore.ts` e `LicenseManager.kt`).
+   - Economia calculada ajustada para R$ 2,90 (R$ 7,99 - R$ 5,09).
+   - O gateway Asaas agora gera as cobranças PIX sem rejeição por valor abaixo do piso.
 
-### B. Redesign Dark Moderno do Fale Conosco no Site (`ContactModal.tsx`)
-1. **Harmonização Visual 100% GoOrNo:**
-   - Substituída a interface branca desalinhada por um design escuro de alto padrão condizente com a landing page.
-   - Paleta oficial: fundo obsidiana (`#071d19` e `#051915`), acentos neon volt (`#d9ff4f`), bordas refinadas esmeralda (`#1b3830`), textos nítidos e ícones Lucide estilizados.
-   - Pílulas de seleção de categoria e preferência com efeito glow neon e alto contraste.
-   - Modal responsivo para smartphones e desktops, com backdrop blur escuro e feedback de protocolo.
-
-### C. Versionamento & Distribuição
-1. **Bumping Oficial para v3.3.51 (Build 72):**
-   - Atualizado `android/app/build.gradle` (`versionCode 72`, `versionName "3.3.51"`).
-   - Atualizado `api/app-version.ts` e `server/index.ts` com notas de versão completas e APK `GoOrNo-v3.3.51.apk`.
-   - Arquivos APK sincronizados em `dist/public`, `client/public` e na raiz do projeto.
+### B. Validação e Robustez do Webhook da Asaas
+1. **Múltiplos Aliases de Rota:**
+   - Rotas cadastradas: `/api/goorno-webhook`, `/api/webhook`, `/api/webhook/asaas` e `/api/webhooks/asaas`.
+2. **Reconciliação e Idempotência:**
+   - Extração resiliente de telefone via `externalReference` (`goorno_tel_XXXXX` ou números diretos), `pixQrCodeId` e consulta de cliente.
+   - Ativação imediata de 30 dias na licença do motorista com registro no histórico financeiro.
+   - Idempotência testada: retransmissões do mesmo evento pela Asaas não duplicam dias nem geram cobrança duplicada.
 
 ---
 
@@ -36,12 +26,14 @@
 
 | Recurso | URL | Status |
 |---|---|---|
-| **Produção Web (Vercel)** | `https://goorno-app.vercel.app` | ✅ No Ar & Atualizado v3.3.51 |
-| **Central de Continuidade** | `http://localhost:3010` | ✅ Checkpoint #015 Ativo |
+| **Produção Web (Vercel)** | `https://goorno-app.vercel.app` | ✅ No Ar & Atualizado (R$ 5,09) |
+| **Webhook Asaas Oficial** | `https://goorno-app.vercel.app/api/goorno-webhook` | ✅ Operacional (Status 200) |
+| **Download APK Direto** | `https://goorno-app.vercel.app/GoOrNo-v3.3.51.apk` | ✅ Operacional (55.3 MB) |
+| **Central de Continuidade** | `http://localhost:3010` | ✅ Checkpoint #016 Ativo |
 | **Copiloto Web Local** | `http://localhost:3008` | ✅ Ativo na porta 3008 |
 | **Repositório GitHub** | `https://github.com/olirumtecapp-debug/goorno.git` | ✅ Branch main sincronizada |
 
 ---
 
 ## 3. Frase de Restauração Segura (Rollback)
-> *"Antigravity, deu ruim no GoOrNo! Volte para o Checkpoint #014!"*
+> *"Antigravity, deu ruim no GoOrNo! Volte para o Checkpoint #015!"*

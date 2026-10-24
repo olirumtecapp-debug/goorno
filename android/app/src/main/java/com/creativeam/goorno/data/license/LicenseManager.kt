@@ -402,7 +402,7 @@ object LicenseManager {
 
             val data = PixChargeData(
                 paymentId = pix.optString("paymentId"),
-                value = pix.optDouble("value", 3.99),
+                value = pix.optDouble("value", 5.09),
                 dueDate = pix.optString("dueDate", ""),
                 qrCodeBase64 = pix.optString("encodedImage", ""),
                 copyPastePix = pix.optString("payload", ""),
@@ -442,10 +442,10 @@ object LicenseManager {
                                 name = item.optString("name"),
                                 periodDays = item.optInt("periodDays", 30),
                                 normalPrice = item.optDouble("normalPrice", 7.99),
-                                promoPrice = item.optDouble("promoPrice", 3.99),
+                                promoPrice = item.optDouble("promoPrice", 5.09),
                                 renewalPrice = item.optDouble("renewalPrice", 7.99),
                                 monthlyEquivalentNormal = item.optDouble("monthlyEquivalentNormal", 7.99),
-                                monthlyEquivalentPromo = item.optDouble("monthlyEquivalentPromo", 3.99),
+                                monthlyEquivalentPromo = item.optDouble("monthlyEquivalentPromo", 5.09),
                                 savingsPromoVsMonthlyNormal = item.optDouble("savingsPromoVsMonthlyNormal", 0.0),
                                 highlightBadge = item.optString("highlightBadge").takeIf { it.isNotBlank() },
                                 description = item.optString("description", ""),
@@ -470,11 +470,11 @@ object LicenseManager {
                 name = "Plano Mensal",
                 periodDays = 30,
                 normalPrice = 7.99,
-                promoPrice = 3.99,
+                promoPrice = 5.09,
                 renewalPrice = 7.99,
                 monthlyEquivalentNormal = 7.99,
-                monthlyEquivalentPromo = 3.99,
-                savingsPromoVsMonthlyNormal = 4.00,
+                monthlyEquivalentPromo = 5.09,
+                savingsPromoVsMonthlyNormal = 2.90,
                 description = "Acesso completo por 30 dias. Renovação por R$ 7,99/mês."
             ),
             SubscriptionPlanItem(
