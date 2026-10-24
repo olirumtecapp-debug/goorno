@@ -326,19 +326,24 @@ class DriverPreferencesRepository(private val context: Context) {
         } catch (_: Throwable) {
         }
 
-        // Sincronização automática e transparente na nuvem vinculada ao WhatsApp do motorista
-        repositoryScope.launch(Dispatchers.IO) {
-            try {
-                val phone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
-                if (phone.length >= 10) {
-                    com.creativeam.goorno.data.cloud.CloudSyncManager.uploadBackupByDriverCode(
-                        driverCode = phone,
-                        config = config,
-                        offers = emptyList()
-                    )
+        // Sincronização na nuvem estritamente condicionada ao consentimento explícito do motorista (LGPD)
+        if (config.cloudBackupConsent) {
+            repositoryScope.launch(Dispatchers.IO) {
+                try {
+                    val phone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
+                    if (phone.length >= 10) {
+                        // Preserva as ofertas já existentes na nuvem ao sincronizar alterações de configurações locais
+                        val existingBackup = com.creativeam.goorno.data.cloud.CloudSyncManager.restoreBackupByDriverCode(phone).getOrNull()
+                        val currentCloudOffers = existingBackup?.second ?: emptyList()
+                        com.creativeam.goorno.data.cloud.CloudSyncManager.uploadBackupByDriverCode(
+                            driverCode = phone,
+                            config = config,
+                            offers = currentCloudOffers
+                        )
+                    }
+                } catch (_: Exception) {
+                    // Silencioso se offline, garante que a persistência local nunca falhe
                 }
-            } catch (_: Exception) {
-                // Silencioso se offline, garante que a persistência local nunca falhe
             }
         }
     }

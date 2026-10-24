@@ -1596,36 +1596,35 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
 
         <p className="text-xs text-[#7a8982] m-0">© 2026 GoOrNo. Feito para quem trabalha na rua.</p>
 
-        <div className="flex items-center gap-3 text-xs font-space font-bold">
+        <div className="flex items-center gap-2 text-xs font-space font-bold flex-wrap justify-center">
           <button
             onClick={() => setLegalModalType('terms')}
-            className="bg-transparent border-0 text-[#071d19] hover:text-[#799900] cursor-pointer p-0 underline"
+            className="px-3.5 py-1.5 rounded-xl bg-emerald-950/5 hover:bg-emerald-950/10 text-[#071d19] border border-emerald-950/15 cursor-pointer transition flex items-center gap-1.5"
           >
-            Termos
+            <span>📜</span>
+            <span>Termos de Uso</span>
           </button>
-          <span className="text-slate-300">•</span>
           <button
             onClick={() => setLegalModalType('privacy')}
-            className="bg-transparent border-0 text-[#071d19] hover:text-[#799900] cursor-pointer p-0 underline"
+            className="px-3.5 py-1.5 rounded-xl bg-emerald-950/5 hover:bg-emerald-950/10 text-[#071d19] border border-emerald-950/15 cursor-pointer transition flex items-center gap-1.5"
           >
-            Privacidade
+            <span>🛡️</span>
+            <span>Privacidade & LGPD</span>
           </button>
-          <span className="text-slate-300">•</span>
           <button
             onClick={() => setLegalModalType('independence')}
-            className="bg-transparent border-0 text-[#071d19] hover:text-[#799900] cursor-pointer p-0 underline"
+            className="px-3.5 py-1.5 rounded-xl bg-emerald-950/5 hover:bg-emerald-950/10 text-[#071d19] border border-emerald-950/15 cursor-pointer transition flex items-center gap-1.5"
           >
-            Independência
+            <span>⚖️</span>
+            <span>Natureza Jurídica</span>
           </button>
-          <span className="text-slate-300">•</span>
           <button
             onClick={() => setIsContactOpen(true)}
-            className="bg-transparent border-0 text-[#071d19] hover:text-[#799900] cursor-pointer flex items-center gap-1"
+            className="px-3.5 py-1.5 rounded-xl bg-[#d9ff4f] hover:bg-[#cbf13e] text-[#071d19] border-0 cursor-pointer transition flex items-center gap-1.5 font-bold shadow-xs"
           >
             <Mail className="w-3.5 h-3.5" />
-            <span>Contato</span>
+            <span>Fale Conosco</span>
           </button>
-
         </div>
       </footer>
 

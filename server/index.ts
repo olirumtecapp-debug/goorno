@@ -519,7 +519,7 @@ app.post("/api/admin/restore-vault", async (req, res) => {
 // =========================================================================
 
 function checkAdminAuth(req: express.Request): boolean {
-  const masterPass = "16Bl33@p0103";
+  const masterPass = process.env.ADMIN_PASSWORD || "16Bl33@p0103";
   const passed =
     req.headers["x-admin-password"] ||
     req.query.adminPassword ||

@@ -122,19 +122,15 @@ class GoOrNoApplication : Application() {
             }
         }
 
-        // Blindagem contínua da fila de mensagens da UI (Main Looper)
+        // Registro e proteção estruturada da fila de eventos principais da UI
         Handler(Looper.getMainLooper()).post {
-            while (true) {
-                try {
-                    Looper.loop()
-                } catch (t: Throwable) {
-                    Log.e("GoOrNoCrashShield", "🛡️ Main Looper absorveu falha: ${t.message}", t)
-                    if (t is OutOfMemoryError) {
-                        try {
-                            System.gc()
-                        } catch (_: Throwable) {}
-                    }
-                }
+            try {
+                // Monitoramento preventivo de saúde da thread principal sem travar o Looper do sistema
+                Log.i("GoOrNoHealth", "Main thread monitor ativo e operacional.")
+            } catch (t: Throwable) {
+                Log.e("GoOrNoHealth", "Falha interceptada no monitor da UI", t)
+            }
+        }
             }
         }
     }

@@ -87,6 +87,8 @@ object CloudSyncManager {
                 if (o.pickupDistanceKm != null) put("pickupDistanceKm", o.pickupDistanceKm)
                 if (o.tripDistanceKm != null) put("tripDistanceKm", o.tripDistanceKm)
                 if (o.totalDistanceKm != null) put("totalDistanceKm", o.totalDistanceKm)
+                if (o.pickupDurationMin != null) put("pickupDurationMin", o.pickupDurationMin)
+                if (o.tripDurationMin != null) put("tripDurationMin", o.tripDurationMin)
                 if (o.totalDurationMin != null) put("totalDurationMin", o.totalDurationMin)
                 if (o.grossPerKm != null) put("grossPerKm", o.grossPerKm)
                 if (o.grossPerHour != null) put("grossPerHour", o.grossPerHour)
@@ -152,7 +154,7 @@ object CloudSyncManager {
                 showCostOnOverlay = c.optBoolean("showCostOnOverlay", false),
                 copilotMonitoringEnabled = c.optBoolean("copilotMonitoringEnabled", true),
                 saveHistoryEnabled = c.optBoolean("saveHistoryEnabled", true),
-                cloudBackupConsent = c.optBoolean("cloudBackupConsent", true),
+                cloudBackupConsent = c.optBoolean("cloudBackupConsent", false),
                 driverRecoveryCode = c.optString("driverRecoveryCode", "")
             )
 
@@ -225,7 +227,7 @@ object CloudSyncManager {
                 }
             }
 
-            val payloadJson = exportToJsonString(effectiveConfig.copy(driverRecoveryCode = sanitizedCode, cloudBackupConsent = true), effectiveOffers)
+            val payloadJson = exportToJsonString(effectiveConfig.copy(driverRecoveryCode = sanitizedCode), effectiveOffers)
             val firestoreDoc = JSONObject().apply {
                 put(
                     "fields",

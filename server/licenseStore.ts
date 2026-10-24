@@ -1,3 +1,4 @@
+import crypto from "crypto";
 
 export const PROMO_CONFIG = {
   campaignActive: process.env.PROMO_ACTIVE !== "false",
@@ -117,6 +118,19 @@ export interface LicenseTransfer {
   ip?: string;
 }
 
+
+export function hashPin(pin: string, salt: string = "goorno_sec_"): string {
+  return crypto.createHash("sha256").update(salt + pin.trim()).digest("hex");
+}
+
+export function verifyPinMatch(incomingPin: string, record: LicenseRecord): boolean {
+  const stored = record.pinHash || record.pin;
+  if (!stored) return false;
+  const trimmed = incomingPin.trim();
+  if (stored === trimmed) return true; // Suporte a PINs anteriores em texto puro
+  return stored === hashPin(trimmed);
+}
+
 export interface LicenseRecord {
   id: string; // Digits only e.g. "11999998888"
   whatsapp: string;
@@ -125,6 +139,9 @@ export interface LicenseRecord {
   status: "trial" | "active" | "expired" | "blocked";
   plano: "trial" | "mensal" | "trimestral" | "semestral" | "anual" | "vitalicio" | "cortesia";
   pin?: string;
+  pinHash?: string;
+  failedPinAttempts?: number;
+  pinBlockedUntil?: string;
   recoverySecret?: string;
   firstPurchasePromoApplied?: boolean;
   nextRenewalPrice?: number;
