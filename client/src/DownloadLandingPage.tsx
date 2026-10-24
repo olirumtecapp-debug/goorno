@@ -391,32 +391,32 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 const item = SCREENSHOTS.find((s) => s.id === 'viagem-compensa');
                 if (item) setSelectedScreenshot(item);
               }}
-              className="bg-[#f2fae8] border-2 border-[#a6d84a] rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+              className="bg-[#f2fae8] border-2 border-[#a6d84a] rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group cursor-pointer h-full"
             >
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full bg-[#166534] text-white tracking-wide font-space shadow-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-black px-2.5 sm:px-3 py-1 rounded-full bg-[#166534] text-white tracking-wide font-space shadow-xs whitespace-nowrap shrink-0">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                     ✓ COMPENSA
                   </span>
-                  <span className="text-[11px] font-bold text-[#166534] bg-white/90 px-2.5 py-0.5 rounded-full border border-[#166534]/20">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-[#166534] bg-white/90 px-2 sm:px-2.5 py-1 rounded-full border border-[#166534]/20 whitespace-nowrap shrink-0">
                     Aprovada em Verde
                   </span>
                 </div>
 
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 2,88</span>
-                  <span className="text-sm font-bold text-[#365922]">/km · R$ 39,72/h</span>
+                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight whitespace-nowrap">R$ 2,88</span>
+                  <span className="text-xs sm:text-sm font-bold text-[#365922] whitespace-nowrap">/km · R$ 39,72/h</span>
                 </div>
                 <h3 className="font-space font-black text-lg text-[#071d19] mb-1">
                   Vale a pena aceitar
                 </h3>
-                <p className="text-xs sm:text-sm text-[#3b5936] leading-relaxed mb-4">
-                  R$ 6,62 por 2,3 km (10 min). O GoOrNo calcula combustível + manutenção preventiva e confirma que sobra lucro líquido real no seu bolso.
+                <p className="text-xs sm:text-sm text-[#3b5936] leading-relaxed mb-4 min-h-[40px] flex items-center">
+                  R$ 6,62 por 2,3 km (10 min). O GoOrNo calcula combustível + manutenção preventiva e confirma lucro real no bolso.
                 </p>
 
                 {/* Smartphone Preview Mockup */}
-                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[26px] border-[2.5px] border-[#223530] shadow-md max-w-[190px] group-hover:scale-105 transition-transform duration-300">
+                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[26px] border-[2.5px] border-[#223530] shadow-md max-w-[190px] w-full group-hover:scale-105 transition-transform duration-300">
                   <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
                   <div className="relative aspect-[9/18.5] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
                     <img
@@ -430,8 +430,8 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               </div>
 
               <div className="mt-4 pt-3 border-t border-[#166534]/15 flex items-center justify-between text-xs font-bold text-[#166534]">
-                <span className="flex items-center gap-1">Toque para ver a tela oficial ↗</span>
-                <span className="bg-[#166534] text-white px-3.5 py-1 rounded-full text-[11px] shadow-xs">ACEITAR</span>
+                <span className="flex items-center gap-1 whitespace-nowrap">Toque para ver a tela oficial ↗</span>
+                <span className="bg-[#166534] text-white px-3.5 py-1 rounded-full text-[11px] shadow-xs whitespace-nowrap">ACEITAR</span>
               </div>
             </article>
 
@@ -441,32 +441,32 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
                 const item = SCREENSHOTS.find((s) => s.id === 'viagem-nao-compensa');
                 if (item) setSelectedScreenshot(item);
               }}
-              className="bg-[#fef2f2] border-2 border-[#fca5a5] rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+              className="bg-[#fef2f2] border-2 border-[#fca5a5] rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group cursor-pointer h-full"
             >
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full bg-[#dc2626] text-white tracking-wide font-space shadow-xs">
-                    <XCircle className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-black px-2.5 sm:px-3 py-1 rounded-full bg-[#dc2626] text-white tracking-wide font-space shadow-xs whitespace-nowrap shrink-0">
+                    <XCircle className="w-3.5 h-3.5 shrink-0" />
                     ✕ NÃO COMPENSA
                   </span>
-                  <span className="text-[11px] font-bold text-[#dc2626] bg-white/90 px-2.5 py-0.5 rounded-full border border-[#dc2626]/20">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-[#dc2626] bg-white/90 px-2 sm:px-2.5 py-1 rounded-full border border-[#dc2626]/20 whitespace-nowrap shrink-0">
                     Alerta Vermelho
                   </span>
                 </div>
 
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight">R$ 1,62</span>
-                  <span className="text-sm font-bold text-[#991b1b]">/km · R$ 57,43/h</span>
+                  <span className="font-space font-black text-3xl sm:text-4xl text-[#071d19] tracking-tight whitespace-nowrap">R$ 1,62</span>
+                  <span className="text-xs sm:text-sm font-bold text-[#991b1b] whitespace-nowrap">/km · R$ 57,43/h</span>
                 </div>
                 <h3 className="font-space font-black text-lg text-[#071d19] mb-1">
                   Melhor recusar na hora
                 </h3>
-                <p className="text-xs sm:text-sm text-[#7f1d1d] leading-relaxed mb-4">
-                  R$ 56,47 por 34,9 km (59 min). O copiloto detecta remuneração insuficiente e avisa que você vai pagar para trabalhar se fizer essa corrida.
+                <p className="text-xs sm:text-sm text-[#7f1d1d] leading-relaxed mb-4 min-h-[40px] flex items-center">
+                  R$ 56,47 por 34,9 km (59 min). O copiloto detecta valor insuficiente por km e alerta para não pagar para trabalhar.
                 </p>
 
                 {/* Smartphone Preview Mockup */}
-                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[26px] border-[2.5px] border-[#223530] shadow-md max-w-[190px] group-hover:scale-105 transition-transform duration-300">
+                <div className="relative mx-auto my-2 p-1.5 bg-[#09110e] rounded-[26px] border-[2.5px] border-[#223530] shadow-md max-w-[190px] w-full group-hover:scale-105 transition-transform duration-300">
                   <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black rounded-full z-10 pointer-events-none"></div>
                   <div className="relative aspect-[9/18.5] rounded-[20px] overflow-hidden bg-black flex items-center justify-center">
                     <img
@@ -480,8 +480,8 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
               </div>
 
               <div className="mt-4 pt-3 border-t border-[#dc2626]/15 flex items-center justify-between text-xs font-bold text-[#dc2626]">
-                <span className="flex items-center gap-1">Toque para ver a tela oficial ↗</span>
-                <span className="bg-[#dc2626] text-white px-3.5 py-1 rounded-full text-[11px] shadow-xs">RECUSAR</span>
+                <span className="flex items-center gap-1 whitespace-nowrap">Toque para ver a tela oficial ↗</span>
+                <span className="bg-[#dc2626] text-white px-3.5 py-1 rounded-full text-[11px] shadow-xs whitespace-nowrap">RECUSAR</span>
               </div>
             </article>
           </div>

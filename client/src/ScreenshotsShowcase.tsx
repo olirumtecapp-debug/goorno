@@ -75,13 +75,13 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'viagem-compensa',
-    filename: 'corrida-aprovada-real.png',
+    filename: 'ViagemCompensa.png',
     title: 'Chamada Lucrativa: ✓ COMPENSA',
     category: 'cards_flutuantes',
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '🟢 CORRIDA APROVADA',
     badgeType: 'green',
-    summary: 'Card verde indicando corrida com excelente margem financeira (R$ 11,58 por 2,7 km em 10 min · R$ 4,29/km · R$ 69,48/h e passageiro nota 4,95).',
+    summary: 'Card verde com veredito instantâneo aprovando a corrida (✓ COMPENSA: R$ 6,62 · 2,3 km em 10 min · R$ 2,88/km · R$ 39,72/h · passageiro nota 4,88).',
     highlightText: 'Dinheiro no bolso garantido: cálculo automático descontando combustível e desgaste real do veículo.'
   },
   {
@@ -103,7 +103,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: 'Cards Flutuantes & Prática',
     badge: '🔴 NÃO COMPENSA',
     badgeType: 'red',
-    summary: 'Card com contorno vermelho destacando corrida com remuneração insuficiente para cobrir seus custos reais (R$ 56,47 por 34,9 km em 59 min · R$ 1,62/km · R$ 57,43/h).',
+    summary: 'Card com contorno vermelho alertando corrida no prejuízo (✕ NÃO COMPENSA: R$ 56,47 · 34,9 km em 59 min · R$ 1,62/km · R$ 57,43/h · passageiro nota 4,89).',
     highlightText: 'Proteja seu patrimônio e evite pagar para trabalhar! Recuse ofertas longas ou trânsito pesado que geram prejuízo disfarçado.'
   },
 
@@ -408,7 +408,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   <Maximize2 className="w-4 h-4 text-[#d9ff4f]/60 group-hover:text-[#d9ff4f] transition" />
                 </div>
                 <p className="text-xs text-white/90 leading-relaxed font-dm">
-                  R$ 28,50 por 6,2 km (R$ 4,60/km · R$ 106,87/h). O GoOrNo aprova na hora com card verde destacando alta rentabilidade.
+                  R$ 6,62 por 2,3 km (R$ 2,88/km · R$ 39,72/h). O GoOrNo aprova na hora com card verde destacando alta margem.
                 </p>
                 <div className="mt-3 text-[11px] font-bold text-[#d9ff4f] underline">
                   Toque para ver o card Compensa →
@@ -430,7 +430,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
                   <Maximize2 className="w-4 h-4 text-[#ff6e58]/60 group-hover:text-[#ff6e58] transition" />
                 </div>
                 <p className="text-xs text-white/90 leading-relaxed font-dm">
-                  R$ 37,15 por 23,2 km (R$ 1,60/km · R$ 39,11/h). O GoOrNo avisa em vermelho que a remuneração por km e por hora geram prejuízo real.
+                  R$ 56,47 por 34,9 km (R$ 1,62/km · R$ 57,43/h). O GoOrNo avisa em vermelho para não pagar para trabalhar em viagens longas com km insuficiente.
                 </p>
                 <div className="mt-3 text-[11px] font-bold text-[#ff6e58] underline">
                   Toque para ver o card Não Compensa →
