@@ -995,13 +995,13 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.json({
-    versionName: "3.3.51",
-    versionCode: 72,
+    versionName: "3.3.52",
+    versionCode: 73,
     releaseDate: "2026-10-24",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.51.apk",
-    directDownload: "/GoOrNo-v3.3.51.apk",
-    fileSizeBytes: 55336412,
-    fileSizeFormatted: "55.3 MB",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.52.apk",
+    directDownload: "/GoOrNo-v3.3.52.apk",
+    fileSizeBytes: 55356892,
+    fileSizeFormatted: "55.4 MB",
     changelog: [
       "✉️ Fale Conosco Integrado no App: Canal direto de Caixa Postal adicionado nas telas de Ajustes e no topo do app para envio de dúvidas, sugestões e suporte diretamente ao desenvolvedor.",
       "🎨 Redesign Moderno da Caixa Postal no Site e no App: Modal totalmente reestilizado com a paleta escura obsidian, neon volt e bordas esmeralda do GoOrNo.",
@@ -1113,37 +1113,37 @@ app.delete("/api/contact/:id", async (req, res) => {
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
-  "/GoOrNo-v3.3.51.apk",
-  "/GoOrNo-v3.3.50.apk",
-  "/GoOrNo-v3.3.49.apk",
-  "/GoOrNo-v3.3.48.apk",
-  "/GoOrNo-v3.3.47.apk",
+  "/GoOrNo-v3.3.52.apk",
+  "/GoOrNo-v3.3.52.apk",
+  "/GoOrNo-v3.3.52.apk",
+  "/GoOrNo-v3.3.52.apk",
+  "/GoOrNo-v3.3.52.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
-  "/download/GoOrNo-v3.3.48.apk",
-  "/download/GoOrNo-v3.3.47.apk"
+  "/download/GoOrNo-v3.3.52.apk",
+  "/download/GoOrNo-v3.3.52.apk"
 ], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.51.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.51.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.51.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.50.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.48.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.48.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.48.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.52.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.52.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.52.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.52.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.52.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.52.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.52.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.47.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.47.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.52.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.52.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.52.apk"),
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.48.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.52.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");
