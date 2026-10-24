@@ -701,54 +701,39 @@ export function DownloadLandingPage({ onOpenSimulator, onOpenAdmin }: DownloadLa
         <section className="section-shell py-10" id="recursos-inteligentes">
           <div className="bg-gradient-to-br from-[#051713] via-[#071f1a] to-[#0c3128] rounded-3xl p-6 sm:p-10 text-white border border-[#175244] shadow-2xl relative overflow-hidden">
             {/* Header da Seção */}
-            <div className="text-center max-w-3xl mx-auto mb-10">
+            <div className="text-center max-w-4xl mx-auto mb-10">
               <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#d9ff4f]/15 text-[#d9ff4f] border border-[#d9ff4f]/30 font-space font-bold text-xs uppercase tracking-wider mb-3">
                 <Sparkles className="w-3.5 h-3.5" /> Inteligência em Tempo Real no Trânsito
               </span>
-              <h2 className="font-space font-black text-2xl sm:text-4xl text-white mb-3 tracking-tight">
-                Recursos Inteligentes que <span className="text-[#d9ff4f]">Nenhum Outro App Tem</span>
+              <h2 className="font-space font-black text-2xl sm:text-3xl lg:text-4xl text-white mb-3 tracking-tight text-balance leading-tight">
+                Recursos Inteligentes que <span className="text-[#d9ff4f] inline-block">Nenhum Outro App Tem</span>
               </h2>
-              <p className="font-dm text-sm sm:text-base text-[#c2d5cd] leading-relaxed">
+              <p className="font-dm text-sm sm:text-base text-[#c2d5cd] leading-relaxed max-w-2xl mx-auto text-balance">
                 O GoOrNo não analisa apenas preço por km. Ele lê o contexto completo da chamada para proteger seu tempo, seu carro e a sua segurança na rua.
               </p>
             </div>
 
-            {/* Banner Ilustrado com Mapa Inteligente e Badges */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center mb-12 bg-white/5 rounded-3xl p-5 sm:p-8 border border-white/10">
-              <div className="lg:col-span-7 flex flex-col justify-center">
+            {/* Banner Ilustrado com Mapa Inteligente e Filtros */}
+            <div className="mb-12 bg-white/5 rounded-3xl p-5 sm:p-8 border border-white/10">
+              <div className="max-w-3xl mb-6">
                 <span className="text-xs font-black font-space text-[#d9ff4f] uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4" /> Filtros Ativos Automáticos
+                  <ShieldCheck className="w-4 h-4 text-[#d9ff4f]" /> Filtros Ativos Automáticos
                 </span>
-                <h3 className="font-space font-bold text-xl sm:text-2xl text-white mb-3">
+                <h3 className="font-space font-bold text-xl sm:text-2xl text-white mb-2">
                   Decisão Instantânea com Leitura Visual de Risco e Rentabilidade
                 </h3>
-                <p className="font-dm text-xs sm:text-sm text-[#b8ccc3] leading-relaxed mb-5">
+                <p className="font-dm text-xs sm:text-sm text-[#b8ccc3] leading-relaxed">
                   Enquanto a chamada toca na tela por apenas 10 a 15 segundos, o GoOrNo cruza o endereço de embarque e desembarque, verifica paradas intermediárias, alerta sobre atacadistas de compras e carimba os seus bairros prediletos.
                 </p>
-                <div className="rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-black/40 p-2">
-                  <img
-                    src="/assets/recursos-inteligentes-badges.png"
-                    alt="Badges inteligentes de recursos do GoOrNo"
-                    className="w-full h-auto rounded-xl object-contain hover:scale-[1.02] transition duration-300"
-                    loading="lazy"
-                  />
-                </div>
               </div>
 
-              <div className="lg:col-span-5 flex justify-center">
-                <div className="relative rounded-3xl overflow-hidden border border-emerald-500/30 shadow-2xl max-w-[340px] group">
-                  <img
-                    src="/assets/mapa-inteligente-ilustracao.png"
-                    alt="Ilustração do App GoOrNo com Mapa Inteligente no Trânsito"
-                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none flex items-end p-4">
-                    <span className="text-xs font-bold text-white font-space bg-black/60 backdrop-blur-xs px-3 py-1.5 rounded-full border border-white/20">
-                      🛰️ Copiloto Ativo sobre Uber & 99
-                    </span>
-                  </div>
-                </div>
+              <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 p-2 sm:p-3 max-w-4xl mx-auto">
+                <img
+                  src="/assets/mapa-inteligente-ilustracao.png"
+                  alt="Ilustração do App GoOrNo com Mapa Inteligente e Filtros Ativos no Trânsito"
+                  className="w-full h-auto rounded-xl object-contain hover:scale-[1.01] transition duration-300"
+                  loading="lazy"
+                />
               </div>
             </div>
 
