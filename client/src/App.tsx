@@ -597,9 +597,34 @@ export function App() {
           window.location.hash = 'app';
           setShowDriverApp(true);
         }}
+        onSecretAdmin={() => {
+          window.location.hash = 'admin';
+          setIsAdminView(true);
+        }}
       />
     );
   }
+
+  // Atalho secreto mobile: 5 toques no logo do app abrem o painel admin
+  const appLogoTapRef = useRef<{ count: number; lastTime: number }>({ count: 0, lastTime: 0 });
+  const handleAppLogoTap = () => {
+    const now = Date.now();
+    if (now - appLogoTapRef.current.lastTime < 1800) {
+      appLogoTapRef.current.count += 1;
+    } else {
+      appLogoTapRef.current.count = 1;
+    }
+    appLogoTapRef.current.lastTime = now;
+
+    if (appLogoTapRef.current.count >= 5) {
+      appLogoTapRef.current.count = 0;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate([40, 60, 40]); } catch (_) {}
+      }
+      window.location.hash = 'admin';
+      setIsAdminView(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#031B17] text-white flex justify-center select-none font-sans">
@@ -608,7 +633,7 @@ export function App() {
         
         {/* TOP COMPACT APP HEADER */}
         <header className="px-4 pt-3 pb-2.5 bg-[#073B32] border-b border-[#115E50]/60 flex items-center justify-between sticky top-0 z-30">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 cursor-pointer select-none active:scale-95 transition-transform" onClick={handleAppLogoTap}>
             <img
               src="/logo-goorno.png"
               alt="GoOrNo"

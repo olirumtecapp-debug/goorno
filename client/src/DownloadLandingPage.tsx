@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   LEGAL_METADATA,
   INDEPENDENCE_DISCLAIMER,
@@ -41,9 +41,34 @@ import { SCREENSHOTS, ScreenshotItem } from './ScreenshotsShowcase';
 
 interface DownloadLandingPageProps {
   onOpenSimulator?: () => void;
+  onSecretAdmin?: () => void;
 }
 
-export function DownloadLandingPage({ onOpenSimulator }: DownloadLandingPageProps) {
+export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: DownloadLandingPageProps) {
+  // Atalho secreto mobile: 5 toques no logo abrem o painel admin
+  const logoTapRef = useRef<{ count: number; lastTime: number }>({ count: 0, lastTime: 0 });
+  const handleLogoTap = () => {
+    const now = Date.now();
+    if (now - logoTapRef.current.lastTime < 1800) {
+      logoTapRef.current.count += 1;
+    } else {
+      logoTapRef.current.count = 1;
+    }
+    logoTapRef.current.lastTime = now;
+
+    if (logoTapRef.current.count >= 5) {
+      logoTapRef.current.count = 0;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate([40, 60, 40]); } catch (_) {}
+      }
+      if (onSecretAdmin) {
+        onSecretAdmin();
+      } else {
+        window.location.hash = 'admin';
+      }
+    }
+  };
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -115,7 +140,7 @@ export function DownloadLandingPage({ onOpenSimulator }: DownloadLandingPageProp
     <div className="font-dm min-h-screen bg-[#f3f5ed] text-[#071d19] selection:bg-[#d9ff4f] selection:text-[#071d19]">
       {/* HEADER FIXO SUPERIOR */}
       <header className="site-header">
-        <a href="#top" className="brand" onClick={(e) => { e.preventDefault(); scrollToSection('top'); }}>
+        <a href="#top" className="brand" onClick={(e) => { e.preventDefault(); handleLogoTap(); scrollToSection('top'); }}>
           <img
             src="/assets/logo-goorno-clean.png"
             alt="GoOrNo"
