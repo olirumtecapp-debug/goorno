@@ -606,8 +606,7 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
-        val repTag = if (result.isRepeatedOffer) " · 🔁 REPETIDO" else ""
-        val headerLabel = "$seqTag$distStr · $minStr$repTag"
+        val headerLabel = "$seqTag$distStr · $minStr"
 
         val tvHeader = TextView(context).apply {
             text = headerLabel
@@ -682,79 +681,7 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         contentArea.addView(tvMetrics)
 
-        // Alerta Destacado de Zona de Risco ou Região Favorita (se houver)
-        if (result.hasRiskAlert) {
-            val riskRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                background = roundedCardBg("#3F0E0E", "#EF4444", 8f, 1)
-                setPadding(dp(8), dp(4), dp(8), dp(4))
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = dp(6)
-                }
-            }
-            val tvRisk = TextView(context).apply {
-                text = result.riskAlertBadge.orEmpty().ifBlank { "⚠️ Área de risco" }
-                setTextColor(Color.parseColor("#FCA5A5"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
-                setTypeface(typeface, Typeface.BOLD)
-                maxLines = 2
-                ellipsize = android.text.TextUtils.TruncateAt.END
-            }
-            riskRow.addView(tvRisk)
-            contentArea.addView(riskRow)
-        } else if (result.isFavoriteZone) {
-            val favRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                background = roundedCardBg("#052E16", "#22C55E", 8f, 1)
-                setPadding(dp(8), dp(4), dp(8), dp(4))
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = dp(6)
-                }
-            }
-            val tvFav = TextView(context).apply {
-                text = "⭐ REGIÃO FAVORITA: ${result.favoriteZoneBadge.orEmpty().ifBlank { "Destino Preferido" }}"
-                setTextColor(Color.parseColor("#86EFAC"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
-                setTypeface(typeface, Typeface.BOLD)
-                setSingleLine(true)
-                ellipsize = android.text.TextUtils.TruncateAt.END
-            }
-            favRow.addView(tvFav)
-            contentArea.addView(favRow)
-        }
 
-        if (!result.operationalBadge.isNullOrBlank()) {
-            val opRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                background = roundedCardBg(if (isDark) "#1E222D" else "#F1F5F9", if (isDark) "#F59E0B" else "#D97706", 8f, 1)
-                setPadding(dp(8), dp(4), dp(8), dp(4))
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = dp(6)
-                }
-            }
-            val tvOp = TextView(context).apply {
-                text = result.operationalBadge
-                setTextColor(Color.parseColor(if (isDark) "#FDE047" else "#B45309"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
-                setTypeface(typeface, Typeface.BOLD)
-                maxLines = 2
-                ellipsize = android.text.TextUtils.TruncateAt.END
-            }
-            opRow.addView(tvOp)
-            contentArea.addView(opRow)
-        }
 
         card.addView(contentArea)
 
@@ -774,6 +701,9 @@ class FloatingOverlayPanel(private val context: Context) {
         card.addView(bannerBottom)
 
         rootLayout.addView(card)
+        buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
+            rootLayout.addView(auxPill)
+        }
         return rootLayout
     }
 
@@ -870,8 +800,7 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
-        val repTag = if (result.isRepeatedOffer) " · 🔁 REPETIDO" else ""
-        val summaryText = "$seqTag${formatCurrency(price)} · $minStr · $distStr$repTag"
+        val summaryText = "$seqTag${formatCurrency(price)} · $minStr · $distStr"
 
         val tvSummary = TextView(context).apply {
             text = summaryText
@@ -1015,50 +944,215 @@ class FloatingOverlayPanel(private val context: Context) {
 
         card.addView(pillarsRow)
 
-        // Alerta de Zona de Risco ou Região Favorita (se houver)
-        if (result.hasRiskAlert) {
-            val tvRisk = TextView(context).apply {
-                text = result.riskAlertBadge.orEmpty().ifBlank { "⚠️ Área de risco" }
-                setTextColor(Color.parseColor("#EF4444"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, dp(6), 0, 0)
-                gravity = Gravity.CENTER
-                maxLines = 2
-                ellipsize = android.text.TextUtils.TruncateAt.END
-            }
-            card.addView(tvRisk)
-        } else if (result.isFavoriteZone) {
-            val tvFav = TextView(context).apply {
-                text = "⭐ REGIÃO FAVORITA: ${result.favoriteZoneBadge.orEmpty().ifBlank { "Destino Preferido" }}"
-                setTextColor(Color.parseColor("#16A34A"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, dp(6), 0, 0)
-                gravity = Gravity.CENTER
-                setSingleLine(true)
-                ellipsize = android.text.TextUtils.TruncateAt.END
-            }
-            card.addView(tvFav)
-        }
-
-        if (!result.operationalBadge.isNullOrBlank()) {
-            val tvOp = TextView(context).apply {
-                text = result.operationalBadge
-                setTextColor(Color.parseColor(if (isDark) "#F59E0B" else "#D97706"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, dp(6), 0, 0)
-                gravity = Gravity.CENTER
-                maxLines = 2
-                ellipsize = android.text.TextUtils.TruncateAt.END
-            }
-            card.addView(tvOp)
-        }
-
         rootLayout.addView(card)
+
+        // Janelinha Auxiliar de Alertas Acoplada (Abre, fecha e arrasta sincronizada com o card principal)
+        buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
+            rootLayout.addView(auxPill)
+        }
+
         return rootLayout
     }
+    // =========================================================================
+    // JANELINHA AUXILIAR DE ALERTAS ACOPLADA (DESIGN IMAGENS 4 E 5)
+    // Acoplada logo abaixo do card principal no rootLayout.
+    // Abre, fecha e move sincronizada sem poluir ou desconfigurar as proporções do card.
+    // =========================================================================
+    private data class AlertPillItem(
+        val icon: String,
+        val label: String,
+        val detail: String,
+        val labelColor: Int,
+        val detailColor: Int
+    )
+
+    private fun buildAuxiliaryAlertPill(
+        result: FinancialEvaluationResult,
+        isDark: Boolean
+    ): View? {
+        val alerts = mutableListOf<AlertPillItem>()
+
+        // 1. Área de Risco (Alerta prioritário de segurança)
+        if (result.hasRiskAlert) {
+            val riskText = result.riskAlertBadge.orEmpty().ifBlank { "Região de Atenção" }
+            alerts.add(
+                AlertPillItem(
+                    icon = "⚠️",
+                    label = "ÁREA DE RISCO:",
+                    detail = riskText,
+                    labelColor = Color.parseColor(if (isDark) "#F87171" else "#DC2626"),
+                    detailColor = Color.parseColor(if (isDark) "#FECACA" else "#991B1B")
+                )
+            )
+        }
+
+        // 2. Supermercado (Atacadista / Compras) - Idêntico à Imagem 4
+        if (result.isSupermarket) {
+            val sName = result.supermarketName ?: "Atacadista / Compras"
+            alerts.add(
+                AlertPillItem(
+                    icon = "🛒",
+                    label = "SUPERMERCADO:",
+                    detail = sName,
+                    labelColor = Color.parseColor(if (isDark) "#F6C764" else "#B45309"),
+                    detailColor = Color.parseColor(if (isDark) "#F6E3B4" else "#78350F")
+                )
+            )
+        }
+
+        // 3. Paradas Intermediárias - Idêntico à Imagem 5
+        if (!result.stopsDescription.isNullOrBlank()) {
+            alerts.add(
+                AlertPillItem(
+                    icon = "🛑",
+                    label = "PARADAS:",
+                    detail = result.stopsDescription,
+                    labelColor = Color.parseColor(if (isDark) "#7DD3FC" else "#0284C7"),
+                    detailColor = Color.parseColor(if (isDark) "#BAE6FD" else "#0369A1")
+                )
+            )
+        }
+
+        // 4. Chamado Repetido (Oferta reemitida pelo app)
+        if (result.isRepeatedOffer) {
+            alerts.add(
+                AlertPillItem(
+                    icon = "🔁",
+                    label = "CHAMADO REPETIDO:",
+                    detail = "Oferta reemitida",
+                    labelColor = Color.parseColor(if (isDark) "#FB923C" else "#EA580C"),
+                    detailColor = Color.parseColor(if (isDark) "#FED7AA" else "#7C2D12")
+                )
+            )
+        }
+
+        // 5. Embarque Longe (Distância até o passageiro > 2 km)
+        if (result.isDistantPickup) {
+            val kmText = result.offer.pickupDistanceKm?.let {
+                String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it)
+            } ?: ""
+            val detailText = if (kmText.isNotBlank()) "$kmText até passageiro" else "Passageiro distante"
+            alerts.add(
+                AlertPillItem(
+                    icon = "⚠️",
+                    label = "EMB. LONGE:",
+                    detail = detailText,
+                    labelColor = Color.parseColor(if (isDark) "#FDE047" else "#CA8A04"),
+                    detailColor = Color.parseColor(if (isDark) "#FEF08A" else "#713F12")
+                )
+            )
+        }
+
+        // 6. Região Favorita
+        if (result.isFavoriteZone && !result.hasRiskAlert) {
+            val favText = result.favoriteZoneBadge.orEmpty().ifBlank { "Destino Preferido" }
+            alerts.add(
+                AlertPillItem(
+                    icon = "⭐",
+                    label = "REGIÃO FAVORITA:",
+                    detail = favText,
+                    labelColor = Color.parseColor(if (isDark) "#4ADE80" else "#16A34A"),
+                    detailColor = Color.parseColor(if (isDark) "#BBF7D0" else "#14532D")
+                )
+            )
+        }
+
+        // 7. Viagem Longa
+        if (result.isLongTrip && alerts.size < 2) {
+            val timeText = if ((result.totalConsideredDurationMin ?: 0) >= 60) {
+                val h = (result.totalConsideredDurationMin ?: 0) / 60
+                val m = (result.totalConsideredDurationMin ?: 0) % 60
+                if (m > 0) "${h}h ${m}m" else "${h}h"
+            } else {
+                "${result.totalConsideredDurationMin ?: 0} min"
+            }
+            alerts.add(
+                AlertPillItem(
+                    icon = "⏱️",
+                    label = "VIAGEM LONGA:",
+                    detail = "$timeText de viagem",
+                    labelColor = Color.parseColor(if (isDark) "#818CF8" else "#4F46E5"),
+                    detailColor = Color.parseColor(if (isDark) "#C7D2FE" else "#312E81")
+                )
+            )
+        }
+
+        // 8. Fallback operacional caso haja outro aviso não mapeado
+        if (alerts.isEmpty() && !result.operationalBadge.isNullOrBlank()) {
+            alerts.add(
+                AlertPillItem(
+                    icon = "⚡",
+                    label = "AVISO:",
+                    detail = result.operationalBadge,
+                    labelColor = Color.parseColor(if (isDark) "#F59E0B" else "#D97706"),
+                    detailColor = Color.parseColor(if (isDark) "#FDE68A" else "#78350F")
+                )
+            )
+        }
+
+        if (alerts.isEmpty()) return null
+
+        val container = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(6)
+            }
+        }
+
+        val pillBgHex = if (isDark) "#061510" else "#F1F5F9"
+        val pillStrokeHex = if (isDark) "#174334" else "#CBD5E1"
+
+        alerts.take(2).forEachIndexed { i, alert ->
+            val pill = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = roundedCardBg(pillBgHex, pillStrokeHex, 16f, 1)
+                setPadding(dp(12), dp(5), dp(12), dp(5))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    if (i > 0) topMargin = dp(4)
+                }
+            }
+
+            val tvIcon = TextView(context).apply {
+                text = alert.icon
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                setPadding(0, 0, dp(6), 0)
+            }
+            pill.addView(tvIcon)
+
+            val tvLabel = TextView(context).apply {
+                text = "${alert.label} "
+                setTextColor(alert.labelColor)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+                setSingleLine(true)
+            }
+            pill.addView(tvLabel)
+
+            val tvDetail = TextView(context).apply {
+                text = alert.detail
+                setTextColor(alert.detailColor)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(Typeface.MONOSPACE, Typeface.NORMAL)
+                setSingleLine(true)
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                maxWidth = dp(210)
+            }
+            pill.addView(tvDetail)
+
+            container.addView(pill)
+        }
+
+        return container
+    }
+
 
     @SuppressLint("ClickableViewAccessibility")
     private fun buildModernSpeechBubbleCardView(

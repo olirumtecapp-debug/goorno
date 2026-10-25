@@ -6,19 +6,19 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.52",
-    versionCode: 73,
-    releaseDate: "2026-10-24",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.52.apk",
-    directDownload: "/GoOrNo-v3.3.52.apk",
+    versionName: "3.3.53",
+    versionCode: 74,
+    releaseDate: "2026-10-25",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.53.apk",
+    directDownload: "/GoOrNo-v3.3.53.apk",
     fileSizeBytes: 55356892,
     fileSizeFormatted: "55.4 MB",
     changelog: [
-      "⚡ Leitura Instantânea Uber & 99: Leitura de primeira chamada na Uber destravada e resposta imediata na transição entre 99 e outros aplicativos.",
-      "✉️ Fale Conosco Integrado no App: Canal direto de Caixa Postal adicionado nas telas de Ajustes e no topo do app para envio de dúvidas, sugestões e suporte diretamente ao desenvolvedor.",
-      "🎨 Redesign Moderno da Caixa Postal no Site e no App: Modal totalmente reestilizado com a paleta escura obsidian, neon volt e bordas esmeralda do GoOrNo.",
-      "🛡️ Adequação Jurídica & LGPD v1.3: Termos, Privacidade, CDC Art. 49 (Direito de arrependimento em 7 dias com estorno PIX) e segurança de PIN com salt dinâmico e bloqueio anti-brute-force.",
-      "⚡ Estabilidade e Robustez: Preservação total de todo o leitor inteligente de ofertas Uber e 99."
+      "✨ Janelinha Auxiliar de Alertas Acoplada: Alertas operacionais (Supermercado, Paradas, Chamado Repetido, Embarque Longe, Área de Risco) agora são exibidos em uma janelinha auxiliar translúcida e elegante acoplada abaixo do card principal.",
+      "🎯 Card 3 Pilares Totalmente Desafogado: O card principal fica 100% limpo, com proporções preservadas e foco total no valor, tempo, distância e nos 3 pilares (R$/km, R$/hora e nota).",
+      "🔗 Sincronização Perfeita: A janelinha auxiliar abre, fecha e é arrastada na tela sincronizada automaticamente com o card.",
+      "⚡ Leitura Instantânea Uber & 99: Preservação total de todo o leitor inteligente de ofertas e motor financeiro.",
+      "🛡️ Estabilidade & Robustez: Desempenho ultra leve e responsivo."
     ],
     mandatory: false,
   });
