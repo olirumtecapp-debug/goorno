@@ -1,39 +1,33 @@
-# CHECKPOINT GOORNO — Checkpoint #023 (v3.3.56 - Build 77)
-**Data:** 26 de Outubro de 2026 (13h25)  
-**Status do Projeto:** ✅ Card Clássico com Bloco na Direita (Só a Cor), Card Compacto Grande (25sp), Filtro de Telas 99 & Fim de Falhas
+# CHECKPOINT GOORNO — Checkpoint #024 (v3.3.57 - Build 78)
+**Data:** 26 de Outubro de 2026 (15h10)  
+**Status do Projeto:** ✅ Filtro "Agradecemos sua resposta", Separação de Endereços, Bloco na Direita (Só a Cor), Card Compacto Grande (25sp) & Estabilidade Total
 
 ---
 
-## 1. O que foi consolidado no Checkpoint #023:
+## 1. O que foi consolidado no Checkpoint #024:
 
-### A. Card Clássico com Bloco na DIREITA (Só a Cor)
-1. **Lado Direito: Bloco Sólido de Cor:**
-   - Barra vertical de cor viva do semáforo (Verde, Âmbar, Vermelho) posicionada na lateral direita.
-   - **Sem texto, sem ícone, só a cor** para identificação instantânea pela visão periférica.
-2. **Lado Esquerdo: Dados Claros e Limpos:**
-   - `R$ 1,92 /km` grande em destaque.
-   - `R$ 33,33/h ★ 4,92` perfeitamente alinhados.
-   - `[99] 18 min - 5,2 km` com badge compacto.
-   - Borda sutil de 1dp, sem contornos pesados.
+### A. Filtro Anti-Sujeira "Agradecemos sua resposta"
+1. **Origem do Problema:**
+   - Na 99, ao recusar uma corrida anterior ou responder a um motivo de recusa, o app exibe a mensagem de feedback/toast: *"Agradecemos sua resposta"*.
+   - Quando a nova corrida tocou, essa mensagem ainda estava em tela/memória de acessibilidade e acabou sendo engolida pelo parser como se fosse parte da rua, fundindo a Origem com o Destino.
+2. **Solução Aplicada em `BrazilianOfferParser.kt`:**
+   - Adicionada limpeza e corte automático em `cleanAddressCandidate` e `isOfferBoundary` para *"Agradecemos sua resposta"*, *"Por que você recusou"*, *"Motivo da recusa"*.
+   - Removido o prefixo `0 (9 min 3,1 km)` que sobrava no início da rua.
+   - Origem (Embarque) e Destino (Desembarque) agora ficam estritamente separados em seus respectivos campos.
 
-### B. Card Compacto 3 Pilares (Super Legível - Números Grandes 25sp)
-1. **Tamanho Real para Direção:**
-   - Números de `R$/Km`, `R$/Hora` e `Nota` aumentados para **25sp Bold**.
-   - Barrinhas indicadoras mais nítidas (5dp x 24dp).
-   - Card super enxuto em altura (sem valor total gigante no topo), mas com máxima legibilidade.
+### B. Card Clássico Dividido (Bloco na DIREITA — Só a Cor)
+- Bloco vertical sólido posicionado no **lado direito** (`dp(40)` x `dp(66)`), **sem texto e sem ícone nenhum**, na cor pura do semáforo.
+- Dados da corrida alinhados na esquerda com fundo escuro grafite `#131418` e borda sutil de 1dp.
 
-### C. Filtro Anti-Sujeira de Modais da 99
-1. **Eliminação de Cards Fantasmas em Telas de Aviso:**
-   - Adicionado bloqueio específico para "Várias solicitações seguidas recusadas", "Confirma se ainda quer receber solicitações", "Pausado", etc.
-   - O app não gera mais nenhuma leitura ou overlay quando a 99 exibe essas caixas de diálogo.
+### C. Card Compacto 3 Pilares (Super Legível — Números Grandes 25sp)
+- Números de `R$/Km`, `R$/Hora` e `Nota` em **25sp Bold**, com barrinhas nítidas e altura total ultra-compacta.
 
-### D. Eliminação do Crash do Android
-- Removido `clipToOutline` que causava `IllegalArgumentException` em renderizações com `GradientDrawable`.
-- Estabilização completa do overlay e do serviço de acessibilidade.
+### D. Eliminação de Crashes do Android
+- Removido `clipToOutline` incompatível com gradientes e estabilizado o serviço de acessibilidade.
 
 ### E. Compatibilidade Google Play Protect
-- `https://goorno-app.vercel.app/GoOrNo-v3.3.53.apk` permanece **100% ativa e intocada** para a análise do Google.
-- Nova versão para testes na rua: **`v3.3.56 (Build 77)`**.
+- `https://goorno-app.vercel.app/GoOrNo-v3.3.53.apk` permanece **100% ativa e intocada** para o Play Protect.
+- Nova versão para testes na rua: **`v3.3.57 (Build 78)`**.
 
 ---
 
@@ -41,11 +35,11 @@
 
 | Recurso | URL | Status |
 |---|---|---|
-| **Download APK v3.3.56** | `https://goorno-app.vercel.app/GoOrNo-v3.3.56.apk` | ✅ Build 77 |
+| **Download APK v3.3.57** | `https://goorno-app.vercel.app/GoOrNo-v3.3.57.apk` | ✅ Build 78 |
 | **Download APK v3.3.53 (Play Protect)** | `https://goorno-app.vercel.app/GoOrNo-v3.3.53.apk` | ✅ Preservado p/ Google |
-| **Central de Continuidade** | `http://localhost:3010` | ✅ Checkpoint #023 |
+| **Central de Continuidade** | `http://localhost:3010` | ✅ Checkpoint #024 |
 
 ---
 
 ## 3. Frase de Emergência / Rollback:
-> *"Antigravity, deu ruim no GoOrNo! Volte para o Checkpoint #023!"*
+> *"Antigravity, deu ruim no GoOrNo! Volte para o Checkpoint #024!"*

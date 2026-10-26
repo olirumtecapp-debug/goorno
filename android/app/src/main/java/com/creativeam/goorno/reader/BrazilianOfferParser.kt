@@ -540,10 +540,19 @@ object BrazilianOfferParser {
         var clean = rawText.trim()
         if (clean.length < 3) return null
 
+        // 0. Remove lixo de sistema/feedbacks de recusa da 99 colados no texto (ex: "Agradecemos sua resposta", "(11 mAgradecemos...")
+        clean = clean.replace(Regex("""(?i)\s*\(?\d*\s*m(?:in)?\)?\s*agradecemos\s+sua\s+resposta.*"""), "").trim()
+        clean = clean.replace(Regex("""(?i)\s*\b(agradecemos\s+sua\s+resposta|agradecemos|sua\s+resposta|por\s+que\s+você\s+recusou|motivo\s+da\s+recusa)\b.*"""), "").trim()
+        clean = clean.replace(Regex("""^[\s•·🟢🟠⬆️⬇️\(\)0O\-]+"""), "").trim()
+
+        if (clean.length < 3) return null
+
         val lower = clean.lowercase(Locale.getDefault())
 
         // Descarta linhas puras de controle, botões de ação ou notificações de sistema
         if (lower.contains("silencioso está ativado") || lower.contains("retornar chamada") ||
+            lower.contains("agradecemos sua resposta") || lower.contains("agradecemos") ||
+            lower.contains("sua resposta") || lower.contains("recusou") ||
             lower.contains("não afeta a ta") || lower.contains("nao afeta a ta") ||
             lower.contains("taxa de aceitação") || lower.contains("taxa de cancelamento") ||
             lower.contains("perfil essencial") || lower.contains("perfil premium") ||
@@ -668,6 +677,8 @@ object BrazilianOfferParser {
                             nextDists.isNotEmpty() ||
                             LEADING_DURATION_DISTANCE_PREFIX_REGEX.containsMatchIn(nextLine)
                         val isOfferBoundary = isLegMarker ||
+                            nextLower.contains("agradecemos") ||
+                            nextLower.contains("sua resposta") ||
                             nextLower.contains("pgto") ||
                             nextLower.contains("uber") ||
                             nextLower.contains("99") ||
@@ -721,6 +732,8 @@ object BrazilianOfferParser {
                                 nextNextDists.isNotEmpty() ||
                                 LEADING_DURATION_DISTANCE_PREFIX_REGEX.containsMatchIn(nextNext)
                             val isOfferBoundary = isLegMarker ||
+                                nextNextLower.contains("agradecemos") ||
+                                nextNextLower.contains("sua resposta") ||
                                 nextNextLower.contains("pgto") ||
                                 nextNextLower.contains("uber") ||
                                 nextNextLower.contains("99") ||
