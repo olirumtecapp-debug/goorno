@@ -153,7 +153,19 @@ object FinancialEngine {
             round2(price / totalDistanceKm)
         } else null
 
-        val durationHours: Double? = if (totalDurationMin != null && totalDurationMin > 0) {
+        // Filtro Anti-Glitch de Transição de Tela:
+        // Evita picos anômalos (ex: R$ 131/h ou R$ 99/h) em transições quando o tempo parcial é ínfimo
+        val isTransitionGlitch = if (totalDistanceKm != null && totalDurationMin != null && totalDurationMin > 0) {
+            val speedKmH = totalDistanceKm / (totalDurationMin.toDouble() / 60.0)
+            (speedKmH > 130.0 && totalDistanceKm > 1.5) || (totalDurationMin < 3 && totalDistanceKm > 1.5)
+        } else false
+
+        if (isTransitionGlitch) {
+            isDurationPartial = true
+            warnings.add("Duração em estabilização (transição de tela detectada).")
+        }
+
+        val durationHours: Double? = if (totalDurationMin != null && totalDurationMin > 0 && !isTransitionGlitch) {
             totalDurationMin.toDouble() / 60.0
         } else null
 
@@ -209,6 +221,11 @@ object FinancialEngine {
         val ratingBadge = formatPassengerRatingBadge(rating, ratingVerdict)
         val ptBr = Locale.forLanguageTag("pt-BR")
 
+        // Lucro compensatório: Se o R$/km e R$/hora atingem com folga a meta do motorista
+        val isFinanciallyCompensatory = baseVerdict == TrafficLightVerdict.GREEN &&
+                (grossPerKm != null && grossPerKm >= config.targetGrossPerKm) &&
+                (grossPerHour == null || grossPerHour >= config.targetGrossPerHour)
+
         val verdictAfterRating = when (ratingVerdict) {
             PassengerRatingVerdict.GOOD -> {
                 reasons.add(
@@ -231,8 +248,14 @@ object FinancialEngine {
                 )
                 warnings.add(msg)
                 if (config.requirePassengerRating && baseVerdict == TrafficLightVerdict.GREEN) {
-                    reasons.add(0, "Nota do passageiro MÉDIA (★ ${String.format(ptBr, "%.2f", rating)}) — Semáforo em Avaliar")
-                    TrafficLightVerdict.YELLOW
+                    if (isFinanciallyCompensatory) {
+                        // CRITÉRIO INTELIGENTE: Viagem paga bem -> NÃO rebaixa para Amarelo! Mantém VERDE.
+                        reasons.add(0, "⭐ Viagem Lucrativa (R$ ${String.format(ptBr, "%.2f", grossPerKm)}/km) — Nota ★ ${String.format(ptBr, "%.2f", rating)} tolerada")
+                        TrafficLightVerdict.GREEN
+                    } else {
+                        reasons.add(0, "Nota do passageiro MÉDIA (★ ${String.format(ptBr, "%.2f", rating)}) — Semáforo em Avaliar")
+                        TrafficLightVerdict.YELLOW
+                    }
                 } else {
                     baseVerdict
                 }

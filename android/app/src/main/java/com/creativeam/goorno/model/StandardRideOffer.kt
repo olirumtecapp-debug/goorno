@@ -168,12 +168,12 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
         subtitle = "Card com resumo no topo, 3 colunas e barras verticais coloridas (Claro ou Escuro)"
     ),
     CLASSIC_LIGHT(
-        title = "Card Clássico (Tradicional)",
-        subtitle = "Formato tradicional com métricas completas e suporte a tema claro ou escuro"
+        title = "Card Clássico (Bloco Lateral)",
+        subtitle = "Métricas completas à esquerda e bloco sólido de cor à direita (sem texto poluído)"
     ),
     MINI_BALL(
-        title = "Bolinha Semáforo (Discreto)",
-        subtitle = "Pílula horizontal limpa com bolinha semáforo e métricas completas sem cortar"
+        title = "Card Compacto (3 Pilares)",
+        subtitle = "Ultra-fino com os 3 pilares sem valor no topo e alertas em janelinhas separadas"
     );
 
     companion object {

@@ -1127,6 +1127,7 @@ app.get([
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.54.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.53.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.53.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.53.apk"),
