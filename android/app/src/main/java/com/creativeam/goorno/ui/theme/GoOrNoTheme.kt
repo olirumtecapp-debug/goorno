@@ -21,11 +21,11 @@ val LimeBright = Color(0xFF97B304)           // Verde-Lima vibrante da logo
 val LimeSoftBg = Color(0xFFF2F8D2)           // Fundo suave lima para badges
 
 // Semáforo Financeiro Moderno
-val TrafficGreen = Color(0xFF059669)
+val TrafficGreen = Color(0xFF10E548)
 val TrafficGreenSoft = Color(0xFFD1FAE5)
-val TrafficYellow = Color(0xFFD97706)
+val TrafficYellow = Color(0xFFFFB800)
 val TrafficYellowSoft = Color(0xFFFEF3C7)
-val TrafficRed = Color(0xFFDC2626)
+val TrafficRed = Color(0xFFFF3B30)
 val TrafficRedSoft = Color(0xFFFEE2E2)
 val TrafficGray = Color(0xFF64748B)
 

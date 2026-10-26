@@ -1237,9 +1237,9 @@ fun GoOrNoComposeApp(
 
                                         // Card Renderizado Fielmente de Acordo com o Estilo Selecionado
                                         val vColor = when (previewVerdictState) {
-                                            "GREEN" -> Color(0xFF00C853)
-                                            "YELLOW" -> Color(0xFFFACC15)
-                                            else -> Color(0xFFEF4444)
+                                            "GREEN" -> Color(0xFF10E548)
+                                            "YELLOW" -> Color(0xFFFFB800)
+                                            else -> Color(0xFFFF3B30)
                                         }
                                         val vText = when (previewVerdictState) {
                                             "GREEN" -> "✓  ACEITAR"
@@ -1433,9 +1433,9 @@ fun GoOrNoComposeApp(
                                                 OverlayDisplayStyle.CLASSIC_LIGHT -> {
                                                     // FORMATO 2: CARD CLÁSSICO DIVIDIDO (BLOCO DE COR SÓLIDO NA DIREITA INTEGRADO)
                                                     Surface(
-                                                        color = Color(0xFF131418),
+                                                        color = Color(0xFF0C0D11),
                                                         shape = RoundedCornerShape(16.dp),
-                                                        border = BorderStroke(1.dp, Color(0xFF27272A)),
+                                                        border = BorderStroke(1.dp, vColor),
                                                         shadowElevation = 8.dp,
                                                         modifier = Modifier.fillMaxWidth().height(78.dp)
                                                     ) {
@@ -1554,11 +1554,11 @@ fun GoOrNoComposeApp(
                                                 }
 
                                                 OverlayDisplayStyle.MINI_BALL -> {
-                                                    // FORMATO COMPACTO 3 PILARES (NÚMEROS GRANDES 26sp BOLD, BARRINHAS NÍTIDAS)
+                                                    // FORMATO COMPACTO 3 PILARES (NÚMEROS GRANDES 22sp BOLD, BARRINHAS NÍTIDAS)
                                                     Surface(
-                                                        color = Color(0xFF131418),
+                                                        color = Color(0xFF0C0D11),
                                                         shape = RoundedCornerShape(16.dp),
-                                                        border = BorderStroke(1.dp, Color(0xFF27272A)),
+                                                        border = BorderStroke(2.dp, vColor),
                                                         shadowElevation = 8.dp,
                                                         modifier = Modifier.fillMaxWidth()
                                                     ) {
@@ -1575,7 +1575,7 @@ fun GoOrNoComposeApp(
                                                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                                                                         Box(modifier = Modifier.size(5.dp, 24.dp).background(vColor, RoundedCornerShape(2.dp)))
                                                                         Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("2,63", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                                                                        Text("2,63", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                                                     }
                                                                 }
                                                                 // Pilar 2: R$/Hora
@@ -1584,7 +1584,7 @@ fun GoOrNoComposeApp(
                                                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                                                                         Box(modifier = Modifier.size(5.dp, 24.dp).background(vColor, RoundedCornerShape(2.dp)))
                                                                         Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("48,43", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                                                                        Text("48,43", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                                                     }
                                                                 }
                                                                 // Pilar 3: Nota
@@ -1593,7 +1593,7 @@ fun GoOrNoComposeApp(
                                                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                                                                         Box(modifier = Modifier.size(5.dp, 24.dp).background(vColor, RoundedCornerShape(2.dp)))
                                                                         Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("4,83", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                                                                        Text("4,83", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                                                     }
                                                                 }
                                                             }
