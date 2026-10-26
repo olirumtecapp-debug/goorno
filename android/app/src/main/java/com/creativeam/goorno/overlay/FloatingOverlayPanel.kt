@@ -387,10 +387,11 @@ class FloatingOverlayPanel(private val context: Context) {
 
 
     // =========================================================================
-    // FORMATO: NOVO CARD COMPACTO 3 PILARES (DESIGN FIEL À IMAGEM 2)
-    // Sem valor em dinheiro grande no topo. Foco total nos 3 pilares limpos
-    // com barrinhas coloridas e linha inferior de tempo e km.
-    // Avisos (Risco, Favorito, etc.) abrem em janelinhas auxiliares separadas abaixo.
+    // FORMATO: NOVO CARD COMPACTO 3 PILARES (SUPER LEGÍVEL - NÚMEROS GRANDES)
+    // - Sem valor em dinheiro grande no topo (super enxuto em altura)
+    // - 3 Pilares com NÚMEROS GRANDES E PESADOS (25sp Bold), fáceis de ler ao dirigir
+    // - Barrinhas verticais nítidas, linha inferior com tempo e distância
+    // - Janelinhas de avisos (Risco, etc.) abrem separadas abaixo.
     // =========================================================================
     @SuppressLint("ClickableViewAccessibility")
     private fun buildMiniBallView(
@@ -410,34 +411,26 @@ class FloatingOverlayPanel(private val context: Context) {
         val minHr = lastKnownConfig?.minGrossPerHour ?: 35.00
 
         val isDark = lastKnownConfig?.overlayTheme != "LIGHT"
-
-        val verdictBorderColor = when (result.verdict) {
-            TrafficLightVerdict.GREEN -> "#00E676"  // Verde Neon
-            TrafficLightVerdict.YELLOW -> "#FFB300" // Âmbar Ouro
-            TrafficLightVerdict.RED -> "#FF1744"    // Vermelho Vivo
-            TrafficLightVerdict.GRAY_NEUTRAL -> "#94A3B8"
-        }
-
-        val cardBgHex = if (isDark) "#0A0B0E" else "#FFFFFF"
-        val primaryTextHex = if (isDark) "#FFFFFF" else "#0F172A"
-        val labelTextHex = if (isDark) "#94A3B8" else "#64748B"
-        val subTextHex = if (isDark) "#E2E8F0" else "#334155"
+        val cardBgHex = "#131418"
+        val primaryTextHex = "#FFFFFF"
+        val labelTextHex = "#94A3B8"
+        val subTextHex = "#CBD5E1"
 
         val kmBarColor = when {
-            grossKm >= targetKm -> "#00E676"
-            grossKm >= minKm -> "#FFB300"
-            else -> "#FF1744"
+            grossKm >= targetKm -> "#22C55E"
+            grossKm >= minKm -> "#F59E0B"
+            else -> "#EF4444"
         }
         val hrBarColor = when {
-            grossHr >= targetHr -> "#00E676"
-            grossHr >= minHr -> "#FFB300"
-            else -> "#FF1744"
+            grossHr >= targetHr -> "#22C55E"
+            grossHr >= minHr -> "#F59E0B"
+            else -> "#EF4444"
         }
-        val ratingColorHex = when (result.passengerRatingVerdict) {
-            PassengerRatingVerdict.GOOD -> "#00E676"
-            PassengerRatingVerdict.MEDIUM -> "#FFB300"
-            PassengerRatingVerdict.BAD -> "#FF1744"
-            else -> if (isDark) "#FFFFFF" else "#0F172A"
+        val ratingBarColor = when (result.passengerRatingVerdict) {
+            PassengerRatingVerdict.GOOD -> "#22C55E"
+            PassengerRatingVerdict.MEDIUM -> "#F59E0B"
+            PassengerRatingVerdict.BAD -> "#EF4444"
+            else -> "#94A3B8"
         }
 
         val rootLayout = LinearLayout(context).apply {
@@ -446,12 +439,12 @@ class FloatingOverlayPanel(private val context: Context) {
             setOnTouchListener(createDragOrTapTouchListener())
         }
 
-        // Card Container Ultra-Compacto
+        // Card Container Horizontal Enxuto (Borda sutil 1dp, sem distorção)
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(8), dp(14), dp(8))
+            setPadding(dp(14), dp(10), dp(14), dp(8))
             background = roundedCardBg(cardBgHex, "#27272A", 16f, 1)
-            layoutParams = LinearLayout.LayoutParams(dp(310), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(325), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -459,7 +452,7 @@ class FloatingOverlayPanel(private val context: Context) {
             }
         }
 
-        // Linha 1: Os 3 Pilares em Colunas com Barrinhas Verticais
+        // Linha 1: Os 3 Pilares em Colunas com NÚMEROS GRANDES (25sp) E BARRINHAS NÍTIDAS
         val pillarsRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -472,18 +465,19 @@ class FloatingOverlayPanel(private val context: Context) {
         fun makePillar(label: String, value: String, barColorHex: String): View {
             val col = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER_HORIZONTAL
+                gravity = Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
             val tvLabel = TextView(context).apply {
                 text = label
                 setTextColor(Color.parseColor(labelTextHex))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                 setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
             }
             val valueRow = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
+                gravity = Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -493,15 +487,16 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             val bar = View(context).apply {
                 background = roundedBg(barColorHex, 2f)
-                layoutParams = LinearLayout.LayoutParams(dp(4), dp(17)).apply {
-                    marginEnd = dp(4)
+                layoutParams = LinearLayout.LayoutParams(dp(5), dp(24)).apply {
+                    marginEnd = dp(5)
                 }
             }
             val tvVal = TextView(context).apply {
                 text = value
                 setTextColor(Color.parseColor(primaryTextHex))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 16.5f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 25f)
                 setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
             }
             valueRow.addView(bar)
             valueRow.addView(tvVal)
@@ -516,98 +511,102 @@ class FloatingOverlayPanel(private val context: Context) {
 
         pillarsRow.addView(makePillar("R$/Km", kmStr, kmBarColor))
         pillarsRow.addView(makePillar("R$/Hora", hrStr, hrBarColor))
-        pillarsRow.addView(makePillar("Nota", ratStr, ratingColorHex))
+        pillarsRow.addView(makePillar("Nota", ratStr, ratingBarColor))
         card.addView(pillarsRow)
 
-        // Linha Divisória Fina
-        val divider = View(context).apply {
-            setBackgroundColor(Color.parseColor(if (isDark) "#1E293B" else "#E2E8F0"))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(1)
-            ).apply {
-                topMargin = dp(6)
-                bottomMargin = dp(6)
-            }
-        }
-        card.addView(divider)
-
-        // Linha 2: Tempo • Distância + App + Timer + Fechar
-        val bottomRow = LinearLayout(context).apply {
+        // Linha 2: Badge do App + Tempo • Distância + Timer + Fechar
+        val subRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            ).apply {
+                topMargin = dp(8)
+            }
         }
+
+        val is99 = offer.sourceApp == SourceApp.NINETY_NINE_DRIVER
+        val isUber = offer.sourceApp == SourceApp.UBER_DRIVER
+
+        val appBadge = TextView(context).apply {
+            when {
+                is99 -> {
+                    text = "99"
+                    setTextColor(Color.parseColor("#000000"))
+                    background = roundedBg("#FACC15", 3f)
+                }
+                isUber -> {
+                    text = "Uber"
+                    setTextColor(Color.parseColor("#000000"))
+                    background = roundedBg("#FFFFFF", 3f)
+                }
+                offer.isSimulated -> {
+                    text = "SIM"
+                    setTextColor(Color.parseColor("#FFFFFF"))
+                    background = roundedBg("#4B5563", 3f)
+                }
+                else -> {
+                    text = offer.sourceApp.displayName.take(5)
+                    setTextColor(Color.parseColor("#FFFFFF"))
+                    background = roundedBg("#4B5563", 3f)
+                }
+            }
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(dp(4), dp(1), dp(4), dp(1))
+        }
+        subRow.addView(appBadge)
 
         val distStr = if (totalKm > 0.0) {
             if (totalKm % 1.0 == 0.0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f km", totalKm)
             else String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", totalKm)
         } else "-- km"
         val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
-        val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
 
-        val tvInfo = TextView(context).apply {
-            text = "— $seqTag$minStr • $distStr"
+        val tvSub = TextView(context).apply {
+            text = "— $minStr • $distStr —"
             setTextColor(Color.parseColor(subTextHex))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
-            setSingleLine(true)
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dp(6)
+            }
         }
-        bottomRow.addView(tvInfo)
-
-        val appShort = when {
-            offer.isSimulated -> "Simulação"
-            offer.sourceApp == SourceApp.UBER_DRIVER -> "Uber"
-            offer.sourceApp == SourceApp.NINETY_NINE_DRIVER -> "99"
-            else -> offer.sourceApp.displayName
-        }
-        val tvApp = TextView(context).apply {
-            text = appShort
-            setTextColor(Color.parseColor(if (isDark) "#94A3B8" else "#64748B"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-            setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(4), 0, dp(6), 0)
-        }
-        bottomRow.addView(tvApp)
+        subRow.addView(tvSub)
 
         val tvTimer = TextView(context).apply {
             text = "${remainingSeconds}s"
-            setTextColor(Color.parseColor(if (isDark) "#94A3B8" else "#64748B"))
+            setTextColor(Color.parseColor("#94A3B8"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(5), dp(1), dp(5), dp(1))
-            background = roundedBg(if (isDark) "#1E293B" else "#F1F5F9", 6f)
+        }
+        subRow.addView(tvTimer)
+
+        val btnClose = TextView(context).apply {
+            text = "✕"
+            setTextColor(Color.parseColor("#CBD5E1"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(dp(5), dp(2), dp(5), dp(2))
+            background = roundedBg("#262930", 4f)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                marginEnd = dp(6)
+                marginStart = dp(6)
             }
-        }
-        activeTimerLabel = tvTimer
-        bottomRow.addView(tvTimer)
-
-        val btnClose = TextView(context).apply {
-            text = "✕"
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-            setTypeface(typeface, Typeface.BOLD)
-            gravity = Gravity.CENTER
-            setPadding(dp(6), dp(2), dp(6), dp(2))
-            background = roundedBg("#DC2626", 8f)
             setOnClickListener { dismissCurrentOfferCardByUser() }
         }
-        bottomRow.addView(btnClose)
+        subRow.addView(btnClose)
 
-        card.addView(bottomRow)
+        card.addView(subRow)
         rootLayout.addView(card)
 
-        // Janelinhas de Alertas Acopladas (Uma para cada aviso, sem encavalar!)
+        // Janelinhas de Alertas Acopladas (Separadas e sem encavalar)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
             rootLayout.addView(auxPill)
         }
@@ -615,17 +614,6 @@ class FloatingOverlayPanel(private val context: Context) {
         return rootLayout
     }
 
-    // =========================================================================
-    // FORMATO OFICIAL: BALÃO DE VEREDITO (ACEITAR / AVALIAR / RECUSAR)
-    // + CARD ESCURO MODERNO COM OS 3 PILARES E BARRAS VERTICAIS COLORIDAS
-    // IDENTICO AO DESIGN DE ALTA VISIBILIDADE DO MERCADO (NÚMEROS GRANDES 28sp)
-    // SUPORTE TOTAL À POSIÇÃO DO BALÃO: ACIMA DO CARTÃO OU ABAIXO DO CARTÃO!
-    // =========================================================================
-    // =========================================================================
-    // FORMATO: CARD IMPACTO PRO - CORRIDA TOCOU (NOVO PADRÃO DE ALTO CONTRASTE)
-    // IDÊNTICO À IMAGEM FORNECIDA PELO USUÁRIO (R$ GIGANTE + VEREDITO SÓLIDO)
-    // =========================================================================
-    @SuppressLint("ClickableViewAccessibility")
     private fun buildBannerProStreetView(
         result: FinancialEvaluationResult,
         index: Int,
@@ -1566,10 +1554,10 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     // =========================================================================
-    // CARD CLÁSSICO DIVIDIDO (DESIGN 100% FIEL À IMAGEM 1)
-    // - Lado Esquerdo: Bloco de Veredito com ícone (✓, !, ✕) e texto (ACEITA, ATENÇÃO, RECUSA)
-    // - Lado Direito: R$/km em destaque grande na cor do veredito, R$/hora, Nota ★ e App + Distância
-    // - Fundo escuro premium, sem bordas grossas toscas, sem encavalamento de textos.
+    // NOVO CARD CLÁSSICO DIVIDIDO (BLOCO DE COR SÓLIDO NA DIREITA - SÓ A COR)
+    // - Lado Esquerdo: Dados da corrida limpos (R$/km em destaque, R$/hora, Nota ★, App + Distância)
+    // - Lado Direito: Bloco vertical sólido na cor do semáforo (SEM TEXTO, SÓ A COR para visão reflexiva)
+    // - Borda sutil 1dp, sem distorção, sem encavalamento de textos.
     // =========================================================================
     @SuppressLint("ClickableViewAccessibility")
     private fun buildClassicSplitCardView(
@@ -1584,41 +1572,15 @@ class FloatingOverlayPanel(private val context: Context) {
         val totalKm = result.totalConsideredDistanceKm ?: 0.0
         val totalMin = result.totalConsideredDurationMin ?: 0
 
-        // Paleta e Veredito idênticos à Imagem 1:
-        val verdictColorHex: String
-        val iconChar: String
-        val verdictText: String
-        val textOnVerdictHex: String
-
-        when (result.verdict) {
-            TrafficLightVerdict.GREEN -> {
-                verdictColorHex = "#22C55E" // Verde vívido
-                iconChar = "✓"
-                verdictText = "ACEITA"
-                textOnVerdictHex = "#052E16"
-            }
-            TrafficLightVerdict.YELLOW -> {
-                verdictColorHex = "#F59E0B" // Âmbar ouro vívido
-                iconChar = "!"
-                verdictText = "ATENÇÃO"
-                textOnVerdictHex = "#000000"
-            }
-            TrafficLightVerdict.RED -> {
-                verdictColorHex = "#EF4444" // Vermelho vívido
-                iconChar = "✕"
-                verdictText = "RECUSA"
-                textOnVerdictHex = "#FFFFFF"
-            }
-            TrafficLightVerdict.GRAY_NEUTRAL -> {
-                verdictColorHex = "#64748B"
-                iconChar = "•"
-                verdictText = "NEUTRO"
-                textOnVerdictHex = "#FFFFFF"
-            }
+        val verdictColorHex = when (result.verdict) {
+            TrafficLightVerdict.GREEN -> "#22C55E"
+            TrafficLightVerdict.YELLOW -> "#F59E0B"
+            TrafficLightVerdict.RED -> "#EF4444"
+            TrafficLightVerdict.GRAY_NEUTRAL -> "#64748B"
         }
 
-        val cardBgHex = "#131418" // Fundo escuro premium
-        val subTextHex = "#9CA3AF" // Cinza suave legível
+        val cardBgHex = "#131418"
+        val subTextHex = "#9CA3AF"
 
         val rootLayout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -1636,50 +1598,17 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(8).toFloat()
-                clipToOutline = true
             }
         }
 
-        // 1. BLOCO DA ESQUERDA (VEREDITO COM ÍCONE E TEXTO - IMAGEM 1)
-        val leftBlock = LinearLayout(context).apply {
+        // 1. SEÇÃO DA ESQUERDA (DADOS DA CORRIDA)
+        val leftSection = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            background = roundedLeftBg(verdictColorHex, 16f)
-            layoutParams = LinearLayout.LayoutParams(dp(72), LinearLayout.LayoutParams.MATCH_PARENT).apply {
-                minimumHeight = dp(78)
-            }
-            setPadding(dp(4), dp(8), dp(4), dp(8))
-        }
-
-        val tvIcon = TextView(context).apply {
-            text = iconChar
-            setTextColor(Color.parseColor(textOnVerdictHex))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
-            setTypeface(typeface, Typeface.BOLD)
-            gravity = Gravity.CENTER
-        }
-        leftBlock.addView(tvIcon)
-
-        val tvVerdict = TextView(context).apply {
-            text = verdictText
-            setTextColor(Color.parseColor(textOnVerdictHex))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f)
-            setTypeface(typeface, Typeface.BOLD)
-            gravity = Gravity.CENTER
-            setPadding(0, dp(1), 0, 0)
-        }
-        leftBlock.addView(tvVerdict)
-
-        card.addView(leftBlock)
-
-        // 2. SEÇÃO DA DIREITA (DADOS DA CORRIDA - IMAGEM 1)
-        val rightSection = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(8), dp(10), dp(8))
+            setPadding(dp(14), dp(8), dp(10), dp(8))
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
-        // Linha 1: R$ 3,09 /km + [timer e fechar]
+        // Linha 1: R$ 1,92 /km + [timer e fechar]
         val row1 = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -1712,7 +1641,6 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         row1.addView(tvKmUnit)
 
-        // Espaçador flexível para empurrar o fechar e timer para a ponta direita
         val spacer1 = View(context).apply {
             layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
         }
@@ -1744,9 +1672,9 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         row1.addView(btnClose)
 
-        rightSection.addView(row1)
+        leftSection.addView(row1)
 
-        // Linha 2: R$ 58,80/h       ★ 4,94
+        // Linha 2: R$ 33,33/h       ★ 4,92
         val row2 = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -1785,9 +1713,9 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             row2.addView(tvRatVal)
         }
-        rightSection.addView(row2)
+        leftSection.addView(row2)
 
-        // Linha 3: [99]  30 min - 9,5 km
+        // Linha 3: [99]  18 min - 5,2 km
         val row3 = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -1852,11 +1780,23 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         row3.addView(tvTrip)
 
-        rightSection.addView(row3)
-        card.addView(rightSection)
+        leftSection.addView(row3)
+        card.addView(leftSection)
+
+        // 2. BLOCO DA DIREITA: BLOCO SÓLIDO DE COR (SEM TEXTO, SÓ A COR PARA VISÃO REFLEXIVA)
+        val rightColorBlock = View(context).apply {
+            background = roundedBg(verdictColorHex, 10f)
+            layoutParams = LinearLayout.LayoutParams(dp(40), dp(66)).apply {
+                marginEnd = dp(8)
+                topMargin = dp(6)
+                bottomMargin = dp(6)
+            }
+        }
+        card.addView(rightColorBlock)
+
         rootLayout.addView(card)
 
-        // Janelinhas de Alertas Acopladas (Separadas uma para cada aviso)
+        // Janelinhas de Alertas Acopladas (Separadas e sem encavalar)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
             rootLayout.addView(auxPill)
         }

@@ -1431,23 +1431,7 @@ fun GoOrNoComposeApp(
                                                 }
 
                                                 OverlayDisplayStyle.CLASSIC_LIGHT -> {
-                                                    // FORMATO 2: CARD CLÁSSICO DIVIDIDO (DESIGN 100% FIEL À IMAGEM 1)
-                                                    val iconText = when (previewVerdictState) {
-                                                        "GREEN" -> "✓"
-                                                        "YELLOW" -> "!"
-                                                        else -> "✕"
-                                                    }
-                                                    val verdictLabel = when (previewVerdictState) {
-                                                        "GREEN" -> "ACEITA"
-                                                        "YELLOW" -> "ATENÇÃO"
-                                                        else -> "RECUSA"
-                                                    }
-                                                    val textOnVerdict = when (previewVerdictState) {
-                                                        "GREEN" -> Color(0xFF052E16)
-                                                        "YELLOW" -> Color.Black
-                                                        else -> Color.White
-                                                    }
-
+                                                    // FORMATO 2: CARD CLÁSSICO DIVIDIDO (BLOCO DE COR SÓLIDO NA DIREITA)
                                                     Surface(
                                                         color = Color(0xFF131418),
                                                         shape = RoundedCornerShape(16.dp),
@@ -1459,39 +1443,11 @@ fun GoOrNoComposeApp(
                                                             modifier = Modifier.fillMaxWidth(),
                                                             verticalAlignment = Alignment.CenterVertically
                                                         ) {
-                                                            // Bloco Esquerdo (Veredito)
-                                                            Surface(
-                                                                color = vColor,
-                                                                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
-                                                                modifier = Modifier
-                                                                    .width(72.dp)
-                                                                    .height(78.dp)
-                                                            ) {
-                                                                Column(
-                                                                    modifier = Modifier.fillMaxSize(),
-                                                                    verticalArrangement = Arrangement.Center,
-                                                                    horizontalAlignment = Alignment.CenterHorizontally
-                                                                ) {
-                                                                    Text(
-                                                                        text = iconText,
-                                                                        color = textOnVerdict,
-                                                                        fontSize = 22.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
-                                                                    Text(
-                                                                        text = verdictLabel,
-                                                                        color = textOnVerdict,
-                                                                        fontSize = 9.5.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
-                                                                }
-                                                            }
-
-                                                            // Seção Direita (Dados)
+                                                            // Seção Esquerda (Dados)
                                                             Column(
                                                                 modifier = Modifier
                                                                     .weight(1f)
-                                                                    .padding(start = 12.dp, top = 8.dp, end = 10.dp, bottom = 8.dp)
+                                                                    .padding(start = 14.dp, top = 8.dp, end = 10.dp, bottom = 8.dp)
                                                             ) {
                                                                 // Linha 1: R$/km + [Timer e Fechar]
                                                                 Row(
@@ -1501,7 +1457,7 @@ fun GoOrNoComposeApp(
                                                                 ) {
                                                                     Row(verticalAlignment = Alignment.Bottom) {
                                                                         Text(
-                                                                            text = "R$ 3,09",
+                                                                            text = "R$ 1,92",
                                                                             color = vColor,
                                                                             fontSize = 21.sp,
                                                                             fontWeight = FontWeight.Bold
@@ -1541,7 +1497,7 @@ fun GoOrNoComposeApp(
                                                                 // Linha 2: R$/hora + Nota
                                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                                     Text(
-                                                                        text = "R$ 58,80/h",
+                                                                        text = "R$ 33,33/h",
                                                                         color = vColor,
                                                                         fontSize = 14.5.sp,
                                                                         fontWeight = FontWeight.Bold
@@ -1553,7 +1509,7 @@ fun GoOrNoComposeApp(
                                                                         fontSize = 12.sp
                                                                     )
                                                                     Text(
-                                                                        text = "4,94",
+                                                                        text = "4,92",
                                                                         color = vColor,
                                                                         fontSize = 13.5.sp,
                                                                         fontWeight = FontWeight.Bold
@@ -1562,7 +1518,7 @@ fun GoOrNoComposeApp(
 
                                                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                                                // Linha 3: [99] 30 min - 9,5 km
+                                                                // Linha 3: [99] 18 min - 5,2 km
                                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                                     Surface(
                                                                         color = Color(0xFFFACC15),
@@ -1578,12 +1534,21 @@ fun GoOrNoComposeApp(
                                                                     }
                                                                     Spacer(modifier = Modifier.width(6.dp))
                                                                     Text(
-                                                                        text = "30 min - 9,5 km",
+                                                                        text = "18 min - 5,2 km",
                                                                         color = Color(0xFF9CA3AF),
                                                                         fontSize = 11.5.sp
                                                                     )
                                                                 }
                                                             }
+
+                                                            // Bloco Direito (Sólido de Cor - SEM TEXTO)
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .padding(end = 8.dp, top = 6.dp, bottom = 6.dp)
+                                                                    .width(40.dp)
+                                                                    .height(66.dp)
+                                                                    .background(vColor, RoundedCornerShape(10.dp))
+                                                            )
                                                         }
                                                     }
                                                 }
@@ -1613,27 +1578,27 @@ fun GoOrNoComposeApp(
                                                                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                                                                     Text("R$/Km", color = miniSecondaryText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                                                                        Box(modifier = Modifier.size(3.5.dp, 15.dp).background(vColor, RoundedCornerShape(2.dp)))
+                                                                        Box(modifier = Modifier.size(4.5.dp, 22.dp).background(vColor, RoundedCornerShape(2.dp)))
                                                                         Spacer(modifier = Modifier.width(4.dp))
-                                                                        Text("2,63", color = miniPrimaryText, fontSize = 15.5.sp, fontWeight = FontWeight.Bold)
+                                                                        Text("2,63", color = miniPrimaryText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                                                                     }
                                                                 }
                                                                 // Pillar 2
                                                                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                                                                     Text("R$/Hora", color = miniSecondaryText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                                                                        Box(modifier = Modifier.size(3.5.dp, 15.dp).background(vColor, RoundedCornerShape(2.dp)))
+                                                                        Box(modifier = Modifier.size(4.5.dp, 22.dp).background(vColor, RoundedCornerShape(2.dp)))
                                                                         Spacer(modifier = Modifier.width(4.dp))
-                                                                        Text("48,43", color = miniPrimaryText, fontSize = 15.5.sp, fontWeight = FontWeight.Bold)
+                                                                        Text("48,43", color = miniPrimaryText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                                                                     }
                                                                 }
                                                                 // Pillar 3
                                                                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                                                                     Text("Nota", color = miniSecondaryText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                                                                        Box(modifier = Modifier.size(3.5.dp, 15.dp).background(vColor, RoundedCornerShape(2.dp)))
+                                                                        Box(modifier = Modifier.size(4.5.dp, 22.dp).background(vColor, RoundedCornerShape(2.dp)))
                                                                         Spacer(modifier = Modifier.width(4.dp))
-                                                                        Text("4,83", color = miniPrimaryText, fontSize = 15.5.sp, fontWeight = FontWeight.Bold)
+                                                                        Text("4,83", color = miniPrimaryText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                                                                     }
                                                                 }
                                                             }
