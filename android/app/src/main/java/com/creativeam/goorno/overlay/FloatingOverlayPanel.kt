@@ -387,10 +387,6 @@ class FloatingOverlayPanel(private val context: Context) {
 
 
     // =========================================================================
-    // FORMATO 2: SÓ BOLINHA SEMÁFORO + TOTAL KM/TEMPO + R$/KM (Ultra Discreto)
-    // =========================================================================
-    @SuppressLint("ClickableViewAccessibility")
-    // =========================================================================
     // FORMATO: NOVO CARD COMPACTO 3 PILARES (DESIGN FIEL À IMAGEM 2)
     // Sem valor em dinheiro grande no topo. Foco total nos 3 pilares limpos
     // com barrinhas coloridas e linha inferior de tempo e km.
@@ -1572,7 +1568,6 @@ class FloatingOverlayPanel(private val context: Context) {
     // =========================================================================
     // FORMATO CLÁSSICO FUNDO ESCURO (TRADICIONAL COM VALOR GIGANTE E PÍLULAS ESCURAS)
     // =========================================================================
-    @SuppressLint("ClickableViewAccessibility")
     // =========================================================================
     // NOVO CARD CLÁSSICO DIVIDIDO (DESIGN FIEL À IMAGEM 3 - LADO CONTRÁRIO)
     // Dados detalhados à esquerda e bloco de cor sólido à direita (sem texto)
