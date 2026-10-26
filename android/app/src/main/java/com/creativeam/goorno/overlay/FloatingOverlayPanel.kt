@@ -497,7 +497,7 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             val bar = View(context).apply {
                 background = roundedBg(barColorHex, 2f)
-                layoutParams = LinearLayout.LayoutParams(dp(3.5), dp(17)).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(4), dp(17)).apply {
                     marginEnd = dp(4)
                 }
             }
