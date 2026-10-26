@@ -1431,166 +1431,157 @@ fun GoOrNoComposeApp(
                                                 }
 
                                                 OverlayDisplayStyle.CLASSIC_LIGHT -> {
-                                                    // FORMATO 2: CLÁSSICO TRADICIONAL (DINÂMICO CLARO/ESCURO)
-                                                    val isDarkClassic = overlayTheme == "DARK"
-                                                    val classicCardBg = if (isDarkClassic) Color(0xFF111F1A) else Color.White
-                                                    val classicDragTitle = if (isDarkClassic) Color(0xFF94A3B8) else Color(0xFF334155)
-                                                    val classicTimerColor = if (isDarkClassic) Color(0xFFCBD5E1) else Color(0xFF64748B)
-                                                    val classicInnerPriceBg = if (isDarkClassic) Color(0xFF0D1714) else Color(0xFFF8FAF9)
-                                                    val classicPriceColor = if (isDarkClassic) Color(0xFF4ADE80) else Color(0xFF073B32)
-                                                    val classicDistColor = if (isDarkClassic) Color(0xFFCBD5E1) else Color(0xFF334155)
-                                                    val classicMetricPillBg = if (isDarkClassic) Color(0xFF0D1F19) else Color(0xFFDCFCE7)
-                                                    val classicMetricPillText = if (isDarkClassic) Color(0xFF4ADE80) else Color(0xFF166534)
+                                                    // FORMATO 2: CARD CLÁSSICO DIVIDIDO (DESIGN 100% FIEL À IMAGEM 1)
+                                                    val iconText = when (previewVerdictState) {
+                                                        "GREEN" -> "✓"
+                                                        "YELLOW" -> "!"
+                                                        else -> "✕"
+                                                    }
+                                                    val verdictLabel = when (previewVerdictState) {
+                                                        "GREEN" -> "ACEITA"
+                                                        "YELLOW" -> "ATENÇÃO"
+                                                        else -> "RECUSA"
+                                                    }
+                                                    val textOnVerdict = when (previewVerdictState) {
+                                                        "GREEN" -> Color(0xFF052E16)
+                                                        "YELLOW" -> Color.Black
+                                                        else -> Color.White
+                                                    }
 
                                                     Surface(
-                                                        color = classicCardBg,
-                                                        shape = RoundedCornerShape(18.dp),
-                                                        border = BorderStroke(1.5.dp, vColor),
+                                                        color = Color(0xFF131418),
+                                                        shape = RoundedCornerShape(16.dp),
+                                                        border = BorderStroke(1.dp, Color(0xFF27272A)),
                                                         shadowElevation = 8.dp,
                                                         modifier = Modifier.fillMaxWidth()
                                                     ) {
-                                                        Column(modifier = Modifier.padding(14.dp, 10.dp, 14.dp, 10.dp)) {
-                                                            Row(
-                                                                modifier = Modifier.fillMaxWidth(),
-                                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                                verticalAlignment = Alignment.CenterVertically
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            // Bloco Esquerdo (Veredito)
+                                                            Surface(
+                                                                color = vColor,
+                                                                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
+                                                                modifier = Modifier
+                                                                    .width(72.dp)
+                                                                    .height(78.dp)
                                                             ) {
-                                                                Text(
-                                                                    text = "⠿ Uber (arraste)",
-                                                                    color = classicDragTitle,
-                                                                    fontSize = 12.sp,
-                                                                    fontWeight = FontWeight.Bold
-                                                                )
-                                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Column(
+                                                                    modifier = Modifier.fillMaxSize(),
+                                                                    verticalArrangement = Arrangement.Center,
+                                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                                ) {
                                                                     Text(
-                                                                        text = "7s",
-                                                                        color = classicTimerColor,
-                                                                        fontSize = 11.sp,
-                                                                        fontWeight = FontWeight.Bold,
-                                                                        modifier = Modifier.padding(end = 6.dp)
+                                                                        text = iconText,
+                                                                        color = textOnVerdict,
+                                                                        fontSize = 22.sp,
+                                                                        fontWeight = FontWeight.Bold
                                                                     )
-                                                                    Surface(
-                                                                        color = Color(0xFFDC2626),
-                                                                        shape = RoundedCornerShape(6.dp)
-                                                                    ) {
-                                                                        Text(
-                                                                            text = "✕ Fechar",
-                                                                            color = Color.White,
-                                                                            fontSize = 10.5.sp,
-                                                                            fontWeight = FontWeight.Bold,
-                                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                                        )
-                                                                    }
+                                                                    Text(
+                                                                        text = verdictLabel,
+                                                                        color = textOnVerdict,
+                                                                        fontSize = 9.5.sp,
+                                                                        fontWeight = FontWeight.Bold
+                                                                    )
                                                                 }
                                                             }
 
-                                                            Spacer(modifier = Modifier.height(8.dp))
-
-                                                            Surface(
-                                                                color = classicInnerPriceBg,
-                                                                shape = RoundedCornerShape(12.dp),
-                                                                border = BorderStroke(1.dp, vColor.copy(alpha = 0.5f)),
-                                                                modifier = Modifier.fillMaxWidth()
+                                                            // Seção Direita (Dados)
+                                                            Column(
+                                                                modifier = Modifier
+                                                                    .weight(1f)
+                                                                    .padding(start = 12.dp, top = 8.dp, end = 10.dp, bottom = 8.dp)
                                                             ) {
-                                                                Column(modifier = Modifier.padding(10.dp)) {
-                                                                    Row(
-                                                                        modifier = Modifier.fillMaxWidth(),
-                                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                                        verticalAlignment = Alignment.CenterVertically
-                                                                    ) {
+                                                                // Linha 1: R$/km + [Timer e Fechar]
+                                                                Row(
+                                                                    modifier = Modifier.fillMaxWidth(),
+                                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                                    verticalAlignment = Alignment.CenterVertically
+                                                                ) {
+                                                                    Row(verticalAlignment = Alignment.Bottom) {
                                                                         Text(
-                                                                            text = "R$ 14,01",
-                                                                            color = classicPriceColor,
-                                                                            fontSize = 18.sp,
-                                                                            fontWeight = FontWeight.Black,
-                                                                            maxLines = 1,
-                                                                            softWrap = false
-                                                                        )
-                                                                        Surface(
+                                                                            text = "R$ 3,09",
                                                                             color = vColor,
-                                                                            shape = RoundedCornerShape(6.dp)
-                                                                        ) {
-                                                                            Text(
-                                                                                text = when (previewVerdictState) {
-                                                                                    "GREEN" -> "ACEITAR"
-                                                                                    "YELLOW" -> "AVALIAR"
-                                                                                    else -> "RECUSAR"
-                                                                                },
-                                                                                color = vTextColor,
-                                                                                fontSize = 10.sp,
-                                                                                fontWeight = FontWeight.Black,
-                                                                                maxLines = 1,
-                                                                                softWrap = false,
-                                                                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                                                                            )
-                                                                        }
+                                                                            fontSize = 21.sp,
+                                                                            fontWeight = FontWeight.Bold
+                                                                        )
                                                                         Text(
-                                                                            text = "6,3 km · 17 min",
-                                                                            color = classicDistColor,
-                                                                            fontSize = 11.5.sp,
-                                                                            fontWeight = FontWeight.Bold,
-                                                                            maxLines = 1,
-                                                                            softWrap = false
+                                                                            text = " /km",
+                                                                            color = Color(0xFF9CA3AF),
+                                                                            fontSize = 12.5.sp,
+                                                                            modifier = Modifier.padding(bottom = 2.dp)
                                                                         )
                                                                     }
-
-                                                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                                                    Row(
-                                                                        modifier = Modifier.fillMaxWidth(),
-                                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                                                    ) {
+                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                        Text(
+                                                                            text = "7s",
+                                                                            color = Color(0xFF6B7280),
+                                                                            fontSize = 10.5.sp,
+                                                                            fontWeight = FontWeight.Bold
+                                                                        )
                                                                         Surface(
-                                                                            color = classicMetricPillBg,
-                                                                            shape = RoundedCornerShape(8.dp),
-                                                                            border = BorderStroke(1.dp, vColor),
-                                                                            modifier = Modifier.weight(1f)
+                                                                            color = Color(0xFF262930),
+                                                                            shape = RoundedCornerShape(4.dp),
+                                                                            modifier = Modifier.padding(start = 5.dp)
                                                                         ) {
                                                                             Text(
-                                                                                text = "R$ 2,22/km",
-                                                                                color = classicMetricPillText,
-                                                                                fontSize = 11.sp,
+                                                                                text = "✕",
+                                                                                color = Color(0xFF9CA3AF),
+                                                                                fontSize = 10.sp,
                                                                                 fontWeight = FontWeight.Bold,
-                                                                                textAlign = TextAlign.Center,
-                                                                                maxLines = 1,
-                                                                                softWrap = false,
-                                                                                modifier = Modifier.padding(vertical = 5.dp)
-                                                                            )
-                                                                        }
-                                                                        Surface(
-                                                                            color = classicMetricPillBg,
-                                                                            shape = RoundedCornerShape(8.dp),
-                                                                            border = BorderStroke(1.dp, vColor),
-                                                                            modifier = Modifier.weight(1f)
-                                                                        ) {
-                                                                            Text(
-                                                                                text = "R$ 49/h",
-                                                                                color = classicMetricPillText,
-                                                                                fontSize = 11.sp,
-                                                                                fontWeight = FontWeight.Bold,
-                                                                                textAlign = TextAlign.Center,
-                                                                                maxLines = 1,
-                                                                                softWrap = false,
-                                                                                modifier = Modifier.padding(vertical = 5.dp)
-                                                                            )
-                                                                        }
-                                                                        Surface(
-                                                                            color = Color(0xFF16A34A),
-                                                                            shape = RoundedCornerShape(8.dp),
-                                                                            modifier = Modifier.weight(1f)
-                                                                        ) {
-                                                                            Text(
-                                                                                text = "★ 4.96",
-                                                                                color = Color.White,
-                                                                                fontSize = 11.sp,
-                                                                                fontWeight = FontWeight.Bold,
-                                                                                textAlign = TextAlign.Center,
-                                                                                maxLines = 1,
-                                                                                softWrap = false,
-                                                                                modifier = Modifier.padding(vertical = 5.dp)
+                                                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                                                                             )
                                                                         }
                                                                     }
+                                                                }
+
+                                                                Spacer(modifier = Modifier.height(2.dp))
+
+                                                                // Linha 2: R$/hora + Nota
+                                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                    Text(
+                                                                        text = "R$ 58,80/h",
+                                                                        color = vColor,
+                                                                        fontSize = 14.5.sp,
+                                                                        fontWeight = FontWeight.Bold
+                                                                    )
+                                                                    Spacer(modifier = Modifier.width(14.dp))
+                                                                    Text(
+                                                                        text = "★ ",
+                                                                        color = Color(0xFFF59E0B),
+                                                                        fontSize = 12.sp
+                                                                    )
+                                                                    Text(
+                                                                        text = "4,94",
+                                                                        color = vColor,
+                                                                        fontSize = 13.5.sp,
+                                                                        fontWeight = FontWeight.Bold
+                                                                    )
+                                                                }
+
+                                                                Spacer(modifier = Modifier.height(4.dp))
+
+                                                                // Linha 3: [99] 30 min - 9,5 km
+                                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                    Surface(
+                                                                        color = Color(0xFFFACC15),
+                                                                        shape = RoundedCornerShape(3.dp)
+                                                                    ) {
+                                                                        Text(
+                                                                            text = "99",
+                                                                            color = Color.Black,
+                                                                            fontSize = 9.sp,
+                                                                            fontWeight = FontWeight.Bold,
+                                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                                        )
+                                                                    }
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Text(
+                                                                        text = "30 min - 9,5 km",
+                                                                        color = Color(0xFF9CA3AF),
+                                                                        fontSize = 11.5.sp
+                                                                    )
                                                                 }
                                                             }
                                                         }
