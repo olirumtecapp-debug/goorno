@@ -1799,8 +1799,8 @@ class FloatingOverlayPanel(private val context: Context) {
             }
         }
 
-        val is99 = offer.sourceApp == SourceApp.NINETY_NINE_DRIVER || (!offer.isSimulated && offer.rawOfferText?.contains("99", ignoreCase = true) == true)
-        val isUber = offer.sourceApp == SourceApp.UBER_DRIVER || (!offer.isSimulated && offer.rawOfferText?.contains("Uber", ignoreCase = true) == true)
+        val is99 = offer.sourceApp == SourceApp.NINETY_NINE_DRIVER
+        val isUber = offer.sourceApp == SourceApp.UBER_DRIVER
 
         val appBadge = TextView(context).apply {
             when {
