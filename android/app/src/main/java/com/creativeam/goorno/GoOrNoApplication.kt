@@ -33,7 +33,8 @@ class GoOrNoApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        installGlobalCrashShield()
+        try {
+            installGlobalCrashShield()
         database = GoOrNoDatabase.getInstance(this)
         preferencesRepository = DriverPreferencesRepository(this)
         overlayPanel = FloatingOverlayPanel(this).apply {
@@ -68,6 +69,10 @@ class GoOrNoApplication : Application() {
             }
         }
 
+        } catch (t: Throwable) {
+            Log.e("GoOrNoApp", "Falha segura em onCreate", t)
+        }
+
         // Mantém todas as configurações do motorista sincronizadas continuamente em memória
         // e ancora o Foreground Service para blindagem total contra o LMK do Android (Spotify, Instagram, etc)
         appScope.launch {
@@ -99,37 +104,20 @@ class GoOrNoApplication : Application() {
     private fun installGlobalCrashShield() {
         val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            Log.e("GoOrNoCrashShield", "🛡️ Falha evitada na thread '${thread.name}': ${throwable.message}", throwable)
+            Log.e("GoOrNoCrashShield", "🛡️ Exceção interceptada na thread '${thread.name}': ${throwable.message}", throwable)
             if (throwable is OutOfMemoryError) {
                 try {
                     System.gc()
                 } catch (_: Throwable) {}
             }
 
-            // Se for na thread secundária (leitura, acessibilidade, corrotina), não derruba o app
+            // Se for na thread secundária (leitura, acessibilidade, corrotina), absorve para não derrubar o app
             if (thread.name != "main") {
                 return@setDefaultUncaughtExceptionHandler
             }
 
-            // Se for no Main Thread, só repassa ao handler original se não for erro recuperável
-            val isRecoverable = throwable is OutOfMemoryError ||
-                throwable is IllegalArgumentException ||
-                throwable is IllegalStateException ||
-                throwable is SecurityException ||
-                throwable is NullPointerException
-            if (!isRecoverable) {
-                originalHandler?.uncaughtException(thread, throwable)
-            }
-        }
-
-        // Registro e proteção estruturada da fila de eventos principais da UI
-        Handler(Looper.getMainLooper()).post {
-            try {
-                // Monitoramento preventivo de saúde da thread principal sem travar o Looper do sistema
-                Log.i("GoOrNoHealth", "Main thread monitor ativo e operacional.")
-            } catch (t: Throwable) {
-                Log.e("GoOrNoHealth", "Falha interceptada no monitor da UI", t)
-            }
+            // Se for na thread principal, entrega ao handler original para encerramento limpo sem corrupção
+            originalHandler?.uncaughtException(thread, throwable)
         }
     }
 }

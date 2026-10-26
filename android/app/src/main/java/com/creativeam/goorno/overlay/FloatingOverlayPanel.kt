@@ -444,7 +444,7 @@ class FloatingOverlayPanel(private val context: Context) {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(10), dp(14), dp(8))
             background = roundedCardBg(cardBgHex, "#27272A", 16f, 1)
-            layoutParams = LinearLayout.LayoutParams(dp(325), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(325), dp(78)).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -466,7 +466,8 @@ class FloatingOverlayPanel(private val context: Context) {
             val col = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+            gravity = Gravity.CENTER_VERTICAL
             }
             val tvLabel = TextView(context).apply {
                 text = label
@@ -494,7 +495,7 @@ class FloatingOverlayPanel(private val context: Context) {
             val tvVal = TextView(context).apply {
                 text = value
                 setTextColor(Color.parseColor(primaryTextHex))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 25f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
                 setTypeface(typeface, Typeface.BOLD)
                 gravity = Gravity.CENTER
             }
@@ -1783,14 +1784,10 @@ class FloatingOverlayPanel(private val context: Context) {
         leftSection.addView(row3)
         card.addView(leftSection)
 
-        // 2. BLOCO DA DIREITA: BLOCO SÓLIDO DE COR (SEM TEXTO, SÓ A COR PARA VISÃO REFLEXIVA)
+        // 2. BLOCO DA DIREITA: BLOCO SÓLIDO DE COR INTEGRADO (SEM TEXTO, SÓ A COR)
         val rightColorBlock = View(context).apply {
-            background = roundedBg(verdictColorHex, 10f)
-            layoutParams = LinearLayout.LayoutParams(dp(40), dp(66)).apply {
-                marginEnd = dp(8)
-                topMargin = dp(6)
-                bottomMargin = dp(6)
-            }
+            background = roundedRightBg(verdictColorHex, 16f)
+            layoutParams = LinearLayout.LayoutParams(dp(44), LinearLayout.LayoutParams.MATCH_PARENT)
         }
         card.addView(rightColorBlock)
 
@@ -2556,6 +2553,15 @@ class FloatingOverlayPanel(private val context: Context) {
             cornerRadius = dp(radiusDp.toInt()).toFloat()
             setColor(Color.parseColor(bgHex))
             setStroke(dp(strokeDp), Color.parseColor(strokeHex))
+        }
+    }
+
+    private fun roundedRightBg(hexColor: String, radiusDp: Float): GradientDrawable {
+        val r = dp(radiusDp.toInt()).toFloat()
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadii = floatArrayOf(0f, 0f, r, r, r, r, 0f, 0f)
+            setColor(Color.parseColor(hexColor))
         }
     }
 

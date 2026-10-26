@@ -79,6 +79,27 @@ object NinetyNineOfferReader {
             )
         }
 
+        // 0b. Rejeição total de telas modais/feedbacks do sistema da 99
+        if (joinedLower.contains("várias solicitações seguidas recusadas") ||
+            joinedLower.contains("agradecemos sua resposta") ||
+            joinedLower.contains("por que você recusou") ||
+            joinedLower.contains("motivo da recusa") ||
+            joinedLower.contains("deseja continuar online") ||
+            joinedLower.contains("pausado por")
+        ) {
+            return StandardRideOffer(
+                offerId = UUID.randomUUID().toString(),
+                sourceApp = if (isSimulated) SourceApp.SIMULATION else SourceApp.NINETY_NINE_DRIVER,
+                captureMethod = captureMethod,
+                screenClassification = ScreenClassification.NON_OFFER,
+                timestampMillis = timestampMillis,
+                offeredPriceField = ExtractedField.Missing,
+                confidenceScore = 0.0,
+                rawCapturedTexts = cleanedLines,
+                isSimulated = isSimulated
+            )
+        }
+
         // 1. Verifica se é viagem em andamento
         if (ONGOING_TRIP_KEYWORDS.any { joinedLower.contains(it) }) {
             return StandardRideOffer(

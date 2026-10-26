@@ -110,6 +110,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun refreshPermissionsState() {
+        try {
         hasOverlayPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Settings.canDrawOverlays(this)
         } else true
@@ -140,6 +141,9 @@ class MainActivity : ComponentActivity() {
         } else {
             RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READING_IN_PROGRESS)
             requestIgnoreBatteryOptimizationsIfNeeded()
+        }
+        } catch (t: Throwable) {
+            android.util.Log.e("MainActivity", "Erro em refreshPermissionsState", t)
         }
     }
 
