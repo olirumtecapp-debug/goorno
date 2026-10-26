@@ -283,7 +283,7 @@ class FloatingOverlayPanel(private val context: Context) {
             OverlayDisplayStyle.BANNER_PRO_STREETVIEW -> buildBannerProStreetView(currentEval, oneBasedIndex, totalInQueue)
             OverlayDisplayStyle.PIRULITO_SIDEBAR -> buildPirulitoSidebarView(currentEval, oneBasedIndex, totalInQueue)
             OverlayDisplayStyle.MINI_BALL -> buildMiniBallView(currentEval, oneBasedIndex, totalInQueue)
-            OverlayDisplayStyle.CLASSIC_LIGHT -> if (lastKnownConfig?.overlayTheme == "DARK") buildClassicDarkCardView(currentEval, oneBasedIndex, totalInQueue) else buildClassicLightCardView(currentEval, oneBasedIndex, totalInQueue)
+            OverlayDisplayStyle.CLASSIC_LIGHT -> buildMiniBallView(currentEval, oneBasedIndex, totalInQueue)
         }
 
         contentWrapper?.addView(builtView)
@@ -574,11 +574,18 @@ class FloatingOverlayPanel(private val context: Context) {
         } else "-- km"
         val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
 
+        val offeredPrice = offer.offeredPriceField.valueOrNull() ?: result.offer.offeredPriceField.valueOrNull()
+        val pricePrefix = if (offeredPrice != null && offeredPrice > 0.0) {
+            String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f • ", offeredPrice)
+        } else ""
+
         val tvSub = TextView(context).apply {
-            text = "$minStr • $distStr"
+            text = "$pricePrefix$minStr • $distStr"
             setTextColor(Color.parseColor(subTextHex))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTypeface(typeface, Typeface.BOLD)
+            isSingleLine = true
+            maxLines = 1
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = dp(6)

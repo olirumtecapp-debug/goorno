@@ -160,20 +160,20 @@ enum class PassengerRatingVerdict(val label: String, val emoji: String, val hexC
  */
 enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
     BANNER_PRO_STREETVIEW(
-        title = "Card Impacto Pro (Recomendado)",
-        subtitle = "Design moderno com km, min, valor gigante e veredito sólido de alto contraste"
+        title = "Card Impacto Pro",
+        subtitle = "Design moderno com valor gigante, métricas em destaque e semáforo sólido de alto contraste"
     ),
     PIRULITO_SIDEBAR(
-        title = "Card 3 Pilares (R$/Km, R$/Hora e Nota)",
-        subtitle = "Card com resumo no topo, 3 colunas e barras verticais coloridas (Claro ou Escuro)"
-    ),
-    CLASSIC_LIGHT(
-        title = "Card Clássico (Bloco Lateral)",
-        subtitle = "Métricas completas à esquerda e bloco sólido de cor à direita (sem texto poluído)"
+        title = "Card 3 Pilares",
+        subtitle = "Resumo no topo com 3 colunas e barras verticais coloridas (Claro ou Escuro)"
     ),
     MINI_BALL(
-        title = "Card Compacto (3 Pilares)",
-        subtitle = "Ultra-fino com os 3 pilares sem valor no topo e alertas em janelinhas separadas"
+        title = "Card 3 Pilares Compacto (Recomendado)",
+        subtitle = "Super enxuto com 3 pilares, valor, tempo, km na linha inferior e borda neon"
+    ),
+    CLASSIC_LIGHT(
+        title = "Card Clássico (Legado)",
+        subtitle = "Formato legado mantido para compatibilidade"
     );
 
     companion object {
@@ -181,9 +181,9 @@ enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
             return when (name?.uppercase()) {
                 "BANNER_PRO_STREETVIEW", "BANNER_PRO", "BANNER", "FULL_CARD", "MODERN" -> BANNER_PRO_STREETVIEW
                 "PIRULITO_SIDEBAR", "PIRULITO", "SIDEBAR", "WIDGET_COMPACTO", "LATERAL_COMPACTO", "COMPACTO_SIDEBAR", "THREE_PILLARS", "CARD_3_PILARES" -> PIRULITO_SIDEBAR
-                "CLASSIC_LIGHT", "CLASSIC_V334", "CLASSIC", "CLASSIC_DARK" -> CLASSIC_LIGHT
                 "MINI_BALL", "SEMAFORO_COMPACT", "COMPACT" -> MINI_BALL
-                else -> entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: BANNER_PRO_STREETVIEW
+                "CLASSIC_LIGHT", "CLASSIC_V334", "CLASSIC", "CLASSIC_DARK" -> MINI_BALL
+                else -> entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: MINI_BALL
             }
         }
     }

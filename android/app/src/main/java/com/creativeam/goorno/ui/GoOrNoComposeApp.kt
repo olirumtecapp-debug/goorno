@@ -1616,8 +1616,9 @@ fun GoOrNoComposeApp(
                                                                 }
                                                                 Spacer(modifier = Modifier.width(6.dp))
                                                                 Text(
-                                                                    text = "14 min • 4,3 km",
-                                                                    color = Color(0xFF9CA3AF),
+                                                                    text = "R$ 15,80 • 14 min • 4,3 km",
+                                                                    color = Color(0xFFCBD5E1),
+                                                                    fontWeight = FontWeight.Bold,
                                                                     fontSize = 11.5.sp,
                                                                     modifier = Modifier.weight(1f)
                                                                 )
@@ -1797,7 +1798,7 @@ fun GoOrNoComposeApp(
                                     color = PetrolHeader
                                 )
 
-                                OverlayDisplayStyle.entries.forEach { style ->
+                                OverlayDisplayStyle.entries.filter { it != OverlayDisplayStyle.CLASSIC_LIGHT }.forEach { style ->
                                     val isChosen = selectedStyle == style
                                     Surface(
                                         color = if (isChosen) TrafficGreenSoft.copy(alpha = 0.65f) else SoftSurfaceVariant,
