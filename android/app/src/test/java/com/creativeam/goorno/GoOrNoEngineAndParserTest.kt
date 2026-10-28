@@ -1371,10 +1371,25 @@ class GoOrNoEngineAndParserTest {
     }
 
     @Test
-    fun `test address cleaning strips RIO GRANDE badge and accepted toast message`() {
-        val rawWithRioGrande = "Hospital da Mulher de São Bernardo do Campo, Jardim Nov. RIO GRANDE"
-        val cleanedRioGrande = BrazilianOfferParser.cleanAddressCandidate(rawWithRioGrande)
-        assertEquals("Hospital da Mulher de São Bernardo do Campo, Jardim Nov.", cleanedRioGrande)
+    fun `test address cleaning preserves valid geographic locations and stops at one continuation line`() {
+        // Rio Grande, Pedágio e Rodovia são locais reais legítimos e NUNCA devem ser censurados por blacklist
+        val validRioGrande = "Rua Rio Grande, 120, Bairro Rio Grande"
+        assertEquals("Rua Rio Grande, 120, Bairro Rio Grande", BrazilianOfferParser.cleanAddressCandidate(validRioGrande))
+
+        val validRioGrandeSerra = "Avenida Dom Pedro I, 50, Rio Grande da Serra"
+        assertEquals("Avenida Dom Pedro I, 50, Rio Grande da Serra", BrazilianOfferParser.cleanAddressCandidate(validRioGrandeSerra))
+
+        // No isolamento de trechos, o acumulador pega no máximo 1 linha de continuação e não invade a próxima viagem
+        val multiLineLegs = listOf(
+            "10 min (3,5 km)",
+            "Hospital da Mulher de São Bernardo do Campo",
+            "Jardim Novo Horizonte",
+            "Rio Grande da Serra", // texto da próxima viagem abaixo na tela
+            "Escolher"
+        )
+        val legs = BrazilianOfferParser.extractRideLegs(multiLineLegs)
+        assertEquals(1, legs.size)
+        assertEquals("Hospital da Mulher de São Bernardo do Campo, Jardim Novo Horizonte", legs.first().address)
 
         val rawWithAccepted = "Avenida Itamarati, 161 Vila Curucá Esta corrida foi aceita por outro motorista Isso é tudo por enquanto"
         val cleanedAccepted = BrazilianOfferParser.cleanAddressCandidate(rawWithAccepted)

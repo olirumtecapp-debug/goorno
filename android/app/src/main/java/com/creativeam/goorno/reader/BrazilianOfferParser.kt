@@ -583,9 +583,8 @@ object BrazilianOfferParser {
         clean = clean.replace(Regex("""^[\s•·🟢🟠⬆️⬇️\(\)\[\]\-]*(?:(?:\d{1,2}\s*h(?:oras?)?(?:\s*e\s*|\s+)?)?\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]+(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)\[\]·•\-]*)?|(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)\[\]·•\-]+(?:\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]*)?))"""), "").trim()
         clean = clean.trimStart(')', ']', '>', '-', ':', '•', '·', ' ')
 
-        // 0c. Corta qualquer mensagem de toast, corrida aceita ou badge de rota colado no final do endereço
+        // 0c. Corta qualquer mensagem de toast do sistema colada no final do endereço
         clean = clean.replace(Regex("""(?i)\s*[\-·•,]?\s*\b(esta corrida foi aceita.*|corrida foi aceita.*|aceita por outro.*|isso [ée] tudo por enquanto.*|isso [ée] tudo.*)\b.*"""), "").trim()
-        clean = clean.replace(Regex("""(?i)\s*[\-·•,]?\s*\b(rio grande|ped[áa]gio|pedagio|via anchieta|rodoanel|imigrantes)\b\s*$"""), "").trim()
 
         if (clean.length < 3) return null
 
@@ -609,8 +608,6 @@ object BrazilianOfferParser {
             lower.contains("esta corrida foi aceita") || lower.contains("corrida foi aceita") ||
             lower.contains("aceita por outro motorista") || lower.contains("aceita por outro") ||
             lower.contains("isso é tudo por enquanto") || lower.contains("isso e tudo") ||
-            lower == "rio grande" || lower == "pedágio" || lower == "pedagio" ||
-            lower == "rodovia" || lower == "via anchieta" || lower == "rodoanel" ||
             lower.matches(Regex("""^\d{1,3}$"""))
         ) {
             return null
@@ -717,7 +714,8 @@ object BrazilianOfferParser {
                 if (strippedPrefix.length >= 3 && (isStreetOrComma || !isBoundary)) {
                     var fullAddr = strippedPrefix
                     var rawLast = strippedPrefix
-                    while (i + 1 < normalized.size) {
+                    var continuationCount = 0
+                    while (i + 1 < normalized.size && continuationCount < 1) {
                         val nextLine = normalized[i + 1].trim()
                         val nextLower = nextLine.lowercase(Locale.getDefault())
                         val nextDurs = extractAllDurationsMinutes(listOf(nextLine))
@@ -753,12 +751,6 @@ object BrazilianOfferParser {
                             nextLower.contains("aceita por outro") ||
                             nextLower.contains("isso é tudo") ||
                             nextLower.contains("isso e tudo") ||
-                            nextLower.contains("rio grande") ||
-                            nextLower.contains("pedágio") ||
-                            nextLower.contains("pedagio") ||
-                            nextLower.contains("rodovia") ||
-                            nextLower.contains("anchieta") ||
-                            nextLower.contains("rodoanel") ||
                             nextLower.matches(Regex("""^\d{1,3}$""")) ||
                             STREET_PREFIX_REGEX.matches(nextLine)
 
@@ -769,6 +761,7 @@ object BrazilianOfferParser {
                             val separator = if (rawLast.endsWith(",") || fullAddr.endsWith(",")) ", " else " "
                             fullAddr = "$fullAddr$separator$cleanedNext".replace(Regex(""",\s*,"""), ",").replace(Regex("""\s+"""), " ")
                             rawLast = nextLine
+                            continuationCount++
                             i++
                         } else {
                             break
@@ -782,8 +775,9 @@ object BrazilianOfferParser {
                     if (initialCand != null) {
                         var cand: String = initialCand
                         var rawLast = rawNext
+                        var continuationCount = 0
                         i++
-                        while (i + 1 < normalized.size) {
+                        while (i + 1 < normalized.size && continuationCount < 1) {
                             val nextNext = normalized[i + 1].trim()
                             val nextNextLower = nextNext.lowercase(Locale.getDefault())
                             val nextNextDurs = extractAllDurationsMinutes(listOf(nextNext))
@@ -819,12 +813,6 @@ object BrazilianOfferParser {
                                 nextNextLower.contains("aceita por outro") ||
                                 nextNextLower.contains("isso é tudo") ||
                                 nextNextLower.contains("isso e tudo") ||
-                                nextNextLower.contains("rio grande") ||
-                                nextNextLower.contains("pedágio") ||
-                                nextNextLower.contains("pedagio") ||
-                                nextNextLower.contains("rodovia") ||
-                                nextNextLower.contains("anchieta") ||
-                                nextNextLower.contains("rodoanel") ||
                                 nextNextLower.matches(Regex("""^\d{1,3}$""")) ||
                                 STREET_PREFIX_REGEX.matches(nextNext)
 
@@ -835,6 +823,7 @@ object BrazilianOfferParser {
                                 val separator = if (rawLast.endsWith(",") || cand.endsWith(",")) ", " else " "
                                 cand = "$cand$separator$cleanedCont".replace(Regex(""",\s*,"""), ",").replace(Regex("""\s+"""), " ")
                                 rawLast = nextNext
+                                continuationCount++
                                 i++
                             } else {
                                 break
