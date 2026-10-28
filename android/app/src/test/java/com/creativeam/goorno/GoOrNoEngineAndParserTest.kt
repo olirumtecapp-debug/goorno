@@ -1286,4 +1286,56 @@ class GoOrNoEngineAndParserTest {
         assertEquals(13.90, offer2.offeredPrice!!, 0.01)
         assertEquals(5.00, offer2.passengerRating!!, 0.01)
     }
+
+    // TESTE DE BLOQUEIO DE MISTURA DE OFERTAS AO ROLAR TELA COM 3 OFERTAS (CHECKPOINT #028)
+    @Test
+    fun `test 99 multiple offers when scrolled - prevent mixing of second and third offer`() {
+        val scrolledScreenNodes = listOf(
+            "< Solicitações",
+            "Escolha uma corrida",
+            "Km até o embarque",
+            "R$ 37,80 x1,4 R$1,32/km",
+            "👤 4,65 • 17 corridas • Cartão verif.",
+            "(6 min 1,6 km) Rua Itagibá de Almeida, 42, Jardim São Paulo",
+            "(51 min 28,4 km) Apcd - Associação Paulista de Cirurgiões-Dentistas, Rua Voluntários da Pátria, 547",
+            "Escolher",
+            "Pop",
+            "R$15,90 x1,7 R$2,19/km",
+            "👤 4,95 • 387 corridas • Cartão verif.",
+            "(8 min 2,1 km) Rua Vinte e Seis de Março, 150, Parque Sao Bernardo",
+            "(14 min 5,1 km) Sonda Supermercados, Avenida Pereira Barreto, 1500 - Baeta Neves",
+            "Escolher",
+            "Isso é tudo por enquanto"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(scrolledScreenNodes)
+        assertEquals("Devem ser identificadas exatamente 2 ofertas distintas", 2, offers.size)
+
+        val offer1 = offers[0]
+        assertEquals("Preço da oferta 1 deve ser 37.80", 37.80, offer1.offeredPrice!!, 0.01)
+        assertEquals("Distância pickup oferta 1 deve ser 1.6 km", 1.6, offer1.pickupDistanceKm!!, 0.01)
+        assertEquals("Distância viagem oferta 1 deve ser 28.4 km", 28.4, offer1.tripDistanceKm!!, 0.01)
+        assertEquals("Distância total oferta 1 deve ser 30.0 km", 30.0, offer1.totalDistanceKm!!, 0.01)
+        assertEquals("Duração total oferta 1 deve ser 57 min", 57, offer1.totalDurationMin)
+        assertEquals("Nota do passageiro oferta 1 deve ser 4.65", 4.65, offer1.passengerRating!!, 0.01)
+
+        val offer2 = offers[1]
+        assertEquals("Preço da oferta 2 deve ser 15.90", 15.90, offer2.offeredPrice!!, 0.01)
+        assertEquals("Distância pickup oferta 2 deve ser 2.1 km", 2.1, offer2.pickupDistanceKm!!, 0.01)
+        assertEquals("Distância viagem oferta 2 deve ser 5.1 km", 5.1, offer2.tripDistanceKm!!, 0.01)
+        assertEquals("Distância total oferta 2 deve ser 7.2 km (NÃO 30 km)", 7.2, offer2.totalDistanceKm!!, 0.01)
+        assertEquals("Duração total oferta 2 deve ser 22 min (NÃO 57 min)", 22, offer2.totalDurationMin)
+        assertEquals("Nota do passageiro oferta 2 deve ser 4.95", 4.95, offer2.passengerRating!!, 0.01)
+    }
+
+    // TESTE DE ROBUSTEZ DA NOTA DO PASSAGEIRO (CHECKPOINT #028)
+    @Test
+    fun `test 99 passenger rating extraction with user icon and isolated rating numbers`() {
+        assertEquals(4.95, BrazilianOfferParser.extractPassengerRating(listOf("👤 4,95 • 387 corridas • Cartão verif."))!!, 0.01)
+        assertEquals(4.65, BrazilianOfferParser.extractPassengerRating(listOf("👤 4,65 • 17 corridas"))!!, 0.01)
+        assertEquals(4.95, BrazilianOfferParser.extractPassengerRating(listOf("👤 4,95 • Cartão verif."))!!, 0.01)
+        assertEquals(4.95, BrazilianOfferParser.extractPassengerRating(listOf("👤 4,95"))!!, 0.01)
+        assertEquals(4.88, BrazilianOfferParser.extractPassengerRating(listOf("4,88"))!!, 0.01)
+        assertEquals(5.00, BrazilianOfferParser.extractPassengerRating(listOf("👤 5,00 • Novo passageiro"))!!, 0.01)
+    }
 }

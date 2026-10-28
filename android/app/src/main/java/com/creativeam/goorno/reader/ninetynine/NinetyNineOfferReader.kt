@@ -144,18 +144,25 @@ object NinetyNineOfferReader {
 
         // Se houver linha com 'Pop' ou 'Pop Expresso' com preço, esse é o valor oficial prioritário
         var primaryPrice: Double? = null
-        for (line in cleanedLines) {
+        var primaryPriceLineIdx: Int = -1
+        for ((idx, line) in cleanedLines.withIndex()) {
             val l = line.lowercase(Locale.getDefault())
             if (l.contains("pop") || l.contains("99pop") || l.contains("plus") || l.contains("negocia") || l.contains("express")) {
                 val p = BrazilianOfferParser.extractAllCurrencies(listOf(line)).firstOrNull()
                 if (p != null && p in 4.0..350.0) {
                     primaryPrice = p
+                    primaryPriceLineIdx = idx
                     break
                 }
             }
         }
 
         val finalPriceVal = primaryPrice ?: candidatePrices.firstOrNull { it in 4.0..350.0 } ?: candidatePrices.firstOrNull()
+        if (primaryPriceLineIdx == -1 && finalPriceVal != null) {
+            primaryPriceLineIdx = cleanedLines.indexOfFirst { line ->
+                BrazilianOfferParser.extractAllCurrencies(listOf(line)).contains(finalPriceVal)
+            }
+        }
 
         val priceField: ExtractedField<Double> = when {
             finalPriceVal != null -> ExtractedField.Present(finalPriceVal)
@@ -163,10 +170,23 @@ object NinetyNineOfferReader {
             else -> ExtractedField.Missing
         }
 
-        // 3. Trechos de Viagem, Distâncias e Durações (Ex: "5 min (1,2 km)" + "10 min (2,4 km)")
-        val legs = BrazilianOfferParser.extractRideLegs(cleanedLines)
-        val allDistances = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
-        val allDurations = BrazilianOfferParser.extractAllDurationsMinutes(cleanedLines)
+        // 3. Trechos de Viagem, Distâncias e Durações (ancorados ao preço principal da oferta)
+        // Se houver resíduos de scroll acima do preço (ex: trechos da chamada anterior que já rolou),
+        // analisa preferencialmente as linhas a partir do preço principal!
+        val linesForLegs = if (primaryPriceLineIdx > 0 && primaryPriceLineIdx < cleanedLines.size) {
+            cleanedLines.subList(primaryPriceLineIdx, cleanedLines.size)
+        } else {
+            cleanedLines
+        }
+        val legs = BrazilianOfferParser.extractRideLegs(linesForLegs).ifEmpty {
+            BrazilianOfferParser.extractRideLegs(cleanedLines)
+        }
+        val allDistances = BrazilianOfferParser.extractAllDistancesKm(linesForLegs).ifEmpty {
+            BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
+        }
+        val allDurations = BrazilianOfferParser.extractAllDurationsMinutes(linesForLegs).ifEmpty {
+            BrazilianOfferParser.extractAllDurationsMinutes(cleanedLines)
+        }
 
         var pickupKmField: ExtractedField<Double> = ExtractedField.Missing
         var tripKmField: ExtractedField<Double> = ExtractedField.Missing
@@ -242,10 +262,17 @@ object NinetyNineOfferReader {
         } ?: "99Pop"
 
         // 6. Endereços de Origem e Destino + Avaliação do Passageiro
-        val (parsedOrigin, parsedDestination) = BrazilianOfferParser.extractOriginAndDestination(cleanedLines)
+        val linesForRatingAndAddr = if (primaryPriceLineIdx > 0 && primaryPriceLineIdx < cleanedLines.size) {
+            val startIdx = (primaryPriceLineIdx - 1).coerceAtLeast(0)
+            cleanedLines.subList(startIdx, cleanedLines.size)
+        } else {
+            cleanedLines
+        }
+        val (parsedOrigin, parsedDestination) = BrazilianOfferParser.extractOriginAndDestination(linesForRatingAndAddr)
         val origin = legOrigin ?: parsedOrigin
         val destination = legDestination ?: parsedDestination
-        val passengerRating = BrazilianOfferParser.extractPassengerRating(cleanedLines)
+        val passengerRating = BrazilianOfferParser.extractPassengerRating(linesForRatingAndAddr)
+            ?: BrazilianOfferParser.extractPassengerRating(cleanedLines)
 
         // 7. Validação de consistência
         val conflictNotes = mutableListOf<String>()
