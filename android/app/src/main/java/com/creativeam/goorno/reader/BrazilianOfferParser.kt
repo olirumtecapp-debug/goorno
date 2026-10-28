@@ -83,7 +83,7 @@ object BrazilianOfferParser {
     )
 
     private val LEADING_DURATION_DISTANCE_PREFIX_REGEX = Regex(
-        pattern = """^[\s•·🟢🟠⬆️⬇️\(\)\[\]\-]*(?:(?:\d{1,2}\s*h(?:oras?)?(?:\s*e\s*|\s+)?)?\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]*)*(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)\[\]·•\-]*)*(?:\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]*)*""",
+        pattern = """^[\s•·🟢🟠⬆️⬇️\(\)\[\]\-]*(?:(?:\d{1,2}\s*h(?:oras?)?(?:\s*e\s*|\s+)?)?\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]+(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)\[\]·•\-]*)?|(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)\[\]·•\-]+(?:\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]*)?))""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -580,7 +580,8 @@ object BrazilianOfferParser {
         clean = clean.replace(Regex("""^[\s•·🟢🟠⬆️⬇️\(\)0O\-]+"""), "").trim()
 
         // 0b. Remove qualquer prefixo residual de duração/distância colado no início (ex: "8 min 2,8 km) ", "7 min 1,5 km) ", "31 min 10,9 km) ", "(6 min 1,3 km) ")
-        clean = clean.replace(Regex("""^[\s•·🟢🟠⬆️⬇️\(\)\[\]\-]*(?:\d{1,2}\s*h(?:oras?)?\s*(?:e\s*)?)?(?:\d{1,3}\s*min(?:utos?|s)?\s*)?(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))\s*)?[\)\],·•\-:\s]+"""), "").trim()
+        clean = clean.replace(Regex("""^[\s•·🟢🟠⬆️⬇️\(\)\[\]\-]*(?:(?:\d{1,2}\s*h(?:oras?)?(?:\s*e\s*|\s+)?)?\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]+(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)\[\]·•\-]*)?|(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)\[\]·•\-]+(?:\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]*)?))"""), "").trim()
+        clean = clean.trimStart(')', ']', '>', '-', ':', '•', '·', ' ')
 
         // 0c. Corta qualquer mensagem de toast, corrida aceita ou badge de rota colado no final do endereço
         clean = clean.replace(Regex("""(?i)\s*[\-·•,]?\s*\b(esta corrida foi aceita.*|corrida foi aceita.*|aceita por outro.*|isso [ée] tudo por enquanto.*|isso [ée] tudo.*)\b.*"""), "").trim()
@@ -1054,22 +1055,39 @@ object BrazilianOfferParser {
 
                 if (validCandidateSlice.isNotEmpty()) {
                     // Localiza o cabeçalho legítimo deste cartão específico ancorado ao Escolher atual
-                    // (pega o ÚLTIMO cabeçalho antes do botão para não capturar restos de cards anteriores!)
-                    var cardHeaderRelIdx = validCandidateSlice.indexOfLast { line ->
-                        val lower = line.lowercase(Locale.getDefault())
-                        lower.contains("pgto. no app") ||
-                            lower.contains("pagamento no app") ||
-                            lower.contains("pop") ||
-                            lower.contains("99pop") ||
-                            lower.contains("plus") ||
-                            lower.contains("negocia") ||
-                            lower.contains("99moto")
+                    // Se houver múltiplos preços no slice (ex: resíduos de card anterior acima),
+                    // ancora o cabeçalho no último preço legítimo deste cartão!
+                    val priceIndices = validCandidateSlice.indices.filter {
+                        extractAllCurrencies(listOf(validCandidateSlice[it])).isNotEmpty()
                     }
-                    if (cardHeaderRelIdx == -1) {
-                        cardHeaderRelIdx = validCandidateSlice.indexOfFirst { line ->
-                            extractAllCurrencies(listOf(line)).isNotEmpty()
+                    val targetPriceIdx = priceIndices.lastOrNull()
+
+                    var cardHeaderRelIdx = if (targetPriceIdx != null) {
+                        // Busca o cabeçalho ("Pgto. no app" ou categoria) imediatamente antes ou na linha do preço alvo
+                        val headerBeforePrice = (targetPriceIdx downTo 0).firstOrNull { idx ->
+                            val lower = validCandidateSlice[idx].lowercase(Locale.getDefault())
+                            lower.contains("pgto. no app") ||
+                                lower.contains("pagamento no app") ||
+                                lower.contains("pop") ||
+                                lower.contains("99pop") ||
+                                lower.contains("plus") ||
+                                lower.contains("negocia") ||
+                                lower.contains("99moto")
+                        }
+                        headerBeforePrice ?: targetPriceIdx
+                    } else {
+                        validCandidateSlice.indexOfFirst { line ->
+                            val lower = line.lowercase(Locale.getDefault())
+                            lower.contains("pgto. no app") ||
+                                lower.contains("pagamento no app") ||
+                                lower.contains("pop") ||
+                                lower.contains("99pop") ||
+                                lower.contains("plus") ||
+                                lower.contains("negocia") ||
+                                lower.contains("99moto")
                         }
                     }
+
                     val actualStart = if (cardHeaderRelIdx != -1) {
                         start + effectiveStart + cardHeaderRelIdx
                     } else {
