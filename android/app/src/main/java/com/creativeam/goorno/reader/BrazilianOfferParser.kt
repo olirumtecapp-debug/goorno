@@ -1000,11 +1000,6 @@ object BrazilianOfferParser {
                         extractAllCurrencies(listOf(line)).isNotEmpty()
                     }
                 }
-                // Se houver um preço legítimo no cartão, garante que o cartão comece no máximo no preço (ou na categoria logo antes)
-                val firstPriceIdx = candidateSlice.indexOfFirst { extractAllCurrencies(listOf(it)).isNotEmpty() }
-                if (firstPriceIdx != -1 && (cardHeaderRelIdx == -1 || cardHeaderRelIdx > firstPriceIdx)) {
-                    cardHeaderRelIdx = firstPriceIdx
-                }
                 val actualStart = if (cardHeaderRelIdx != -1) start + cardHeaderRelIdx else start
                 val slice = cleaned.subList(actualStart, chooseIdx + 1)
                 if (extractAllDistancesKm(slice).isNotEmpty() && extractAllCurrencies(slice).isNotEmpty()) {
