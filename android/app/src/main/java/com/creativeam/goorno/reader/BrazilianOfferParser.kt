@@ -941,7 +941,7 @@ object BrazilianOfferParser {
                         nextLower.contains("deslocamento") ||
                         nextLower.contains("esta corrida foi aceita") ||
                         nextLower.contains("corrida foi aceita") ||
-                        nextLower.contains("aceita por outro") ||
+                        nextLower.contains("aceita por outro")
                     val isNextContinuation = cleanedNext != null && cleanedNext.length in 3..45 &&
                         !isOfferBoundary &&
                         !STREET_PREFIX_REGEX.matches(cleanedNext) &&
