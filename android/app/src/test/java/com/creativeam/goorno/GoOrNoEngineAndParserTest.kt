@@ -1338,4 +1338,76 @@ class GoOrNoEngineAndParserTest {
         assertEquals(4.88, BrazilianOfferParser.extractPassengerRating(listOf("4,88"))!!, 0.01)
         assertEquals(5.00, BrazilianOfferParser.extractPassengerRating(listOf("👤 5,00 • Novo passageiro"))!!, 0.01)
     }
+// TESTES DO CHECKPOINT #029 (v3.3.62)
+    @Test
+    fun `test 99 passenger rating 5_00 with circled star and perfil premium`() {
+        val nodes = listOf(
+            "Pop Nova",
+            "R$ 7,60 R$ 2,10/km",
+            "✪ 5,00 • 17 corridas • Perfil Premium",
+            "8 min 2,8 km) Rua Rolando Júlio Duclos, 147, Jardim Palermo",
+            "31 min 10,9 km) Avenida Itamarati, 161 Vila Curucá",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(nodes)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+
+        assertEquals(7.60, offer.offeredPrice!!, 0.01)
+        assertEquals(5.00, offer.passengerRating!!, 0.01)
+        assertEquals("Rua Rolando Júlio Duclos, 147, Jardim Palermo", offer.originAddress)
+        assertEquals("Avenida Itamarati, 161 Vila Curucá", offer.destinationAddress)
+    }
+
+    @Test
+    fun `test address cleaning strips leading duration and distance prefix from establishment and street`() {
+        val rawOrigin = "7 min 1,5 km) Império Açaí e Tapioca, Rua Marechal Deodoro, Centro, São Bernardo do Campo"
+        val cleanedOrigin = BrazilianOfferParser.cleanAddressCandidate(rawOrigin)
+        assertEquals("Império Açaí e Tapioca, Rua Marechal Deodoro, Centro, São Bernardo do Campo", cleanedOrigin)
+
+        val rawDest = "8 min 2,8 km) Rua Rolando Júlio Duclos, 147, Jardim Palermo"
+        val cleanedDest = BrazilianOfferParser.cleanAddressCandidate(rawDest)
+        assertEquals("Rua Rolando Júlio Duclos, 147, Jardim Palermo", cleanedDest)
+    }
+
+    @Test
+    fun `test address cleaning strips RIO GRANDE badge and accepted toast message`() {
+        val rawWithRioGrande = "Hospital da Mulher de São Bernardo do Campo, Jardim Nov. RIO GRANDE"
+        val cleanedRioGrande = BrazilianOfferParser.cleanAddressCandidate(rawWithRioGrande)
+        assertEquals("Hospital da Mulher de São Bernardo do Campo, Jardim Nov.", cleanedRioGrande)
+
+        val rawWithAccepted = "Avenida Itamarati, 161 Vila Curucá Esta corrida foi aceita por outro motorista Isso é tudo por enquanto"
+        val cleanedAccepted = BrazilianOfferParser.cleanAddressCandidate(rawWithAccepted)
+        assertEquals("Avenida Itamarati, 161 Vila Curucá", cleanedAccepted)
+    }
+
+    @Test
+    fun `test 99 rejection of accepted by another driver offer and exclusion from list`() {
+        val screenWithDeadOffer = listOf(
+            "Esta corrida foi aceita por outro motorista",
+            "Isso é tudo por enquanto"
+        )
+        val offer = NinetyNineOfferReader.parseScreenNodes(screenWithDeadOffer)
+        assertEquals(ScreenClassification.NON_OFFER, offer.screenClassification)
+
+        val multiScreenWithDeadAndValid = listOf(
+            "Pop",
+            "R$ 12,00",
+            "8 min 2,0 km) Rua A, 100",
+            "10 min 3,0 km) Rua B, 200",
+            "Esta corrida foi aceita por outro motorista",
+            "Pop Nova",
+            "R$ 18,50",
+            "✪ 4,90 • 50 corridas",
+            "5 min 1,5 km) Rua C, 300",
+            "12 min 4,0 km) Rua D, 400",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(multiScreenWithDeadAndValid)
+        assertEquals(1, offers.size)
+        assertEquals(18.50, offers.first().offeredPrice!!, 0.01)
+        assertEquals(4.90, offers.first().passengerRating!!, 0.01)
+        assertEquals("Rua C, 300", offers.first().originAddress)
+        assertEquals("Rua D, 400", offers.first().destinationAddress)
+    }
 }

@@ -79,13 +79,17 @@ object NinetyNineOfferReader {
             )
         }
 
-        // 0b. Rejeição total de telas modais/feedbacks do sistema da 99
+        // 0b. Rejeição total de telas modais/feedbacks do sistema da 99 e corridas aceitas/expiradas
         if (joinedLower.contains("várias solicitações seguidas recusadas") ||
             joinedLower.contains("agradecemos sua resposta") ||
             joinedLower.contains("por que você recusou") ||
             joinedLower.contains("motivo da recusa") ||
             joinedLower.contains("deseja continuar online") ||
-            joinedLower.contains("pausado por")
+            joinedLower.contains("pausado por") ||
+            joinedLower.contains("esta corrida foi aceita") ||
+            joinedLower.contains("corrida foi aceita por outro") ||
+            joinedLower.contains("aceita por outro motorista") ||
+            joinedLower.contains("corrida aceita")
         ) {
             return StandardRideOffer(
                 offerId = UUID.randomUUID().toString(),
@@ -271,8 +275,8 @@ object NinetyNineOfferReader {
         val (parsedOrigin, parsedDestination) = BrazilianOfferParser.extractOriginAndDestination(linesForRatingAndAddr)
         val origin = legOrigin ?: parsedOrigin
         val destination = legDestination ?: parsedDestination
-        val passengerRating = BrazilianOfferParser.extractPassengerRating(linesForRatingAndAddr)
-            ?: BrazilianOfferParser.extractPassengerRating(cleanedLines)
+        val passengerRating = BrazilianOfferParser.extractPassengerRating(cleanedLines)
+            ?: BrazilianOfferParser.extractPassengerRating(linesForRatingAndAddr)
 
         // 7. Validação de consistência
         val conflictNotes = mutableListOf<String>()

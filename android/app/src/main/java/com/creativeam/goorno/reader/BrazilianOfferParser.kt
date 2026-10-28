@@ -83,7 +83,7 @@ object BrazilianOfferParser {
     )
 
     private val LEADING_DURATION_DISTANCE_PREFIX_REGEX = Regex(
-        pattern = """^[\s•·🟢🟠⬆️⬇️\(\)]*(?:(?:\d{1,2}\s*h(?:oras?)?(?:\s*e\s*|\s+)?)?\d{1,3}\s*min(?:utos?|s)?[\s\(\)·•-]*)*(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)·•-]*)+""",
+        pattern = """^[\s•·🟢🟠⬆️⬇️\(\)\[\]\-]*(?:(?:\d{1,2}\s*h(?:oras?)?(?:\s*e\s*|\s+)?)?\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]*)*(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))[\s\(\)\[\]·•\-]*)*(?:\d{1,3}\s*min(?:utos?|s)?[\s\(\)\[\]·•\-]*)*""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -203,19 +203,24 @@ object BrazilianOfferParser {
                 }
             }
 
-            // Caso 2d: Fragmentação de Nota do Passageiro (ex: "4,95" ou "👤 4,95" seguido de "• 387 corridas", "• Cartão verif.", etc.)
-            val ratingCandidate = Regex("""^(?:[★⭐✪\*👤👥🧑👨👩]\s*)?[3-5][.,]\d{1,2}$""").matches(current.trim())
-            if (ratingCandidate && i + 1 < flatTokens.size) {
-                val next = flatTokens[i + 1].trim()
-                val nextLower = next.lowercase(Locale.getDefault())
-                if (nextLower.startsWith("·") || nextLower.startsWith("•") || nextLower.startsWith("-") ||
-                    nextLower.startsWith("–") || nextLower.startsWith("—") || nextLower.startsWith("⋅") ||
-                    nextLower.contains("corrida") || nextLower.contains("viagen") || nextLower.contains("perfil") ||
-                    nextLower.contains("cartão") || nextLower.contains("cartao") || nextLower.contains("verif") ||
-                    nextLower.contains("novo") || nextLower.contains("passageir") || nextLower.contains("usuári")
-                ) {
-                    current = "$current $next"
-                    i++
+            // Caso 2d: Fragmentação de Nota do Passageiro (ex: "4,95" ou "👤 4,95" seguido de "• 17 corridas", "• Perfil Premium", etc.)
+            val ratingCandidate = Regex("""^(?:[^\w\d\s]\s*)?[3-5][.,]\d{1,2}$""").matches(current.trim())
+            if (ratingCandidate) {
+                while (i + 1 < flatTokens.size) {
+                    val next = flatTokens[i + 1].trim()
+                    val nextLower = next.lowercase(Locale.getDefault())
+                    if (nextLower.startsWith("·") || nextLower.startsWith("•") || nextLower.startsWith("-") ||
+                        nextLower.startsWith("–") || nextLower.startsWith("—") || nextLower.startsWith("⋅") ||
+                        nextLower.contains("corrida") || nextLower.contains("viagen") || nextLower.contains("perfil") ||
+                        nextLower.contains("cartão") || nextLower.contains("cartao") || nextLower.contains("verif") ||
+                        nextLower.contains("novo") || nextLower.contains("passageir") || nextLower.contains("usuári") ||
+                        nextLower.contains("premium") || nextLower.contains("essencial")
+                    ) {
+                        current = "$current $next"
+                        i++
+                    } else {
+                        break
+                    }
                 }
             }
 
@@ -441,7 +446,7 @@ object BrazilianOfferParser {
     }
 
     private val EXPLICIT_STAR_RATING_REGEX = Regex(
-        pattern = """(?:[★⭐✪\*👤👥🧑👨👩]|nota|avalia[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]?\s*([3-5][.,]\d{1,2})\b|\b([3-5][.,]\d{1,2})\s*(?:[★⭐✪\*👤👥🧑👨👩]|\(\d+\s*(?:corridas?|viagens?)?\)|[·•∙‧⋅\.\-–—|/]\s*(?:\d+\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa])|\d+\s*(?:corridas?|viagens?)|[·•∙‧\-–]\s*perfil)""",
+        pattern = """(?:[^\w\d\s]|nota|avalia[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]?\s*([3-5][.,]\d{1,2})\b|\b([3-5][.,]\d{1,2})\s*(?:[^\w\d\s]|\(\d+\s*(?:corridas?|viagens?)?\)|[·•∙‧⋅\.\-–—|/]\s*(?:\d+\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa]|premium|essencial)|\d+\s*(?:corridas?|viagens?)|[·•∙‧\-–]\s*(?:perfil|premium|essencial))""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -466,7 +471,7 @@ object BrazilianOfferParser {
         // 0ª Passada de SUPER ALTA PRECISÃO: busca no texto completo agrupado
         val fullJoined = normalized.joinToString(" ")
         val explicitPassengerRegex = Regex(
-            """(?:[★⭐✪\*👤👥🧑👨👩]|nota|avalia[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]?\s*([3-5][.,]\d{1,2})\b|\b([3-5][.,]\d{1,2})\s*(?:[★⭐✪\*👤👥🧑👨👩]|[·•∙‧⋅\.\-–—|/]\s*(?:\d+\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa])|\(\d+\s*(?:corridas?|viagens?)?\)|[·•∙‧⋅\.\-–—|/]\s*(?:cart[ãa]o|verif|perfil)|\d+\s*(?:corridas?|viagens?))""",
+            """(?:[^\w\d\s]|nota|avalia[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]?\s*([3-5][.,]\d{1,2})\b|\b([3-5][.,]\d{1,2})\s*(?:[^\w\d\s]|[·•∙‧⋅\.\-–—|/]\s*(?:\d+\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa]|premium|essencial)|\(\d+\s*(?:corridas?|viagens?)?\)|[·•∙‧⋅\.\-–—|/]\s*(?:cart[ãa]o|verif|perfil|premium|essencial)|\d+\s*(?:corridas?|viagens?))""",
             RegexOption.IGNORE_CASE
         )
         val mFull = explicitPassengerRegex.find(fullJoined)
@@ -502,7 +507,8 @@ object BrazilianOfferParser {
                 lower.contains("passageir") || lower.contains("usuári") || lower.contains("usuari") ||
                 lower.contains("cartão") || lower.contains("cartao") || lower.contains("verif") ||
                 lower.contains("novo") || lower.contains("nota") || lower.contains("avalia") ||
-                line.contains("👤")
+                lower.contains("premium") || lower.contains("essencial") ||
+                line.any { !it.isLetterOrDigit() && !it.isWhitespace() && it != '.' && it != ',' }
             ) {
                 val match = Regex("""(?<![R\$\d.,/])([3-5][.,]\d{1,2})\b(?!\s*(?:km|m\b|min|h\b|x\b|/km|/h))""").find(line)
                 if (match != null) {
@@ -573,6 +579,13 @@ object BrazilianOfferParser {
         clean = clean.replace(Regex("""(?i)\s*\b(agradecemos\s+sua\s+resposta|agradecemos|sua\s+resposta|por\s+que\s+você\s+recusou|motivo\s+da\s+recusa)\b.*"""), "").trim()
         clean = clean.replace(Regex("""^[\s•·🟢🟠⬆️⬇️\(\)0O\-]+"""), "").trim()
 
+        // 0b. Remove qualquer prefixo residual de duração/distância colado no início (ex: "8 min 2,8 km) ", "7 min 1,5 km) ", "31 min 10,9 km) ", "(6 min 1,3 km) ")
+        clean = clean.replace(Regex("""^[\s•·🟢🟠⬆️⬇️\(\)\[\]\-]*(?:\d{1,2}\s*h(?:oras?)?\s*(?:e\s*)?)?(?:\d{1,3}\s*min(?:utos?|s)?\s*)?(?:\d{1,4}(?:[.,]\d{1,2})?\s*(?:km|m\b(?!in))\s*)?[\)\],·•\-:\s]+"""), "").trim()
+
+        // 0c. Corta qualquer mensagem de toast, corrida aceita ou badge de rota colado no final do endereço
+        clean = clean.replace(Regex("""(?i)\s*[\-·•,]?\s*\b(esta corrida foi aceita.*|corrida foi aceita.*|aceita por outro.*|isso [ée] tudo por enquanto.*|isso [ée] tudo.*)\b.*"""), "").trim()
+        clean = clean.replace(Regex("""(?i)\s*[\-·•,]?\s*\b(rio grande|ped[áa]gio|pedagio|via anchieta|rodoanel|imigrantes)\b\s*$"""), "").trim()
+
         if (clean.length < 3) return null
 
         val lower = clean.lowercase(Locale.getDefault())
@@ -592,6 +605,11 @@ object BrazilianOfferParser {
             lower.contains("radar de viagens") || lower.startsWith("viagem longa") ||
             lower.startsWith("viagem ") || lower == "viagem" ||
             lower.contains("higran") || lower.contains("canhaem") ||
+            lower.contains("esta corrida foi aceita") || lower.contains("corrida foi aceita") ||
+            lower.contains("aceita por outro motorista") || lower.contains("aceita por outro") ||
+            lower.contains("isso é tudo por enquanto") || lower.contains("isso e tudo") ||
+            lower == "rio grande" || lower == "pedágio" || lower == "pedagio" ||
+            lower == "rodovia" || lower == "via anchieta" || lower == "rodoanel" ||
             lower.matches(Regex("""^\d{1,3}$"""))
         ) {
             return null
@@ -683,15 +701,17 @@ object BrazilianOfferParser {
             if (distKm != null) {
                 if (durMin == null) durMin = (distKm * 2.2).toInt().coerceAtLeast(3)
                 // 1. Tenta pegar o endereço no restante da MESMA linha
-                val strippedPrefix = LEADING_DURATION_DISTANCE_PREFIX_REGEX.replace(lineForAddress, "").trim()
+                val strippedPrefix = LEADING_DURATION_DISTANCE_PREFIX_REGEX.replace(lineForAddress, "").trim().trimStart(')', ']', '>', '-', ':', '•', '·', ' ')
                 var legAddress: String? = null
 
-                val isStreetOrComma = STREET_PREFIX_REGEX.matches(strippedPrefix) || strippedPrefix.contains(",")
+                val isStreetOrComma = STREET_PREFIX_REGEX.matches(strippedPrefix) || strippedPrefix.contains(",") || strippedPrefix.length >= 5
                 val strippedLower = strippedPrefix.lowercase(Locale.getDefault())
                 val isBoundary = strippedLower.contains("pgto") || strippedLower.contains("uber") ||
                     strippedLower.contains("99") || strippedLower.contains("r$") ||
                     strippedLower.contains("escolher") || strippedLower.contains("aceitar") ||
-                    strippedLower.contains("recusar") || strippedLower.contains("perfil")
+                    strippedLower.contains("recusar") || strippedLower.contains("perfil") ||
+                    strippedLower.contains("esta corrida foi aceita") || strippedLower.contains("corrida foi aceita") ||
+                    strippedLower.contains("aceita por outro") || strippedLower.contains("isso é tudo")
 
                 if (strippedPrefix.length >= 3 && (isStreetOrComma || !isBoundary)) {
                     var fullAddr = strippedPrefix
@@ -727,6 +747,17 @@ object BrazilianOfferParser {
                             nextLower.contains("black") ||
                             nextLower.contains("higran") ||
                             nextLower.contains("canhaem") ||
+                            nextLower.contains("esta corrida foi aceita") ||
+                            nextLower.contains("corrida foi aceita") ||
+                            nextLower.contains("aceita por outro") ||
+                            nextLower.contains("isso é tudo") ||
+                            nextLower.contains("isso e tudo") ||
+                            nextLower.contains("rio grande") ||
+                            nextLower.contains("pedágio") ||
+                            nextLower.contains("pedagio") ||
+                            nextLower.contains("rodovia") ||
+                            nextLower.contains("anchieta") ||
+                            nextLower.contains("rodoanel") ||
                             nextLower.matches(Regex("""^\d{1,3}$""")) ||
                             STREET_PREFIX_REGEX.matches(nextLine)
 
@@ -782,6 +813,17 @@ object BrazilianOfferParser {
                                 nextNextLower.contains("black") ||
                                 nextNextLower.contains("higran") ||
                                 nextNextLower.contains("canhaem") ||
+                                nextNextLower.contains("esta corrida foi aceita") ||
+                                nextNextLower.contains("corrida foi aceita") ||
+                                nextNextLower.contains("aceita por outro") ||
+                                nextNextLower.contains("isso é tudo") ||
+                                nextNextLower.contains("isso e tudo") ||
+                                nextNextLower.contains("rio grande") ||
+                                nextNextLower.contains("pedágio") ||
+                                nextNextLower.contains("pedagio") ||
+                                nextNextLower.contains("rodovia") ||
+                                nextNextLower.contains("anchieta") ||
+                                nextNextLower.contains("rodoanel") ||
                                 nextNextLower.matches(Regex("""^\d{1,3}$""")) ||
                                 STREET_PREFIX_REGEX.matches(nextNext)
 
@@ -868,9 +910,9 @@ object BrazilianOfferParser {
                 continue
             }
 
-            // Se a linha começa com "(6 min 1,3 km) Rua dos Vianas, 1545", removemos o prefixo "(6 min 1,3 km)" para preservar o endereço!
-            val strippedPrefix = LEADING_DURATION_DISTANCE_PREFIX_REGEX.replace(rawLine, "").trim()
-            val candidate = if (strippedPrefix.length >= 5 && STREET_PREFIX_REGEX.matches(strippedPrefix)) {
+            // Se a linha começa com "(6 min 1,3 km) Rua dos Vianas, 1545" ou "7 min 1,5 km) Império Açaí...", removemos o prefixo para preservar o endereço limpo!
+            val strippedPrefix = LEADING_DURATION_DISTANCE_PREFIX_REGEX.replace(rawLine, "").trim().trimStart(')', ']', '>', '-', ':', '•', '·', ' ')
+            val candidate = if (strippedPrefix.length >= 4) {
                 strippedPrefix
             } else {
                 rawLine
@@ -903,9 +945,19 @@ object BrazilianOfferParser {
                         nextLower.contains("aceitar") ||
                         nextLower.contains("verificado") ||
                         nextLower.contains("isso é tudo") ||
+                        nextLower.contains("isso e tudo") ||
                         nextLower.contains("corridas") ||
                         nextLower.contains("perfil ") ||
-                        nextLower.contains("deslocamento")
+                        nextLower.contains("deslocamento") ||
+                        nextLower.contains("esta corrida foi aceita") ||
+                        nextLower.contains("corrida foi aceita") ||
+                        nextLower.contains("aceita por outro") ||
+                        nextLower.contains("rio grande") ||
+                        nextLower.contains("pedágio") ||
+                        nextLower.contains("pedagio") ||
+                        nextLower.contains("rodovia") ||
+                        nextLower.contains("anchieta") ||
+                        nextLower.contains("rodoanel")
                     val isNextContinuation = cleanedNext != null && cleanedNext.length in 3..45 &&
                         !isOfferBoundary &&
                         !STREET_PREFIX_REGEX.matches(cleanedNext) &&
@@ -983,27 +1035,55 @@ object BrazilianOfferParser {
             var start = 0
             for (chooseIdx in chooseIndices) {
                 val candidateSlice = cleaned.subList(start, chooseIdx + 1)
-                // Localiza o cabeçalho legítimo deste cartão específico (prioriza "Pgto. no app" ou categoria),
-                // descartando resíduos órfãos deixados pelo scroll de chamadas antigas
-                var cardHeaderRelIdx = candidateSlice.indexOfFirst { line ->
+                // Se houver mensagem de corrida aceita/expirada antes deste Escolher,
+                // tudo anterior a ela pertence à corrida morta e deve ser descartado!
+                val lastAcceptedIdx = candidateSlice.indexOfLast { line ->
                     val lower = line.lowercase(Locale.getDefault())
-                    lower.contains("pgto. no app") ||
-                        lower.contains("pagamento no app") ||
-                        lower.contains("pop") ||
-                        lower.contains("99pop") ||
-                        lower.contains("plus") ||
-                        lower.contains("negocia") ||
-                        lower.contains("99moto")
+                    lower.contains("esta corrida foi aceita") ||
+                        lower.contains("corrida foi aceita") ||
+                        lower.contains("aceita por outro") ||
+                        lower.contains("isso é tudo por enquanto") ||
+                        lower.contains("isso e tudo")
                 }
-                if (cardHeaderRelIdx == -1) {
-                    cardHeaderRelIdx = candidateSlice.indexOfFirst { line ->
-                        extractAllCurrencies(listOf(line)).isNotEmpty()
+                val effectiveStart = if (lastAcceptedIdx != -1) lastAcceptedIdx + 1 else 0
+                val validCandidateSlice = if (effectiveStart < candidateSlice.size) {
+                    candidateSlice.subList(effectiveStart, candidateSlice.size)
+                } else {
+                    emptyList()
+                }
+
+                if (validCandidateSlice.isNotEmpty()) {
+                    // Localiza o cabeçalho legítimo deste cartão específico ancorado ao Escolher atual
+                    // (pega o ÚLTIMO cabeçalho antes do botão para não capturar restos de cards anteriores!)
+                    var cardHeaderRelIdx = validCandidateSlice.indexOfLast { line ->
+                        val lower = line.lowercase(Locale.getDefault())
+                        lower.contains("pgto. no app") ||
+                            lower.contains("pagamento no app") ||
+                            lower.contains("pop") ||
+                            lower.contains("99pop") ||
+                            lower.contains("plus") ||
+                            lower.contains("negocia") ||
+                            lower.contains("99moto")
                     }
-                }
-                val actualStart = if (cardHeaderRelIdx != -1) start + cardHeaderRelIdx else start
-                val slice = cleaned.subList(actualStart, chooseIdx + 1)
-                if (extractAllDistancesKm(slice).isNotEmpty() && extractAllCurrencies(slice).isNotEmpty()) {
-                    clusters.add(slice)
+                    if (cardHeaderRelIdx == -1) {
+                        cardHeaderRelIdx = validCandidateSlice.indexOfFirst { line ->
+                            extractAllCurrencies(listOf(line)).isNotEmpty()
+                        }
+                    }
+                    val actualStart = if (cardHeaderRelIdx != -1) {
+                        start + effectiveStart + cardHeaderRelIdx
+                    } else {
+                        start + effectiveStart
+                    }
+                    val slice = cleaned.subList(actualStart, chooseIdx + 1)
+                    val sliceJoined = slice.joinToString(" ").lowercase(Locale.getDefault())
+                    val isDead = sliceJoined.contains("esta corrida foi aceita") ||
+                        sliceJoined.contains("corrida foi aceita") ||
+                        sliceJoined.contains("aceita por outro")
+
+                    if (!isDead && extractAllDistancesKm(slice).isNotEmpty() && extractAllCurrencies(slice).isNotEmpty()) {
+                        clusters.add(slice)
+                    }
                 }
                 start = chooseIdx + 1
             }
