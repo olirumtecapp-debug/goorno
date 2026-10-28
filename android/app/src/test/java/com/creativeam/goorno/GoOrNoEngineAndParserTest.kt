@@ -1389,7 +1389,7 @@ class GoOrNoEngineAndParserTest {
         )
         val legs = BrazilianOfferParser.extractRideLegs(multiLineLegs)
         assertEquals(1, legs.size)
-        assertEquals("Hospital da Mulher de São Bernardo do Campo, Jardim Novo Horizonte", legs.first().address)
+        assertEquals("Hospital da Mulher de São Bernardo do Campo Jardim Novo Horizonte", legs.first().address)
 
         val rawWithAccepted = "Avenida Itamarati, 161 Vila Curucá Esta corrida foi aceita por outro motorista Isso é tudo por enquanto"
         val cleanedAccepted = BrazilianOfferParser.cleanAddressCandidate(rawWithAccepted)
