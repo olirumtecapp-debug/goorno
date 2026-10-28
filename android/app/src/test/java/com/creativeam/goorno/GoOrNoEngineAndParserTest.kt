@@ -1315,16 +1315,16 @@ class GoOrNoEngineAndParserTest {
         assertEquals("Preço da oferta 1 deve ser 37.80", 37.80, offer1.offeredPrice!!, 0.01)
         assertEquals("Distância pickup oferta 1 deve ser 1.6 km", 1.6, offer1.pickupDistanceKm!!, 0.01)
         assertEquals("Distância viagem oferta 1 deve ser 28.4 km", 28.4, offer1.tripDistanceKm!!, 0.01)
-        assertEquals("Distância total oferta 1 deve ser 30.0 km", 30.0, offer1.totalDistanceKm!!, 0.01)
-        assertEquals("Duração total oferta 1 deve ser 57 min", 57, offer1.totalDurationMin)
+        assertEquals("Distância total oferta 1 deve ser 30.0 km", 30.0, offer1.totalDistanceKmExplicit!!, 0.01)
+        assertEquals("Duração total oferta 1 deve ser 57 min", 57, offer1.totalDurationMinExplicit)
         assertEquals("Nota do passageiro oferta 1 deve ser 4.65", 4.65, offer1.passengerRating!!, 0.01)
 
         val offer2 = offers[1]
         assertEquals("Preço da oferta 2 deve ser 15.90", 15.90, offer2.offeredPrice!!, 0.01)
         assertEquals("Distância pickup oferta 2 deve ser 2.1 km", 2.1, offer2.pickupDistanceKm!!, 0.01)
         assertEquals("Distância viagem oferta 2 deve ser 5.1 km", 5.1, offer2.tripDistanceKm!!, 0.01)
-        assertEquals("Distância total oferta 2 deve ser 7.2 km (NÃO 30 km)", 7.2, offer2.totalDistanceKm!!, 0.01)
-        assertEquals("Duração total oferta 2 deve ser 22 min (NÃO 57 min)", 22, offer2.totalDurationMin)
+        assertEquals("Distância total oferta 2 deve ser 7.2 km (NÃO 30 km)", 7.2, offer2.totalDistanceKmExplicit!!, 0.01)
+        assertEquals("Duração total oferta 2 deve ser 22 min (NÃO 57 min)", 22, offer2.totalDurationMinExplicit)
         assertEquals("Nota do passageiro oferta 2 deve ser 4.95", 4.95, offer2.passengerRating!!, 0.01)
     }
 
