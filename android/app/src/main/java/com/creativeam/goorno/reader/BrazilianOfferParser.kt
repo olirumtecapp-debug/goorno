@@ -758,7 +758,7 @@ object BrazilianOfferParser {
 
                         val cleanedNext = cleanAddressCandidate(nextLine)
                         if (cleanedNext != null && cleanedNext.length in 2..50) {
-                            val separator = if (rawLast.endsWith(",") || fullAddr.endsWith(",")) ", " else " "
+                            val separator = if (rawLast.endsWith(",") || fullAddr.endsWith(",")) " " else ", "
                             fullAddr = "$fullAddr$separator$cleanedNext".replace(Regex(""",\s*,"""), ",").replace(Regex("""\s+"""), " ")
                             rawLast = nextLine
                             continuationCount++
@@ -820,7 +820,7 @@ object BrazilianOfferParser {
 
                             val cleanedCont = cleanAddressCandidate(nextNext)
                             if (cleanedCont != null && cleanedCont.length in 2..50) {
-                                val separator = if (rawLast.endsWith(",") || cand.endsWith(",")) ", " else " "
+                                val separator = if (rawLast.endsWith(",") || cand.endsWith(",")) " " else ", "
                                 cand = "$cand$separator$cleanedCont".replace(Regex(""",\s*,"""), ",").replace(Regex("""\s+"""), " ")
                                 rawLast = nextNext
                                 continuationCount++
@@ -942,12 +942,6 @@ object BrazilianOfferParser {
                         nextLower.contains("esta corrida foi aceita") ||
                         nextLower.contains("corrida foi aceita") ||
                         nextLower.contains("aceita por outro") ||
-                        nextLower.contains("rio grande") ||
-                        nextLower.contains("pedágio") ||
-                        nextLower.contains("pedagio") ||
-                        nextLower.contains("rodovia") ||
-                        nextLower.contains("anchieta") ||
-                        nextLower.contains("rodoanel")
                     val isNextContinuation = cleanedNext != null && cleanedNext.length in 3..45 &&
                         !isOfferBoundary &&
                         !STREET_PREFIX_REGEX.matches(cleanedNext) &&
