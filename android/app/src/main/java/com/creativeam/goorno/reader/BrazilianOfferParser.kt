@@ -23,9 +23,9 @@ object BrazilianOfferParser {
         option = RegexOption.IGNORE_CASE
     )
 
-    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "R$1,44/km aprox.", "R$ 1,16 por deslocamento", "R$3,06 Tarifa base dinâmica incl.", "R$ 45/h")
+    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "3,66/km", "Est. de R$1,94/km", "R$ 1,16 por deslocamento", "R$3,06 Tarifa base dinâmica incl.", "R$ 45/h")
     private val NON_OFFER_PRICE_NOISE_REGEX = Regex(
-        pattern = """R\$\s*\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km(?:\s*aprox\.?)?|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus|tarifa\s+base|din[âa]mica|a\s+mais.*)""",
+        pattern = """(?:(?:Est\.\s+de\s+)?R\$\s*)?\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km(?:\s*aprox\.?)?|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus|tarifa\s+base|din[âa]mica|a\s+mais.*)""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -175,7 +175,7 @@ object BrazilianOfferParser {
             }
 
             // Caso 2b: Fragmentação de horas e minutos (ex: "1 h" + "e" + "19 min (28.3 km)" ou "1 h" + "19 min")
-            val hourOnlyMatch = Regex("""^(\d{1,2})\s*h(?:oras?)?$""", RegexOption.IGNORE_CASE).matchEntire(current)
+            val hourOnlyMatch = Regex("""^[\s•·oO🟢🟠\-\(\)\[\]]*(\d{1,2})\s*h(?:oras?)?$""", RegexOption.IGNORE_CASE).matchEntire(current)
             if (hourOnlyMatch != null && i + 1 < flatTokens.size) {
                 val next1 = flatTokens[i + 1].trim()
                 if (next1.equals("e", ignoreCase = true) && i + 2 < flatTokens.size) {
@@ -339,9 +339,12 @@ object BrazilianOfferParser {
         for (line in normalized) {
             val lower = line.lowercase(Locale.getDefault())
             // Ignora instruções isoladas de GPS de conversão de rua no topo da tela (ex: "↰ 61 m")
-            if (lower.contains("↰") || lower.contains("↱") || lower.contains("↑") ||
-                lower.contains("→") || lower.contains("←")
-            ) {
+            val isGpsTurnInstruction = (lower.contains("↰") || lower.contains("↱") || lower.contains("↗") || lower.contains("↖")) &&
+                !lower.contains("min") && !lower.contains("km") && line.length < 15
+            if (isGpsTurnInstruction) {
+                continue
+            }
+            if (lower.contains("tarifa base") || lower.contains("desconto")) {
                 continue
             }
             val sanitized = stripNonOfferPriceNoise(line)
@@ -414,6 +417,12 @@ object BrazilianOfferParser {
         val normalized = normalizeFragmentedNodes(lines)
         val results = mutableListOf<Int>()
         for (line in normalized) {
+            val lower = line.lowercase(Locale.getDefault())
+            if (lower.contains("viagem longa") || lower.contains("espera longa") ||
+                lower.contains("tarifa base") || lower.contains("desconto")
+            ) {
+                continue
+            }
             val hmMatches = HOURS_AND_MIN_REGEX.findAll(line).toList()
             if (hmMatches.isNotEmpty()) {
                 for (hm in hmMatches) {
@@ -445,72 +454,71 @@ object BrazilianOfferParser {
         return results
     }
 
-    private val EXPLICIT_STAR_RATING_REGEX = Regex(
-        pattern = """(?:[^\w\d\s]|nota|avalia[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]?\s*([3-5][.,]\d{1,2})\b|\b([3-5][.,]\d{1,2})\s*(?:[^\w\d\s]|\(\d+\s*(?:corridas?|viagens?)?\)|[·•∙‧⋅\.\-–—|/]\s*(?:\d+\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa]|premium|essencial)|\d+\s*(?:corridas?|viagens?)|[·•∙‧\-–]\s*(?:perfil|premium|essencial))""",
+    private val RATING_PREFIX_REGEX = Regex(
+        pattern = """(?<![R\$\d.,/])(?:[★⭐✪☆*👤🚹👥]|nota|avalia[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]??\s*([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""",
         option = RegexOption.IGNORE_CASE
     )
 
-    private val TWO_DECIMAL_RATING_REGEX = Regex(
-        pattern = """(?<![R\$\d.,/])([34][.,]\d{2}|5[.,]00)\b(?!\s*(?:km|m\b|min|h\b|x\b|/km|/h))""",
-        option = RegexOption.IGNORE_CASE
-    )
-
-    private val ONE_DECIMAL_RATING_CONTEXT_REGEX = Regex(
-        pattern = """(?<![R\$\d.,/])([34][.,]\d|5[.,]0)\b(?!\s*(?:km|m\b|min|h\b|x\b|/km|/h))""",
+    private val RATING_SUFFIX_REGEX = Regex(
+        pattern = """(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\s*(?:[·•∙‧⋅\.\-–—|]\s*(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa]|premium|essencial)|\([^)]*(?:corridas?|viagens?|\d+)[^)]*\)|(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?))|(?:novo\s+passageiro|passageiro\s+novo))""",
         option = RegexOption.IGNORE_CASE
     )
 
     /**
      * Extrai a Avaliação / Nota do Passageiro (ex: "★ 4,92", "4,85 (42 corridas)", "4,95 · 736 corridas", "5,00 · 105 corridas", "⭐ 4,72")
-     * ignorando preços (R$), distâncias (km) e multiplicadores de dinâmico (ex: 1,2x).
+     * ignorando preços (R$), tarifas por km (ex: "3,66/km", "R$3,65/km"), distâncias (km) e multiplicadores de dinâmico (ex: 1,2x).
      */
     fun extractPassengerRating(lines: List<String>): Double? {
         val normalized = normalizeFragmentedNodes(lines)
         if (normalized.isEmpty()) return null
 
+        val cleaned = normalized.map { stripNonOfferPriceNoise(it).trim() }.filter { it.isNotBlank() }
+        if (cleaned.isEmpty()) return null
+
         // 0ª Passada de SUPER ALTA PRECISÃO: busca no texto completo agrupado
-        val fullJoined = normalized.joinToString(" ")
-        val explicitPassengerRegex = Regex(
-            """(?:[^\w\d\s]|nota|avalia[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]?\s*([3-5][.,]\d{1,2})\b|\b([3-5][.,]\d{1,2})\s*(?:[^\w\d\s]|[·•∙‧⋅\.\-–—|/]\s*(?:\d+\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa]|premium|essencial)|\(\d+\s*(?:corridas?|viagens?)?\)|[·•∙‧⋅\.\-–—|/]\s*(?:cart[ãa]o|verif|perfil|premium|essencial)|\d+\s*(?:corridas?|viagens?))""",
-            RegexOption.IGNORE_CASE
-        )
-        val mFull = explicitPassengerRegex.find(fullJoined)
-        if (mFull != null) {
-            val token = mFull.groupValues[1].ifBlank { mFull.groupValues[2] }
-            val rating = parseBrazilianDecimal(token)
+        val fullJoined = cleaned.joinToString(" ")
+        val mPrefixFull = RATING_PREFIX_REGEX.find(fullJoined)
+        if (mPrefixFull != null) {
+            val rating = parseBrazilianDecimal(mPrefixFull.groupValues[1])
+            if (rating != null && rating in 3.00..5.00) {
+                return rating
+            }
+        }
+        val mSuffixFull = RATING_SUFFIX_REGEX.find(fullJoined)
+        if (mSuffixFull != null) {
+            val rating = parseBrazilianDecimal(mSuffixFull.groupValues[1])
             if (rating != null && rating in 3.00..5.00) {
                 return rating
             }
         }
 
-        // 1ª Passada: Padrão explícito com estrela (★ / ⭐) ou ícone de passageiro (👤), palavra "Nota" ou seguido de corridas/perfil/bullets
-        for (line in normalized) {
-            val clean = stripNonOfferPriceNoise(line)
-                .replace(CURRENCY_REGEX, " ")
-                .replace(DISTANCE_TOKEN_REGEX, " ")
-                .replace(Regex("""\d+[.,]\d+\s*x\b""", RegexOption.IGNORE_CASE), " ")
-
-            val explicitMatch = EXPLICIT_STAR_RATING_REGEX.find(clean)
-            if (explicitMatch != null) {
-                val token = explicitMatch.groupValues[1].ifBlank { explicitMatch.groupValues[2] }
-                val rating = parseBrazilianDecimal(token)
+        // 1ª Passada: Linha por linha procurando padrão explícito com prefixo ou sufixo
+        for (line in cleaned) {
+            val mPrefix = RATING_PREFIX_REGEX.find(line)
+            if (mPrefix != null) {
+                val rating = parseBrazilianDecimal(mPrefix.groupValues[1])
+                if (rating != null && rating in 3.00..5.00) {
+                    return rating
+                }
+            }
+            val mSuffix = RATING_SUFFIX_REGEX.find(line)
+            if (mSuffix != null) {
+                val rating = parseBrazilianDecimal(mSuffix.groupValues[1])
                 if (rating != null && rating in 3.00..5.00) {
                     return rating
                 }
             }
         }
 
-        // 2ª Passada: Linha contextual de passageiro ("corridas", "perfil", "viagens", "verificado", "passageiro", "usuário", "cartão", "novo")
-        for (line in normalized) {
+        // 2ª Passada: Linha contextual de passageiro se ainda não capturado
+        for (line in cleaned) {
             val lower = line.lowercase(Locale.getDefault())
             if (lower.contains("corrida") || lower.contains("viagen") || lower.contains("perfil") ||
                 lower.contains("passageir") || lower.contains("usuári") || lower.contains("usuari") ||
                 lower.contains("cartão") || lower.contains("cartao") || lower.contains("verif") ||
-                lower.contains("novo") || lower.contains("nota") || lower.contains("avalia") ||
-                lower.contains("premium") || lower.contains("essencial") ||
-                line.any { !it.isLetterOrDigit() && !it.isWhitespace() && it != '.' && it != ',' }
+                lower.contains("novo") || lower.contains("nota") || lower.contains("avalia")
             ) {
-                val match = Regex("""(?<![R\$\d.,/])([3-5][.,]\d{1,2})\b(?!\s*(?:km|m\b|min|h\b|x\b|/km|/h))""").find(line)
+                val match = Regex("""(?<![R\$\d.,/])([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(line)
                 if (match != null) {
                     val r = parseBrazilianDecimal(match.groupValues[1])
                     if (r != null && r in 3.00..5.00) {
@@ -518,50 +526,6 @@ object BrazilianOfferParser {
                     }
                 }
             }
-        }
-
-        // 3ª Passada: Número decimal típico de avaliação fora de preço/km/dinâmico.
-        // Se houver mais de um número (ex: 5,00 no cabeçalho do motorista e 4,86 da corrida),
-        // PREFERE sempre o valor decimal menor que 5.00 (ex: 4,xx) para não pegar a nota do motorista!
-        val fallbackCandidates = mutableListOf<Double>()
-        for (line in normalized) {
-            val lineLower = line.lowercase(Locale.getDefault())
-            if (lineLower.contains("posto") ||
-                lineLower.contains("abastece") ||
-                lineLower.contains("combust") ||
-                lineLower.contains("desconto")
-            ) {
-                continue
-            }
-
-            val clean = stripNonOfferPriceNoise(line)
-                .replace(CURRENCY_REGEX, " ")
-                .replace(DISTANCE_TOKEN_REGEX, " ")
-                .replace(Regex("""\d+[.,]\d+\s*x\b""", RegexOption.IGNORE_CASE), " ")
-                .trim()
-
-            val twoDecMatch = TWO_DECIMAL_RATING_REGEX.find(clean)
-            if (twoDecMatch != null) {
-                val rating = parseBrazilianDecimal(twoDecMatch.groupValues[1])
-                if (rating != null && rating in 3.50..5.00) {
-                    fallbackCandidates.add(rating)
-                }
-            }
-
-            if (clean.length <= 6) {
-                val oneDecMatch = ONE_DECIMAL_RATING_CONTEXT_REGEX.find(clean)
-                if (oneDecMatch != null) {
-                    val rating = parseBrazilianDecimal(oneDecMatch.groupValues[1])
-                    if (rating != null && rating in 3.50..5.00) {
-                        fallbackCandidates.add(rating)
-                    }
-                }
-            }
-        }
-
-        if (fallbackCandidates.isNotEmpty()) {
-            val non5 = fallbackCandidates.firstOrNull { it < 4.995 }
-            return non5 ?: fallbackCandidates.first()
         }
 
         return null
@@ -663,9 +627,9 @@ object BrazilianOfferParser {
             val lower = line.lowercase(Locale.getDefault())
 
             // Ignora instruções isoladas de GPS do topo da tela (ex: "↰ 61 m")
-            if (lower.contains("↰") || lower.contains("↱") || lower.contains("↑") ||
-                lower.contains("→") || lower.contains("←")
-            ) {
+            val isGpsTurnInstruction = (lower.contains("↰") || lower.contains("↱") || lower.contains("↗") || lower.contains("↖")) &&
+                !lower.contains("min") && !lower.contains("km") && line.length < 15
+            if (isGpsTurnInstruction) {
                 i++
                 continue
             }
@@ -1005,19 +969,19 @@ object BrazilianOfferParser {
             normalized
         }
 
-        // 2. Fatiamento de ALTA PRECISÃO para lista de solicitações da 99 usando o delimitador "Escolher"
-        val chooseIndices = mutableListOf<Int>()
+        // 2. Fatiamento de ALTA PRECISÃO para lista de solicitações da 99 e Radar Uber usando delimitadores ("Escolher" / "Selecionar")
+        val actionIndices = mutableListOf<Int>()
         for (i in cleaned.indices) {
             val l = cleaned[i].trim().lowercase(Locale.getDefault())
-            if (l == "escolher" || l.startsWith("escolher")) {
-                chooseIndices.add(i)
+            if (l == "escolher" || l.startsWith("escolher") || l == "selecionar" || l.startsWith("selecionar")) {
+                actionIndices.add(i)
             }
         }
 
-        if (chooseIndices.size >= 1) {
+        if (actionIndices.size >= 1) {
             val clusters = mutableListOf<List<String>>()
             var start = 0
-            for (chooseIdx in chooseIndices) {
+            for (chooseIdx in actionIndices) {
                 val candidateSlice = cleaned.subList(start, chooseIdx + 1)
                 // Se houver mensagem de corrida aceita/expirada antes deste Escolher,
                 // tudo anterior a ela pertence à corrida morta e deve ser descartado!

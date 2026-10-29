@@ -1425,4 +1425,125 @@ class GoOrNoEngineAndParserTest {
         assertEquals("Rua C, 300", offers.first().originAddress)
         assertEquals("Rua D, 400", offers.first().destinationAddress)
     }
+
+    // -------------------------------------------------------------
+    // CALIBRAÇÃO V3.3.63: PRECISÃO CIRÚRGICA DE LEITURA (IMAGENS DO USUÁRIO)
+    // -------------------------------------------------------------
+
+    @Test
+    fun `test real user screenshot image 1 - 3_66 per km must not be read as rating 4_93`() {
+        val screenNodes = listOf(
+            "Pop Nova",
+            "R$ 18,50",
+            "x2,0",
+            "3,66/km",
+            "4,93 · 409 corridas · Cartão verif.",
+            "(9 min 2,3 km) Av. Paulista, 1000",
+            "(30 min 12,8 km) Rua Domingos de Morais, 500",
+            "Escolher"
+        )
+        val offer = NinetyNineOfferReader.parseScreenNodes(screenNodes)
+        assertEquals(18.50, offer.offeredPrice!!, 0.01)
+        assertEquals(4.93, offer.passengerRating!!, 0.01)
+        assertNotEquals(3.66, offer.passengerRating!!, 0.01)
+        assertEquals(15.1, offer.totalDistanceKm!!, 0.1)
+        assertEquals(39, offer.totalDurationMin!!)
+    }
+
+    @Test
+    fun `test real user screenshot image 2 - 3_65 per km must not be read as rating 4_96`() {
+        val screenNodes = listOf(
+            "Pop Nova",
+            "R$ 14,60",
+            "1,7x",
+            "3,65/km",
+            "4,96 · 1.250 corridas",
+            "(5 min 1,2 km) Rua Augusta, 200",
+            "(15 min 4,8 km) Rua Oscar Freire, 300",
+            "Escolher"
+        )
+        val offer = NinetyNineOfferReader.parseScreenNodes(screenNodes)
+        assertEquals(14.60, offer.offeredPrice!!, 0.01)
+        assertEquals(4.96, offer.passengerRating!!, 0.01)
+        assertNotEquals(3.65, offer.passengerRating!!, 0.01)
+        assertEquals(6.0, offer.totalDistanceKm!!, 0.1)
+        assertEquals(20, offer.totalDurationMin!!)
+    }
+
+    @Test
+    fun `test screen without passenger rating does not read per km rate as rating`() {
+        val screenNodes = listOf(
+            "R$ 12,10 · 14 min · 4,0 km",
+            "3,04/km",
+            "Rua das Flores, 120",
+            "Av. Brasil, 450",
+            "Escolher"
+        )
+        val offer = NinetyNineOfferReader.parseScreenNodes(screenNodes)
+        assertEquals(12.10, offer.offeredPrice!!, 0.01)
+        assertNull(offer.passengerRating)
+    }
+
+    @Test
+    fun `test uber hour and minute parsing with bullet and circle prefixes`() {
+        val uberScreenNodes = listOf(
+            "UberX",
+            "R$ 48,90",
+            "★ 4,89 (1.420)",
+            "o 1 h e 23 min (45,2 km)",
+            "Av. Ibirapuera, 100",
+            "Rua Voluntários da Pátria, 500"
+        )
+        val offer = UberOfferReader.parseScreenNodes(uberScreenNodes)
+        assertEquals(48.90, offer.offeredPrice!!, 0.01)
+        assertEquals(4.89, offer.passengerRating!!, 0.01)
+        assertEquals(83, offer.totalDurationMin!!)
+        assertEquals(45.2, offer.totalDistanceKm!!, 0.1)
+    }
+
+    @Test
+    fun `test uber radar list splitting with Selecionar delimiter`() {
+        val radarScreenNodes = listOf(
+            "Radar de viagens",
+            "UberX",
+            "R$ 15,30",
+            "★ 4,92 (230)",
+            "5 min (1,5 km)",
+            "12 min (4,0 km)",
+            "Selecionar",
+            "Comfort",
+            "R$ 28,50",
+            "★ 4,88 (650)",
+            "8 min (2,5 km)",
+            "20 min (8,0 km)",
+            "Selecionar"
+        )
+        val clusters = BrazilianOfferParser.splitIntoMultipleOfferClusters(radarScreenNodes)
+        assertEquals(2, clusters.size)
+    }
+
+    @Test
+    fun `test preservation of stops and long trip and financial engine integration`() {
+        val offerWithStop = StandardRideOffer(
+            offerId = "test-stop",
+            sourceApp = SourceApp.NINETY_NINE_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = 1000L,
+            offeredPriceField = ExtractedField.Present(25.00),
+            totalDistanceKmField = ExtractedField.Present(10.0),
+            totalDurationMinField = ExtractedField.Present(25),
+            stopsCountField = ExtractedField.Present(1),
+            confidenceScore = 0.95
+        )
+        val config = DriverFinancialConfig(
+            fuelConsumptionKmPerLiter = 10.0,
+            fuelPricePerLiter = 6.00,
+            maintenanceCostPerKm = 0.25,
+            targetGrossPerKm = 2.00,
+            targetGrossPerHour = 40.00
+        )
+        val result = FinancialEngine.evaluate(offerWithStop, config)
+        assertTrue(result.warnings.any { it.contains("1 parada") || it.contains("parada") })
+    }
 }
