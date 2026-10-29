@@ -1446,8 +1446,8 @@ class GoOrNoEngineAndParserTest {
         assertEquals(18.50, offer.offeredPrice!!, 0.01)
         assertEquals(4.93, offer.passengerRating!!, 0.01)
         assertNotEquals(3.66, offer.passengerRating!!, 0.01)
-        assertEquals(15.1, offer.totalDistanceKm!!, 0.1)
-        assertEquals(39, offer.totalDurationMin!!)
+        assertEquals(15.1, offer.totalDistanceKmExplicit!!, 0.1)
+        assertEquals(39, offer.totalDurationMinExplicit!!)
     }
 
     @Test
@@ -1466,8 +1466,8 @@ class GoOrNoEngineAndParserTest {
         assertEquals(14.60, offer.offeredPrice!!, 0.01)
         assertEquals(4.96, offer.passengerRating!!, 0.01)
         assertNotEquals(3.65, offer.passengerRating!!, 0.01)
-        assertEquals(6.0, offer.totalDistanceKm!!, 0.1)
-        assertEquals(20, offer.totalDurationMin!!)
+        assertEquals(6.0, offer.totalDistanceKmExplicit!!, 0.1)
+        assertEquals(20, offer.totalDurationMinExplicit!!)
     }
 
     @Test
@@ -1497,8 +1497,8 @@ class GoOrNoEngineAndParserTest {
         val offer = UberOfferReader.parseScreenNodes(uberScreenNodes)
         assertEquals(48.90, offer.offeredPrice!!, 0.01)
         assertEquals(4.89, offer.passengerRating!!, 0.01)
-        assertEquals(83, offer.totalDurationMin!!)
-        assertEquals(45.2, offer.totalDistanceKm!!, 0.1)
+        assertEquals(83, offer.totalDurationMinExplicit!!)
+        assertEquals(45.2, offer.totalDistanceKmExplicit!!, 0.1)
     }
 
     @Test
@@ -1533,7 +1533,7 @@ class GoOrNoEngineAndParserTest {
             offeredPriceField = ExtractedField.Present(25.00),
             totalDistanceKmField = ExtractedField.Present(10.0),
             totalDurationMinField = ExtractedField.Present(25),
-            stopsCountField = ExtractedField.Present(1),
+            stopsDescription = "1 parada",
             confidenceScore = 0.95
         )
         val config = DriverFinancialConfig(
