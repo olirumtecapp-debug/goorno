@@ -1544,6 +1544,7 @@ class GoOrNoEngineAndParserTest {
             targetGrossPerHour = 40.00
         )
         val result = FinancialEngine.evaluate(offerWithStop, config)
-        assertTrue(result.warnings.any { it.contains("1 parada") || it.contains("parada") })
+        assertEquals("1 parada", result.stopsDescription)
+        assertTrue(result.reasons.any { it.contains("1 parada") })
     }
 }

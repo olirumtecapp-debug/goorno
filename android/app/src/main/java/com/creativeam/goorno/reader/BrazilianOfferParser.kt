@@ -528,6 +528,17 @@ object BrazilianOfferParser {
             }
         }
 
+        // 3ª Passada: Número decimal típico isolado de avaliação (ex: "4,88", "4,95") quando não for preço ou km
+        for (line in cleaned) {
+            val trimmed = line.trim()
+            if (trimmed.length in 3..5 && Regex("""^[34][.,]\d{1,2}$|^5[.,]0{1,2}$""").matches(trimmed)) {
+                val rating = parseBrazilianDecimal(trimmed)
+                if (rating != null && rating in 3.00..5.00) {
+                    return rating
+                }
+            }
+        }
+
         return null
     }
 
