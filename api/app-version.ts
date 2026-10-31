@@ -6,19 +6,19 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.53",
-    versionCode: 74,
-    releaseDate: "2026-10-25",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.53.apk",
-    directDownload: "/GoOrNo-v3.3.53.apk",
-    fileSizeBytes: 55356892,
+    versionName: "3.3.63",
+    versionCode: 84,
+    releaseDate: "2026-10-31",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.63.apk",
+    directDownload: "/GoOrNo.apk",
+    fileSizeBytes: 55360988,
     fileSizeFormatted: "55.4 MB",
     changelog: [
-      "✨ Janelinha Auxiliar de Alertas Acoplada: Alertas operacionais (Supermercado, Paradas, Chamado Repetido, Embarque Longe, Área de Risco) agora são exibidos em uma janelinha auxiliar translúcida e elegante acoplada abaixo do card principal.",
-      "🎯 Card 3 Pilares Totalmente Desafogado: O card principal fica 100% limpo, com proporções preservadas e foco total no valor, tempo, distância e nos 3 pilares (R$/km, R$/hora e nota).",
-      "🔗 Sincronização Perfeita: A janelinha auxiliar abre, fecha e é arrastada na tela sincronizada automaticamente com o card.",
-      "⚡ Leitura Instantânea Uber & 99: Preservação total de todo o leitor inteligente de ofertas e motor financeiro.",
-      "🛡️ Estabilidade & Robustez: Desempenho ultra leve e responsivo."
+      "🛡️ Limpeza Profunda de Endereços: Remoção de resíduos de prefixo de tempo/distância colados a nomes comerciais.",
+      "🚫 Bloqueio de Corridas Expiradas: Descarte imediato de avisos como 'Esta corrida foi aceita por outro motorista'.",
+      "⭐ Leitura Perfeita de Nota 5.00: Captura de notas com ícones especiais e marcadores de Perfil Premium.",
+      "🎯 Clustering de Ofertas Consecutivas: Separação cirúrgica entre chamadas sobrepostas na 99 e Uber.",
+      "⚡ Desempenho Ultra Leve & Seguro: Menor latência e 100% de precisão nos 3 pilares (R$/km, R$/hora e nota)."
     ],
     mandatory: false,
   });
