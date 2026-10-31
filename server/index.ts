@@ -1110,41 +1110,55 @@ app.delete("/api/contact/:id", async (req, res) => {
   }
 });
 
+
+// App Version endpoint for in-app and landing page updates
+app.get("/api/app-version", (_req, res) => {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.status(200).json({
+    versionName: "3.3.63",
+    versionCode: 84,
+    releaseDate: "2026-10-31",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.63.apk",
+    directDownload: "/GoOrNo.apk",
+    fileSizeBytes: 55360988,
+    fileSizeFormatted: "55.4 MB",
+    changelog: [
+      "✨ Limpeza Profunda de Endereços: Remoção de resíduos de prefixo de tempo/distância colados a nomes comerciais.",
+      "🚫 Bloqueio de Corridas Expiradas: Descarte imediato de avisos como 'Esta corrida foi aceita por outro motorista'.",
+      "⭐ Leitura Perfeita de Nota 5.00: Captura de notas com ícones especiais e marcadores de Perfil Premium.",
+      "⚡ Clustering de Ofertas Consecutivas: Separação cirúrgica entre chamadas sobrepostas na 99 e Uber.",
+      "🛡️ Desempenho Ultra Leve & Seguro: Menor latência e 100% de precisão nos 3 pilares (R$/km, R$/hora e nota)."
+    ],
+    mandatory: false,
+  });
+});
+
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
-  "/GoOrNo-v3.3.53.apk",
-  "/GoOrNo-v3.3.53.apk",
-  "/GoOrNo-v3.3.53.apk",
-  "/GoOrNo-v3.3.53.apk",
+  "/GoOrNo-v3.3.63.apk",
   "/GoOrNo-v3.3.53.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
-  "/download/GoOrNo-v3.3.53.apk",
-  "/download/GoOrNo-v3.3.53.apk"
+  "/download/GoOrNo-v3.3.63.apk"
 ], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.54.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.53.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.53.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.53.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.53.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.53.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.53.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.53.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.63.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.63.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.63.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.53.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.53.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.53.apk"),
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.53.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.63.apk");
     }
   }
   res.status(404).send("APK não encontrado no servidor.");
