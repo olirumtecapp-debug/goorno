@@ -474,7 +474,7 @@ object BrazilianOfferParser {
     )
 
         private val RATING_SUFFIX_REGEX = Regex(
-        pattern = """(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\s*(?:[★⭐✪☆*]|(?:\([A-Za-z0-9+.\s-]+\))|[·•∙‧⋅\.\-–—|]\s*(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa]|premium|essencial|boa|otima|ótima)|\([^)]*(?:corridas?|viagens?|\d+)[^)]*\)|(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?))|(?:novo\s+passageiro|passageiro\s+novo))""",
+        pattern = """(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\s*(?:[★⭐✪☆*]|(?:\([A-Za-z0-9+.\s-]+\))|[·•∙‧⋅.|–—\-]\s*(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa]|premium|essencial|boa|otima|ótima)|\([^)]*(?:corridas?|viagens?|\d+)[^)]*\)|(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?))|(?:novo\s+passageiro|passageiro\s+novo))""",
         option = RegexOption.IGNORE_CASE
     )
 
