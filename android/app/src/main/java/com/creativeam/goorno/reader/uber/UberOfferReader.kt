@@ -237,7 +237,10 @@ object UberOfferReader {
                 line.contains("Corrida", ignoreCase = true) ||
                 line.contains("Selecionar", ignoreCase = true) ||
                 line.contains("Embarque", ignoreCase = true) ||
-                line.contains("Desembarque", ignoreCase = true)
+                line.contains("Desembarque", ignoreCase = true) ||
+                line.contains("Uber", ignoreCase = true) ||
+                line.contains("Entregar", ignoreCase = true) ||
+                (line.contains("min", ignoreCase = true) && line.contains("km", ignoreCase = true))
         }
 
         val isSelfReadingGoOrNo = cleanedLines.any { line ->

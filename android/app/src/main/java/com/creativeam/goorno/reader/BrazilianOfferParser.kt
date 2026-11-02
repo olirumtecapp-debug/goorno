@@ -469,7 +469,7 @@ object BrazilianOfferParser {
     }
 
     private val RATING_PREFIX_REGEX = Regex(
-        pattern = """(?<![R\$\d.,/])(?:[★⭐✪☆*👤🚹👥]|nota|avalia[çc][ãa]o|classifica[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]??\s*([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""",
+        pattern = """(?<![R\$\d.,/])(?:[★⭐✪☆*👤🚹👥Θ•●○▪▫■□]|nota|avalia[çc][ãa]o|classifica[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]??\s*([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -503,6 +503,20 @@ object BrazilianOfferParser {
             val rating = parseBrazilianDecimal(mSuffixFull.groupValues[1])
             if (rating != null && rating in 3.00..5.00) {
                 return rating
+            }
+        }
+
+        // 1b. Busca ultra-direta na linha com corridas/viagens/cartão (ex: "4,93 · 127 corridas", "4,97 · 432 corridas")
+        for (line in cleaned) {
+            val lower = line.lowercase(Locale.getDefault())
+            if (lower.contains("corrida") || lower.contains("viagen") || lower.contains("cartão") || lower.contains("cartao") || lower.contains("verif")) {
+                val directMatch = Regex("""(?<![R$d.,/])([3-5][.,]d{1,2})(?!s*(?:/|km|m|min|h|x))""").find(line)
+                if (directMatch != null) {
+                    val r = parseBrazilianDecimal(directMatch.groupValues[1])
+                    if (r != null && r in 3.00..5.00) {
+                        return r
+                    }
+                }
             }
         }
 
@@ -993,7 +1007,7 @@ object BrazilianOfferParser {
         // Se a tela possui o cabeçalho "Radar de viagens" ou "Solicitações", ignora qualquer texto de mapa/ganhos do fundo
         val listHeaderIdx = normalized.indexOfFirst { line ->
             val l = line.lowercase(Locale.getDefault())
-            l.contains("radar de viagens") || l == "solicitações" || l == "solicitacoes"
+            l.contains("radar de viagens") || l.contains("solicitações") || l.contains("solicitacoes")
         }
         val cleaned = if (listHeaderIdx > 0 && listHeaderIdx < normalized.size - 1) {
             normalized.subList(listHeaderIdx, normalized.size)

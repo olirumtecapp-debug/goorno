@@ -12,8 +12,8 @@ android {
         applicationId "com.creativeam.goorno"
         minSdk 26
         targetSdk 34
-        versionCode 87
-        versionName "3.3.66"
+        versionCode 88
+        versionName "3.3.67"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

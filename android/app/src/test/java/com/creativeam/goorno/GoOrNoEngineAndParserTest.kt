@@ -1716,4 +1716,38 @@ class GoOrNoEngineAndParserTest {
         val evalLenient = FinancialEngine.evaluate(offer55Km, DriverFinancialConfig(shortTripKmThreshold = 6.0))
         assertTrue(evalLenient.isShortTrip)
     }
+    @Test
+    fun testRealImageUserScreenshotsRatingParsing() {
+        val screen1 = listOf(
+            "< Solicitações",
+            "Escolha uma corrida",
+            "Km até o embarque",
+            "Pop",
+            "R$ 37,30 R$1,85/km",
+            "4,97 · 432 corridas · Cartão verif.",
+            "(8 min 2 km) Rua Ruth Pinto de Camargo, 130, Nova Petrópolis",
+            "(41 min 18,2 km) Rua Archângelo Archiná, 365, Cidade São Mateus",
+            "Escolher",
+            "Isso é tudo por enquanto"
+        )
+        val offers1 = NinetyNineOfferReader.parseMultipleOffersFromScreen(screen1)
+        assertEquals(1, offers1.size)
+        assertEquals(4.97, offers1[0].passengerRating!!, 0.001)
+
+        val screen2 = listOf(
+            "< Solicitações",
+            "Escolha uma corrida",
+            "Km até o embarque",
+            "Pop",
+            "R$ 12,10 R$2,28/km",
+            "4,93 · 127 corridas · Cartão verif.",
+            "(5 min 688 m) Rua Mozart da Silva, 490, Jardim Farina",
+            "(13 min 4,6 km) Rua Vinte e Cinco de Janeiro, 2, Jardim Santo André CDHU",
+            "Escolher",
+            "Isso é tudo por enquanto"
+        )
+        val offers2 = NinetyNineOfferReader.parseMultipleOffersFromScreen(screen2)
+        assertEquals(1, offers2.size)
+        assertEquals(4.93, offers2[0].passengerRating!!, 0.001)
+    }
 }

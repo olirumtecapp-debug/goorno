@@ -6,19 +6,18 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.66",
-    versionCode: 87,
+    versionName: "3.3.67",
+    versionCode: 88,
     releaseDate: "2026-11-02",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.66.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.67.apk",
     directDownload: "/GoOrNo.apk",
     fileSizeBytes: 55360988,
     fileSizeFormatted: "55.4 MB",
     changelog: [
-      "🏷️ Novo Padrão de Pílulas Flutuantes: Badges de alto contraste para Mercado, Corrida Curta, Embarque Distante, Risco e Rodízio.",
-      "🚗 Rodízio Municipal de São Paulo: Alerta automático no destino/origem dentro do Centro Expandido com base na placa cadastrada.",
-      "📍 Cadastro de Risco e Favorito Flexível: Escolha rápida entre Rua ou Bairro e campo de texto livremente editável.",
-      "🎯 Refinamento de Leitura da Nota: Captura precisa da avaliação do passageiro sem exibir tracinhos.",
-      "⚡ R$/Km e R$/Hora Impecáveis: Separação rigorosa entre deslocamento de busca e corrida com passageiro."
+      "🚀 Leitura Uber 100% Restaurada: Correção de captura para chamadas nativas e fallback visual rápido.",
+      "🎯 Nota do Passageiro Garantida: Captura perfeita mesmo sob sobreposição de janela e no primeiro card de Solicitações.",
+      "🏷️ Pílulas Flutuantes Estritamente Abaixo do Card: Design limpo e sem poluição visual na tela.",
+      "⚡ Fim dos Travamentos e ANR: Execução leve e responsiva em background."
     ],
     mandatory: false,
   });

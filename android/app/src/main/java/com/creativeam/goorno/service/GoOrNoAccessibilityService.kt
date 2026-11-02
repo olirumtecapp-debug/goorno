@@ -283,23 +283,18 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // 2. Coleta nós ESTRITAMENTE da janela do pacote alvo (nunca de outras janelas) - Rápido e Direto sem atrasos
         val positionedNodes = mutableListOf<PositionedText>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
-            collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = true)
-            if (positionedNodes.size < 3) {
-                positionedNodes.clear()
-                collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
-            }
-        } else {
+            collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
+        }
+        // Se a raiz ativa contiver poucos nós (ex: apenas mapa ou sub-janela em segundo plano da Uber),
+        // varre as janelas interativas do app alvo para capturar o card de oferta
+        if (positionedNodes.size < 5) {
             try {
                 val allWindows = windows
                 if (!allWindows.isNullOrEmpty()) {
                     for (win in allWindows) {
                         val root = win.root ?: continue
-                        if (root.packageName?.toString() == targetPkg) {
-                            collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = true)
-                            if (positionedNodes.size < 3) {
-                                positionedNodes.clear()
-                                collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
-                            }
+                        if (root != activeRoot && root.packageName?.toString() == targetPkg) {
+                            collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
                         }
                     }
                 }
@@ -453,12 +448,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        // UBER DRIVER NUNCA PRECISA DE OCR: a árvore de acessibilidade nativa é completa e 10x mais rápida.
-        // O OCR por captura silenciosa é reservado exclusivamente para a 99 (telas Canvas) para não atrasar nem congelar a UI.
-        if (targetApp == SourceApp.UBER_DRIVER) {
-            isTakingAutoScreenshot = false
-            return
-        }
+        // OCR seguro em segundo plano tanto para 99 quanto para Uber quando a árvore de acessibilidade nativa estiver incompleta
 
         val app = applicationContext as? GoOrNoApplication
         if (app?.overlayPanel?.isCardCurrentlyVisible() == true || (now - lastOfferProcessedTimeMillis < 2_500L)) {
@@ -717,7 +707,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val totalKm = offer.totalDistanceKmExplicit
             ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
         val kmRounded = (Math.round(totalKm * 2.0) / 2.0)
-        return "${offer.sourceApp.name}|$priceRounded|$kmRounded"
+        val origPrefix = offer.originAddress?.take(8)?.lowercase(Locale.getDefault()) ?: ""
+        return "${offer.sourceApp.name}|$priceRounded|$kmRounded|$origPrefix"
     }
 
     private fun processAndShowOffers(
@@ -891,15 +882,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     ) {
         if (node == null || depth > 50 || output.size >= 600) return
         try {
-            if (requireVisible && !node.isVisibleToUser) return
-
             val rect = Rect()
             try {
                 node.getBoundsInScreen(rect)
             } catch (_: Throwable) {
             }
 
-            if (requireVisible && (rect.width() <= 0 || rect.height() <= 0)) {
+            // Descarta nós com dimensões nulas (0x0). Se o nó estiver na tela física do app motorista,
+            // captura mesmo que um painel flutuante (como o próprio GoOrNo) esteja cobrindo parte dele.
+            if (rect.width() <= 0 || rect.height() <= 0) {
                 return
             }
 
