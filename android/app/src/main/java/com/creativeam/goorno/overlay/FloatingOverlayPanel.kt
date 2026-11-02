@@ -624,7 +624,11 @@ class FloatingOverlayPanel(private val context: Context) {
 
         // Janelinhas de Alertas Acopladas (Separadas e sem encavalar)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
-            rootLayout.addView(auxPill)
+            if (result.hasRiskAlert) {
+                rootLayout.addView(auxPill, 0)
+            } else {
+                rootLayout.addView(auxPill)
+            }
         }
 
         return rootLayout
@@ -798,7 +802,11 @@ class FloatingOverlayPanel(private val context: Context) {
 
         rootLayout.addView(card)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
-            rootLayout.addView(auxPill)
+            if (result.hasRiskAlert) {
+                rootLayout.addView(auxPill, 0)
+            } else {
+                rootLayout.addView(auxPill)
+            }
         }
         return rootLayout
     }
@@ -1044,7 +1052,11 @@ class FloatingOverlayPanel(private val context: Context) {
 
         // Janelinha Auxiliar de Alertas Acoplada (Abre, fecha e arrasta sincronizada com o card principal)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
-            rootLayout.addView(auxPill)
+            if (result.hasRiskAlert) {
+                rootLayout.addView(auxPill, 0)
+            } else {
+                rootLayout.addView(auxPill)
+            }
         }
 
         return rootLayout
@@ -1056,10 +1068,10 @@ class FloatingOverlayPanel(private val context: Context) {
     // =========================================================================
     private data class AlertPillItem(
         val icon: String,
-        val label: String,
-        val detail: String,
-        val labelColor: Int,
-        val detailColor: Int
+        val text: String,
+        val bgHex: String,
+        val textColorHex: String = "#FFFFFF",
+        val strokeHex: String? = null
     )
 
     private fun buildAuxiliaryAlertPill(
@@ -1068,120 +1080,142 @@ class FloatingOverlayPanel(private val context: Context) {
     ): View? {
         val alerts = mutableListOf<AlertPillItem>()
 
-        // 1. Área de Risco (Alerta prioritário de segurança)
+        // 1. Área de Risco (Alerta prioritário de segurança - Estilo Imagem 4)
         if (result.hasRiskAlert) {
-            val riskText = result.riskAlertBadge.orEmpty().ifBlank { "Região de Atenção" }
+            val riskText = result.riskAlertBadge?.takeIf { it.isNotBlank() } ?: "Endereço de risco"
             alerts.add(
                 AlertPillItem(
                     icon = "⚠️",
-                    label = "ÁREA DE RISCO:",
-                    detail = riskText,
-                    labelColor = Color.parseColor(if (isDark) "#F87171" else "#DC2626"),
-                    detailColor = Color.parseColor(if (isDark) "#FECACA" else "#991B1B")
+                    text = riskText,
+                    bgHex = if (isDark) "#2A0808" else "#FFFFFF",
+                    textColorHex = "#DC2626",
+                    strokeHex = "#DC2626"
                 )
             )
         }
 
-        // 2. Supermercado (Atacadista / Compras) - Idêntico à Imagem 4
+        // 2. Rodízio SP no Destino / Origem (Estilo Imagem 5)
+        if (result.isRodizioAlert) {
+            val rText = result.rodizioAlertBadge?.takeIf { it.isNotBlank() } ?: "RODÍZIO NO DESTINO"
+            alerts.add(
+                AlertPillItem(
+                    icon = "⚠️",
+                    text = rText.uppercase(),
+                    bgHex = "#D97706",
+                    textColorHex = "#FFFFFF"
+                )
+            )
+        }
+
+        // 3. Supermercado / Atacadista (Estilo Imagem 1)
         if (result.isSupermarket) {
-            val sName = result.supermarketName ?: "Atacadista / Compras"
+            val sName = result.supermarketName?.takeIf { it.isNotBlank() } ?: "MERCADO"
+            val label = if (sName.contains("mercado", ignoreCase = true) || sName.length <= 12) sName else "MERCADO"
             alerts.add(
                 AlertPillItem(
                     icon = "🛒",
-                    label = "SUPERMERCADO:",
-                    detail = sName,
-                    labelColor = Color.parseColor(if (isDark) "#F6C764" else "#B45309"),
-                    detailColor = Color.parseColor(if (isDark) "#F6E3B4" else "#78350F")
+                    text = label.uppercase(),
+                    bgHex = "#DC2626",
+                    textColorHex = "#FFFFFF"
                 )
             )
         }
 
-        // 3. Paradas Intermediárias - Idêntico à Imagem 5
-        if (!result.stopsDescription.isNullOrBlank()) {
+        // 4. Corrida Curta (Estilo Imagem 2)
+        if (result.isShortTrip) {
             alerts.add(
                 AlertPillItem(
-                    icon = "🛑",
-                    label = "PARADAS:",
-                    detail = result.stopsDescription,
-                    labelColor = Color.parseColor(if (isDark) "#7DD3FC" else "#0284C7"),
-                    detailColor = Color.parseColor(if (isDark) "#BAE6FD" else "#0369A1")
+                    icon = "⚡",
+                    text = "CORRIDA CURTA",
+                    bgHex = "#0284C7",
+                    textColorHex = "#FFFFFF"
                 )
             )
         }
 
-        // 4. Chamado Repetido (Oferta reemitida pelo app)
-        if (result.isRepeatedOffer) {
-            alerts.add(
-                AlertPillItem(
-                    icon = "🔁",
-                    label = "CHAMADO REPETIDO:",
-                    detail = "Oferta reemitida",
-                    labelColor = Color.parseColor(if (isDark) "#FB923C" else "#EA580C"),
-                    detailColor = Color.parseColor(if (isDark) "#FED7AA" else "#7C2D12")
-                )
-            )
-        }
-
-        // 5. Embarque Longe (Distância até o passageiro > 2 km)
+        // 5. Embarque Distante (Estilo Imagem 3)
         if (result.isDistantPickup) {
-            val kmText = result.offer.pickupDistanceKm?.let {
-                String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", it)
-            } ?: ""
-            val detailText = if (kmText.isNotBlank()) "$kmText até passageiro" else "Passageiro distante"
             alerts.add(
                 AlertPillItem(
                     icon = "⚠️",
-                    label = "EMB. LONGE:",
-                    detail = detailText,
-                    labelColor = Color.parseColor(if (isDark) "#FDE047" else "#CA8A04"),
-                    detailColor = Color.parseColor(if (isDark) "#FEF08A" else "#713F12")
+                    text = "EMBARQUE DISTANTE",
+                    bgHex = "#0F172A",
+                    textColorHex = "#FFFFFF",
+                    strokeHex = "#334155"
                 )
             )
         }
 
         // 6. Região Favorita
         if (result.isFavoriteZone && !result.hasRiskAlert) {
-            val favText = result.favoriteZoneBadge.orEmpty().ifBlank { "Destino Preferido" }
+            val favText = result.favoriteZoneBadge?.takeIf { it.isNotBlank() } ?: "REGIÃO FAVORITA"
             alerts.add(
                 AlertPillItem(
                     icon = "⭐",
-                    label = "REGIÃO FAVORITA:",
-                    detail = favText,
-                    labelColor = Color.parseColor(if (isDark) "#4ADE80" else "#16A34A"),
-                    detailColor = Color.parseColor(if (isDark) "#BBF7D0" else "#14532D")
+                    text = favText.uppercase(),
+                    bgHex = "#059669",
+                    textColorHex = "#FFFFFF"
                 )
             )
         }
 
-        // 7. Viagem Longa
+        // 7. Paradas Intermediárias
+        if (!result.stopsDescription.isNullOrBlank()) {
+            alerts.add(
+                AlertPillItem(
+                    icon = "🛑",
+                    text = result.stopsDescription.uppercase(),
+                    bgHex = "#0F766E",
+                    textColorHex = "#FFFFFF"
+                )
+            )
+        }
+
+        // 8. Viagem Longa
         if (result.isLongTrip && alerts.size < 2) {
-            val timeText = if ((result.totalConsideredDurationMin ?: 0) >= 60) {
-                val h = (result.totalConsideredDurationMin ?: 0) / 60
-                val m = (result.totalConsideredDurationMin ?: 0) % 60
-                if (m > 0) "${h}h ${m}m" else "${h}h"
-            } else {
-                "${result.totalConsideredDurationMin ?: 0} min"
-            }
             alerts.add(
                 AlertPillItem(
                     icon = "⏱️",
-                    label = "VIAGEM LONGA:",
-                    detail = "$timeText de viagem",
-                    labelColor = Color.parseColor(if (isDark) "#818CF8" else "#4F46E5"),
-                    detailColor = Color.parseColor(if (isDark) "#C7D2FE" else "#312E81")
+                    text = "VIAGEM LONGA",
+                    bgHex = "#6366F1",
+                    textColorHex = "#FFFFFF"
                 )
             )
         }
 
-        // 8. Fallback operacional caso haja outro aviso não mapeado
+        // 9. Chamado Repetido
+        if (result.isRepeatedOffer && alerts.size < 2) {
+            alerts.add(
+                AlertPillItem(
+                    icon = "🔁",
+                    text = "CHAMADO REPETIDO",
+                    bgHex = "#EA580C",
+                    textColorHex = "#FFFFFF"
+                )
+            )
+        }
+
+        // 10. Nota Baixa
+        if (result.passengerRatingVerdict == PassengerRatingVerdict.BAD && alerts.size < 2) {
+            val rat = result.passengerRating?.let { String.format(Locale.forLanguageTag("pt-BR"), "%.2f", it) } ?: ""
+            alerts.add(
+                AlertPillItem(
+                    icon = "👤",
+                    text = "NOTA BAIXA ($rat)",
+                    bgHex = "#B45309",
+                    textColorHex = "#FFFFFF"
+                )
+            )
+        }
+
+        // 11. Fallback Operacional caso haja outro aviso não mapeado
         if (alerts.isEmpty() && !result.operationalBadge.isNullOrBlank()) {
             alerts.add(
                 AlertPillItem(
                     icon = "⚡",
-                    label = "AVISO:",
-                    detail = result.operationalBadge,
-                    labelColor = Color.parseColor(if (isDark) "#F59E0B" else "#D97706"),
-                    detailColor = Color.parseColor(if (isDark) "#FDE68A" else "#78350F")
+                    text = result.operationalBadge.uppercase(),
+                    bgHex = "#D97706",
+                    textColorHex = "#FFFFFF"
                 )
             )
         }
@@ -1195,54 +1229,37 @@ class FloatingOverlayPanel(private val context: Context) {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                topMargin = dp(6)
+                topMargin = dp(4)
+                bottomMargin = dp(4)
             }
         }
-
-        val pillBgHex = if (isDark) "#061510" else "#F1F5F9"
-        val pillStrokeHex = if (isDark) "#174334" else "#CBD5E1"
 
         alerts.take(2).forEachIndexed { i, alert ->
             val pill = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                background = roundedCardBg(pillBgHex, pillStrokeHex, 16f, 1)
-                setPadding(dp(12), dp(5), dp(12), dp(5))
+                gravity = Gravity.CENTER
+                background = roundedCardBg(alert.bgHex, alert.strokeHex ?: alert.bgHex, 6f, if (alert.strokeHex != null) 1 else 0)
+                setPadding(dp(12), dp(4), dp(12), dp(4))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    if (i > 0) topMargin = dp(4)
+                    if (i > 0) topMargin = dp(3)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    elevation = dp(3).toFloat()
                 }
             }
 
-            val tvIcon = TextView(context).apply {
-                text = alert.icon
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-                setPadding(0, 0, dp(6), 0)
-            }
-            pill.addView(tvIcon)
-
-            val tvLabel = TextView(context).apply {
-                text = "${alert.label} "
-                setTextColor(alert.labelColor)
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+            val tvContent = TextView(context).apply {
+                text = "${alert.icon} ${alert.text}"
+                setTextColor(Color.parseColor(alert.textColorHex))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                setTypeface(Typeface.DEFAULT_BOLD, Typeface.BOLD)
                 setSingleLine(true)
+                gravity = Gravity.CENTER
             }
-            pill.addView(tvLabel)
-
-            val tvDetail = TextView(context).apply {
-                text = alert.detail
-                setTextColor(alert.detailColor)
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                setTypeface(Typeface.MONOSPACE, Typeface.NORMAL)
-                setSingleLine(true)
-                ellipsize = android.text.TextUtils.TruncateAt.END
-                maxWidth = dp(210)
-            }
-            pill.addView(tvDetail)
-
+            pill.addView(tvContent)
             container.addView(pill)
         }
 
@@ -1811,7 +1828,11 @@ class FloatingOverlayPanel(private val context: Context) {
 
         // Janelinhas de Alertas Acopladas (Separadas e sem encavalar)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
-            rootLayout.addView(auxPill)
+            if (result.hasRiskAlert) {
+                rootLayout.addView(auxPill, 0)
+            } else {
+                rootLayout.addView(auxPill)
+            }
         }
 
         return rootLayout

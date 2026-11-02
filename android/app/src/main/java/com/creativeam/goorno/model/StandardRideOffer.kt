@@ -231,6 +231,8 @@ data class DriverFinancialConfig(
     val customRiskZones: String = "",
     val favoriteZonesEnabled: Boolean = true,
     val customFavoriteZones: String = "",
+    val vehiclePlate: String = "",
+    val rodizioAlertEnabled: Boolean = true,
     val copilotMonitoringEnabled: Boolean = true,
     val saveHistoryEnabled: Boolean = true,
     val cloudBackupConsent: Boolean = false,
@@ -294,5 +296,8 @@ data class FinancialEvaluationResult(
     val isSupermarket: Boolean = false,
     val supermarketName: String? = null,
     val isDistantPickup: Boolean = false,
-    val isLongTrip: Boolean = false
+    val isLongTrip: Boolean = false,
+    val isShortTrip: Boolean = false,
+    val isRodizioAlert: Boolean = false,
+    val rodizioAlertBadge: String? = null
 )

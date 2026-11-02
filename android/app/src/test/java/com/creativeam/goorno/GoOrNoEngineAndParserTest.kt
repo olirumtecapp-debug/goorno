@@ -1547,4 +1547,108 @@ class GoOrNoEngineAndParserTest {
         assertEquals("1 parada", result.stopsDescription)
         assertTrue(result.reasons.any { it.contains("1 parada") })
     }
+
+    // 46. TESTES DO RODÍZIO SP (CET-SP):
+    @Test
+    fun testRodizioSpPlateExtractionAndEvaluation() {
+        assertEquals(9, com.creativeam.goorno.engine.RodizioEvaluator.extractFinalPlateDigit("BRA2E19"))
+        assertEquals(4, com.creativeam.goorno.engine.RodizioEvaluator.extractFinalPlateDigit("ABC-1234"))
+        assertEquals(0, com.creativeam.goorno.engine.RodizioEvaluator.extractFinalPlateDigit("XYZ-9990"))
+
+        val calFridayMorning = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.FRIDAY)
+            set(java.util.Calendar.HOUR_OF_DAY, 8)
+            set(java.util.Calendar.MINUTE, 30)
+        }
+
+        val configFridayPlate = DriverFinancialConfig(
+            vehiclePlate = "BRA2E19",
+            rodizioAlertEnabled = true
+        )
+
+        val result = com.creativeam.goorno.engine.RodizioEvaluator.evaluate(
+            originAddress = "Av. Kennedy, 500, São Bernardo do Campo",
+            destinationAddress = "Avenida Paulista, 1000, Bela Vista, São Paulo",
+            config = configFridayPlate,
+            calendar = calFridayMorning
+        )
+
+        assertTrue(result.isRodizio)
+        assertEquals("RODÍZIO NO DESTINO", result.badge)
+        assertEquals(com.creativeam.goorno.engine.RodizioMatchType.DESTINATION, result.matchType)
+
+        val calFridayAfternoonNoRodizio = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.FRIDAY)
+            set(java.util.Calendar.HOUR_OF_DAY, 13)
+            set(java.util.Calendar.MINUTE, 0)
+        }
+        val resultOutside = com.creativeam.goorno.engine.RodizioEvaluator.evaluate(
+            originAddress = "Av. Kennedy, 500, São Bernardo do Campo",
+            destinationAddress = "Avenida Paulista, 1000, Bela Vista, São Paulo",
+            config = configFridayPlate,
+            calendar = calFridayAfternoonNoRodizio
+        )
+        assertFalse(resultOutside.isRodizio)
+    }
+
+    // 47. TESTE DA EXTRAÇÃO SEPARADA DE RUA E BAIRRO:
+    @Test
+    fun testExtractionOfStreetAndDistrictSeparately() {
+        val s1 = com.creativeam.goorno.engine.RiskAreaEvaluator.extractStreetAndDistrict("Rua Geralda Valeriano, 32, Baeta Neves")
+        assertEquals("Rua Geralda Valeriano", s1.street)
+        assertEquals("Baeta Neves", s1.district)
+
+        val s2 = com.creativeam.goorno.engine.RiskAreaEvaluator.extractStreetAndDistrict("14 min (791 m) D'avó, Avenida Pery Ronchet")
+        assertEquals("Avenida Pery Ronchet", s2.street)
+    }
+
+    // 48. TESTES DE REFINAMENTO DA NOTA DO PASSAGEIRO:
+    @Test
+    fun testPassengerRatingRefinementForComplexRealNodeFormats() {
+        val r1 = BrazilianOfferParser.extractPassengerRating(listOf("★ 4,96 (Boa)"))
+        assertEquals(4.96, r1!!, 0.01)
+
+        val r2 = BrazilianOfferParser.extractPassengerRating(listOf("4.92 ★"))
+        assertEquals(4.92, r2!!, 0.01)
+
+        val r3 = BrazilianOfferParser.extractPassengerRating(listOf("5.00"))
+        assertEquals(5.00, r3!!, 0.01)
+
+        val r4 = BrazilianOfferParser.extractPassengerRating(listOf("4.85 · 42 viagens"))
+        assertEquals(4.85, r4!!, 0.01)
+    }
+
+    // 49. TESTE DE CORRIDA CURTA E ISOLAMENTO DE EMBARQUE PARCIAL:
+    @Test
+    fun testShortTripDetectionAndPartialPickupIsolation() {
+        val shortOffer = StandardRideOffer(
+            offerId = "short-1",
+            sourceApp = SourceApp.UBER_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = 1000L,
+            offeredPriceField = ExtractedField.Present(9.50),
+            totalDistanceKmField = ExtractedField.Present(2.5),
+            totalDurationMinField = ExtractedField.Present(8),
+            confidenceScore = 0.95
+        )
+        val result = FinancialEngine.evaluate(shortOffer, DriverFinancialConfig())
+        assertTrue(result.isShortTrip)
+
+        val partialOffer = StandardRideOffer(
+            offerId = "partial-1",
+            sourceApp = SourceApp.UBER_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = 1000L,
+            offeredPriceField = ExtractedField.Present(25.00),
+            pickupDistanceKmField = ExtractedField.Present(1.2),
+            pickupDurationMinField = ExtractedField.Present(4),
+            confidenceScore = 0.95
+        )
+        val partialResult = FinancialEngine.evaluate(partialOffer, DriverFinancialConfig())
+        assertTrue(partialResult.isDistancePartial)
+        assertNull(partialResult.grossPerKm)
+    }
+    }
 }

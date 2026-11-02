@@ -44,6 +44,8 @@ class DriverPreferencesRepository(private val context: Context) {
     private object Keys {
         val DRIVER_NAME = stringPreferencesKey("driver_name")
         val VEHICLE_MODEL = stringPreferencesKey("vehicle_model")
+        val VEHICLE_PLATE = stringPreferencesKey("vehicle_plate")
+        val RODIZIO_ALERT_ENABLED = booleanPreferencesKey("rodizio_alert_enabled")
         val FUEL_KM_PER_LITER = doublePreferencesKey("fuel_km_per_liter")
         val FUEL_PRICE = doublePreferencesKey("fuel_price")
         val MAINTENANCE_PER_KM = doublePreferencesKey("maintenance_per_km")
@@ -107,6 +109,8 @@ class DriverPreferencesRepository(private val context: Context) {
                 inMemoryConfigSnapshot = DriverFinancialConfig(
                     driverName = b.getString("driver_name", null) ?: "Motorista",
                     vehicleModel = b.getString("vehicle_model", null) ?: "Carro Padrão",
+                    vehiclePlate = b.getString("vehicle_plate", null) ?: "",
+                    rodizioAlertEnabled = b.getBoolean("rodizio_alert_enabled", true),
                     fuelConsumptionKmPerLiter = if (b.contains("fuel_km_per_liter")) b.getFloat("fuel_km_per_liter", 10.5f).toDouble() else 10.5,
                     fuelPricePerLiter = if (b.contains("fuel_price")) b.getFloat("fuel_price", 5.89f).toDouble() else 5.89,
                     maintenanceCostPerKm = if (b.contains("maintenance_per_km")) b.getFloat("maintenance_per_km", 0.25f).toDouble() else 0.25,
@@ -177,6 +181,8 @@ class DriverPreferencesRepository(private val context: Context) {
             DriverFinancialConfig(
                 driverName = prefs[Keys.DRIVER_NAME] ?: b.getString("driver_name", null) ?: "Motorista",
                 vehicleModel = prefs[Keys.VEHICLE_MODEL] ?: b.getString("vehicle_model", null) ?: "Carro Padrão",
+                vehiclePlate = prefs[Keys.VEHICLE_PLATE] ?: b.getString("vehicle_plate", null) ?: "",
+                rodizioAlertEnabled = prefs[Keys.RODIZIO_ALERT_ENABLED] ?: b.getBoolean("rodizio_alert_enabled", true),
                 fuelConsumptionKmPerLiter = prefs[Keys.FUEL_KM_PER_LITER] ?: if (b.contains("fuel_km_per_liter")) b.getFloat("fuel_km_per_liter", 10.5f).toDouble() else 10.5,
                 fuelPricePerLiter = prefs[Keys.FUEL_PRICE] ?: if (b.contains("fuel_price")) b.getFloat("fuel_price", 5.89f).toDouble() else 5.89,
                 maintenanceCostPerKm = prefs[Keys.MAINTENANCE_PER_KM] ?: if (b.contains("maintenance_per_km")) b.getFloat("maintenance_per_km", 0.25f).toDouble() else 0.25,
@@ -231,6 +237,8 @@ class DriverPreferencesRepository(private val context: Context) {
             context.dataStore.edit { prefs ->
                 prefs[Keys.DRIVER_NAME] = config.driverName
                 prefs[Keys.VEHICLE_MODEL] = config.vehicleModel
+                prefs[Keys.VEHICLE_PLATE] = config.vehiclePlate
+                prefs[Keys.RODIZIO_ALERT_ENABLED] = config.rodizioAlertEnabled
                 prefs[Keys.FUEL_KM_PER_LITER] = config.fuelConsumptionKmPerLiter
                 prefs[Keys.FUEL_PRICE] = config.fuelPricePerLiter
                 prefs[Keys.MAINTENANCE_PER_KM] = config.maintenanceCostPerKm
@@ -281,6 +289,8 @@ class DriverPreferencesRepository(private val context: Context) {
             backupPrefs.edit().apply {
                 putString("driver_name", config.driverName)
                 putString("vehicle_model", config.vehicleModel)
+                putString("vehicle_plate", config.vehiclePlate)
+                putBoolean("rodizio_alert_enabled", config.rodizioAlertEnabled)
                 putFloat("fuel_km_per_liter", config.fuelConsumptionKmPerLiter.toFloat())
                 putFloat("fuel_price", config.fuelPricePerLiter.toFloat())
                 putFloat("maintenance_per_km", config.maintenanceCostPerKm.toFloat())

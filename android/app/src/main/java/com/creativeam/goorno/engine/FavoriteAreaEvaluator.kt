@@ -87,6 +87,10 @@ object FavoriteAreaEvaluator {
      * Extrai uma sugestão limpa de rua ou bairro a partir de um endereço completo
      * para facilitar o botão de "Marcar como Região Favorita" com 1 toque no Histórico.
      */
+    fun extractStreetAndDistrict(fullAddress: String): AddressCandidateSelection {
+        return RiskAreaEvaluator.extractStreetAndDistrict(fullAddress)
+    }
+
     fun extractCleanStreetOrDistrict(fullAddress: String): String {
         return RiskAreaEvaluator.extractCleanStreetOrDistrict(fullAddress)
     }

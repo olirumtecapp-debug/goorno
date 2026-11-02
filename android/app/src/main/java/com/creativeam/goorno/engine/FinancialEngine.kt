@@ -93,7 +93,7 @@ object FinancialEngine {
             pickupKm != null && pickupKm > 0.0 -> {
                 isDistancePartial = true
                 warnings.add("Apenas distância de embarque informada (distância parcial).")
-                pickupKm
+                null
             }
             tripKm != null && tripKm > 0.0 -> {
                 isDistancePartial = true
@@ -123,7 +123,7 @@ object FinancialEngine {
             pickupMin != null && pickupMin > 0 -> {
                 isDurationPartial = true
                 warnings.add("Apenas tempo até o passageiro informado (tempo parcial).")
-                pickupMin
+                null
             }
             tripMin != null && tripMin > 0 -> {
                 isDurationPartial = true
@@ -333,8 +333,19 @@ object FinancialEngine {
             false
         }
         val isLongTrip = (totalDistanceKm != null && totalDistanceKm >= 25.0) || (totalDurationMin != null && totalDurationMin >= 45)
+        val isShortTrip = totalDistanceKm != null && totalDistanceKm in 0.1..3.5
+
+        val rodizioAssessment = RodizioEvaluator.evaluate(
+            originAddress = offer.originAddress,
+            destinationAddress = offer.destinationAddress,
+            config = config
+        )
 
         val operationalAlertParts = mutableListOf<String>()
+        if (rodizioAssessment.isRodizio) {
+            operationalAlertParts.add("⚠️ ${rodizioAssessment.badge}")
+            warnings.add(0, rodizioAssessment.message ?: "⚠️ Alerta de Rodízio SP")
+        }
         if (offer.isRepeatedOffer) {
             operationalAlertParts.add("🔁 Chamado Repetido")
             reasons.add(0, "🔁 Chamado repetido: oferta reenviada pelo aplicativo.")
@@ -403,7 +414,10 @@ object FinancialEngine {
             isSupermarket = offer.isSupermarket,
             supermarketName = offer.supermarketName,
             isDistantPickup = isDistantPickup,
-            isLongTrip = isLongTrip
+            isLongTrip = isLongTrip,
+            isShortTrip = isShortTrip,
+            isRodizioAlert = rodizioAssessment.isRodizio,
+            rodizioAlertBadge = rodizioAssessment.badge
         )
     }
 

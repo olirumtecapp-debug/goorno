@@ -1,4 +1,4 @@
-package com.creativeam.goorno.reader
+﻿package com.creativeam.goorno.reader
 
 import com.creativeam.goorno.model.CaptureMethod
 import com.creativeam.goorno.model.ExtractedField
@@ -108,6 +108,20 @@ object BrazilianOfferParser {
         while (i < flatTokens.size) {
             var current = flatTokens[i]
 
+            // Caso 0a: Estrela de Avaliação Fragmentada ("★" / "⭐" e decimal "4.92")
+            if ((current == "★" || current == "⭐" || current == "*" || current == "☆" || current == "✪") &&
+                i + 1 < flatTokens.size &&
+                Regex("""^[3-5][.,]\d{1,2}$""").matches(flatTokens[i + 1].trim())
+            ) {
+                current = "$current ${flatTokens[i + 1].trim()}"
+                i++
+            } else if (Regex("""^[3-5][.,]\d{1,2}$""").matches(current.trim()) &&
+                i + 1 < flatTokens.size &&
+                (flatTokens[i + 1].trim() == "★" || flatTokens[i + 1].trim() == "⭐" || flatTokens[i + 1].trim() == "*" || flatTokens[i + 1].trim() == "☆")
+            ) {
+                current = "${current.trim()} ${flatTokens[i + 1].trim()}"
+                i++
+            }
             // Caso 0: Sinal "+" isolado antes de "R$" (ex: "+" + "R$ 1,00 incluído" -> "+R$ 1,00 incluído")
             if ((current == "+" || current.endsWith("+")) &&
                 i + 1 < flatTokens.size &&
@@ -459,8 +473,8 @@ object BrazilianOfferParser {
         option = RegexOption.IGNORE_CASE
     )
 
-    private val RATING_SUFFIX_REGEX = Regex(
-        pattern = """(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\s*(?:[·•∙‧⋅\.\-–—|]\s*(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa]|premium|essencial)|\([^)]*(?:corridas?|viagens?|\d+)[^)]*\)|(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?))|(?:novo\s+passageiro|passageiro\s+novo))""",
+        private val RATING_SUFFIX_REGEX = Regex(
+        pattern = """(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\s*(?:[★⭐✪☆*]|(?:\([A-Za-z0-9+.\s-]+\))|[·•∙‧⋅\.\-–—|]\s*(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?)|cart[ãa]o|verif|perfil|novo|usu[áa]ri[oa]|passageir[oa]|premium|essencial|boa|otima|ótima)|\([^)]*(?:corridas?|viagens?|\d+)[^)]*\)|(?:(?:\+?[\d.]+|\d+\+?)\s*(?:corridas?|viagens?))|(?:novo\s+passageiro|passageiro\s+novo))""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -531,6 +545,13 @@ object BrazilianOfferParser {
         // 3ª Passada: Número decimal típico isolado de avaliação (ex: "4,88", "4,95") quando não for preço ou km
         for (line in cleaned) {
             val trimmed = line.trim()
+            val decMatch = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(trimmed)
+            if (decMatch != null && !trimmed.contains("R$", ignoreCase = true) && !trimmed.contains("/km") && !trimmed.contains("km") && !trimmed.contains("min")) {
+                val rating = parseBrazilianDecimal(decMatch.groupValues[1])
+                if (rating != null && rating in 3.50..5.00) {
+                    return rating
+                }
+            }
             if (trimmed.length in 3..5 && Regex("""^[34][.,]\d{1,2}$|^5[.,]0{1,2}$""").matches(trimmed)) {
                 val rating = parseBrazilianDecimal(trimmed)
                 if (rating != null && rating in 3.00..5.00) {

@@ -8,6 +8,11 @@ import java.util.Locale
 /**
  * Resultado da avaliação de segurança geográfica (Área de Risco) da Origem e do Destino.
  */
+data class AddressCandidateSelection(
+    val street: String,
+    val district: String?
+)
+
 data class RiskAssessment(
     val hasRisk: Boolean,
     val originMatchedZone: String? = null,
@@ -182,7 +187,44 @@ object RiskAreaEvaluator {
      * Extrai uma sugestão inteligente de rua ou bairro a partir de um endereço completo
      * para facilitar o botão de "Marcar como Área de Risco" com 1 toque no Histórico.
      */
+    fun extractStreetAndDistrict(fullAddress: String): AddressCandidateSelection {
+        val cleaned = fullAddress
+            .replace(Regex("""^\d+\s*min\s*\([\d.,]+\s*(?:km|m)\)\s*[-•·]?\s*""", RegexOption.IGNORE_CASE), "")
+            .trim()
+        val parts = cleaned.split("-", ",", "·", "•").map { it.trim() }.filter { it.isNotBlank() }
+        if (parts.isEmpty()) {
+            return AddressCandidateSelection(street = cleaned.take(45), district = null)
+        }
+
+        val streetIdx = parts.indexOfFirst { p ->
+            val l = p.lowercase(Locale.getDefault())
+            l.startsWith("rua ") || l.startsWith("r. ") || l.startsWith("av. ") ||
+                l.startsWith("av ") || l.startsWith("avenida ") || l.startsWith("alameda ") ||
+                l.startsWith("al. ") || l.startsWith("travessa ") || l.startsWith("tv. ") ||
+                l.startsWith("estrada ") || l.startsWith("rodovia ") || l.startsWith("rod. ") ||
+                l.startsWith("praça ") || l.startsWith("praca ") || l.startsWith("pça ") ||
+                l.startsWith("viela ") || l.startsWith("beco ") || l.startsWith("via ")
+        }
+
+        val rawStreet = if (streetIdx != -1) parts[streetIdx] else parts.firstOrNull { !it.all { c -> c.isDigit() } } ?: parts[0]
+        val cleanStreet = rawStreet.replace(Regex("""\s+\d{1,5}(?:\s*-[A-Za-z0-9]+)?$"""), "").trim()
+
+        val candidateDistrictParts = parts.filter { p ->
+            p != rawStreet && p != cleanStreet && !p.all { c -> c.isDigit() } && p.length >= 3
+        }
+        val district = candidateDistrictParts.firstOrNull()?.replace(Regex("""^\d+\s*"""), "")?.trim()
+
+        return AddressCandidateSelection(
+            street = cleanStreet.ifBlank { cleaned.take(45) },
+            district = if (!district.isNullOrBlank() && district != cleanStreet) district else null
+        )
+    }
+
     fun extractCleanStreetOrDistrict(fullAddress: String): String {
+        return extractStreetAndDistrict(fullAddress).street
+    }
+
+    private fun legacyExtract(fullAddress: String): String {
         val cleaned = fullAddress
             .replace(Regex("""^\d+\s*min\s*\([\d.,]+\s*(?:km|m)\)\s*[-•·]?\s*""", RegexOption.IGNORE_CASE), "")
             .trim()

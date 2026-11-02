@@ -1,4 +1,4 @@
-package com.creativeam.goorno.ui
+﻿package com.creativeam.goorno.ui
 
 import android.content.Context
 import android.content.Intent
@@ -179,7 +179,7 @@ fun GoOrNoComposeApp(
     var showLegalNatureDialog by remember { mutableStateOf(false) }
 
     val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
-        val cleanTerm = RiskAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
+        val cleanTerm = rawAddr.trim()
         if (cleanTerm.length >= 3) {
             pendingRiskAddressToConfirm = cleanTerm
         } else {
@@ -188,7 +188,7 @@ fun GoOrNoComposeApp(
     }
 
     val promptMarkAddressAsFavorite: (String) -> Unit = { rawAddr ->
-        val cleanTerm = FavoriteAreaEvaluator.extractCleanStreetOrDistrict(rawAddr)
+        val cleanTerm = rawAddr.trim()
         if (cleanTerm.length >= 3) {
             pendingFavoriteAddressToConfirm = cleanTerm
         } else {
@@ -1137,6 +1137,8 @@ fun GoOrNoComposeApp(
                     item {
                         var driverName by remember(config.driverName) { mutableStateOf(config.driverName) }
                         var vehicleModel by remember(config.vehicleModel) { mutableStateOf(config.vehicleModel) }
+                        var vehiclePlate by remember(config.vehiclePlate) { mutableStateOf(config.vehiclePlate) }
+                        var rodizioAlertEnabled by remember(config.rodizioAlertEnabled) { mutableStateOf(config.rodizioAlertEnabled) }
                         var selectedStyle by remember(config.overlayDisplayStyle) {
                             mutableStateOf(OverlayDisplayStyle.fromName(config.overlayDisplayStyle))
                         }
@@ -2127,11 +2129,61 @@ fun GoOrNoComposeApp(
                                     singleLine = true
                                 )
 
+                                OutlinedTextField(
+                                    value = vehiclePlate,
+                                    onValueChange = { vehiclePlate = it.uppercase(); savedFlag = false },
+                                    label = { Text("Placa do Veículo (ex: BRA2E19 ou ABC-1234)") },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+
+                                val plateDigit = com.creativeam.goorno.engine.RodizioEvaluator.extractFinalPlateDigit(vehiclePlate)
+                                val rodizioDay = if (plateDigit != null) com.creativeam.goorno.engine.RodizioEvaluator.getDayNameForDigit(plateDigit) else null
+                                if (rodizioDay != null) {
+                                    Surface(
+                                        color = Color(0xFFFEF3C7),
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFD97706).copy(alpha = 0.4f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "🚗 Placa final $plateDigit • Rodízio SP às ${rodizioDay}s (07h-10h e 17h-20h)",
+                                            color = Color(0xFF92400E),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.5.sp,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    color = SoftSurfaceVariant,
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Alerta de Rodízio SP (Centro Expandido)", fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = PetrolHeader)
+                                            Text("Avisa se a origem ou destino da corrida estiver no anel de rodízio no seu horário restrito.", fontSize = 10.5.sp, color = MutedText)
+                                        }
+                                        Switch(
+                                            checked = rodizioAlertEnabled,
+                                            onCheckedChange = { rodizioAlertEnabled = it; savedFlag = false }
+                                        )
+                                    }
+                                }
+
                                 Button(
                                     onClick = {
                                         val updated = config.copy(
                                             driverName = driverName.ifBlank { "Motorista" },
                                             vehicleModel = vehicleModel.ifBlank { "Veículo" },
+                                            vehiclePlate = vehiclePlate.trim().uppercase(),
+                                            rodizioAlertEnabled = rodizioAlertEnabled,
                                             overlayDisplayStyle = selectedStyle.name,
                                             overlayTheme = overlayTheme,
                                             overlayBubblePosition = bubblePosition,
@@ -5852,10 +5904,13 @@ fun GoOrNoComposeApp(
     }
 
     // -------------------------------------------------------------
-    // DIALOG 2: CONFIRMAÇÃO DE CADASTRO DE ÁREA DE RISCO
+    // DIALOG 2: CONFIRMAÇÃO DE CADASTRO DE ÁREA DE RISCO (RUA VS BAIRRO EDITÁVEL)
     // -------------------------------------------------------------
     if (pendingRiskAddressToConfirm != null) {
-        val targetZone = pendingRiskAddressToConfirm!!
+        val rawAddr = pendingRiskAddressToConfirm!!
+        val candidate = remember(rawAddr) { com.creativeam.goorno.engine.RiskAreaEvaluator.extractStreetAndDistrict(rawAddr) }
+        var targetZone by remember(candidate) { mutableStateOf(candidate.street) }
+
         AlertDialog(
             onDismissRequest = { pendingRiskAddressToConfirm = null },
             shape = RoundedCornerShape(22.dp),
@@ -5877,27 +5932,60 @@ fun GoOrNoComposeApp(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Deseja realmente marcar este local como Área de Risco no GoOrNo?",
-                        fontSize = 12.5.sp,
+                        text = "Escolha se deseja cadastrar a Rua específica ou o Bairro, ou edite o texto abaixo:",
+                        fontSize = 12.sp,
                         color = PetrolDarkText
                     )
-                    Surface(
-                        color = Color(0xFFFEF2F2),
-                        border = BorderStroke(1.dp, TrafficRed),
-                        shape = RoundedCornerShape(12.dp),
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "🚨 $targetZone",
-                            color = TrafficRed,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                        )
+                        Surface(
+                            onClick = { targetZone = candidate.street },
+                            color = if (targetZone.equals(candidate.street, ignoreCase = true)) Color(0xFFFEE2E2) else SoftSurfaceVariant,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (targetZone.equals(candidate.street, ignoreCase = true)) TrafficRed else Color.Transparent),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "📍 Rua:\n${candidate.street}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (targetZone.equals(candidate.street, ignoreCase = true)) TrafficRed else PetrolDarkText,
+                                modifier = Modifier.padding(8.dp),
+                                maxLines = 2
+                            )
+                        }
+                        if (candidate.district != null) {
+                            Surface(
+                                onClick = { targetZone = candidate.district },
+                                color = if (targetZone.equals(candidate.district, ignoreCase = true)) Color(0xFFFEE2E2) else SoftSurfaceVariant,
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, if (targetZone.equals(candidate.district, ignoreCase = true)) TrafficRed else Color.Transparent),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "🏘️ Bairro:\n${candidate.district}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (targetZone.equals(candidate.district, ignoreCase = true)) TrafficRed else PetrolDarkText,
+                                    modifier = Modifier.padding(8.dp),
+                                    maxLines = 2
+                                )
+                            }
+                        }
                     }
+                    OutlinedTextField(
+                        value = targetZone,
+                        onValueChange = { targetZone = it },
+                        label = { Text("Nome da Rua ou Região") },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
                     Text(
-                        text = "Quando uma nova corrida for chamada para esta região, o copiloto exibirá um alerta vermelho em destaque na tela.",
-                        fontSize = 11.5.sp,
+                        text = "Quando uma nova corrida for chamada para esta rua ou região, o copiloto exibirá um alerta vermelho em destaque na tela.",
+                        fontSize = 11.sp,
                         color = MutedText
                     )
                 }
@@ -5905,13 +5993,16 @@ fun GoOrNoComposeApp(
             confirmButton = {
                 Button(
                     onClick = {
-                        val currentList = RiskAreaEvaluator.parseCustomZonesList(config.customRiskZones)
-                        val updatedList = (currentList + targetZone).distinct()
-                        scope.launch {
-                            app.preferencesRepository.saveConfig(
-                                config.copy(customRiskZones = updatedList.joinToString(", "))
-                            )
-                            notifyUser("⚠️ '$targetZone' cadastrado como Área de Risco!")
+                        val cleanTerm = targetZone.trim()
+                        if (cleanTerm.length >= 3) {
+                            val currentList = com.creativeam.goorno.engine.RiskAreaEvaluator.parseCustomZonesList(config.customRiskZones)
+                            val updatedList = (currentList + cleanTerm).distinct()
+                            scope.launch {
+                                app.preferencesRepository.saveConfig(
+                                    config.copy(customRiskZones = updatedList.joinToString(", "))
+                                )
+                                notifyUser("⚠️ '$cleanTerm' cadastrado como Área de Risco!")
+                            }
                         }
                         pendingRiskAddressToConfirm = null
                     },
@@ -5938,7 +6029,10 @@ fun GoOrNoComposeApp(
     }
 
     if (pendingFavoriteAddressToConfirm != null) {
-        val targetZone = pendingFavoriteAddressToConfirm!!
+        val rawAddr = pendingFavoriteAddressToConfirm!!
+        val candidate = remember(rawAddr) { com.creativeam.goorno.engine.FavoriteAreaEvaluator.extractStreetAndDistrict(rawAddr) }
+        var targetZone by remember(candidate) { mutableStateOf(candidate.street) }
+
         AlertDialog(
             onDismissRequest = { pendingFavoriteAddressToConfirm = null },
             shape = RoundedCornerShape(22.dp),
@@ -5950,7 +6044,7 @@ fun GoOrNoComposeApp(
                 ) {
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFF059669))
                     Text(
-                        text = "Cadastrar Bairro Favorito",
+                        text = "Cadastrar Local Favorito",
                         fontWeight = FontWeight.Black,
                         fontSize = 17.sp,
                         color = PetrolDarkText
@@ -5960,27 +6054,60 @@ fun GoOrNoComposeApp(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Deseja salvar este local como sua Região/Bairro Favorito no GoOrNo?",
-                        fontSize = 12.5.sp,
+                        text = "Escolha se deseja cadastrar a Rua específica ou o Bairro, ou edite o texto abaixo:",
+                        fontSize = 12.sp,
                         color = PetrolDarkText
                     )
-                    Surface(
-                        color = Color(0xFFECFDF5),
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, Color(0xFF059669).copy(alpha = 0.35f)),
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "⭐ $targetZone",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.5.sp,
-                            color = Color(0xFF065F46),
-                            modifier = Modifier.padding(10.dp)
-                        )
+                        Surface(
+                            onClick = { targetZone = candidate.street },
+                            color = if (targetZone.equals(candidate.street, ignoreCase = true)) Color(0xFFECFDF5) else SoftSurfaceVariant,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (targetZone.equals(candidate.street, ignoreCase = true)) Color(0xFF059669) else Color.Transparent),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "📍 Rua:\n${candidate.street}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (targetZone.equals(candidate.street, ignoreCase = true)) Color(0xFF059669) else PetrolDarkText,
+                                modifier = Modifier.padding(8.dp),
+                                maxLines = 2
+                            )
+                        }
+                        if (candidate.district != null) {
+                            Surface(
+                                onClick = { targetZone = candidate.district },
+                                color = if (targetZone.equals(candidate.district, ignoreCase = true)) Color(0xFFECFDF5) else SoftSurfaceVariant,
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, if (targetZone.equals(candidate.district, ignoreCase = true)) Color(0xFF059669) else Color.Transparent),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "🏘️ Bairro:\n${candidate.district}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (targetZone.equals(candidate.district, ignoreCase = true)) Color(0xFF059669) else PetrolDarkText,
+                                    modifier = Modifier.padding(8.dp),
+                                    maxLines = 2
+                                )
+                            }
+                        }
                     }
+                    OutlinedTextField(
+                        value = targetZone,
+                        onValueChange = { targetZone = it },
+                        label = { Text("Nome da Rua ou Região") },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
                     Text(
                         text = "Quando uma nova corrida for chamada para esta região ou com embarque nela, o card flutuante exibirá um destaque verde com estrela.",
-                        fontSize = 11.5.sp,
+                        fontSize = 11.sp,
                         color = MutedText
                     )
                 }
@@ -5988,13 +6115,16 @@ fun GoOrNoComposeApp(
             confirmButton = {
                 Button(
                     onClick = {
-                        val currentList = FavoriteAreaEvaluator.parseCustomZonesList(config.customFavoriteZones)
-                        val updatedList = (currentList + targetZone).distinct()
-                        scope.launch {
-                            app.preferencesRepository.saveConfig(
-                                config.copy(customFavoriteZones = updatedList.joinToString(", "))
-                            )
-                            notifyUser("⭐ '$targetZone' cadastrado como Bairro Favorito!")
+                        val cleanTerm = targetZone.trim()
+                        if (cleanTerm.length >= 3) {
+                            val currentList = com.creativeam.goorno.engine.FavoriteAreaEvaluator.parseCustomZonesList(config.customFavoriteZones)
+                            val updatedList = (currentList + cleanTerm).distinct()
+                            scope.launch {
+                                app.preferencesRepository.saveConfig(
+                                    config.copy(customFavoriteZones = updatedList.joinToString(", "))
+                                )
+                                notifyUser("⭐ '$cleanTerm' cadastrado como Local Favorito!")
+                            }
                         }
                         pendingFavoriteAddressToConfirm = null
                     },
@@ -6005,7 +6135,7 @@ fun GoOrNoComposeApp(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Sim, Cadastrar Bairro Favorito", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                    Text("Sim, Cadastrar Local Favorito", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
                 }
             },
             dismissButton = {
