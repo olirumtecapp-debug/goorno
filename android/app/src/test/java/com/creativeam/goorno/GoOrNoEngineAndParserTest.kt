@@ -1693,22 +1693,26 @@ class GoOrNoEngineAndParserTest {
             screenClassification = ScreenClassification.NEW_OFFER,
             timestampMillis = System.currentTimeMillis(),
             offeredPriceField = ExtractedField.Present(12.0),
-            pickupDistanceKm = 1.0,
-            tripDistanceKm = 3.0,
-            pickupDurationMin = 3,
-            tripDurationMin = 8
+            pickupDistanceKmField = ExtractedField.Present(1.0),
+            tripDistanceKmField = ExtractedField.Present(3.0),
+            pickupDurationMinField = ExtractedField.Present(3),
+            tripDurationMinField = ExtractedField.Present(8),
+            confidenceScore = 0.95
         )
 
-        // Com limite padrão de 5.0km: corrida de 4.0km é CURTA
+        // Com limite padrao de 5.0km: corrida de 4.0km e CURTA
         val evalDefault = FinancialEngine.evaluate(offer4Km, DriverFinancialConfig(shortTripKmThreshold = 5.0))
         assertTrue(evalDefault.isShortTrip)
 
-        // Com limite configurado para 3.5km pelo motorista: corrida de 4.0km NÃO é curta
+        // Com limite configurado para 3.5km pelo motorista: corrida de 4.0km NAO e curta
         val evalStrict = FinancialEngine.evaluate(offer4Km, DriverFinancialConfig(shortTripKmThreshold = 3.5))
         assertFalse(evalStrict.isShortTrip)
 
         // Com limite configurado para 6.0km: corrida de 5.5km se torna curta
-        val offer55Km = offer4Km.copy(pickupDistanceKm = 1.5, tripDistanceKm = 4.0)
+        val offer55Km = offer4Km.copy(
+            pickupDistanceKmField = ExtractedField.Present(1.5),
+            tripDistanceKmField = ExtractedField.Present(4.0)
+        )
         val evalLenient = FinancialEngine.evaluate(offer55Km, DriverFinancialConfig(shortTripKmThreshold = 6.0))
         assertTrue(evalLenient.isShortTrip)
     }
