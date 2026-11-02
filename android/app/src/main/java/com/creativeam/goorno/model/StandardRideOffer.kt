@@ -299,6 +299,9 @@ data class FinancialEvaluationResult(
     val isDistantPickup: Boolean = false,
     val isLongTrip: Boolean = false,
     val isShortTrip: Boolean = false,
+    val isSlowTraffic: Boolean = false,
+    val slowTrafficBadge: String? = null,
+    val isSeverelyStuck: Boolean = false,
     val isRodizioAlert: Boolean = false,
     val rodizioAlertBadge: String? = null
 )
