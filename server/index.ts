@@ -1098,7 +1098,7 @@ app.get("/api/app-version", (_req, res) => {
     versionName: "3.3.65",
     versionCode: 86,
     releaseDate: "2026-11-02",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.64.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.65.apk",
     directDownload: "/GoOrNo.apk",
     fileSizeBytes: 55360988,
     fileSizeFormatted: "55.4 MB",
@@ -1116,11 +1116,13 @@ app.get("/api/app-version", (_req, res) => {
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
+  "/GoOrNo-v3.3.65.apk",
   "/GoOrNo-v3.3.64.apk",
   "/GoOrNo-v3.3.63.apk",
   "/GoOrNo-v3.3.53.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
+  "/download/GoOrNo-v3.3.65.apk",
   "/download/GoOrNo-v3.3.64.apk",
   "/download/GoOrNo-v3.3.63.apk"
 ], (_req, res) => {
@@ -1128,21 +1130,22 @@ app.get([
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.64.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.64.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.64.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.65.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.65.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.65.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.64.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.63.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.53.apk"),
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.64.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.65.apk");
     }
   }
-  res.status(404).send("APK não encontrado no servidor.");
+  return res.redirect("https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.65.apk");
 });
 
 // Serve static build in production/local start

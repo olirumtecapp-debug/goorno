@@ -9,7 +9,7 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
     versionName: "3.3.65",
     versionCode: 86,
     releaseDate: "2026-11-02",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.64.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.65.apk",
     directDownload: "/GoOrNo.apk",
     fileSizeBytes: 55360988,
     fileSizeFormatted: "55.4 MB",
