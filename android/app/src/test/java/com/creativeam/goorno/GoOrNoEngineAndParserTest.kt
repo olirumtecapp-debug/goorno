@@ -1650,5 +1650,4 @@ class GoOrNoEngineAndParserTest {
         assertTrue(partialResult.isDistancePartial)
         assertNull(partialResult.grossPerKm)
     }
-    }
 }
