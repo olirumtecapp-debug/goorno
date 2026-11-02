@@ -333,7 +333,35 @@ object FinancialEngine {
             false
         }
         val isLongTrip = (totalDistanceKm != null && totalDistanceKm >= 25.0) || (totalDurationMin != null && totalDurationMin >= 45)
-        val isShortTrip = totalDistanceKm != null && totalDistanceKm in 0.1..3.5
+
+        // Detecção Inteligente de Trânsito Lento / Corrida Travada:
+        val estimatedSpeedKmH = if (totalDistanceKm != null && totalDistanceKm > 0.0 && totalDurationMin != null && totalDurationMin > 0) {
+            (totalDistanceKm / (totalDurationMin.toDouble() / 60.0))
+        } else null
+
+        val minPerKm = if (totalDistanceKm != null && totalDistanceKm > 0.0 && totalDurationMin != null && totalDurationMin > 0) {
+            totalDurationMin.toDouble() / totalDistanceKm
+        } else null
+
+        // Alerta de lentidão: velocidade média < 12.0 km/h OU ritmo >= 5.0 min/km (em dados consolidados, sem transição)
+        val isSlowTraffic = !isDistancePartial && !isDurationPartial && estimatedSpeedKmH != null && minPerKm != null &&
+                (estimatedSpeedKmH < 12.0 || minPerKm >= 5.0)
+
+        // Severamente travada: velocidade média < 9.0 km/h OU ritmo >= 6.5 min/km
+        val isSeverelyStuck = isSlowTraffic && (estimatedSpeedKmH != null && estimatedSpeedKmH < 9.0 || minPerKm != null && minPerKm >= 6.5)
+
+        val slowTrafficBadge = if (isSlowTraffic) {
+            val distFormatted = String.format(Locale.forLanguageTag("pt-BR"), "%.1f", totalDistanceKm ?: 0.0)
+            if (isSeverelyStuck) {
+                "CORRIDA TRAVADA (${totalDurationMin}m • ${distFormatted}km)"
+            } else {
+                "TRÂNSITO LENTO (${totalDurationMin}m • ${distFormatted}km)"
+            }
+        } else null
+
+        // Corrida Curta: até 5.0 km totais, sem ser leitura parcial, sem embarque distante e sem trânsito lento/travado!
+        val shortTripLimit = config.shortTripKmThreshold.coerceIn(1.0, 10.0)
+        val isShortTrip = !isDistancePartial && totalDistanceKm != null && totalDistanceKm in 0.1..shortTripLimit && !isDistantPickup && !isSlowTraffic
 
         val rodizioAssessment = RodizioEvaluator.evaluate(
             originAddress = offer.originAddress,
@@ -342,6 +370,11 @@ object FinancialEngine {
         )
 
         val operationalAlertParts = mutableListOf<String>()
+        if (isSlowTraffic) {
+            val label = slowTrafficBadge ?: "Trânsito lento detectado"
+            operationalAlertParts.add(if (isSeverelyStuck) "🛑 $label" else "🐢 $label")
+            warnings.add(0, if (isSeverelyStuck) "🛑 Corrida travada: velocidade média muito baixa (${String.format(Locale.forLanguageTag("pt-BR"), "%.0f", estimatedSpeedKmH ?: 0.0)} km/h)." else "🐢 Trânsito lento: tempo previsto desproporcional à distância.")
+        }
         if (rodizioAssessment.isRodizio) {
             operationalAlertParts.add("⚠️ ${rodizioAssessment.badge}")
             warnings.add(0, rodizioAssessment.message ?: "⚠️ Alerta de Rodízio SP")
@@ -417,7 +450,10 @@ object FinancialEngine {
             isLongTrip = isLongTrip,
             isShortTrip = isShortTrip,
             isRodizioAlert = rodizioAssessment.isRodizio,
-            rodizioAlertBadge = rodizioAssessment.badge
+            rodizioAlertBadge = rodizioAssessment.badge,
+            isSlowTraffic = isSlowTraffic,
+            slowTrafficBadge = slowTrafficBadge,
+            isSeverelyStuck = isSeverelyStuck
         )
     }
 

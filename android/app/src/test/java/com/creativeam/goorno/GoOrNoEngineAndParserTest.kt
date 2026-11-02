@@ -1634,6 +1634,39 @@ class GoOrNoEngineAndParserTest {
         )
         val result = FinancialEngine.evaluate(shortOffer, DriverFinancialConfig())
         assertTrue(result.isShortTrip)
+        assertFalse(result.isSlowTraffic)
+
+        // Teste de Corrida Curta com Trânsito Lento (3 km em 20 min) -> NÃO deve ser corrida curta, deve ser TRÂNSITO LENTO / CORRIDA TRAVADA!
+        val stuckOffer = StandardRideOffer(
+            offerId = "stuck-1",
+            sourceApp = SourceApp.UBER_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = 1000L,
+            offeredPriceField = ExtractedField.Present(10.00),
+            totalDistanceKmField = ExtractedField.Present(3.0),
+            totalDurationMinField = ExtractedField.Present(20),
+            confidenceScore = 0.95
+        )
+        val stuckResult = FinancialEngine.evaluate(stuckOffer, DriverFinancialConfig())
+        assertFalse(stuckResult.isShortTrip)
+        assertTrue(stuckResult.isSlowTraffic)
+        assertTrue(stuckResult.isSeverelyStuck)
+
+        // Teste de Corrida de 6.8 km -> NÃO é corrida curta
+        val normalOffer = StandardRideOffer(
+            offerId = "normal-1",
+            sourceApp = SourceApp.UBER_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = 1000L,
+            offeredPriceField = ExtractedField.Present(22.00),
+            totalDistanceKmField = ExtractedField.Present(6.8),
+            totalDurationMinField = ExtractedField.Present(18),
+            confidenceScore = 0.95
+        )
+        val normalResult = FinancialEngine.evaluate(normalOffer, DriverFinancialConfig())
+        assertFalse(normalResult.isShortTrip)
 
         val partialOffer = StandardRideOffer(
             offerId = "partial-1",
@@ -1648,6 +1681,35 @@ class GoOrNoEngineAndParserTest {
         )
         val partialResult = FinancialEngine.evaluate(partialOffer, DriverFinancialConfig())
         assertTrue(partialResult.isDistancePartial)
+        assertFalse(partialResult.isShortTrip)
         assertNotNull(partialResult.grossPerKm)
+    }
+    @Test
+    fun testCustomShortTripKmThresholdConfiguration() {
+        val offer4Km = StandardRideOffer(
+            offerId = "short-custom-1",
+            sourceApp = SourceApp.UBER_DRIVER,
+            captureMethod = CaptureMethod.ACCESSIBILITY,
+            screenClassification = ScreenClassification.NEW_OFFER,
+            timestampMillis = System.currentTimeMillis(),
+            offeredPriceField = ExtractedField.Present(12.0),
+            pickupDistanceKm = 1.0,
+            tripDistanceKm = 3.0,
+            pickupDurationMin = 3,
+            tripDurationMin = 8
+        )
+
+        // Com limite padrão de 5.0km: corrida de 4.0km é CURTA
+        val evalDefault = FinancialEngine.evaluate(offer4Km, DriverFinancialConfig(shortTripKmThreshold = 5.0))
+        assertTrue(evalDefault.isShortTrip)
+
+        // Com limite configurado para 3.5km pelo motorista: corrida de 4.0km NÃO é curta
+        val evalStrict = FinancialEngine.evaluate(offer4Km, DriverFinancialConfig(shortTripKmThreshold = 3.5))
+        assertFalse(evalStrict.isShortTrip)
+
+        // Com limite configurado para 6.0km: corrida de 5.5km se torna curta
+        val offer55Km = offer4Km.copy(pickupDistanceKm = 1.5, tripDistanceKm = 4.0)
+        val evalLenient = FinancialEngine.evaluate(offer55Km, DriverFinancialConfig(shortTripKmThreshold = 6.0))
+        assertTrue(evalLenient.isShortTrip)
     }
 }

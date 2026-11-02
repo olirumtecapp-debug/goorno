@@ -215,6 +215,7 @@ data class DriverFinancialConfig(
     val targetGoodPassengerRating: Double = 4.85,
     val minAcceptablePassengerRating: Double = 4.70,
     val distantPickupKmThreshold: Double = 2.5,
+    val shortTripKmThreshold: Double = 5.0,
     val minConfidenceThreshold: Double = 0.65,
     val overlayOpacityPercent: Int = 92,
     val overlayAutoMinimizeSec: Int = 5,

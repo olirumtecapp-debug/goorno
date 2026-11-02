@@ -2762,6 +2762,98 @@ fun GoOrNoComposeApp(
                         Spacer(modifier = Modifier.height(14.dp))
 
                         // =========================================================
+                        // CARD DE CORRIDA CURTA (CONFIGURÁVEL)
+                        // =========================================================
+                        var shortTripLimitThreshold by remember(config.shortTripKmThreshold) {
+                            mutableStateOf(config.shortTripKmThreshold.toFloat())
+                        }
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        color = PetrolHeader,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "⚡ CORRIDA CURTA",
+                                            color = LimeBright,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 10.sp,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "Limite de Corrida Curta",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 14.sp,
+                                        color = PetrolHeader
+                                    )
+                                }
+                                Text(
+                                    text = "Corridas com distância total de até este valor (e com trânsito normal) receberão a abinha '⚡ CORRIDA CURTA' no card:",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Distância máxima para corrida curta:",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = PetrolDarkText
+                                    )
+                                    Surface(
+                                        color = SoftSurfaceVariant,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", shortTripLimitThreshold),
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 14.sp,
+                                            color = PetrolHeader,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                                Slider(
+                                    value = shortTripLimitThreshold,
+                                    onValueChange = {
+                                        val rounded = (Math.round(it * 10f) / 10f).coerceIn(1.0f, 10.0f)
+                                        shortTripLimitThreshold = rounded
+                                        val updated = config.copy(shortTripKmThreshold = rounded.toDouble())
+                                        scope.launch {
+                                            app.preferencesRepository.saveConfig(updated)
+                                            app.overlayPanel.applyConfig(updated)
+                                        }
+                                    },
+                                    valueRange = 1.0f..10.0f,
+                                    steps = 17,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = PetrolHeader,
+                                        activeTrackColor = LimeBright
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // =========================================================
                         // CARD DE AVALIAÇÃO DO PASSAGEIRO (VERDE / AMARELA / VERMELHA)
                         // =========================================================
                         var goodRatingText by remember(config.targetGoodPassengerRating) {

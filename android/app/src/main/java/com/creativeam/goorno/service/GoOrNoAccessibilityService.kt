@@ -33,6 +33,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.Locale
+import java.util.concurrent.Executors
 
 /**
  * Serviço principal de leitura automática de ofertas (Android AccessibilityService) v2.9.0.
@@ -61,6 +62,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var lastOfferProcessedTimeMillis: Long = 0L
     private var isTakingAutoScreenshot: Boolean = false
     private var consecutiveScansWithoutOffers: Int = 0
+    private val screenshotExecutor = Executors.newSingleThreadExecutor()
 
     private val mlKitRecognizer by lazy {
         TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -233,6 +235,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             eventCombined.contains("Pop", ignoreCase = true) ||
             eventCombined.contains("Aceitar", ignoreCase = true) ||
             eventCombined.contains("Escolher", ignoreCase = true) ||
+            eventCombined.contains("Viagem", ignoreCase = true) ||
+            eventCombined.contains("Exclusivo", ignoreCase = true) ||
+            eventCombined.contains("Radar", ignoreCase = true) ||
+            eventCombined.contains("Selecionar", ignoreCase = true) ||
+            eventCombined.contains("Comfort", ignoreCase = true) ||
+            eventCombined.contains("Black", ignoreCase = true) ||
+            eventCombined.contains("Flash", ignoreCase = true) ||
+            eventCombined.contains("Priority", ignoreCase = true) ||
+            eventCombined.contains("Prioridade", ignoreCase = true) ||
             eventCombined.contains("Uber", ignoreCase = true) ||
             eventCombined.contains("min", ignoreCase = true)
 
@@ -310,8 +321,22 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val hasRideActionBtn = joinedScreenLower.contains("escolher") ||
             joinedScreenLower.contains("aceitar") ||
             joinedScreenLower.contains("selecionar") ||
+            joinedScreenLower.contains("viagem") ||
+            joinedScreenLower.contains("exclusivo") ||
+            joinedScreenLower.contains("radar") ||
             joinedScreenLower.contains("deslize") ||
-            joinedScreenLower.contains("nova corrida")
+            joinedScreenLower.contains("nova corrida") ||
+            joinedScreenLower.contains("uberx") ||
+            joinedScreenLower.contains("comfort") ||
+            joinedScreenLower.contains("black") ||
+            joinedScreenLower.contains("flash") ||
+            joinedScreenLower.contains("priority") ||
+            joinedScreenLower.contains("prioridade") ||
+            joinedScreenLower.contains("pop") ||
+            joinedScreenLower.contains("99pop") ||
+            joinedScreenLower.contains("99moto") ||
+            joinedScreenLower.contains("99negocia") ||
+            joinedScreenLower.contains("99plus")
 
         val isIdleSearchingScreen = (joinedScreenLower.contains("buscando solicitações") ||
             joinedScreenLower.contains("buscando solicitacoes") ||
@@ -428,6 +453,13 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        // UBER DRIVER NUNCA PRECISA DE OCR: a árvore de acessibilidade nativa é completa e 10x mais rápida.
+        // O OCR por captura silenciosa é reservado exclusivamente para a 99 (telas Canvas) para não atrasar nem congelar a UI.
+        if (targetApp == SourceApp.UBER_DRIVER) {
+            isTakingAutoScreenshot = false
+            return
+        }
+
         val app = applicationContext as? GoOrNoApplication
         if (app?.overlayPanel?.isCardCurrentlyVisible() == true || (now - lastOfferProcessedTimeMillis < 2_500L)) {
             isTakingAutoScreenshot = false
@@ -452,14 +484,22 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         isTakingAutoScreenshot = true
         lastAutoScreenshotTimeMillis = now
+        val captureReqTime = now
 
         try {
             takeScreenshot(
                 Display.DEFAULT_DISPLAY,
-                mainExecutor,
+                screenshotExecutor,
                 object : TakeScreenshotCallback {
                     override fun onSuccess(screenshotResult: ScreenshotResult) {
                         val hwBuffer = screenshotResult.hardwareBuffer
+                        val callbackNow = System.currentTimeMillis()
+                        // Se a captura levou mais de 1.1s para retornar do sistema operacional, já está defasada!
+                        if (callbackNow - captureReqTime > 1100L) {
+                            try { hwBuffer.close() } catch (_: Throwable) {}
+                            isTakingAutoScreenshot = false
+                            return
+                        }
                         val colorSpace = screenshotResult.colorSpace
                         val hwBitmap = try {
                             Bitmap.wrapHardwareBuffer(hwBuffer, colorSpace)
@@ -613,17 +653,30 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                     }
 
                                     if (ocrOffers.isNotEmpty()) {
+                                        val ocrFinishTime = System.currentTimeMillis()
+                                        // Descarte de OCR defasado: se o OCR demorou mais de 1.4s, nunca entrega oferta fantasma da tela anterior!
+                                        if (ocrFinishTime - captureReqTime > 1400L) {
+                                            isTakingAutoScreenshot = false
+                                            return@addOnSuccessListener
+                                        }
+                                        val currentActiveRoot = try { rootInActiveWindow } catch (_: Exception) { null }
+                                        val curPkg = currentActiveRoot?.packageName?.toString() ?: ""
+                                        if (curPkg.isNotBlank() && !SourceApp.isAllowedDriverPackage(curPkg)) {
+                                            isTakingAutoScreenshot = false
+                                            return@addOnSuccessListener
+                                        }
+
                                         consecutiveScansWithoutOffers = 0
                                         RuntimeDiagnosticsBus.recordAccessibilitySnapshot(
                                             AccessibilitySnapshot(
-                                                timestampMillis = System.currentTimeMillis(),
+                                                timestampMillis = ocrFinishTime,
                                                 packageName = "${effectiveOcrApp.displayName} (Leitura Visual Automática)",
                                                 detectedApp = effectiveOcrApp,
                                                 nodeCount = normalizedOcr.size,
                                                 extractedTexts = normalizedOcr.take(90)
                                             )
                                         )
-                                        processAndShowOffers(ocrOffers, normalizedOcr, System.currentTimeMillis())
+                                        processAndShowOffers(ocrOffers, normalizedOcr, ocrFinishTime)
                                     } else {
                                         consecutiveScansWithoutOffers++
                                         // Se ficou 2 leituras sem nenhuma oferta na tela (ex: abriu WhatsApp ou saiu da chamada),
@@ -664,9 +717,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val totalKm = offer.totalDistanceKmExplicit
             ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
         val kmRounded = (Math.round(totalKm * 2.0) / 2.0)
-        val origPrefix = offer.originAddress?.take(8)?.lowercase(Locale.getDefault()) ?: ""
-        val destPrefix = offer.destinationAddress?.take(8)?.lowercase(Locale.getDefault()) ?: ""
-        return "${offer.sourceApp.name}|$priceRounded|$kmRounded|$origPrefix|$destPrefix"
+        return "${offer.sourceApp.name}|$priceRounded|$kmRounded"
     }
 
     private fun processAndShowOffers(
@@ -679,9 +730,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         val app = applicationContext as? GoOrNoApplication ?: return
 
-        // Remove chaves que expiraram há mais de 120 segundos
+        // Remove chaves que expiraram há mais de 60 segundos
         val expiredKeys = shownOfferTimestamps.entries
-            .filter { now - it.value > 120_000L }
+            .filter { now - it.value > 60_000L }
             .map { it.key }
         expiredKeys.forEach { shownOfferTimestamps.remove(it) }
 
@@ -694,11 +745,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             if (lastShown == null) {
                 // Primeira vez que esta oferta toca
                 validOffers.add(offer.copy(isRepeatedOffer = false))
-            } else if (now - lastShown >= 15_000L && now - lastShown <= 120_000L) {
-                // Já tocou há mais de 15 segundos (nova chamada/re-oferta do app)
+            } else if (now - lastShown >= 6_000L && now - lastShown <= 60_000L) {
+                // Já tocou há mais de 6 segundos (nova chamada/re-oferta do app)
                 validOffers.add(offer.copy(isRepeatedOffer = true))
             } else {
-                // Ainda está dentro dos 15 segundos do toque original; ignora para não repicar o card
+                // Ainda está dentro da janela do mesmo toque; não repica o card
             }
         }
 
@@ -892,6 +943,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         pollingJob?.cancel()
+        try { screenshotExecutor.shutdown() } catch (_: Throwable) {}
         RuntimeDiagnosticsBus.setAccessibilityConnected(false)
         (applicationContext as? GoOrNoApplication)?.overlayPanel?.hidePanel()
         serviceScope.cancel()

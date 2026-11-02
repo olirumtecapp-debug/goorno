@@ -110,7 +110,15 @@ class FloatingOverlayPanel(private val context: Context) {
     fun setMonitoringEnabled(enabled: Boolean, accessibilityEnabled: Boolean = isAccessibilityActive) {
         isMonitoringEnabled = enabled
         isAccessibilityActive = accessibilityEnabled
+        activeCardFingerprint = ""
+        offerQueue = emptyList()
+        currentQueueIndex = 0
+        recentlyDismissedOfferTimestamps.clear()
+        isTransitioningBetweenOffers = false
+        mainHandler.removeCallbacks(countdownRunnable)
+        mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
         if (!enabled) {
+            removeWindowViewOnly()
             hidePanel()
         }
         mainHandler.post {
@@ -229,21 +237,31 @@ class FloatingOverlayPanel(private val context: Context) {
             val newPrice = firstEval.offer.offeredPrice ?: 0.0
             val newKm = firstEval.totalConsideredDistanceKm ?: 0.0
             val newFingerprint = "${firstEval.offer.sourceApp.name}|${String.format(Locale.US, "%.2f", newPrice)}|${String.format(Locale.US, "%.1f", newKm)}"
+            val appPriceKey = "${firstEval.offer.sourceApp.name}|${String.format(Locale.US, "%.2f", newPrice)}"
 
             val now = System.currentTimeMillis()
-            recentlyDismissedOfferTimestamps.entries.removeAll { now - it.value > 60_000L }
+            recentlyDismissedOfferTimestamps.entries.removeAll { now - it.value > 20_000L }
 
             // Proteção Anti-Reabertura: se esta oferta já foi fechada/expirada recentemente,
-            // ignora novas leituras da acessibilidade por 18s para a janela não ficar reabrindo em loop
-            val lastDismissed = recentlyDismissedOfferTimestamps[newFingerprint]
-            if (lastDismissed != null && (now - lastDismissed) < 18_000L && results.none { it.offer.isSimulated }) {
+            // ignora novas leituras por 5s (evita reabrir em loop na mesma tela)
+            val lastDismissed = recentlyDismissedOfferTimestamps[newFingerprint] ?: recentlyDismissedOfferTimestamps[appPriceKey]
+            if (lastDismissed != null && (now - lastDismissed) < 5_000L && results.none { it.offer.isSimulated }) {
                 return@post
             }
 
             // Proteção Anti-Flicker: se o card flutuante já está visível para a mesma corrida,
-            // NÃO destrói nem recria as views (evita sumir o valor ou piscar a janela!)
-            if (isCardCurrentlyVisible() && activeCardFingerprint == newFingerprint && offerQueue.isNotEmpty()) {
-                return@post
+            // NÃO destrói nem recria as views e NÃO reinicia o timer da contagem regressiva!
+            if (isCardCurrentlyVisible() && offerQueue.isNotEmpty()) {
+                val currentActive = offerQueue.getOrNull(currentQueueIndex)
+                if (currentActive != null && currentActive.offer.sourceApp == firstEval.offer.sourceApp) {
+                    val currentPrice = currentActive.offer.offeredPrice ?: 0.0
+                    if (kotlin.math.abs(currentPrice - newPrice) < 0.25) {
+                        // É a mesma corrida recebendo dados complementares (ex: endereços ou rating)
+                        offerQueue = results.take(5)
+                        activeCardFingerprint = newFingerprint
+                        return@post
+                    }
+                }
             }
             activeCardFingerprint = newFingerprint
 
@@ -311,8 +329,15 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     fun dismissCurrentOfferCardByUser() {
+        val now = System.currentTimeMillis()
         if (activeCardFingerprint.isNotBlank()) {
-            recentlyDismissedOfferTimestamps[activeCardFingerprint] = System.currentTimeMillis()
+            recentlyDismissedOfferTimestamps[activeCardFingerprint] = now
+        }
+        val currentActive = offerQueue.getOrNull(currentQueueIndex)
+        if (currentActive != null) {
+            val price = currentActive.offer.offeredPrice ?: 0.0
+            val appPriceKey = "${currentActive.offer.sourceApp.name}|${String.format(Locale.US, "%.2f", price)}"
+            recentlyDismissedOfferTimestamps[appPriceKey] = now
         }
         activeCardFingerprint = ""
         offerQueue = emptyList()
@@ -342,10 +367,19 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun hidePanel() {
         mainHandler.post {
+            val now = System.currentTimeMillis()
             if (activeCardFingerprint.isNotBlank()) {
-                recentlyDismissedOfferTimestamps[activeCardFingerprint] = System.currentTimeMillis()
+                recentlyDismissedOfferTimestamps[activeCardFingerprint] = now
+            }
+            val currentActive = offerQueue.getOrNull(currentQueueIndex)
+            if (currentActive != null) {
+                val price = currentActive.offer.offeredPrice ?: 0.0
+                val appPriceKey = "${currentActive.offer.sourceApp.name}|${String.format(Locale.US, "%.2f", price)}"
+                recentlyDismissedOfferTimestamps[appPriceKey] = now
             }
             activeCardFingerprint = ""
+            offerQueue = emptyList()
+            currentQueueIndex = 0
             mainHandler.removeCallbacks(countdownRunnable)
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
             isTransitioningBetweenOffers = false
@@ -357,6 +391,9 @@ class FloatingOverlayPanel(private val context: Context) {
     fun clearRecentlyDismissed() {
         mainHandler.post {
             recentlyDismissedOfferTimestamps.clear()
+            activeCardFingerprint = ""
+            offerQueue = emptyList()
+            currentQueueIndex = 0
         }
     }
 
@@ -1125,6 +1162,19 @@ class FloatingOverlayPanel(private val context: Context) {
                     icon = "⚠️",
                     text = rText.uppercase(),
                     bgHex = "#D97706",
+                    textColorHex = "#FFFFFF"
+                )
+            )
+        }
+
+        // 2b. Trânsito Lento ou Corrida Travada (Alerta inteligente de velocidade/tempo excessivo)
+        if (result.isSlowTraffic) {
+            val label = result.slowTrafficBadge?.takeIf { it.isNotBlank() } ?: "TRÂNSITO LENTO"
+            alerts.add(
+                AlertPillItem(
+                    icon = if (result.isSeverelyStuck) "🛑" else "🐢",
+                    text = label.uppercase(),
+                    bgHex = if (result.isSeverelyStuck) "#991B1B" else "#C2410C",
                     textColorHex = "#FFFFFF"
                 )
             )

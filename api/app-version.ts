@@ -6,10 +6,10 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.65",
-    versionCode: 86,
+    versionName: "3.3.66",
+    versionCode: 87,
     releaseDate: "2026-11-02",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.65.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.66.apk",
     directDownload: "/GoOrNo.apk",
     fileSizeBytes: 55360988,
     fileSizeFormatted: "55.4 MB",

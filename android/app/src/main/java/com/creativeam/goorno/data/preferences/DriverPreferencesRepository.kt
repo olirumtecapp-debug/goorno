@@ -64,6 +64,7 @@ class DriverPreferencesRepository(private val context: Context) {
         val TARGET_GOOD_PASSENGER_RATING = doublePreferencesKey("target_good_passenger_rating")
         val MIN_ACCEPTABLE_PASSENGER_RATING = doublePreferencesKey("min_acceptable_passenger_rating")
         val DISTANT_PICKUP_KM_THRESHOLD = doublePreferencesKey("distant_pickup_km_threshold")
+        val SHORT_TRIP_KM_THRESHOLD = doublePreferencesKey("short_trip_km_threshold")
         val MIN_CONFIDENCE = doublePreferencesKey("min_confidence")
         val OVERLAY_OPACITY = intPreferencesKey("overlay_opacity")
         val OVERLAY_AUTO_MIN_SEC = intPreferencesKey("overlay_auto_min_sec")
@@ -131,6 +132,7 @@ class DriverPreferencesRepository(private val context: Context) {
                     targetGoodPassengerRating = if (b.contains("target_good_passenger_rating")) b.getFloat("target_good_passenger_rating", 4.85f).toDouble() else 4.85,
                     minAcceptablePassengerRating = if (b.contains("min_acceptable_passenger_rating")) b.getFloat("min_acceptable_passenger_rating", 4.70f).toDouble() else 4.70,
                     distantPickupKmThreshold = if (b.contains("distant_pickup_km_threshold")) b.getFloat("distant_pickup_km_threshold", 2.5f).toDouble() else 2.5,
+                    shortTripKmThreshold = if (b.contains("short_trip_km_threshold")) b.getFloat("short_trip_km_threshold", 5.0f).toDouble() else 5.0,
                     minConfidenceThreshold = if (b.contains("min_confidence")) b.getFloat("min_confidence", 0.65f).toDouble() else 0.65,
                     overlayOpacityPercent = b.getInt("overlay_opacity", 92),
                     overlayAutoMinimizeSec = b.getInt("overlay_auto_min_sec", 5).coerceIn(3, 7),
@@ -203,6 +205,7 @@ class DriverPreferencesRepository(private val context: Context) {
                 targetGoodPassengerRating = prefs[Keys.TARGET_GOOD_PASSENGER_RATING] ?: if (b.contains("target_good_passenger_rating")) b.getFloat("target_good_passenger_rating", 4.85f).toDouble() else 4.85,
                 minAcceptablePassengerRating = prefs[Keys.MIN_ACCEPTABLE_PASSENGER_RATING] ?: if (b.contains("min_acceptable_passenger_rating")) b.getFloat("min_acceptable_passenger_rating", 4.70f).toDouble() else 4.70,
                 distantPickupKmThreshold = prefs[Keys.DISTANT_PICKUP_KM_THRESHOLD] ?: if (b.contains("distant_pickup_km_threshold")) b.getFloat("distant_pickup_km_threshold", 2.5f).toDouble() else 2.5,
+                shortTripKmThreshold = prefs[Keys.SHORT_TRIP_KM_THRESHOLD] ?: if (b.contains("short_trip_km_threshold")) b.getFloat("short_trip_km_threshold", 5.0f).toDouble() else 5.0,
                 minConfidenceThreshold = prefs[Keys.MIN_CONFIDENCE] ?: if (b.contains("min_confidence")) b.getFloat("min_confidence", 0.65f).toDouble() else 0.65,
                 overlayOpacityPercent = prefs[Keys.OVERLAY_OPACITY] ?: b.getInt("overlay_opacity", 92),
                 overlayAutoMinimizeSec = (prefs[Keys.OVERLAY_AUTO_MIN_SEC] ?: b.getInt("overlay_auto_min_sec", 5)).coerceIn(3, 7),
@@ -259,6 +262,7 @@ class DriverPreferencesRepository(private val context: Context) {
                 prefs[Keys.TARGET_GOOD_PASSENGER_RATING] = config.targetGoodPassengerRating.coerceIn(3.0, 5.0)
                 prefs[Keys.MIN_ACCEPTABLE_PASSENGER_RATING] = config.minAcceptablePassengerRating.coerceIn(3.0, 5.0)
                 prefs[Keys.DISTANT_PICKUP_KM_THRESHOLD] = config.distantPickupKmThreshold.coerceIn(0.5, 10.0)
+                prefs[Keys.SHORT_TRIP_KM_THRESHOLD] = config.shortTripKmThreshold.coerceIn(1.0, 10.0)
                 prefs[Keys.MIN_CONFIDENCE] = config.minConfidenceThreshold
                 prefs[Keys.OVERLAY_OPACITY] = config.overlayOpacityPercent.coerceIn(25, 100)
                 prefs[Keys.OVERLAY_AUTO_MIN_SEC] = config.overlayAutoMinimizeSec.coerceIn(3, 60)
@@ -311,6 +315,7 @@ class DriverPreferencesRepository(private val context: Context) {
                 putFloat("target_good_passenger_rating", config.targetGoodPassengerRating.toFloat())
                 putFloat("min_acceptable_passenger_rating", config.minAcceptablePassengerRating.toFloat())
                 putFloat("distant_pickup_km_threshold", config.distantPickupKmThreshold.toFloat())
+                putFloat("short_trip_km_threshold", config.shortTripKmThreshold.toFloat())
                 putFloat("min_confidence", config.minConfidenceThreshold.toFloat())
                 putInt("overlay_opacity", config.overlayOpacityPercent)
                 putInt("overlay_auto_min_sec", config.overlayAutoMinimizeSec)
