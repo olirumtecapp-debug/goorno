@@ -145,7 +145,7 @@ object FinancialEngine {
         // Se nem distância nem tempo existem, não há como avaliar
         if (totalDistanceKm == null && totalDurationMin == null) {
             warnings.add("Distância e duração ausentes na oferta.")
-            return buildIncompleteResult(offer, config, reasons, warnings)
+            return buildIncompleteResult(offer, config, reasons, warnings, isDistancePartial, isDurationPartial)
         }
 
         // 3. Indicadores Financeiros
@@ -530,14 +530,16 @@ object FinancialEngine {
         offer: StandardRideOffer,
         config: DriverFinancialConfig,
         reasons: List<String>,
-        warnings: List<String>
+        warnings: List<String>,
+        isDistancePartial: Boolean = false,
+        isDurationPartial: Boolean = false
     ): FinancialEvaluationResult {
         return FinancialEvaluationResult(
             offer = offer,
             totalConsideredDistanceKm = null,
             totalConsideredDurationMin = null,
-            isDistancePartial = false,
-            isDurationPartial = false,
+            isDistancePartial = isDistancePartial,
+            isDurationPartial = isDurationPartial,
             isAnalysisComplete = false,
             grossPerKm = null,
             grossPerHour = null,
