@@ -510,7 +510,7 @@ object BrazilianOfferParser {
         for (line in cleaned) {
             val lower = line.lowercase(Locale.getDefault())
             if (lower.contains("corrida") || lower.contains("viagen") || lower.contains("cartão") || lower.contains("cartao") || lower.contains("verif")) {
-                val directMatch = Regex("""(?<![R$d.,/])([3-5][.,]d{1,2})(?!s*(?:/|km|m|min|h|x))""").find(line)
+                val directMatch = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(line)
                 if (directMatch != null) {
                     val r = parseBrazilianDecimal(directMatch.groupValues[1])
                     if (r != null && r in 3.00..5.00) {
