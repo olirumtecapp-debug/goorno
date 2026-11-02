@@ -5,6 +5,8 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -33,7 +35,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.Locale
-import java.util.concurrent.Executors
 
 /**
  * Serviço principal de leitura automática de ofertas (Android AccessibilityService) v2.9.0.
@@ -48,6 +49,7 @@ import java.util.concurrent.Executors
  */
 class GoOrNoAccessibilityService : AccessibilityService() {
 
+    private val mainHandler = Handler(Looper.getMainLooper())
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var pollingJob: Job? = null
 
@@ -62,7 +64,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var lastOfferProcessedTimeMillis: Long = 0L
     private var isTakingAutoScreenshot: Boolean = false
     private var consecutiveScansWithoutOffers: Int = 0
-    private val screenshotExecutor = Executors.newSingleThreadExecutor()
 
     private val mlKitRecognizer by lazy {
         TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -88,9 +89,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         RuntimeDiagnosticsBus.setAccessibilityConnected(true)
-        try {
-            GoOrNoForegroundKeepAliveService.start(this)
-        } catch (_: Throwable) {}
+        // KeepAlive desnecessario no servico de acessibilidade nativo
         val app = applicationContext as? GoOrNoApplication
 
         app?.overlayPanel?.onOfferCardClosed = {
@@ -235,15 +234,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             eventCombined.contains("Pop", ignoreCase = true) ||
             eventCombined.contains("Aceitar", ignoreCase = true) ||
             eventCombined.contains("Escolher", ignoreCase = true) ||
-            eventCombined.contains("Viagem", ignoreCase = true) ||
-            eventCombined.contains("Exclusivo", ignoreCase = true) ||
-            eventCombined.contains("Radar", ignoreCase = true) ||
-            eventCombined.contains("Selecionar", ignoreCase = true) ||
-            eventCombined.contains("Comfort", ignoreCase = true) ||
-            eventCombined.contains("Black", ignoreCase = true) ||
-            eventCombined.contains("Flash", ignoreCase = true) ||
-            eventCombined.contains("Priority", ignoreCase = true) ||
-            eventCombined.contains("Prioridade", ignoreCase = true) ||
             eventCombined.contains("Uber", ignoreCase = true) ||
             eventCombined.contains("min", ignoreCase = true)
 
@@ -280,25 +270,26 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 2. Coleta nós ESTRITAMENTE da janela do pacote alvo (nunca de outras janelas) - Rápido e Direto sem atrasos
+        // 2. Coleta nós de TODAS as janelas pertencentes ao app motorista (janela principal, mapa, sub-janelas, diálogos e BottomSheets da Uber e 99)
         val positionedNodes = mutableListOf<PositionedText>()
+        val rootsToScan = mutableListOf<AccessibilityNodeInfo>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
-            collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
+            rootsToScan.add(activeRoot)
         }
-        // Se a raiz ativa contiver poucos nós (ex: apenas mapa ou sub-janela em segundo plano da Uber),
-        // varre as janelas interativas do app alvo para capturar o card de oferta
-        if (positionedNodes.size < 5) {
-            try {
-                val allWindows = windows
-                if (!allWindows.isNullOrEmpty()) {
-                    for (win in allWindows) {
-                        val root = win.root ?: continue
-                        if (root != activeRoot && root.packageName?.toString() == targetPkg) {
-                            collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
-                        }
+        try {
+            val allWindows = windows
+            if (!allWindows.isNullOrEmpty()) {
+                for (win in allWindows) {
+                    val root = win.root ?: continue
+                    if (root.packageName?.toString() == targetPkg && !rootsToScan.contains(root)) {
+                        rootsToScan.add(root)
                     }
                 }
-            } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
+
+        for (root in rootsToScan) {
+            collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
         }
 
         if (positionedNodes.isEmpty()) {
@@ -316,9 +307,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val hasRideActionBtn = joinedScreenLower.contains("escolher") ||
             joinedScreenLower.contains("aceitar") ||
             joinedScreenLower.contains("selecionar") ||
-            joinedScreenLower.contains("viagem") ||
-            joinedScreenLower.contains("exclusivo") ||
-            joinedScreenLower.contains("radar") ||
             joinedScreenLower.contains("deslize") ||
             joinedScreenLower.contains("nova corrida") ||
             joinedScreenLower.contains("uberx") ||
@@ -327,22 +315,30 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             joinedScreenLower.contains("flash") ||
             joinedScreenLower.contains("priority") ||
             joinedScreenLower.contains("prioridade") ||
+            joinedScreenLower.contains("exclusivo") ||
+            joinedScreenLower.contains("radar") ||
+            joinedScreenLower.contains("viagem") ||
+            joinedScreenLower.contains("corrida") ||
+            joinedScreenLower.contains("entregar") ||
             joinedScreenLower.contains("pop") ||
             joinedScreenLower.contains("99pop") ||
             joinedScreenLower.contains("99moto") ||
             joinedScreenLower.contains("99negocia") ||
             joinedScreenLower.contains("99plus")
 
-        val isIdleSearchingScreen = (joinedScreenLower.contains("buscando solicitações") ||
+        val hasCurrency = normalizedTexts.any { it.contains("R$") }
+        val isIdleSearchingScreen = !hasCurrency && !hasRideActionBtn && (
+            joinedScreenLower.contains("buscando solicitações") ||
             joinedScreenLower.contains("buscando solicitacoes") ||
             joinedScreenLower.contains("ainda buscando") ||
             joinedScreenLower.contains("mapa de chamadas") ||
             joinedScreenLower.contains("aguarde ou veja o mapa") ||
             joinedScreenLower.contains("procurando viagens") ||
             joinedScreenLower.contains("você está online") ||
-            joinedScreenLower.contains("voce esta online")) && !hasRideActionBtn
+            joinedScreenLower.contains("voce esta online")
+        )
 
-        if (isIdleSearchingScreen || (!hasRideActionBtn && normalizedTexts.none { it.contains("R$") })) {
+        if (isIdleSearchingScreen || (!hasRideActionBtn && !hasCurrency)) {
             currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
             (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
             shownOfferTimestamps.clear()
@@ -448,8 +444,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        // OCR seguro em segundo plano tanto para 99 quanto para Uber quando a árvore de acessibilidade nativa estiver incompleta
-
         val app = applicationContext as? GoOrNoApplication
         if (app?.overlayPanel?.isCardCurrentlyVisible() == true || (now - lastOfferProcessedTimeMillis < 2_500L)) {
             isTakingAutoScreenshot = false
@@ -474,22 +468,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         isTakingAutoScreenshot = true
         lastAutoScreenshotTimeMillis = now
-        val captureReqTime = now
 
         try {
             takeScreenshot(
                 Display.DEFAULT_DISPLAY,
-                screenshotExecutor,
+                mainExecutor,
                 object : TakeScreenshotCallback {
                     override fun onSuccess(screenshotResult: ScreenshotResult) {
                         val hwBuffer = screenshotResult.hardwareBuffer
-                        val callbackNow = System.currentTimeMillis()
-                        // Se a captura levou mais de 1.1s para retornar do sistema operacional, já está defasada!
-                        if (callbackNow - captureReqTime > 1100L) {
-                            try { hwBuffer.close() } catch (_: Throwable) {}
-                            isTakingAutoScreenshot = false
-                            return
-                        }
                         val colorSpace = screenshotResult.colorSpace
                         val hwBitmap = try {
                             Bitmap.wrapHardwareBuffer(hwBuffer, colorSpace)
@@ -643,30 +629,17 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                     }
 
                                     if (ocrOffers.isNotEmpty()) {
-                                        val ocrFinishTime = System.currentTimeMillis()
-                                        // Descarte de OCR defasado: se o OCR demorou mais de 1.4s, nunca entrega oferta fantasma da tela anterior!
-                                        if (ocrFinishTime - captureReqTime > 1400L) {
-                                            isTakingAutoScreenshot = false
-                                            return@addOnSuccessListener
-                                        }
-                                        val currentActiveRoot = try { rootInActiveWindow } catch (_: Exception) { null }
-                                        val curPkg = currentActiveRoot?.packageName?.toString() ?: ""
-                                        if (curPkg.isNotBlank() && !SourceApp.isAllowedDriverPackage(curPkg)) {
-                                            isTakingAutoScreenshot = false
-                                            return@addOnSuccessListener
-                                        }
-
                                         consecutiveScansWithoutOffers = 0
                                         RuntimeDiagnosticsBus.recordAccessibilitySnapshot(
                                             AccessibilitySnapshot(
-                                                timestampMillis = ocrFinishTime,
+                                                timestampMillis = System.currentTimeMillis(),
                                                 packageName = "${effectiveOcrApp.displayName} (Leitura Visual Automática)",
                                                 detectedApp = effectiveOcrApp,
                                                 nodeCount = normalizedOcr.size,
                                                 extractedTexts = normalizedOcr.take(90)
                                             )
                                         )
-                                        processAndShowOffers(ocrOffers, normalizedOcr, ocrFinishTime)
+                                        mainHandler.post { processAndShowOffers(ocrOffers, normalizedOcr, System.currentTimeMillis()) }
                                     } else {
                                         consecutiveScansWithoutOffers++
                                         // Se ficou 2 leituras sem nenhuma oferta na tela (ex: abriu WhatsApp ou saiu da chamada),
@@ -708,7 +681,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
         val kmRounded = (Math.round(totalKm * 2.0) / 2.0)
         val origPrefix = offer.originAddress?.take(8)?.lowercase(Locale.getDefault()) ?: ""
-        return "${offer.sourceApp.name}|$priceRounded|$kmRounded|$origPrefix"
+        val destPrefix = offer.destinationAddress?.take(8)?.lowercase(Locale.getDefault()) ?: ""
+        return "${offer.sourceApp.name}|$priceRounded|$kmRounded|$origPrefix|$destPrefix"
     }
 
     private fun processAndShowOffers(
@@ -721,9 +695,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         val app = applicationContext as? GoOrNoApplication ?: return
 
-        // Remove chaves que expiraram há mais de 60 segundos
+        // Remove chaves que expiraram há mais de 120 segundos
         val expiredKeys = shownOfferTimestamps.entries
-            .filter { now - it.value > 60_000L }
+            .filter { now - it.value > 120_000L }
             .map { it.key }
         expiredKeys.forEach { shownOfferTimestamps.remove(it) }
 
@@ -736,11 +710,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             if (lastShown == null) {
                 // Primeira vez que esta oferta toca
                 validOffers.add(offer.copy(isRepeatedOffer = false))
-            } else if (now - lastShown >= 6_000L && now - lastShown <= 60_000L) {
-                // Já tocou há mais de 6 segundos (nova chamada/re-oferta do app)
+            } else if (now - lastShown >= 15_000L && now - lastShown <= 120_000L) {
+                // Já tocou há mais de 15 segundos (nova chamada/re-oferta do app)
                 validOffers.add(offer.copy(isRepeatedOffer = true))
             } else {
-                // Ainda está dentro da janela do mesmo toque; não repica o card
+                // Ainda está dentro dos 15 segundos do toque original; ignora para não repicar o card
             }
         }
 
@@ -882,14 +856,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     ) {
         if (node == null || depth > 50 || output.size >= 600) return
         try {
+            // Verifica apenas limites na tela física
+
             val rect = Rect()
             try {
                 node.getBoundsInScreen(rect)
             } catch (_: Throwable) {
             }
 
-            // Descarta nós com dimensões nulas (0x0). Se o nó estiver na tela física do app motorista,
-            // captura mesmo que um painel flutuante (como o próprio GoOrNo) esteja cobrindo parte dele.
             if (rect.width() <= 0 || rect.height() <= 0) {
                 return
             }
@@ -934,7 +908,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         pollingJob?.cancel()
-        try { screenshotExecutor.shutdown() } catch (_: Throwable) {}
         RuntimeDiagnosticsBus.setAccessibilityConnected(false)
         (applicationContext as? GoOrNoApplication)?.overlayPanel?.hidePanel()
         serviceScope.cancel()

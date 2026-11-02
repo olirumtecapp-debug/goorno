@@ -223,7 +223,7 @@ data class DriverFinancialConfig(
     val overlayTheme: String = "DARK", // "DARK" ou "LIGHT"
     val overlayBubblePosition: String = "BELOW",
     val overlayHorizontalPosition: String = "RIGHT",
-    val showFloatingShortcutBubble: Boolean = true,
+    val showFloatingShortcutBubble: Boolean = false,
     val showProfitOnOverlay: Boolean = false,
     val showCostOnOverlay: Boolean = false,
     val riskAlertEnabled: Boolean = true,

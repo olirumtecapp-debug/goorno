@@ -6,12 +6,12 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.67",
-    versionCode: 88,
+    versionName: "3.3.68",
+    versionCode: 89,
     releaseDate: "2026-11-02",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.67.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.68.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 55360988,
+    fileSizeBytes: 55360989,
     fileSizeFormatted: "55.4 MB",
     changelog: [
       "🚀 Leitura Uber 100% Restaurada: Correção de captura para chamadas nativas e fallback visual rápido.",

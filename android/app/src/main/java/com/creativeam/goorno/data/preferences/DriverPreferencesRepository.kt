@@ -140,7 +140,7 @@ class DriverPreferencesRepository(private val context: Context) {
                     overlayTheme = b.getString("overlay_theme", null) ?: "DARK",
                     overlayBubblePosition = b.getString("overlay_bubble_position", null) ?: "BELOW",
                     overlayHorizontalPosition = b.getString("overlay_horizontal_position", null) ?: "RIGHT",
-                    showFloatingShortcutBubble = b.getBoolean("show_floating_shortcut_bubble", true),
+                    showFloatingShortcutBubble = b.getBoolean("show_floating_shortcut_bubble", false),
                     showProfitOnOverlay = b.getBoolean("show_profit_on_overlay", false),
                     showCostOnOverlay = b.getBoolean("show_cost_on_overlay", false),
                     riskAlertEnabled = b.getBoolean("risk_alert_enabled", true),

@@ -35,71 +35,71 @@ class GoOrNoApplication : Application() {
         super.onCreate()
         try {
             installGlobalCrashShield()
-        database = GoOrNoDatabase.getInstance(this)
-        preferencesRepository = DriverPreferencesRepository(this)
-        overlayPanel = FloatingOverlayPanel(this).apply {
-            onUserRequestedDisableCopilot = {
-                appScope.launch {
-                    val current = preferencesRepository.getConfigOnce()
-                    preferencesRepository.saveConfig(current.copy(copilotMonitoringEnabled = false))
-                    RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.SERVICE_OFF)
-                    try {
-                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                        nm.cancelAll()
-                    } catch (_: Exception) {
+            database = GoOrNoDatabase.getInstance(this)
+            preferencesRepository = DriverPreferencesRepository(this)
+            overlayPanel = FloatingOverlayPanel(this).apply {
+                onUserRequestedDisableCopilot = {
+                    appScope.launch {
+                        val current = preferencesRepository.getConfigOnce()
+                        preferencesRepository.saveConfig(current.copy(copilotMonitoringEnabled = false))
+                        RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.SERVICE_OFF)
+                        try {
+                            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                            nm.cancelAll()
+                        } catch (_: Exception) {
+                        }
+                    }
+                }
+                onUserRequestedHideShortcutBubble = {
+                    appScope.launch {
+                        val current = preferencesRepository.getConfigOnce()
+                        preferencesRepository.saveConfig(current.copy(showFloatingShortcutBubble = false))
+                    }
+                }
+                onUserUpdatedSemaforoQuickly = { minKm, minHr, minRating, maxPickupKm ->
+                    appScope.launch {
+                        val current = preferencesRepository.getConfigOnce()
+                        preferencesRepository.saveConfig(current.copy(
+                            targetGrossPerKm = minKm,
+                            targetGrossPerHour = minHr,
+                            targetGoodPassengerRating = minRating,
+                            distantPickupKmThreshold = maxPickupKm
+                        ))
                     }
                 }
             }
-            onUserRequestedHideShortcutBubble = {
-                appScope.launch {
-                    val current = preferencesRepository.getConfigOnce()
-                    preferencesRepository.saveConfig(current.copy(showFloatingShortcutBubble = false))
-                }
-            }
-            onUserUpdatedSemaforoQuickly = { minKm, minHr, minRating, maxPickupKm ->
-                appScope.launch {
-                    val current = preferencesRepository.getConfigOnce()
-                    preferencesRepository.saveConfig(current.copy(
-                        targetGrossPerKm = minKm,
-                        targetGrossPerHour = minHr,
-                        targetGoodPassengerRating = minRating,
-                        distantPickupKmThreshold = maxPickupKm
-                    ))
-                }
-            }
-        }
-
         } catch (t: Throwable) {
             Log.e("GoOrNoApp", "Falha segura em onCreate", t)
         }
 
         // Mantém todas as configurações do motorista sincronizadas continuamente em memória
-        // e ancora o Foreground Service para blindagem total contra o LMK do Android (Spotify, Instagram, etc)
         appScope.launch {
-            preferencesRepository.configFlow.collectLatest { cfg ->
-                overlayPanel.applyConfig(cfg)
-                if (cfg.copilotMonitoringEnabled) {
-                    com.creativeam.goorno.service.GoOrNoForegroundKeepAliveService.start(this@GoOrNoApplication)
-                    com.creativeam.goorno.service.CopilotNotificationReceiver.showActiveNotification(
-                        context = this@GoOrNoApplication,
-                        showProfit = cfg.showProfitOnOverlay,
-                        showCost = cfg.showCostOnOverlay
-                    )
-                } else {
-                    com.creativeam.goorno.service.GoOrNoForegroundKeepAliveService.stop(this@GoOrNoApplication)
-                    com.creativeam.goorno.service.CopilotNotificationReceiver.cancelActiveNotification(this@GoOrNoApplication)
+            try {
+                preferencesRepository.configFlow.collectLatest { cfg ->
+                    try {
+                        overlayPanel.applyConfig(cfg)
+                        if (cfg.copilotMonitoringEnabled) {
+                            com.creativeam.goorno.service.CopilotNotificationReceiver.showActiveNotification(
+                                context = this@GoOrNoApplication,
+                                showProfit = cfg.showProfitOnOverlay,
+                                showCost = cfg.showCostOnOverlay
+                            )
+                        } else {
+                            com.creativeam.goorno.service.CopilotNotificationReceiver.cancelActiveNotification(this@GoOrNoApplication)
+                        }
+                    } catch (_: Throwable) {}
                 }
-            }
+            } catch (_: Throwable) {}
         }
     }
 
     /**
      * Blindagem Global contra Falhas e Fechamento Inesperado (CrashShield).
      *
-     * 1. Intercepta exceções não tratadas no Main Looper (UI thread), impedindo o diálogo
-     *    "O GoOrNo continua apresentando falhas. Fechar app".
-     * 2. Intercepta erros graves em segundo plano (como OutOfMemoryError, StaleObjectException,
-     *    BadTokenException) e aciona limpeza de RAM (System.gc()) silenciosa.
+     * 1. Intercepta exceções não tratadas no Main Looper e em threads secundárias, impedindo
+     *    o diálogo do sistema "O GoOrNo continua apresentando falhas. Fechar app".
+     * 2. Trata erros conhecidos de WindowManager, transições de ForegroundService do Android 14
+     *    e limpezas de memória OOM sem derrubar o processo.
      */
     private fun installGlobalCrashShield() {
         val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -109,6 +109,25 @@ class GoOrNoApplication : Application() {
                 try {
                     System.gc()
                 } catch (_: Throwable) {}
+                return@setDefaultUncaughtExceptionHandler
+            }
+
+            // Exceções recuperáveis conhecidas de ciclo de vida do Android, WindowManager e ForegroundService:
+            // NUNCA exibe o diálogo de falha para o motorista!
+            val isRecoverable = throwable is android.view.WindowManager.BadTokenException ||
+                throwable is android.view.WindowManager.InvalidDisplayException ||
+                throwable is IllegalStateException ||
+                throwable is SecurityException ||
+                throwable is IllegalArgumentException ||
+                throwable is NullPointerException ||
+                throwable is java.util.ConcurrentModificationException ||
+                throwable.javaClass.name.contains("ForegroundService") ||
+                throwable.javaClass.name.contains("DeadSystem") ||
+                throwable.javaClass.name.contains("TransactionTooLarge")
+
+            if (isRecoverable) {
+                Log.w("GoOrNoCrashShield", "🛡️ Erro recuperável absorvido silenciosamente: ${throwable.javaClass.simpleName} - ${throwable.message}")
+                return@setDefaultUncaughtExceptionHandler
             }
 
             // Se for na thread secundária (leitura, acessibilidade, corrotina), absorve para não derrubar o app
@@ -116,7 +135,7 @@ class GoOrNoApplication : Application() {
                 return@setDefaultUncaughtExceptionHandler
             }
 
-            // Se for na thread principal, entrega ao handler original para encerramento limpo sem corrupção
+            // Se for erro crítico irrecuperável na thread principal, entrega ao handler padrão
             originalHandler?.uncaughtException(thread, throwable)
         }
     }
