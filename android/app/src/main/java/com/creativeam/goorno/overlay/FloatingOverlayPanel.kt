@@ -85,7 +85,7 @@ class FloatingOverlayPanel(private val context: Context) {
         override fun run() {
             remainingSeconds--
             if (remainingSeconds <= 0) {
-                advanceToNextOfferOrFinish()
+                dismissCurrentOfferCardByUser()
             } else {
                 activeTimerLabel?.text = "${remainingSeconds}s"
                 mainHandler.postDelayed(this, 1000L)
@@ -318,6 +318,9 @@ class FloatingOverlayPanel(private val context: Context) {
         offerQueue = emptyList()
         currentQueueIndex = 0
         isTransitioningBetweenOffers = false
+        mainHandler.removeCallbacks(countdownRunnable)
+        mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
+        removeWindowViewOnly()
         hidePanel()
         onOfferCardClosed?.invoke()
     }
@@ -599,23 +602,33 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             setTypeface(typeface, Typeface.BOLD)
         }
+        activeTimerLabel = tvTimer
         subRow.addView(tvTimer)
 
         val btnClose = TextView(context).apply {
             text = "✕"
             setTextColor(Color.parseColor("#CBD5E1"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(typeface, Typeface.BOLD)
             gravity = Gravity.CENTER
-            setPadding(dp(5), dp(2), dp(5), dp(2))
-            background = roundedBg("#262930", 4f)
+            setPadding(dp(10), dp(5), dp(10), dp(5))
+            background = roundedBg("#262930", 6f)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 marginStart = dp(6)
+                minWidth = dp(34)
+                minHeight = dp(28)
             }
             setOnClickListener { dismissCurrentOfferCardByUser() }
+            setOnTouchListener { v, ev ->
+                if (ev.action == MotionEvent.ACTION_UP) {
+                    v.performClick()
+                    dismissCurrentOfferCardByUser()
+                }
+                true
+            }
         }
         subRow.addView(btnClose)
 
@@ -624,11 +637,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         // Janelinhas de Alertas Acopladas (Separadas e sem encavalar)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
-            if (result.hasRiskAlert) {
-                rootLayout.addView(auxPill, 0)
-            } else {
-                rootLayout.addView(auxPill)
-            }
+            rootLayout.addView(auxPill)
         }
 
         return rootLayout
@@ -735,8 +744,16 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextColor(Color.parseColor(secondaryTextHex))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(8), dp(2), dp(2), dp(2))
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(4), dp(8), dp(4))
             setOnClickListener { dismissCurrentOfferCardByUser() }
+            setOnTouchListener { v, ev ->
+                if (ev.action == MotionEvent.ACTION_UP) {
+                    v.performClick()
+                    dismissCurrentOfferCardByUser()
+                }
+                true
+            }
         }
         topRow.addView(btnClose)
 
@@ -802,11 +819,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         rootLayout.addView(card)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
-            if (result.hasRiskAlert) {
-                rootLayout.addView(auxPill, 0)
-            } else {
-                rootLayout.addView(auxPill)
-            }
+            rootLayout.addView(auxPill)
         }
         return rootLayout
     }
@@ -932,8 +945,23 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextColor(secondaryTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(dp(4), 0, dp(2), 0)
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                minWidth = dp(32)
+                minHeight = dp(28)
+            }
             setOnClickListener { dismissCurrentOfferCardByUser() }
+            setOnTouchListener { v, ev ->
+                if (ev.action == MotionEvent.ACTION_UP) {
+                    v.performClick()
+                    dismissCurrentOfferCardByUser()
+                }
+                true
+            }
         }
         topRow.addView(btnClose)
 
@@ -1052,11 +1080,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         // Janelinha Auxiliar de Alertas Acoplada (Abre, fecha e arrasta sincronizada com o card principal)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
-            if (result.hasRiskAlert) {
-                rootLayout.addView(auxPill, 0)
-            } else {
-                rootLayout.addView(auxPill)
-            }
+            rootLayout.addView(auxPill)
         }
 
         return rootLayout
@@ -1082,14 +1106,13 @@ class FloatingOverlayPanel(private val context: Context) {
 
         // 1. Área de Risco (Alerta prioritário de segurança - Estilo Imagem 4)
         if (result.hasRiskAlert) {
-            val riskText = result.riskAlertBadge?.takeIf { it.isNotBlank() } ?: "Endereço de risco"
+            val riskText = result.riskAlertBadge?.takeIf { it.isNotBlank() } ?: "Área de Risco"
             alerts.add(
                 AlertPillItem(
-                    icon = "⚠️",
-                    text = riskText,
-                    bgHex = if (isDark) "#2A0808" else "#FFFFFF",
-                    textColorHex = "#DC2626",
-                    strokeHex = "#DC2626"
+                    icon = "🚨",
+                    text = riskText.uppercase(),
+                    bgHex = "#DC2626",
+                    textColorHex = "#FFFFFF"
                 )
             )
         }
@@ -1828,11 +1851,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         // Janelinhas de Alertas Acopladas (Separadas e sem encavalar)
         buildAuxiliaryAlertPill(result, isDark)?.let { auxPill ->
-            if (result.hasRiskAlert) {
-                rootLayout.addView(auxPill, 0)
-            } else {
-                rootLayout.addView(auxPill)
-            }
+            rootLayout.addView(auxPill)
         }
 
         return rootLayout

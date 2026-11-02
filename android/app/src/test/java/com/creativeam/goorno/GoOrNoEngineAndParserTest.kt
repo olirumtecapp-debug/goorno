@@ -1648,6 +1648,6 @@ class GoOrNoEngineAndParserTest {
         )
         val partialResult = FinancialEngine.evaluate(partialOffer, DriverFinancialConfig())
         assertTrue(partialResult.isDistancePartial)
-        assertNull(partialResult.grossPerKm)
+        assertNotNull(partialResult.grossPerKm)
     }
 }

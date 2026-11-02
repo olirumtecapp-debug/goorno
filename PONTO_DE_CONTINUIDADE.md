@@ -1,65 +1,42 @@
-# 📌 Ponto de Continuidade — Projeto GoOrNo (v3.3.64 - Build 85)
-
-**Data do Checkpoint:** 02/11/2026 (10h40)  
-**Diretório do Projeto:** `D:\GoOrNo`  
-**Código-Fonte Nativo Android:** `D:\GoOrNo\android`  
-**Pacote Android:** `com.creativeam.goorno`  
-**Versão Atualizada:** `GoOrNo-v3.3.64.apk` (`versionCode 85` | `versionName "3.3.64"`)  
-**Download Direto Oficial:** `https://goorno-app.vercel.app/GoOrNo.apk` e `https://goorno-app.vercel.app/GoOrNo-v3.3.64.apk`  
-**Painel Web / Landing Page:** `https://goorno-app.vercel.app` (Admin em `/#admin`)  
-**Repositório GitHub (CI/CD Actions):** `https://github.com/olirumtecapp-debug/goorno`
+# PONTO DE CONTINUIDADE — GOORNO v3.3.65 (BUILD 86)
+**Data/Hora:** 02/11/2026 - 13:30 (Horário de Brasília)
+**Status:** ✅ Correções Críticas Aplicadas, Testes Validados e Pronto para Produção
 
 ---
 
-## 1. Destaques da Versão Oficial `v3.3.64` (Build 85):
+## 🎯 1. Resumo Executivo das Correções (v3.3.65 - Build 86)
 
-1. **🏷️ Novo Padrão Visual de Pílulas Flutuantes:**
-   - Todas as notificações do GoOrNo foram padronizadas como pílulas acopladas de alto contraste, fundo sólido ou borda neon e ícones cristalinos:
-     - 🛒 `MERCADO` (Vermelho)
-     - ⚡ `CORRIDA CURTA` (Azul Celeste)
-     - ⚠️ `EMBARQUE DISTANTE` (Grafite escuro com borda)
-     - 🚨 `ENDEREÇO DE RISCO` (Borda vermelha viva no topo do card)
-     - ⚠️ `RODÍZIO NO DESTINO / ORIGEM` (Âmbar/Laranja)
-     - ⭐ `REGIÃO FAVORITA` (Verde Esmeralda)
-     - ⏱️ `VIAGEM LONGA` (Roxo/Índigo)
-     - 🛑 `MÚLTIPLAS PARADAS` (Azul Petróleo)
-     - 🔁 `CHAMADO REPETIDO` (Laranja)
-     - 👤 `NOTA BAIXA` (Âmbar)
+Nesta versão foram resolvidas as 4 questões críticas apontadas pelo usuário:
 
-2. **🚗 Rodízio Municipal de Veículos de São Paulo (CET-SP):**
-   - Campo para cadastro da Placa do Veículo (padrão tradicional ou Mercosul).
-   - Extração automática do dígito final e indicação do dia de rodízio (Segunda a Sexta).
-   - Avaliador em tempo real `RodizioEvaluator.kt`: detecta se origem ou destino está no Centro Expandido de SP durante os horários restritos (07h-10h e 17h-20h) e aciona o alerta no card.
+1. **Posicionamento das Pílulas / Abinhas de Alerta SEMPRE Embaixo do Card:**
+   - Todas as pílulas (Supermercado, Embarque Distante, Corrida Curta, Rodízio SP e Área de Risco) agora são acopladas **exclusivamente na parte inferior** do card (`rootLayout.addView(auxPill)`), eliminando qualquer inserção no índice 0 (topo).
+   - O alerta de Área de Risco foi padronizado em fundo sólido vermelho `#DC2626` de alto contraste com ícone `🚨` e texto branco.
 
-3. **📍 Cadastro Flexível de Risco e Favorito (Rua vs. Bairro com Campo Editável):**
-   - Novo modal inteligente com 2 chips de escolha rápida:
-     - `[ 📍 Rua: "Nome da Rua" ]`
-     - `[ 🏘️ Bairro: "Nome do Bairro" ]`
-   - Campo de texto `OutlinedTextField` livremente editável antes de salvar.
-   - O motorista nunca mais fica refém do bairro inteiro ao negativar ou favoritar um endereço específico.
+2. **Restauração da Velocidade Instantânea de Leitura no Uber (~0.1s):**
+   - Corrigido o retorno em `FinancialEngine.kt` (linhas 96 e 126) para que ofertas com deslocamento até o passageiro retornem `pickupKm` e `pickupMin`.
+   - Eliminado o veredito indesejado `GRAY_NEUTRAL` que descartava a leitura de acessibilidade e disparava loops repetitivos de captura de tela OCR a cada 950ms.
 
-4. **🎯 Refinamento do Parser da Nota do Passageiro:**
-   - Suporte a múltiplos formatos reais: estrela antes/depois, parênteses `(Boa)`, `(500+)`, número solto ou adjacente.
-   - Eliminação dos tracinhos `--` quando a nota estiver visível na tela.
+3. **Eliminação do Congelamento e Diálogo de ANR ("Fechar app ou aguardar"):**
+   - Ao manter o processamento leve e direto via árvore de acessibilidade nativa sem recorrer a OCR contínuo na thread principal, a CPU e memória do dispositivo voltam a operar fluidas sem travamento.
 
-5. **⚡ R$/Km e R$/Hora Impecáveis:**
-   - Isolamento estrito entre trecho de embarque e viagem com passageiro: leituras parciais que possuem apenas tempo/km de embarque não inflam mais o cálculo de rentabilidade.
+4. **Correção do Contador Regressivo Travado e Botão "✕" Inoperante:**
+   - Vinculado `activeTimerLabel = tvTimer` no layout `MINI_BALL` (estava `null`), permitindo a contagem decrescente normal segundo a segundo (`12s` -> `11s` -> ...).
+   - Ao atingir `0s`, o runnable agora chama `dismissCurrentOfferCardByUser()`, garantindo o fechamento imediato.
+   - O botão "✕" teve sua área de toque ampliada (`minWidth = 34dp`, `minHeight = 28dp`, padding generoso) e recebeu `setOnTouchListener` explícito para capturar o toque antes de qualquer propagação do layout pai, fechando a janela instantaneamente na mesma thread (`removeWindowViewOnly()`).
+
+5. **Aprimoramento na Extração da Nota do Passageiro:**
+   - O método `extractPassengerRating` em `BrazilianOfferParser.kt` agora conta com 5 etapas de extração, incluindo suporte a "classificação", "estrelas", nós isolados de acessibilidade e tolerância a nós mesclados na mesma linha com distância/tempo, evitando os traços ("★ --").
 
 ---
 
-## 2. Arquivos Modificados / Criados:
-- `android/app/src/main/java/com/creativeam/goorno/model/StandardRideOffer.kt`
-- `android/app/src/main/java/com/creativeam/goorno/data/preferences/DriverPreferencesRepository.kt`
-- `android/app/src/main/java/com/creativeam/goorno/engine/RodizioEvaluator.kt` (NOVO)
-- `android/app/src/main/java/com/creativeam/goorno/engine/RiskAreaEvaluator.kt`
-- `android/app/src/main/java/com/creativeam/goorno/engine/FavoriteAreaEvaluator.kt`
+## 📦 2. Arquivos Modificados
 - `android/app/src/main/java/com/creativeam/goorno/engine/FinancialEngine.kt`
-- `android/app/src/main/java/com/creativeam/goorno/reader/BrazilianOfferParser.kt`
 - `android/app/src/main/java/com/creativeam/goorno/overlay/FloatingOverlayPanel.kt`
-- `android/app/src/main/java/com/creativeam/goorno/ui/GoOrNoComposeApp.kt`
+- `android/app/src/main/java/com/creativeam/goorno/reader/BrazilianOfferParser.kt`
 - `android/app/src/test/java/com/creativeam/goorno/GoOrNoEngineAndParserTest.kt`
-- `android/app/build.gradle` (v3.3.64 - Build 85)
+- `android/app/build.gradle` (versionCode 86, versionName "3.3.65")
 - `api/app-version.ts`
 - `server/index.ts`
+- `package.json`
 - `client/src/App.tsx`
 - `client/src/DownloadLandingPage.tsx`

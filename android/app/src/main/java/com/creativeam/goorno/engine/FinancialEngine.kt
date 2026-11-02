@@ -93,7 +93,7 @@ object FinancialEngine {
             pickupKm != null && pickupKm > 0.0 -> {
                 isDistancePartial = true
                 warnings.add("Apenas distância de embarque informada (distância parcial).")
-                null
+                pickupKm
             }
             tripKm != null && tripKm > 0.0 -> {
                 isDistancePartial = true
@@ -123,7 +123,7 @@ object FinancialEngine {
             pickupMin != null && pickupMin > 0 -> {
                 isDurationPartial = true
                 warnings.add("Apenas tempo até o passageiro informado (tempo parcial).")
-                null
+                pickupMin
             }
             tripMin != null && tripMin > 0 -> {
                 isDurationPartial = true
