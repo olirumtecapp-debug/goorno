@@ -1095,10 +1095,10 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.69",
-    versionCode: 90,
+    versionName: "3.3.70",
+    versionCode: 91,
     releaseDate: "2026-11-02",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.69.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.70.apk",
     directDownload: "/GoOrNo.apk",
     fileSizeBytes: 55360990,
     fileSizeFormatted: "55.4 MB",

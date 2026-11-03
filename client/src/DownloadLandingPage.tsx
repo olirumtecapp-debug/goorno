@@ -82,7 +82,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
   const [deleteSecret, setDeleteSecret] = useState('');
   const [deleteFeedback, setDeleteFeedback] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [appVersion, setAppVersion] = useState<string>('3.3.64');
+  const [appVersion, setAppVersion] = useState<string>('3.3.70');
 
   useEffect(() => {
     fetch('/api/app-version')
@@ -114,7 +114,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
   };
 
   const handleDownloadApk = () => {
-    // Redireciona diretamente para o link de download oficial do APK v3.3.69
+    // Redireciona diretamente para o link de download oficial do APK v3.3.70
     window.location.href = '/GoOrNo.apk';
   };
 

@@ -151,8 +151,9 @@ object NinetyNineOfferReader {
         var primaryPriceLineIdx: Int = -1
         for ((idx, line) in cleanedLines.withIndex()) {
             val l = line.lowercase(Locale.getDefault())
-            // Ignora subtarifas inclusas como "Tarifa Expresso inclusa" ou "Tarifa base dinâmica"
-            if (l.contains("inclus") || l.contains("tarifa") || l.contains("/km") || l.contains("deslocamento")) {
+            // Ignora subtarifas inclusas como "Tarifa Expresso inclusa" ou "Tarifa base dinâmica", mas não "Tarifa mais alta"
+            val isSubFare = l.contains("inclus") || l.contains("tarifa expresso") || l.contains("tarifa base") || l.contains("tarifa express") || l.contains("/km") || l.contains("deslocamento")
+            if (isSubFare) {
                 continue
             }
             val isCategoryLine = l.contains("pop") || l.contains("99pop") || l.contains("plus") || l.contains("negocia") || (l.contains("express") && !l.contains("inclus"))
@@ -167,7 +168,8 @@ object NinetyNineOfferReader {
                 if (idx + 1 < cleanedLines.size) {
                     val nextLine = cleanedLines[idx + 1]
                     val nextLower = nextLine.lowercase(Locale.getDefault())
-                    if (!nextLower.contains("inclus") && !nextLower.contains("tarifa") && !nextLower.contains("deslocamento")) {
+                    val isNextSubFare = nextLower.contains("inclus") || nextLower.contains("tarifa expresso") || nextLower.contains("tarifa base") || nextLower.contains("deslocamento")
+                    if (!isNextSubFare) {
                         val pNextLine = BrazilianOfferParser.extractAllCurrencies(listOf(nextLine)).firstOrNull()
                         if (pNextLine != null && pNextLine in 4.0..350.0) {
                             primaryPrice = pNextLine
@@ -179,7 +181,20 @@ object NinetyNineOfferReader {
             }
         }
 
-        val finalPriceVal = primaryPrice ?: candidatePrices.firstOrNull { it in 4.0..350.0 } ?: candidatePrices.firstOrNull()
+        val validCandidates = candidatePrices.filter { it in 4.0..350.0 }
+        // Se houver mais de um preço candidato e o primaryPrice não foi cravado, desempata descartando bônus de dinâmica menores (ex: 10.01 vs 43.01)
+        val finalPriceVal = primaryPrice ?: if (validCandidates.size >= 2) {
+            val dists = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
+            val totKm = if (dists.size >= 2) dists[0] + dists[1] else dists.firstOrNull() ?: 1.0
+            val bestCandidate = validCandidates.maxOrNull() ?: validCandidates.first()
+            if (totKm > 4.0 && (validCandidates.minOrNull() ?: 0.0) / totKm < 1.0 && bestCandidate / totKm >= 1.20) {
+                bestCandidate
+            } else {
+                validCandidates.first()
+            }
+        } else {
+            validCandidates.firstOrNull() ?: candidatePrices.firstOrNull()
+        }
         if (primaryPriceLineIdx == -1 && finalPriceVal != null) {
             primaryPriceLineIdx = cleanedLines.indexOfFirst { line ->
                 BrazilianOfferParser.extractAllCurrencies(listOf(line)).contains(finalPriceVal)

@@ -23,15 +23,15 @@ object BrazilianOfferParser {
         option = RegexOption.IGNORE_CASE
     )
 
-    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "3,66/km", "Est. de R$1,94/km", "R$ 1,16 por deslocamento", "R$3,06 Tarifa base dinâmica incl.", "R$ 45/h")
+    // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "3,66/km", "Est. de R$1,94/km", "R$ 1,16 por deslocamento", "R$3,06 Tarifa base dinâmica incl.", "R$ 45/h", "⚡ R$10,01")
     private val NON_OFFER_PRICE_NOISE_REGEX = Regex(
-        pattern = """(?:(?:Est\.\s+de\s+)?R\$\s*)?\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km(?:\s*aprox\.?)?|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus|tarifa\s+base|tarifa\s+expresso|expresso\s+inclus[ao]|tarifa\s+express|din[âa]mica|a\s+mais.*)""",
+        pattern = """(?:(?:Est\.\s+de\s+)?R\$\s*)?\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km(?:\s*aprox\.?)?|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus|tarifa\s+base|tarifa\s+expresso|expresso\s+inclus[ao]|tarifa\s+express|din[âa]mica|a\s+mais.*)|(?:[⚡\+]|\bmais\b)\s*R\$\s*\d{1,3}(?:[.,]\d{1,2})?""",
         option = RegexOption.IGNORE_CASE
     )
 
     // Ex: "R$ 12,50", "R$8,10", "R$ 1.250,00", "R$18,00", "R$ 24", "R$ 15,84"
     private val CURRENCY_REGEX = Regex(
-        pattern = """(?<!\+)R\$\s*(\d{1,3}(?:\.\d{3})*(?:\s*[.,]\s*\d{1,2})?|\d+(?:\s*[.,]\s*\d{1,2})?)""",
+        pattern = """(?<![⚡\+])R\$\s*(\d{1,3}(?:\.\d{3})*(?:\s*[.,]\s*\d{1,2})?|\d+(?:\s*[.,]\s*\d{1,2})?)""",
         option = RegexOption.IGNORE_CASE
     )
 

@@ -1872,6 +1872,34 @@ class GoOrNoEngineAndParserTest {
     }
 
     @Test
+    fun testScreenshotPopExpresso43_01WithDynamicSurge10_01AndRating4_86() {
+        // Foto 5 enviada pelo motorista: Pop Expresso R$ 43,01 com selo de dinâmica ⚡ R$ 10,01 que NÃO deve substituir o valor cheio!
+        val screenNodes = listOf(
+            "< Solicitações",
+            "Escolha uma",
+            "Km até o embarque",
+            "Pop Expresso",
+            "Tarifa mais alta",
+            "R$43,01",
+            "⚡ R$10,01 R$2,55/km",
+            "ÁREA DE RISCO - EMBARQUE",
+            "VIAGEM LONGA",
+            "4,86 · 94 corridas · Cartão verif.",
+            "(9 min 1,6 km) Rua Sete de Setembro, 14 , Vila Sao Pedro",
+            "(44 min 15,3 km) Rua Cesarina Ferreira, 127, Vila Emilio",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(screenNodes)
+        assertEquals(1, offers.size)
+        val offer = offers[0]
+        assertEquals(43.01, offer.offeredPrice!!, 0.001)
+        assertEquals(4.86, offer.passengerRating!!, 0.001)
+        assertEquals(1.6, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(15.3, offer.tripDistanceKm!!, 0.001)
+        assertEquals(16.9, offer.totalDistanceKmExplicit!!, 0.001)
+    }
+
+    @Test
     fun testUberOfferWithAnchoredLegsIgnores14_2KmMapNoise() {
         // Teste 5: Oferta Uber com embarque de 3,2 km e viagem de 1,1 km. Total deve ser 4,3 km (não 14,2 km de ruído)
         val uberNodes = listOf(
