@@ -262,7 +262,7 @@ class FloatingOverlayPanel(private val context: Context) {
                         offerQueue = results.take(5)
                         activeCardFingerprint = newFingerprint
                         if (prevRating == null && newRating != null) {
-                            renderOfferCard(firstEval, currentQueueIndex + 1, offerQueue.size)
+                            showCurrentQueuedOffer()
                         }
                         return@post
                     }
