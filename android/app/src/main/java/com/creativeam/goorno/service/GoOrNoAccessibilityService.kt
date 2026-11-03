@@ -550,6 +550,25 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
                         mlKitRecognizer.process(inputImage)
                             .addOnSuccessListener { visionText ->
+                                // Valida atualidade da captura: se o motorista mudou de app ou a tela mudou antes do OCR terminar, descarta
+                                val currentForeground = try { rootInActiveWindow?.packageName?.toString() } catch (_: Exception) { null }
+                                    ?: lastKnownForegroundPkg
+                                if (currentForeground != targetPkg) {
+                                    try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
+                                    isTakingAutoScreenshot = false
+                                    return@addOnSuccessListener
+                                }
+                                if (System.currentTimeMillis() - now > 2200L) {
+                                    try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
+                                    isTakingAutoScreenshot = false
+                                    return@addOnSuccessListener
+                                }
+                                if (now < lastOfferProcessedTimeMillis) {
+                                    try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
+                                    isTakingAutoScreenshot = false
+                                    return@addOnSuccessListener
+                                }
+
                                 val fullOcrText = visionText.text
                                 val hasGoOrNoScreenSignature = fullOcrText.contains("Início Ganhos Janela Histórico", ignoreCase = true) ||
                                     (fullOcrText.contains("Histórico de Corridas", ignoreCase = true) && fullOcrText.contains("GoOrNo", ignoreCase = true)) ||
@@ -865,6 +884,18 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             }
 
             if (rect.width() <= 0 || rect.height() <= 0) {
+                return
+            }
+
+            // Descarta nós totalmente fora dos limites da tela física (ex: cartões antigos rolados fora da tela)
+            val displayMetrics = resources.displayMetrics
+            val screenW = displayMetrics.widthPixels
+            val screenH = displayMetrics.heightPixels
+            if (rect.bottom < 0 || rect.top > screenH || rect.right < 0 || rect.left > screenW) {
+                return
+            }
+
+            if (requireVisible && !node.isVisibleToUser) {
                 return
             }
 

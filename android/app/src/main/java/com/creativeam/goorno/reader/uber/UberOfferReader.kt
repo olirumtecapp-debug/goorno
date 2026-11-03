@@ -136,31 +136,32 @@ object UberOfferReader {
         var tripKmField: ExtractedField<Double> = ExtractedField.Missing
         var totalKmField: ExtractedField<Double> = ExtractedField.Missing
 
-        if (distances.size >= 2) {
-            pickupKmField = ExtractedField.Present(distances[0])
-            tripKmField = ExtractedField.Present(distances[1])
-        } else if (distances.size == 1) {
-            totalKmField = ExtractedField.Present(distances[0])
-        }
-
         val durations = BrazilianOfferParser.extractAllDurationsMinutes(cardLines)
         var pickupMinField: ExtractedField<Int> = ExtractedField.Missing
         var tripMinField: ExtractedField<Int> = ExtractedField.Missing
         var totalMinField: ExtractedField<Int> = ExtractedField.Missing
 
-        if (durations.size >= 2) {
-            pickupMinField = ExtractedField.Present(durations[0])
-            tripMinField = ExtractedField.Present(durations[1])
-        } else if (durations.size == 1) {
-            totalMinField = ExtractedField.Present(durations[0])
-        }
-
         val legs = BrazilianOfferParser.extractRideLegs(cardLines)
+        // Se trechos de viagem ancorados estiverem presentes, eles têm prioridade absoluta sobre números dispersos na tela
         if (legs.size >= 2) {
-            if (!pickupKmField.isPresent) pickupKmField = ExtractedField.Present(legs[0].distanceKm)
-            if (!tripKmField.isPresent) tripKmField = ExtractedField.Present(legs[1].distanceKm)
-            if (!pickupMinField.isPresent) pickupMinField = ExtractedField.Present(legs[0].durationMin)
-            if (!tripMinField.isPresent) tripMinField = ExtractedField.Present(legs[1].durationMin)
+            pickupKmField = ExtractedField.Present(legs[0].distanceKm)
+            tripKmField = ExtractedField.Present(legs[1].distanceKm)
+            pickupMinField = ExtractedField.Present(legs[0].durationMin)
+            tripMinField = ExtractedField.Present(legs[1].durationMin)
+        } else {
+            if (distances.size >= 2) {
+                pickupKmField = ExtractedField.Present(distances[0])
+                tripKmField = ExtractedField.Present(distances[1])
+            } else if (distances.size == 1) {
+                totalKmField = ExtractedField.Present(distances[0])
+            }
+
+            if (durations.size >= 2) {
+                pickupMinField = ExtractedField.Present(durations[0])
+                tripMinField = ExtractedField.Present(durations[1])
+            } else if (durations.size == 1) {
+                totalMinField = ExtractedField.Present(durations[0])
+            }
         }
 
         val detectedCategory = UBER_CATEGORIES.firstOrNull { cat ->

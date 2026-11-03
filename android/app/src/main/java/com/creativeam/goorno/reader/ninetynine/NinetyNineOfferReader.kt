@@ -146,17 +146,35 @@ object NinetyNineOfferReader {
             candidatePrices.addAll(extracted)
         }
 
-        // Se houver linha com 'Pop' ou 'Pop Expresso' com preço, esse é o valor oficial prioritário
+        // Se houver linha com categoria ('Pop', 'Pop Expresso', 'Pop Nova', etc.), busca o preço oficial prioritário da oferta
         var primaryPrice: Double? = null
         var primaryPriceLineIdx: Int = -1
         for ((idx, line) in cleanedLines.withIndex()) {
             val l = line.lowercase(Locale.getDefault())
-            if (l.contains("pop") || l.contains("99pop") || l.contains("plus") || l.contains("negocia") || l.contains("express")) {
-                val p = BrazilianOfferParser.extractAllCurrencies(listOf(line)).firstOrNull()
-                if (p != null && p in 4.0..350.0) {
-                    primaryPrice = p
+            // Ignora subtarifas inclusas como "Tarifa Expresso inclusa" ou "Tarifa base dinâmica"
+            if (l.contains("inclus") || l.contains("tarifa") || l.contains("/km") || l.contains("deslocamento")) {
+                continue
+            }
+            val isCategoryLine = l.contains("pop") || l.contains("99pop") || l.contains("plus") || l.contains("negocia") || (l.contains("express") && !l.contains("inclus"))
+            if (isCategoryLine) {
+                val pSameLine = BrazilianOfferParser.extractAllCurrencies(listOf(line)).firstOrNull()
+                if (pSameLine != null && pSameLine in 4.0..350.0) {
+                    primaryPrice = pSameLine
                     primaryPriceLineIdx = idx
                     break
+                }
+                // Preço na linha imediatamente seguinte à categoria (ex: ["Pop Expresso", "R$33,42"] ou ["Pop Nova", "R$44,80"])
+                if (idx + 1 < cleanedLines.size) {
+                    val nextLine = cleanedLines[idx + 1]
+                    val nextLower = nextLine.lowercase(Locale.getDefault())
+                    if (!nextLower.contains("inclus") && !nextLower.contains("tarifa") && !nextLower.contains("deslocamento")) {
+                        val pNextLine = BrazilianOfferParser.extractAllCurrencies(listOf(nextLine)).firstOrNull()
+                        if (pNextLine != null && pNextLine in 4.0..350.0) {
+                            primaryPrice = pNextLine
+                            primaryPriceLineIdx = idx + 1
+                            break
+                        }
+                    }
                 }
             }
         }

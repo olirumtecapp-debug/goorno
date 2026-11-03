@@ -257,8 +257,13 @@ class FloatingOverlayPanel(private val context: Context) {
                     val currentPrice = currentActive.offer.offeredPrice ?: 0.0
                     if (kotlin.math.abs(currentPrice - newPrice) < 0.25) {
                         // É a mesma corrida recebendo dados complementares (ex: endereços ou rating)
+                        val prevRating = currentActive.passengerRating
+                        val newRating = firstEval.passengerRating
                         offerQueue = results.take(5)
                         activeCardFingerprint = newFingerprint
+                        if (prevRating == null && newRating != null) {
+                            renderOfferCard(firstEval, currentQueueIndex + 1, offerQueue.size)
+                        }
                         return@post
                     }
                 }

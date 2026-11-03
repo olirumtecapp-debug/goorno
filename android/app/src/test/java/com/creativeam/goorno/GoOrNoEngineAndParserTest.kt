@@ -1750,4 +1750,167 @@ class GoOrNoEngineAndParserTest {
         assertEquals(1, offers2.size)
         assertEquals(4.93, offers2[0].passengerRating!!, 0.001)
     }
+
+    // =========================================================================
+    // TESTES REGRESSIVOS DAS 4 FOTOS REAIS DO USUÁRIO (V3.3.69 - BUILD 90)
+    // =========================================================================
+
+    @Test
+    fun testScreenshot1RealUserPopNova44_80WithSplitNodesAndRating4_99() {
+        // Foto 1: Pop Nova com R$44,80 (e nós fragmentados "R$ 44" + ",80") e nota de passageiro 4,99
+        val screenNodes = listOf(
+            "< Solicitações",
+            "Escolha uma corrida",
+            "Pop Nova",
+            "R$ 44",
+            ",80",
+            "R$2,10/km",
+            "EMBARQUE DISTANTE",
+            "VIAGEM LONGA",
+            "👤 4,99 · 211 corridas · Cartão verif.",
+            "(8 min 2 km) Rua Emílio Ribas, 355 , Vila Apiai",
+            "(1 h e 7 min 19,3 km) Rua das Carnaubeiras, 168 , Jabaquara",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(screenNodes)
+        assertEquals(1, offers.size)
+        val offer = offers[0]
+        assertEquals(44.80, offer.offeredPrice!!, 0.001)
+        assertEquals(4.99, offer.passengerRating!!, 0.001)
+        assertEquals(2.0, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(19.3, offer.tripDistanceKm!!, 0.001)
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+        assertEquals(21.3, eval.totalConsideredDistanceKm!!, 0.001)
+        assertEquals(75, eval.totalConsideredDurationMin)
+    }
+
+    @Test
+    fun testScreenshot2PopExpresso33_42DoesNotPickTarifaExpressoInclusa() {
+        // Foto 2: Pop Expresso de R$ 33,42 com linha de subtarifa "R$7,42 Tarifa Expresso inclusa"
+        val screenNodes = listOf(
+            "Pop Expresso",
+            "R$33,42",
+            "⚡1,1x",
+            "R$3,17/km",
+            "R$7,42 Tarifa Expresso inclusa",
+            "R$2,68 Tarifa base dinâmica incl.",
+            "★ 4,90 · 184 corridas",
+            "Perfil Premium",
+            "(3 min 630 m) Rua Jacob Piatto, 270, Baeta Neves",
+            "(27 min 9,9 km) Avenida João Ramalho, 1504, Parque Sao Vicente",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(screenNodes)
+        assertEquals(1, offers.size)
+        val offer = offers[0]
+        // NUNCA pode pegar R$ 7,42 da Tarifa Expresso! O valor real da oferta é R$ 33,42!
+        assertEquals(33.42, offer.offeredPrice!!, 0.001)
+        assertEquals(4.90, offer.passengerRating!!, 0.001)
+        assertEquals(0.630, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(9.9, offer.tripDistanceKm!!, 0.001)
+    }
+
+    @Test
+    fun testScreenshot3MultipleOffers7_70And12_00PreservesRatingsAndDecimal() {
+        // Foto 3: Lista com 2 solicitações. Card 1 tem R$ 7,70 (fragmentado "R$ 7" + ",70") e nota 4,85
+        val screenNodes = listOf(
+            "< Solicitações",
+            "Escolha uma",
+            "Km até o embarque",
+            "Pop Nova",
+            "R$ 7",
+            ",70",
+            "R$2,78/km",
+            "TRÂNSITO LENTO (14M · 2,8KM)",
+            "👤 4,85 · 54 corridas · Perfil Premium",
+            "(3 min 764 m) Rua Maria de Fátima, 631, Baeta Neves",
+            "(11 min 2 km) Terminal Rodoviário São Bernardo do Campo, Praça Samuel Sabatini, 50 - Centro",
+            "Escolher",
+            "Pop Nova",
+            "R$12,00 R$2,20/km",
+            "👤 4,94 · 566 corridas · Perfil Premium",
+            "(3 min 799 m) Rua Dr. Amâncio de Carvalho, 349, Baeta Neves",
+            "(19 min 4,7 km) Drogaria Poupa Centro – Farmácia Presencial",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(screenNodes)
+        assertEquals(2, offers.size)
+
+        // Card 1: R$ 7,70 (NÃO 7,00) e nota 4,85 (NÃO null)
+        val offer1 = offers[0]
+        assertEquals(7.70, offer1.offeredPrice!!, 0.001)
+        assertEquals(4.85, offer1.passengerRating!!, 0.001)
+        assertEquals(0.764, offer1.pickupDistanceKm!!, 0.001)
+        assertEquals(2.0, offer1.tripDistanceKm!!, 0.001)
+
+        // Card 2: R$ 12,00 e nota 4,94
+        val offer2 = offers[1]
+        assertEquals(12.00, offer2.offeredPrice!!, 0.001)
+        assertEquals(4.94, offer2.passengerRating!!, 0.001)
+    }
+
+    @Test
+    fun testScreenshot4Pop11_10WithRating4_93AndPerfilPremium() {
+        // Foto 4: Oferta de R$ 11,10 com nota de passageiro 4,93 e "+999 corridas"
+        val screenNodes = listOf(
+            "< Solicitações",
+            "Pop Nova",
+            "R$11,10 R$1,66/km",
+            "EMBARQUE DISTANTE",
+            "👤 4,93 · +999 corridas · Perfil Premium",
+            "(8 min 2,1 km) Rua Carlos Gomes, 263, Centro",
+            "(13 min 4,6 km) Avenida Índico, 964, Jardim do Mar",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(screenNodes)
+        assertEquals(1, offers.size)
+        val offer = offers[0]
+        assertEquals(11.10, offer.offeredPrice!!, 0.001)
+        assertEquals(4.93, offer.passengerRating!!, 0.001)
+        assertEquals(2.1, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(4.6, offer.tripDistanceKm!!, 0.001)
+    }
+
+    @Test
+    fun testUberOfferWithAnchoredLegsIgnores14_2KmMapNoise() {
+        // Teste 5: Oferta Uber com embarque de 3,2 km e viagem de 1,1 km. Total deve ser 4,3 km (não 14,2 km de ruído)
+        val uberNodes = listOf(
+            "UberX",
+            "R$ 18,50",
+            "★ 4,89 (1128)",
+            "(6 min 3,2 km) Rua Alegre, 200, Santa Paula",
+            "(4 min 1,1 km) Av. Goiás, 100, Centro",
+            "14,2 km mapa",
+            "Escolher"
+        )
+        val offer = UberOfferReader.parseScreenNodes(uberNodes)
+        assertEquals(18.50, offer.offeredPrice!!, 0.001)
+        assertEquals(4.89, offer.passengerRating!!, 0.001)
+        assertEquals(3.2, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(1.1, offer.tripDistanceKm!!, 0.001)
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+        assertEquals(4.3, eval.totalConsideredDistanceKm!!, 0.001)
+    }
+
+    @Test
+    fun testCardWithoutRatingReturnsNullWithoutLeakingFromSecondCard() {
+        // Teste 6: Primeiro card sem nota de passageiro retorna null e NÃO vaza nota do segundo card
+        val multiNodes = listOf(
+            "Pop Nova",
+            "R$ 15,00",
+            "(5 min 1,2 km) Rua A",
+            "(10 min 3,0 km) Rua B",
+            "Escolher",
+            "Pop Nova",
+            "R$ 22,00",
+            "👤 4,94 · 566 corridas · Perfil Premium",
+            "(4 min 1,0 km) Rua C",
+            "(15 min 5,0 km) Rua D",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(multiNodes)
+        assertEquals(2, offers.size)
+        assertNull(offers[0].passengerRating)
+        assertEquals(4.94, offers[1].passengerRating!!, 0.001)
+    }
 }

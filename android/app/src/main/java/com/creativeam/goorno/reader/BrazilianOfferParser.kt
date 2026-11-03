@@ -25,7 +25,7 @@ object BrazilianOfferParser {
 
     // Remove trechos que NÃO são o preço principal da oferta (ex: "R$2,18/km", "3,66/km", "Est. de R$1,94/km", "R$ 1,16 por deslocamento", "R$3,06 Tarifa base dinâmica incl.", "R$ 45/h")
     private val NON_OFFER_PRICE_NOISE_REGEX = Regex(
-        pattern = """(?:(?:Est\.\s+de\s+)?R\$\s*)?\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km(?:\s*aprox\.?)?|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus|tarifa\s+base|din[âa]mica|a\s+mais.*)""",
+        pattern = """(?:(?:Est\.\s+de\s+)?R\$\s*)?\d{1,3}(?:[.,]\d{1,2})?\s*(?:/\s*km(?:\s*aprox\.?)?|/\s*h|por\s+km|por\s+deslocamento|de\s+deslocamento|incl\.|inclu[íi]do|aprox\.?|adicional|b[ôo]nus|tarifa\s+base|tarifa\s+expresso|expresso\s+inclus[ao]|tarifa\s+express|din[âa]mica|a\s+mais.*)""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -148,6 +148,14 @@ object BrazilianOfferParser {
             ) {
                 current = "$current ${flatTokens[i + 1]}"
                 i++
+                // Se após o número inteiro houver centavos separados (ex: "R$" + "44" + ",80" ou "R$" + "7" + ",70")
+                if (i + 1 < flatTokens.size && Regex("""^[.,]\d{1,2}$""").matches(flatTokens[i + 1].trim())) {
+                    current = "$current${flatTokens[i + 1].trim()}"
+                    i++
+                } else if (i + 2 < flatTokens.size && Regex("""^[.,]$""").matches(flatTokens[i + 1].trim()) && Regex("""^\d{1,2}$""").matches(flatTokens[i + 2].trim())) {
+                    current = "$current${flatTokens[i + 1].trim()}${flatTokens[i + 2].trim()}"
+                    i += 2
+                }
                 // Se o próximo após o número for "/km", "por deslocamento", "incluído" ou "aprox", junta também para o filtro de ruído reconhecer!
                 if (i + 1 < flatTokens.size) {
                     val nextLower = flatTokens[i + 1].lowercase(Locale.getDefault())
@@ -159,6 +167,15 @@ object BrazilianOfferParser {
                         current = "$current ${flatTokens[i + 1]}"
                         i++
                     }
+                }
+            } else if (Regex("""^(?:\+\s*)?R\$\s*\d{1,4}$""", RegexOption.IGNORE_CASE).matches(current.trim()) && i + 1 < flatTokens.size) {
+                val nextTrim = flatTokens[i + 1].trim()
+                if (Regex("""^[.,]\d{1,2}$""").matches(nextTrim)) {
+                    current = "$current$nextTrim"
+                    i++
+                } else if (Regex("""^[.,]$""").matches(nextTrim) && i + 2 < flatTokens.size && Regex("""^\d{1,2}$""").matches(flatTokens[i + 2].trim())) {
+                    current = "$current$nextTrim${flatTokens[i + 2].trim()}"
+                    i += 2
                 }
             }
 
@@ -218,7 +235,7 @@ object BrazilianOfferParser {
             }
 
             // Caso 2d: Fragmentação de Nota do Passageiro (ex: "4,95" ou "👤 4,95" seguido de "• 17 corridas", "• Perfil Premium", etc.)
-            val ratingCandidate = Regex("""^(?:[^\w\d\s]\s*)?[3-5][.,]\d{1,2}$""").matches(current.trim())
+            val ratingCandidate = Regex("""^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\w\d\s])\s*)?[3-5][.,]\d{1,2}$""").matches(current.trim())
             if (ratingCandidate) {
                 while (i + 1 < flatTokens.size) {
                     val next = flatTokens[i + 1].trim()
@@ -291,6 +308,10 @@ object BrazilianOfferParser {
                 lower.contains("tarifa base dinamica") ||
                 lower.contains("dinâmica incl") ||
                 lower.contains("dinamica incl") ||
+                lower.contains("tarifa expresso") ||
+                lower.contains("expresso inclusa") ||
+                lower.contains("expresso incl") ||
+                lower.contains("tarifa express") ||
                 lower.contains("a mais por corrida")
             ) {
                 continue
@@ -469,7 +490,7 @@ object BrazilianOfferParser {
     }
 
     private val RATING_PREFIX_REGEX = Regex(
-        pattern = """(?<![R\$\d.,/])(?:[★⭐✪☆*👤🚹👥Θ•●○▪▫■□]|nota|avalia[çc][ãa]o|classifica[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]??\s*([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""",
+        pattern = """(?<![R\$\d.,/])(?:[★⭐✪☆*Θ•●○▪▫■□]|👤|🚹|👥|[\uD800-\uDBFF][\uDC00-\uDFFF]|nota|avalia[çc][ãa]o|classifica[çc][ãa]o|passageir[oa]|usu[áa]ri[oa])\s*[:\-]??\s*([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -489,7 +510,43 @@ object BrazilianOfferParser {
         val cleaned = normalized.map { stripNonOfferPriceNoise(it).trim() }.filter { it.isNotBlank() }
         if (cleaned.isEmpty()) return null
 
-        // 0ª Passada de SUPER ALTA PRECISÃO: busca no texto completo agrupado
+        // 0ª Passada de MÁXIMA PRIORIDADE: Linha contextual de passageiro (99 e Uber: "👤 4,85 · 54 corridas", "👤 4,93 · +999 corridas", "★ 4,91 (392)")
+        for (line in cleaned) {
+            val lower = line.lowercase(Locale.getDefault())
+            if (lower.contains("corrida") || lower.contains("viagen") || lower.contains("cartão") ||
+                lower.contains("cartao") || lower.contains("verif") || lower.contains("perfil") ||
+                lower.contains("premium") || lower.contains("essencial") || lower.contains("passageir") ||
+                lower.contains("usuári") || lower.contains("usuari") || lower.contains("novo")
+            ) {
+                val directMatch = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(line)
+                if (directMatch != null) {
+                    val r = parseBrazilianDecimal(directMatch.groupValues[1])
+                    if (r != null && r in 3.00..5.00) {
+                        return r
+                    }
+                }
+            }
+        }
+
+        // 1ª Passada: Padrão explícito com prefixo ou sufixo em linha individual
+        for (line in cleaned) {
+            val mPrefix = RATING_PREFIX_REGEX.find(line)
+            if (mPrefix != null) {
+                val rating = parseBrazilianDecimal(mPrefix.groupValues[1])
+                if (rating != null && rating in 3.00..5.00) {
+                    return rating
+                }
+            }
+            val mSuffix = RATING_SUFFIX_REGEX.find(line)
+            if (mSuffix != null) {
+                val rating = parseBrazilianDecimal(mSuffix.groupValues[1])
+                if (rating != null && rating in 3.00..5.00) {
+                    return rating
+                }
+            }
+        }
+
+        // 2ª Passada: Busca no texto completo agrupado
         val fullJoined = cleaned.joinToString(" ")
         val mPrefixFull = RATING_PREFIX_REGEX.find(fullJoined)
         if (mPrefixFull != null) {
@@ -503,20 +560,6 @@ object BrazilianOfferParser {
             val rating = parseBrazilianDecimal(mSuffixFull.groupValues[1])
             if (rating != null && rating in 3.00..5.00) {
                 return rating
-            }
-        }
-
-        // 1b. Busca ultra-direta na linha com corridas/viagens/cartão (ex: "4,93 · 127 corridas", "4,97 · 432 corridas")
-        for (line in cleaned) {
-            val lower = line.lowercase(Locale.getDefault())
-            if (lower.contains("corrida") || lower.contains("viagen") || lower.contains("cartão") || lower.contains("cartao") || lower.contains("verif")) {
-                val directMatch = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(line)
-                if (directMatch != null) {
-                    val r = parseBrazilianDecimal(directMatch.groupValues[1])
-                    if (r != null && r in 3.00..5.00) {
-                        return r
-                    }
-                }
             }
         }
 

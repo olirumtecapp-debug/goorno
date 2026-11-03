@@ -90,7 +90,7 @@ app.post("/api/rides/capture", async (req, res) => {
       destinationAddress = "Rua Funchal, 418 - Vila Olímpia, São Paulo - SP",
       destinationNeighborhood = "Vila Olímpia",
       passengerName = "Passageiro Verificado",
-      passengerRating = 4.89,
+      passengerRating = 4.90,
       decision = "evaluating",
     } = req.body || {};
 
@@ -263,7 +263,7 @@ app.post("/api/rides/scan-screenshot", async (req, res) => {
 
     const ratingMatch = text.match(/\b([45][.,][0-9]{2})\b/);
     const passengerRating =
-      Number(aiExtracted?.passengerRating) || (ratingMatch ? parseFloat(ratingMatch[1].replace(",", ".")) : 4.89);
+      Number(aiExtracted?.passengerRating) || (ratingMatch ? parseFloat(ratingMatch[1].replace(",", ".")) : 4.90);
 
     const lines = text
       .split(/\r?\n|\|/)
@@ -1095,12 +1095,12 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.68",
-    versionCode: 89,
+    versionName: "3.3.69",
+    versionCode: 90,
     releaseDate: "2026-11-02",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.68.apk",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.69.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 55360989,
+    fileSizeBytes: 55360990,
     fileSizeFormatted: "55.4 MB",
     changelog: [
       "🏷️ Novo Padrão de Pílulas Flutuantes: Badges de alto contraste para Mercado, Corrida Curta, Embarque Distante, Risco e Rodízio.",
@@ -1116,36 +1116,36 @@ app.get("/api/app-version", (_req, res) => {
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
-  "/GoOrNo-v3.3.68.apk",
-  "/GoOrNo-v3.3.68.apk",
-  "/GoOrNo-v3.3.68.apk",
-  "/GoOrNo-v3.3.68.apk",
+  "/GoOrNo-v3.3.69.apk",
+  "/GoOrNo-v3.3.69.apk",
+  "/GoOrNo-v3.3.69.apk",
+  "/GoOrNo-v3.3.69.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
-  "/download/GoOrNo-v3.3.68.apk",
-  "/download/GoOrNo-v3.3.68.apk",
-  "/download/GoOrNo-v3.3.68.apk"
+  "/download/GoOrNo-v3.3.69.apk",
+  "/download/GoOrNo-v3.3.69.apk",
+  "/download/GoOrNo-v3.3.69.apk"
 ], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.68.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.68.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.68.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.69.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.69.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.69.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.68.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.68.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.68.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.69.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.69.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.69.apk"),
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.68.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.69.apk");
     }
   }
-  return res.redirect("https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.68.apk");
+  return res.redirect("https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.69.apk");
 });
 
 // Serve static build in production/local start
