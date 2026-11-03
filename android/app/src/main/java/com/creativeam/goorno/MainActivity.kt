@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
     private var hasOverlayPerm by mutableStateOf(false)
     private var hasAccessibilityPerm by mutableStateOf(false)
     private var requestedScreen by mutableStateOf<String?>(null)
+    private var resumeTrigger by mutableStateOf(0)
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -73,7 +74,8 @@ class MainActivity : ComponentActivity() {
                     onRequestOverlayPermission = { openOverlayPermissionSettings() },
                     onRequestAccessibilityPermission = { openAccessibilitySettings() },
                     onRequestOcrCapturePermission = { requestOcrMediaProjection() },
-                    onStopAllBackgroundServices = { stopAllBackgroundMonitoring() }
+                    onStopAllBackgroundServices = { stopAllBackgroundMonitoring() },
+                    resumeTrigger = resumeTrigger
                 )
             }
         }
@@ -95,6 +97,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         refreshPermissionsState()
+        resumeTrigger++
     }
 
     private fun requestNotificationPermissionIfNeeded() {

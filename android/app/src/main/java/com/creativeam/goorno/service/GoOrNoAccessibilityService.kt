@@ -156,18 +156,24 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                         continue
                     }
 
+                    val isDriverAppActive = SourceApp.isAllowedDriverPackage(lastKnownForegroundPkg)
+                    val loopDelay = if (isDriverAppActive) 150L else 400L
+                    val minScanInterval = if (isDriverAppActive) 140L else 380L
+
                     if (app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
                         val now = System.currentTimeMillis()
                         if (app.overlayPanel.isCardCurrentlyVisible()) {
                             checkIfOfferDismissedAndCloseCard(activeRootPkg = null, eventPkg = null)
                         }
-                        if (now - lastScanTimeMillis >= 380L) {
+                        if (now - lastScanTimeMillis >= minScanInterval) {
                             scanCurrentScreen(eventPkg = null, forceThrottleBypass = false)
                         }
                     }
                 } catch (_: Throwable) {
                 }
-                delay(400L)
+                val isDriverAppActive = SourceApp.isAllowedDriverPackage(lastKnownForegroundPkg)
+                val loopDelay = if (isDriverAppActive) 150L else 400L
+                delay(loopDelay)
             }
         }
     }
@@ -229,7 +235,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val eventTexts = event?.text?.joinToString(" ") ?: ""
         val eventContentDesc = event?.contentDescription?.toString() ?: ""
         val eventCombined = "$eventTexts $eventContentDesc"
+        val isDriverPkgEvent = isEventDriverPkg || isActiveDriverPkg
         val isLikelyOfferEvent = isAppTransitionToDriver ||
+            isDriverPkgEvent || // Prioridade máxima: qualquer evento de UI/lista de app motorista (Uber ou 99) quebra o throttle imediatamente!
             eventCombined.contains("R$") ||
             eventCombined.contains("Pop", ignoreCase = true) ||
             eventCombined.contains("Aceitar", ignoreCase = true) ||

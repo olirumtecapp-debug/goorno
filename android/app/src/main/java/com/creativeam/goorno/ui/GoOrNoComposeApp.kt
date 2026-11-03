@@ -113,7 +113,8 @@ fun GoOrNoComposeApp(
     onRequestOverlayPermission: () -> Unit,
     onRequestAccessibilityPermission: () -> Unit,
     onRequestOcrCapturePermission: () -> Unit,
-    onStopAllBackgroundServices: () -> Unit
+    onStopAllBackgroundServices: () -> Unit,
+    resumeTrigger: Int = 0
 ) {
     val context = LocalContext.current
     val app = remember { context.applicationContext as GoOrNoApplication }
@@ -201,8 +202,8 @@ fun GoOrNoComposeApp(
         scope.launch(Dispatchers.IO) {
             try {
                 val conn = (URL("https://goorno-app.vercel.app/api/app-version").openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 4000
-                    readTimeout = 4000
+                    connectTimeout = 8000
+                    readTimeout = 8000
                     requestMethod = "GET"
                     setRequestProperty("Accept", "application/json")
                 }
@@ -285,6 +286,12 @@ fun GoOrNoComposeApp(
                 }
             }
         } catch (_: Throwable) {}
+    }
+
+    LaunchedEffect(resumeTrigger) {
+        if (resumeTrigger > 0) {
+            checkForUpdates(false)
+        }
     }
 
     LaunchedEffect(initialRequestedScreen) {
