@@ -8,16 +8,16 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.status(200).json({
     versionName: "3.3.69",
     versionCode: 90,
-    releaseDate: "2026-11-02",
+    releaseDate: "2026-11-03",
     apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.69.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 55360990,
+    fileSizeBytes: 55377368,
     fileSizeFormatted: "55.4 MB",
     changelog: [
-      "🚀 Leitura Uber 100% Restaurada: Correção de captura para chamadas nativas e fallback visual rápido.",
-      "🎯 Nota do Passageiro Garantida: Captura perfeita mesmo sob sobreposição de janela e no primeiro card de Solicitações.",
-      "🏷️ Pílulas Flutuantes Estritamente Abaixo do Card: Design limpo e sem poluição visual na tela.",
-      "⚡ Fim dos Travamentos e ANR: Execução leve e responsiva em background."
+      "🎯 Nota do Passageiro Garantida: Captura perfeita com suporte a emojis e no primeiro card de Solicitações.",
+      "💰 Correção da Tarifa Expresso: Descarte de subtarifas e captura do valor cheio da corrida.",
+      "🔢 Fusão de Centavos Fragmentados: Unificação imediata de valores como R$ 44,80 e R$ 7,70.",
+      "⚡ Estabilidade e Descarte de Ruído: Elementos fora da tela e dados antigos bloqueados."
     ],
     mandatory: false,
   });
