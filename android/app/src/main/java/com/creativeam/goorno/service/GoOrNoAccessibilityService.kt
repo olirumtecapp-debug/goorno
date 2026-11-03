@@ -891,49 +891,46 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             } catch (_: Throwable) {
             }
 
-            if (rect.width() <= 0 || rect.height() <= 0) {
-                return
-            }
-
-            // Descarta nós totalmente fora dos limites da tela física (ex: cartões antigos rolados fora da tela)
+            val hasValidBounds = rect.width() > 0 && rect.height() > 0
             val displayMetrics = resources.displayMetrics
             val screenW = displayMetrics.widthPixels
             val screenH = displayMetrics.heightPixels
-            if (rect.bottom < 0 || rect.top > screenH || rect.right < 0 || rect.left > screenW) {
-                return
-            }
+            val isOffScreen = hasValidBounds && (rect.bottom < 0 || rect.top > screenH || rect.right < 0 || rect.left > screenW)
 
-            if (requireVisible && !node.isVisibleToUser) {
-                return
-            }
+            // Se o nó tem limites válidos na tela e está visível, extrai os textos
+            if (hasValidBounds && !isOffScreen && (!requireVisible || node.isVisibleToUser)) {
+                val centerY = (rect.top + rect.bottom) / 2
 
-            val centerY = if (rect.height() > 0) (rect.top + rect.bottom) / 2 else rect.top
-
-            node.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { txt ->
-                output.add(PositionedText(txt, rect.top, rect.left, centerY))
-            }
-            node.contentDescription?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { desc ->
-                if (output.none { it.text == desc && kotlin.math.abs(it.centerY - centerY) <= 14 }) {
-                    output.add(PositionedText(desc, rect.top, rect.left, centerY))
+                node.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { txt ->
+                    output.add(PositionedText(txt, rect.top, rect.left, centerY))
                 }
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                node.hintText?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { hint ->
-                    if (output.none { it.text == hint }) {
-                        output.add(PositionedText(hint, rect.top, rect.left, centerY))
+                node.contentDescription?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { desc ->
+                    if (output.none { it.text == desc && kotlin.math.abs(it.centerY - centerY) <= 14 }) {
+                        output.add(PositionedText(desc, rect.top, rect.left, centerY))
+                    }
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    node.hintText?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { hint ->
+                        if (output.none { it.text == hint }) {
+                            output.add(PositionedText(hint, rect.top, rect.left, centerY))
+                        }
                     }
                 }
             }
 
-            val count = node.childCount
-            for (i in 0 until count) {
-                val child = try {
-                    node.getChild(i)
-                } catch (_: Throwable) {
-                    null
-                }
-                if (child != null) {
-                    collectPositionedTexts(child, output, depth + 1, requireVisible)
+            // SEMPRE percorre os nós filhos recursivamente, mesmo que o container pai tenha dimensões 0
+            // ou não tenha texto próprio (exceto se o container estiver comprovadamente fora da tela física rolada)
+            if (!isOffScreen) {
+                val count = node.childCount
+                for (i in 0 until count) {
+                    val child = try {
+                        node.getChild(i)
+                    } catch (_: Throwable) {
+                        null
+                    }
+                    if (child != null) {
+                        collectPositionedTexts(child, output, depth + 1, requireVisible)
+                    }
                 }
             }
         } catch (_: Throwable) {

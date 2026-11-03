@@ -1996,10 +1996,15 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             setPadding(dp(4), dp(4), dp(4), dp(4))
 
+            // CRITICAL: Blindagem total contra interferência na leitura de acessibilidade da Uber e 99!
+            // Torna o botão flutuante e todos os seus filhos 100% invisíveis/transparentes para a árvore de acessibilidade do Android.
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+
             val logoIv = android.widget.ImageView(context).apply {
                 setImageResource(com.creativeam.goorno.R.drawable.logo_goorno)
                 scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
                 layoutParams = LinearLayout.LayoutParams(dp(38), dp(38))
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             }
             addView(logoIv)
 
@@ -2338,14 +2343,26 @@ class FloatingOverlayPanel(private val context: Context) {
                 launchAppScreen("HOME")
                 dismissQuickSettingsModal()
             })
-            contentContainer.addView(createListAction("👁️", "Ocultar Botão Flutuante", "Pode reativar depois no menu Janela") {
+            contentContainer.addView(createListAction("👁️", "Ocultar Botão da Tela", "Esconde este atalho; reative na notificação superior") {
+                dismissQuickSettingsModal()
                 hideShortcutBubble()
                 onUserRequestedHideShortcutBubble?.invoke()
+                com.creativeam.goorno.service.CopilotNotificationReceiver.showActiveNotification(context, showShortcutBubble = false)
                 android.widget.Toast.makeText(
                     context,
-                    "Botão ocultado. Para reativar, acesse GoOrNo > Formato da Janela.",
+                    "Botão ocultado. Toque em '👁️ Mostrar Botão' na notificação superior para reexibir.",
                     android.widget.Toast.LENGTH_LONG
                 ).show()
+            })
+            contentContainer.addView(createListAction("⏹️", "Desativar Copiloto", "Desliga o monitoramento do GoOrNo") {
+                dismissQuickSettingsModal()
+                onUserRequestedDisableCopilot?.invoke()
+                try {
+                    val disableIntent = Intent(context, com.creativeam.goorno.service.CopilotNotificationReceiver::class.java).apply {
+                        action = com.creativeam.goorno.service.CopilotNotificationReceiver.ACTION_DISABLE_COPILOT
+                    }
+                    context.sendBroadcast(disableIntent)
+                } catch (_: Throwable) {}
             })
         }
 

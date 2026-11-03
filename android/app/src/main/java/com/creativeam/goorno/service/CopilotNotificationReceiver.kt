@@ -100,11 +100,39 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
             ACTION_DISMISS_OVERLAY_CARD -> {
                 app?.overlayPanel?.dismissCurrentOfferCardByUser()
             }
+
+            ACTION_SHOW_SHORTCUT_BUBBLE -> {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                prefs.edit().putBoolean("show_shortcut_bubble", true).apply()
+
+                if (app != null) {
+                    val pendingResult = goAsync()
+                    CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                        try {
+                            val currentConfig = app.preferencesRepository.getConfigOnce()
+                            app.preferencesRepository.saveConfig(
+                                currentConfig.copy(showFloatingShortcutBubble = true)
+                            )
+                        } catch (_: Exception) {
+                        } finally {
+                            pendingResult.finish()
+                        }
+                    }
+                }
+
+                showActiveNotification(context, showShortcutBubble = true)
+                Toast.makeText(
+                    context,
+                    "👁️ Botão flutuante reativado!",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 
     companion object {
         const val ACTION_DISABLE_COPILOT = "com.creativeam.goorno.ACTION_DISABLE_COPILOT"
+        const val ACTION_SHOW_SHORTCUT_BUBBLE = "com.creativeam.goorno.ACTION_SHOW_SHORTCUT_BUBBLE"
         const val ACTION_OPEN_ORIGIN_STREET_VIEW = "com.creativeam.goorno.ACTION_OPEN_ORIGIN_STREET_VIEW"
         const val ACTION_OPEN_DEST_STREET_VIEW = "com.creativeam.goorno.ACTION_OPEN_DEST_STREET_VIEW"
         const val ACTION_DISMISS_OVERLAY_CARD = "com.creativeam.goorno.ACTION_DISMISS_OVERLAY_CARD"
@@ -122,7 +150,8 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
             context: Context,
             latestEvaluation: FinancialEvaluationResult? = null,
             showProfit: Boolean? = null,
-            showCost: Boolean? = null
+            showCost: Boolean? = null,
+            showShortcutBubble: Boolean? = null
         ) {
             try {
                 val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -133,6 +162,9 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                 }
                 if (showCost != null) {
                     editor.putBoolean("show_cost", showCost)
+                }
+                if (showShortcutBubble != null) {
+                    editor.putBoolean("show_shortcut_bubble", showShortcutBubble)
                 }
 
                 if (latestEvaluation != null && latestEvaluation.offer.offeredPrice != null) {
@@ -345,12 +377,35 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                         .setContentText("Monitorando Uber & 99")
                 }
 
-                // Botão Desativar sempre presente na notificação superior
-                builder.addAction(
-                    android.R.drawable.ic_menu_close_clear_cancel,
-                    "⏹️ Desativar",
-                    disablePendingIntent
+                val isShortcutBubbleVisible = prefs.getBoolean("show_shortcut_bubble", true)
+                val showBubbleIntent = Intent(context, CopilotNotificationReceiver::class.java).apply {
+                    action = ACTION_SHOW_SHORTCUT_BUBBLE
+                }
+                val showBubblePendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    102,
+                    showBubbleIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
+
+                // Se o botão flutuante estiver oculto, exibe o atalho de restauração rápida "👁️ Mostrar Botão"
+                if (!isShortcutBubbleVisible) {
+                    builder.addAction(
+                        R.drawable.ic_stat_goorno,
+                        "👁️ Mostrar Botão",
+                        showBubblePendingIntent
+                    )
+                }
+
+                // Exibe "⏹️ Desativar" caso o botão flutuante esteja visível OU haja espaço disponível (< 3 ações)
+                val hasBothStreetView = hasRide && (prefs.getString("origin_address", "") ?: "").isNotBlank() && (prefs.getString("dest_address", "") ?: "").isNotBlank()
+                if (isShortcutBubbleVisible || !hasBothStreetView) {
+                    builder.addAction(
+                        android.R.drawable.ic_menu_close_clear_cancel,
+                        "⏹️ Desativar",
+                        disablePendingIntent
+                    )
+                }
 
                 val notification = builder.build()
                 if (!GoOrNoForegroundKeepAliveService.isServiceRunning()) {

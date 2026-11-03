@@ -82,7 +82,8 @@ class GoOrNoApplication : Application() {
                             com.creativeam.goorno.service.CopilotNotificationReceiver.showActiveNotification(
                                 context = this@GoOrNoApplication,
                                 showProfit = cfg.showProfitOnOverlay,
-                                showCost = cfg.showCostOnOverlay
+                                showCost = cfg.showCostOnOverlay,
+                                showShortcutBubble = cfg.showFloatingShortcutBubble
                             )
                         } else {
                             com.creativeam.goorno.service.CopilotNotificationReceiver.cancelActiveNotification(this@GoOrNoApplication)
