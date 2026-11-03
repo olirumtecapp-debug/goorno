@@ -1,4 +1,4 @@
-﻿package com.creativeam.goorno.reader
+package com.creativeam.goorno.reader
 
 import com.creativeam.goorno.model.CaptureMethod
 import com.creativeam.goorno.model.ExtractedField
@@ -379,7 +379,9 @@ object BrazilianOfferParser {
             if (isGpsTurnInstruction) {
                 continue
             }
-            if (lower.contains("tarifa base") || lower.contains("desconto")) {
+            if (lower.contains("tarifa base") || lower.contains("desconto") ||
+                lower.contains("trânsito lento") || lower.contains("transito lento")
+            ) {
                 continue
             }
             val sanitized = stripNonOfferPriceNoise(line)
@@ -454,7 +456,8 @@ object BrazilianOfferParser {
         for (line in normalized) {
             val lower = line.lowercase(Locale.getDefault())
             if (lower.contains("viagem longa") || lower.contains("espera longa") ||
-                lower.contains("tarifa base") || lower.contains("desconto")
+                lower.contains("tarifa base") || lower.contains("desconto") ||
+                lower.contains("trânsito lento") || lower.contains("transito lento")
             ) {
                 continue
             }
@@ -715,10 +718,10 @@ object BrazilianOfferParser {
             val line = normalized[i].trim()
             val lower = line.lowercase(Locale.getDefault())
 
-            // Ignora instruções isoladas de GPS do topo da tela (ex: "↰ 61 m")
+            // Ignora instruções isoladas de GPS do topo da tela (ex: "↰ 61 m") ou selos de trânsito lento
             val isGpsTurnInstruction = (lower.contains("↰") || lower.contains("↱") || lower.contains("↗") || lower.contains("↖")) &&
                 !lower.contains("min") && !lower.contains("km") && line.length < 15
-            if (isGpsTurnInstruction) {
+            if (isGpsTurnInstruction || lower.contains("trânsito lento") || lower.contains("transito lento")) {
                 i++
                 continue
             }
