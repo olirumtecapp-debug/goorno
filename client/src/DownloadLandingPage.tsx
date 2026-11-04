@@ -37,7 +37,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { ContactModal } from './ContactModal';
-import { SCREENSHOTS, ScreenshotItem } from './ScreenshotsShowcase';
+import { SCREENSHOTS, ALL_SCREENSHOTS, ScreenshotItem } from './ScreenshotsShowcase';
 
 interface DownloadLandingPageProps {
   onOpenSimulator?: () => void;
@@ -412,7 +412,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
             {/* CARD COMPENSA (VALE A PENA) */}
             <article 
               onClick={() => {
-                const item = SCREENSHOTS.find((s) => s.id === 'viagem-compensa');
+                const item = ALL_SCREENSHOTS.find((s) => s.id === 'viagem-compensa');
                 if (item) setSelectedScreenshot(item);
               }}
               className="bg-[#f2fae8] border-2 border-[#a6d84a] rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group cursor-pointer h-full"
@@ -462,7 +462,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
             {/* CARD NÃO COMPENSA (MELHOR RECUSAR) */}
             <article 
               onClick={() => {
-                const item = SCREENSHOTS.find((s) => s.id === 'viagem-nao-compensa');
+                const item = ALL_SCREENSHOTS.find((s) => s.id === 'viagem-nao-compensa');
                 if (item) setSelectedScreenshot(item);
               }}
               className="bg-[#fef2f2] border-2 border-[#fca5a5] rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group cursor-pointer h-full"
@@ -531,7 +531,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div 
                 onClick={() => {
-                  const item = SCREENSHOTS.find((s) => s.id === 'card-tipo-1');
+                  const item = ALL_SCREENSHOTS.find((s) => s.id === 'card-tipo-1');
                   if (item) setSelectedScreenshot(item);
                 }}
                 className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
@@ -557,7 +557,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
 
               <div 
                 onClick={() => {
-                  const item = SCREENSHOTS.find((s) => s.id === 'card-tipo-2');
+                  const item = ALL_SCREENSHOTS.find((s) => s.id === 'card-tipo-2');
                   if (item) setSelectedScreenshot(item);
                 }}
                 className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
@@ -583,7 +583,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
 
               <div 
                 onClick={() => {
-                  const item = SCREENSHOTS.find((s) => s.id === 'card-tipo-3');
+                  const item = ALL_SCREENSHOTS.find((s) => s.id === 'card-tipo-3');
                   if (item) setSelectedScreenshot(item);
                 }}
                 className="bg-white/5 border border-white/10 hover:border-[#d9ff4f]/60 rounded-2xl p-5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
@@ -963,26 +963,26 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
 
             <img
               className="screen-image screen-back cursor-pointer"
-              src="/assets/UberRuim.jpeg"
+              src="/telas/UberRuimNew.jpeg"
               alt="Tela do GoOrNo mostrando uma corrida ruim no trânsito"
               onClick={() => {
-                const item = SCREENSHOTS.find((s) => s.id === 'uber-ruim');
+                const item = ALL_SCREENSHOTS.find((s) => s.id === 'uber-ruim');
                 if (item) setSelectedScreenshot(item);
               }}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/UberRuim.jpeg';
+                (e.target as HTMLImageElement).src = '/UberRuimNew.jpeg';
               }}
             />
             <img
               className="screen-image screen-front cursor-pointer"
-              src="/assets/UberBoa.jpeg"
+              src="/telas/UberBoaNew.jpeg"
               alt="Tela do GoOrNo mostrando uma corrida boa aprovada em verde"
               onClick={() => {
-                const item = SCREENSHOTS.find((s) => s.id === 'uber-boa');
+                const item = ALL_SCREENSHOTS.find((s) => s.id === 'uber-boa');
                 if (item) setSelectedScreenshot(item);
               }}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/UberBoa.jpeg';
+                (e.target as HTMLImageElement).src = '/UberBoaNew.jpeg';
               }}
             />
 
@@ -998,17 +998,15 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
             <div className="text-center mb-5">
               <span className="font-space font-bold text-xs uppercase tracking-widest text-[#638076] bg-[#e6ebdf] px-3.5 py-1.5 rounded-full border border-[rgba(7,29,25,0.08)] inline-flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-[#799900]" />
-                Explore Todas as 22 Telas Oficiais por Categoria
+                Explore Todas as 18 Telas Oficiais por Categoria
               </span>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {[
-                { key: 'all', label: 'Todas as Telas (22)', icon: Sparkles },
-                { key: 'cards_flutuantes', label: '🎛️ 4 Cards Flutuantes (7)', icon: Car },
+                { key: 'all', label: 'Todas as Telas (18)', icon: Sparkles },
                 { key: 'streetview', label: '📍 Notificação & Street View (3)', icon: MapPin },
-                { key: 'atalhos', label: '⚡ Atalhos & Trânsito (4)', icon: Zap },
-                { key: 'safety', label: '🛡️ Segurança & Áreas de Risco (6)', icon: ShieldCheck },
-                { key: 'config', label: '⚙️ Metas & Custos (2)', icon: Sliders }
+                { key: 'atalhos', label: '⚡ Atalhos & Trânsito (9)', icon: Zap },
+                { key: 'safety', label: '🛡️ Áreas de Risco e Áreas Favoritas (6)', icon: ShieldCheck }
               ].map((cat) => {
                 const Icon = cat.icon;
                 const isSelected = activeCategory === cat.key;

@@ -19,7 +19,7 @@ export interface ScreenshotItem {
   id: string;
   filename: string;
   title: string;
-  category: 'cards_flutuantes' | 'streetview' | 'atalhos' | 'safety' | 'config';
+  category: 'streetview' | 'atalhos' | 'safety';
   categoryLabel: string;
   badge?: string;
   badgeType?: 'green' | 'red' | 'blue' | 'purple' | 'amber';
@@ -28,76 +28,9 @@ export interface ScreenshotItem {
 }
 
 export const SCREENSHOTS: ScreenshotItem[] = [
-  // --- 1. CARDS FLUTUANTES & PRÁTICA ---
-  {
-    id: 'card-tipo-1',
-    filename: 'CardImpactoNew.jpeg',
-    title: 'Card Impacto Pro (Recomendado)',
-    category: 'cards_flutuantes',
-    categoryLabel: 'Cards Flutuantes & Prática',
-    badge: '✨ MODELO 1: IMPACTO PRO',
-    badgeType: 'green',
-    summary: 'Design moderno com valor gigante no centro, km e tempo no topo e faixa sólida com o veredito instantâneo (✓ COMPENSA: R$ 6,62 · 2,3 km · R$ 2,88/km · R$ 39,72/h).',
-    highlightText: 'Permite ao motorista decidir em frações de segundo com contraste impecável e leitura visual imediata no trânsito.'
-  },
-  {
-    id: 'card-tipo-2',
-    filename: 'Card3PilaresNew.jpeg',
-    title: 'Card 3 Pilares (R$/Km, R$/Hora e Nota)',
-    category: 'cards_flutuantes',
-    categoryLabel: 'Cards Flutuantes & Prática',
-    badge: '📊 MODELO 2: 3 PILARES',
-    badgeType: 'blue',
-    summary: 'Resumo superior em linha única e 3 colunas verticais com barras coloridas (R$ 9,10 · 2,6 km · 15 min) com tag inteligente de Supermercado detectada na hora.',
-    highlightText: 'Equilíbrio perfeito de métricas em colunas limpas, com suporte a tema claro ou escuro e transparência ajustável.'
-  },
-  {
-    id: 'card-tipo-3',
-    filename: 'CardCompactoNew.jpeg',
-    title: 'Card Compacto (Discreto)',
-    category: 'cards_flutuantes',
-    categoryLabel: 'Cards Flutuantes & Prática',
-    badge: '✨ MODELO 3: COMPACTO',
-    badgeType: 'purple',
-    summary: 'Formato limpo e objetivo que ocupa menos espaço da tela, mantendo a leitura instantânea de ganhos e nota.',
-    highlightText: 'Design minimalista para quem quer discrição sem abrir mão dos números essenciais da corrida.'
-  },
-  
-  {
-    id: 'viagem-compensa',
-    filename: 'ViagemCompensa.png',
-    title: 'Chamada Lucrativa: ✓ COMPENSA',
-    category: 'cards_flutuantes',
-    categoryLabel: 'Cards Flutuantes & Prática',
-    badge: '🟢 CORRIDA APROVADA',
-    badgeType: 'green',
-    summary: 'Card verde com veredito instantâneo aprovando a corrida (✓ COMPENSA: R$ 6,62 · 2,3 km em 10 min · R$ 2,88/km · R$ 39,72/h · passageiro nota 4,88).',
-    highlightText: 'Dinheiro no bolso garantido: cálculo automático descontando combustível e desgaste real do veículo.'
-  },
-  {
-    id: 'viagem-avaliar',
-    filename: 'merece-analise-real.png',
-    title: 'Chamada Intermediária: ● AVALIAR',
-    category: 'cards_flutuantes',
-    categoryLabel: 'Cards Flutuantes & Prática',
-    badge: '🟡 MERECE ANÁLISE',
-    badgeType: 'amber',
-    summary: 'Card com alerta amarelo orientando o motorista a ponderar se a rota e o destino compensam (● AVALIAR: R$ 7,32 · 2,4 km em 12 min · R$ 3,05/km · R$ 36,60/h · ★ 4,89).',
-    highlightText: 'Flexibilidade inteligente: você define os limites de valor por km e por hora para cada faixa do semáforo.'
-  },
-  {
-    id: 'viagem-nao-compensa',
-    filename: 'ViagemNaoCompensa.png',
-    title: 'Chamada no Prejuízo: ✕ RECUSAR',
-    category: 'cards_flutuantes',
-    categoryLabel: 'Cards Flutuantes & Prática',
-    badge: '🔴 NÃO COMPENSA',
-    badgeType: 'red',
-    summary: 'Card com contorno vermelho alertando corrida no prejuízo com embarque longe (✕ NÃO COMPENSA: R$ 33,82 · 20,8 km em 44 min · R$ 1,63/km · R$ 46,12/h · ★ 4,97 · Emb. Longe 2,8 km).',
-    highlightText: 'Proteja seu patrimônio e evite pagar para trabalhar! O GoOrNo avisa embarque distante e tarifa insuficiente para cobrir seus custos.'
-  },
-
-  // --- 2. NOTIFICAÇÃO & STREET VIEW 360° ---
+  // ==========================================
+  // 1. NOTIFICAÇÃO & STREET VIEW 360° (3 telas)
+  // ==========================================
   {
     id: 'notificacao-streetview',
     filename: 'Notificacao_Origem_DestinoNew.jpeg',
@@ -127,149 +60,266 @@ export const SCREENSHOTS: ScreenshotItem[] = [
     category: 'streetview',
     categoryLabel: 'Notificação & Street View',
     badge: '🏁 FACHADA DO DESEMBARQUE',
-    badgeType: 'blue',
-    summary: 'Inspeção visual da fachada e rua de destino antes de iniciar a corrida ou durante o deslocamento.',
-    highlightText: 'Chegue no endereço com total tranquilidade visualizando portarias, fachadas de prédios e características da rua.'
+    badgeType: 'green',
+    summary: 'Foto real da fachada do destino final para conferir segurança da região, portaria ou acesso antes de iniciar a viagem.',
+    highlightText: 'Chegue com precisão cirúrgica no destino sem errar o lado da rua ou ficar procurando endereço.'
   },
 
-  // --- 3. ATALHOS RÁPIDOS & TRÂNSITO ---
+  // ==========================================
+  // 2. ATALHOS & TRÂNSITO (9 telas)
+  // ==========================================
   {
-    id: 'atalho-rapido',
+    id: 'tela-atalho-1',
     filename: 'TelaAtalho1.jpeg',
     title: 'Menu Flutuante de Atalhos Rápidos',
     category: 'atalhos',
     categoryLabel: 'Atalhos & Trânsito',
-    badge: '⚡ ATALHOS SOBRE O UBER/99',
+    badge: '⚡ ATALHOS RÁPIDOS',
     badgeType: 'green',
-    summary: 'Botão flutuante discreto com acesso em 1 toque a Semáforo, Metas, Áreas de Risco, Histórico e Painel Completo.',
-    highlightText: 'Opere 100% das funções do GoOrNo sem precisar sair da tela do Uber ou da 99.'
+    summary: 'Menu de acesso rápido que abre sobre a Uber ou 99 ao tocar na bolinha flutuante: abra Semáforo, Metas Financeiras, Áreas de Risco ou Histórico sem fechar o app de viagens.',
+    highlightText: 'Agilidade total ao dirigir: troque de ferramenta ou consulte dados vitais com apenas 1 clique.'
   },
   {
-    id: 'semaforo-rapido',
+    id: 'tela-atalho-2',
     filename: 'TelaAtalho2.jpeg',
     title: 'Ajuste Rápido do Semáforo no Trânsito',
     category: 'atalhos',
     categoryLabel: 'Atalhos & Trânsito',
-    badge: '⏱️ AJUSTE EM 2 SEGUNDOS',
-    badgeType: 'amber',
-    summary: 'Popup flutuante para aumentar ou diminuir R$/km mín, R$/hora mín e nota mínima do passageiro com botões [+] e [-] instantâneos.',
-    highlightText: 'Ajuste suas metas rapidamente na chuva, no horário de pico ou na dinâmica sem tirar a atenção da rua.'
+    badge: '⚡ SEMÁFORO RÁPIDO',
+    badgeType: 'blue',
+    summary: 'Ajuste instantâneo de parâmetros de rentabilidade via botões [+] e [-]: altere R$/Km Mínimo, R$/Hora Mínimo, Nota Mínima e Embarque Longe Máximo durante o plantão.',
+    highlightText: 'Adapte seus critérios de aprovação de chamadas em tempo real conforme a demanda ou horário de pico.'
   },
   {
-    id: 'painel-inicial',
+    id: 'tela-config-card-1',
     filename: 'TelaConfigCard1.jpeg',
-    title: 'Painel Inicial & Última Corrida Capturada',
+    title: 'Estilo do Cartão & Janela Arrastável',
     category: 'atalhos',
     categoryLabel: 'Atalhos & Trânsito',
-    badge: '📱 MONITORAMENTO EM TEMPO REAL',
-    badgeType: 'blue',
-    summary: 'Tela inicial do app exibindo o status dos serviços, detector de chamadas ativo e os dados completos da última corrida analisada.',
-    highlightText: 'Controle total da operação com diagnóstico em tempo real e verificação dos motores de leitura OCR.'
+    badge: '🎛️ ESTILO DO CARTÃO',
+    badgeType: 'purple',
+    summary: 'Escolha seu formato preferido (Card Impacto Pro ou 3 Pilares) e utilize a Janela Livremente Arrastável, que salva automaticamente a posição onde você posicionar na tela.',
+    highlightText: 'Nunca mais tampe botões vitais da Uber ou 99: posicione a janelinha onde for mais ergonômico no seu smartphone.'
   },
   {
-    id: 'historico-auditoria',
+    id: 'tela-config-card-2',
+    filename: 'TelaConfigCard2.jpeg',
+    title: 'Tema Claro/Escuro & Botão Permanente',
+    category: 'atalhos',
+    categoryLabel: 'Atalhos & Trânsito',
+    badge: '🌙 TEMA & BOTÃO FLUTUANTE',
+    badgeType: 'green',
+    summary: 'Alterne entre fundo Claro (Branco) e Escuro (Preto), ligue a bolinha flutuante permanente na borda da tela e ative a exibição opcional de Lucro Líquido na janela.',
+    highlightText: 'Conforto visual completo para rodar tanto de dia sob sol forte quanto à noite sem ofuscar a visão.'
+  },
+  {
+    id: 'tela-config-card-3',
+    filename: 'TelaConfigCard3.jpeg',
+    title: 'Tempo de Exibição, Veículo & Alerta Rodízio SP',
+    category: 'atalhos',
+    categoryLabel: 'Atalhos & Trânsito',
+    badge: '🚗 VEÍCULO & RODÍZIO SP',
+    badgeType: 'amber',
+    summary: 'Defina o tempo de tela do card (3s a 7s), cadastre modelo e placa do veículo com detecção automática do dia de Rodízio em SP (Centro Expandido) e alerta sonoro preventivo.',
+    highlightText: 'Evite multas pesadas de rodízio na capital paulista com aviso preventivo antes de aceitar chamadas na zona restrita.'
+  },
+  {
+    id: 'tela-ganhos-1',
+    filename: 'TelaGanhos1.jpeg',
+    title: 'Critérios de Ganho por Km e Ganho por Hora',
+    category: 'atalhos',
+    categoryLabel: 'Atalhos & Trânsito',
+    badge: '🚦 SEMÁFORO & METAS',
+    badgeType: 'green',
+    summary: 'Calibre os limites numéricos para classificar chamadas em Ruim, Médio ou Bom: defina faixas de R$/km e R$/hora com régua visual colorida e botões [+] e [-].',
+    highlightText: 'O coração financeiro do GoOrNo: você decide quanto vale sua hora e seu km, e o aplicativo filtra o resto.'
+  },
+  {
+    id: 'tela-ganhos-2',
+    filename: 'TelaGanhos2.jpeg',
+    title: 'Limites de Embarque Distante & Corrida Curta',
+    category: 'atalhos',
+    categoryLabel: 'Atalhos & Trânsito',
+    badge: '⚠️ EMBARQUE & CORRIDA CURTA',
+    badgeType: 'amber',
+    summary: 'Configure a distância máxima de deslocamento até o passageiro (alerta de ⚠️ Emb. Longe) e o raio máximo para identificar e destacar automaticamente corridas curtas.',
+    highlightText: 'Elimine corridas com busca excessiva que consom gasolina e identifique tiros curtos perfeitos para bater metas.'
+  },
+  {
+    id: 'tela-ganhos-3',
+    filename: 'TelaGanhos3.jpeg',
+    title: 'Avaliação do Passageiro & Bloqueio por Nota',
+    category: 'atalhos',
+    categoryLabel: 'Atalhos & Trânsito',
+    badge: '★ NOTA DO PASSAGEIRO',
+    badgeType: 'red',
+    summary: 'Defina notas de corte para passageiros (Verde Boa >= 4,85, Amarela Média e Vermelha Ruim < 4,70) com trava para forçar Semáforo Vermelho (Recusar) para clientes mal avaliados.',
+    highlightText: 'Proteção preventiva contra passageiros problemáticos ou com histórico negativo nas plataformas.'
+  },
+  {
+    id: 'tela-historico',
     filename: 'TelaHistorico.jpeg',
-    title: 'Histórico de Corridas & Auditoria com Lucro Real',
+    title: 'Histórico de Corridas & Auditoria de Lucro',
     category: 'atalhos',
     categoryLabel: 'Atalhos & Trânsito',
     badge: '📋 AUDITORIA COM LUCRO REAL',
-    badgeType: 'purple',
-    summary: 'Histórico auditado com centenas de chamadas salvas, indicando km bruto, hora bruta, lucro líquido estimado e botões rápidos (+Favorito, +Risco, 360° Maps).',
-    highlightText: 'Guarde o registro de todas as ofertas lidas na tela com conferência de ganhos reais e rotas.'
+    badgeType: 'blue',
+    summary: 'Registro completo de chamadas capturadas: plataforma, KM bruto, hora bruta, lucro líquido descontado combustível, nota do passageiro e botões para favoritar, marcar risco ou abrir Street View.',
+    highlightText: 'Audite seus ganhos reais corrida a corrida com histórico detalhado e conferência de faturamento.'
   },
 
-  // --- 4. SEGURANÇA & ÁREAS DE RISCO ---
+  // ==========================================
+  // 3. ÁREAS DE RISCO E ÁREAS FAVORITAS (6 telas)
+  // ==========================================
   {
-    id: 'seguranca-area-risco',
+    id: 'seguranca-area-risco-1',
     filename: 'AreaRisco1.jpeg',
-    title: 'Central de Segurança & Áreas de Risco',
+    title: 'Cadastro Imediato de Área de Risco',
     category: 'safety',
-    categoryLabel: 'Segurança & Áreas de Risco',
-    badge: '🛡️ BLOQUEIO DE LOCAIS PERIGOSOS',
+    categoryLabel: 'Áreas de Risco e Áreas Favoritas',
+    badge: '⚠️ BLOQUEIO DE RUA OU BAIRRO',
     badgeType: 'red',
-    summary: 'Ative alertas sonoros e force semáforo VERMELHO automático para ruas ou bairros perigosos, mesmo se pagarem bem por km.',
-    highlightText: 'Sua vida e seu carro em primeiro lugar: o GoOrNo não deixa você entrar em furadas por engano.'
+    summary: 'Modal rápido para cadastrar a rua exata ou o bairro inteiro como área perigosa diretamente a partir do histórico ou durante o trabalho.',
+    highlightText: 'Bloqueie endereços perigosos em 1 toque: qualquer chamada para esse local forçará semáforo vermelho imediato.'
   },
   {
-    id: 'seguranca-regiao-favorita',
-    filename: 'Favorita1.jpeg',
-    title: 'Regiões Favoritas & Bairros Preferidos',
-    category: 'safety',
-    categoryLabel: 'Segurança & Áreas de Risco',
-    badge: '⭐ ROTAS FAVORITAS',
-    badgeType: 'green',
-    summary: 'Cadastre seus bairros seguros e destinos prioritários com identificação imediata na janela flutuante.',
-    highlightText: 'Priorize corridas que levam para onde você gosta de trabalhar, com aviso sonoro e visual diferenciado.'
-  },
-  {
-    id: 'adicionar-area-risco',
+    id: 'seguranca-area-risco-2',
     filename: 'AreaRisco2.jpeg',
-    title: 'Busca e Bloqueio Geográfico no Mapa',
+    title: 'Gerenciamento de Áreas de Risco Cadastradas',
     category: 'safety',
-    categoryLabel: 'Segurança & Áreas de Risco',
-    badge: '🗺️ PESQUISA E BLOQUEIO NO MAPA',
+    categoryLabel: 'Áreas de Risco e Áreas Favoritas',
+    badge: '🛡️ LISTA DE ZONAS PERIGOSAS',
     badgeType: 'red',
-    summary: 'Pesquise qualquer bairro ou rua pelo nome e adicione à sua lista de bloqueio com apenas um clique.',
-    highlightText: 'Base flexível: integre com o banco nacional de zonas críticas ou monte sua própria lista de segurança da sua cidade.'
+    summary: 'Painel com a lista completa de ruas e bairros em quarentena de segurança, permitindo buscar, ativar, desativar ou excluir pontos de risco.',
+    highlightText: 'Mantenha sua base de proteção sempre atualizada de acordo com a realidade da sua cidade.'
   },
   {
-    id: 'adicionar-regiao-favorita',
-    filename: 'Favorita2.jpeg',
-    title: 'Cadastro de Locais e Destinos Favoritos',
-    category: 'safety',
-    categoryLabel: 'Segurança & Áreas de Risco',
-    badge: '⭐ CADASTRO DE BAIRROS VIP',
-    badgeType: 'green',
-    summary: 'Localize áreas residenciais nobres, shoppings, centros comerciais ou aeroportos para receber destaque especial.',
-    highlightText: 'Aumente seu faturamento direcionando suas corridas para as melhores regiões da sua cidade.'
-  },
-  {
-    id: 'exemplo-area-risco-card',
+    id: 'seguranca-area-risco-3',
     filename: 'AreaRisco3.jpeg',
-    title: 'Alerta Ativo de Área de Risco no Card',
+    title: 'Alerta de Área de Risco na Janela Flutuante',
     category: 'safety',
-    categoryLabel: 'Segurança & Áreas de Risco',
-    badge: '⚠️ AVISO VISUAL NO CARD',
+    categoryLabel: 'Áreas de Risco e Áreas Favoritas',
+    badge: '🚨 ALERTA VISUAL VERMELHO',
     badgeType: 'red',
-    summary: 'Quando a chamada toca para um local bloqueado, o card exibe uma faixa de alto contraste alertando "ÁREA DE RISCO".',
-    highlightText: 'Evite aceitar corridas por distração ou correria: o alerta surge no topo da tela antes de você clicar.'
+    summary: 'Quando uma oferta toca para uma região cadastrada como perigosa, o card flutuante emite destaque vermelho chamativo de alerta de perigo.',
+    highlightText: 'Sua integridade física em 1º lugar: recuse furadas antes de aceitar por impulso.'
   },
   {
-    id: 'exemplo-regiao-favorita-card',
+    id: 'seguranca-regiao-favorita-1',
+    filename: 'Favorita1.jpeg',
+    title: 'Cadastro de Regiões e Bairros Favoritos',
+    category: 'safety',
+    categoryLabel: 'Áreas de Risco e Áreas Favoritas',
+    badge: '⭐ ADICIONAR FAVORITA',
+    badgeType: 'green',
+    summary: 'Cadastre seus bairros preferidos, shoppings, aeroportos ou regiões seguras com apenas um toque a partir do histórico de chamadas.',
+    highlightText: 'Personalize seu mapa de trabalho: priorize destinos lucrativos e bairros que você mais gosta de atender.'
+  },
+  {
+    id: 'seguranca-regiao-favorita-2',
+    filename: 'Favorita2.jpeg',
+    title: 'Gestão de Bairros e Destinos Favoritos',
+    category: 'safety',
+    categoryLabel: 'Áreas de Risco e Áreas Favoritas',
+    badge: '⭐ LISTA DE DESTINOS VIP',
+    badgeType: 'green',
+    summary: 'Lista organizada de todas as suas regiões favoritas ativas, facilitando o gerenciamento de destinos prioritários na sua cidade.',
+    highlightText: 'Filtre suas corridas para as áreas que rendem mais e oferecem maior segurança para rodar.'
+  },
+  {
+    id: 'seguranca-regiao-favorita-3',
     filename: 'Favorita3.jpeg',
     title: 'Destaque de Região Favorita no Card',
     category: 'safety',
-    categoryLabel: 'Segurança & Áreas de Risco',
-    badge: '⭐ AVISO DE REGIÃO FAVORITA',
-    badgeType: 'amber',
-    summary: 'Indicação dourada imediata no card avisando que a corrida vai em direção ao seu destino ou bairro preferido.',
-    highlightText: 'Aceite rapidamente as melhores corridas do dia com a segurança de estar indo para sua área favorita.'
-  },
-
-  // --- 5. METAS & CUSTOS DO VEÍCULO ---
-  {
-    id: 'tela-semaforo',
-    filename: 'TelaConfigCard2.jpeg',
-    title: 'Configuração de Metas & Faixas do Semáforo',
-    category: 'config',
-    categoryLabel: 'Metas & Custos',
-    badge: '🚦 REGRAS DO SEMÁFORO FINANCEIRO',
+    categoryLabel: 'Áreas de Risco e Áreas Favoritas',
+    badge: '⭐ DESTAQUE VISUAL VERDE',
     badgeType: 'green',
-    summary: 'Defina seus parâmetros mínimos de R$/km, R$/hora e nota mínima para os vereditos Verde, Amarelo e Vermelho.',
-    highlightText: 'Personalização absoluta: você no controle total dos seus critérios de rentabilidade.'
-  },
-  {
-    id: 'tela-custo-carro',
-    filename: 'TelaConfigCard3.jpeg',
-    title: 'Calculadora de Custos Reais do Veículo',
-    category: 'config',
-    categoryLabel: 'Metas & Custos',
-    badge: '⛽ GASOLINA & MANUTENÇÃO',
-    badgeType: 'amber',
-    summary: 'Insira o consumo de combustível (km/l), valor do litro e custo estimado de pneus, óleo e manutenção por km rodado.',
-    highlightText: 'Cálculo 100% honesto e transparente do seu custo real de rodagem por quilômetro.'
+    summary: 'A janelinha flutuante identifica e destaca em verde vibrante quando a viagem vai para um bairro ou endereço da sua lista de favoritas.',
+    highlightText: 'Identifique na hora as melhores corridas do dia e aceite com prioridade absoluta.'
   }
 ];
+
+export const EXTRA_SCREENSHOTS: ScreenshotItem[] = [
+  {
+    id: 'card-tipo-1',
+    filename: 'CardImpactoNew.jpeg',
+    title: 'Card Impacto Pro (Recomendado)',
+    category: 'atalhos',
+    categoryLabel: '3 Modelos de Janela Flutuante',
+    badge: '✨ MODELO 1: IMPACTO PRO',
+    badgeType: 'green',
+    summary: 'Design moderno com valor gigante no centro, km e tempo no topo e faixa sólida com o veredito instantâneo (✓ COMPENSA: R$ 6,62 · 2,3 km · R$ 2,88/km · R$ 39,72/h).',
+    highlightText: 'Permite ao motorista decidir em frações de segundo com contraste impecável e leitura visual imediata no trânsito.'
+  },
+  {
+    id: 'card-tipo-2',
+    filename: 'Card3PilaresNew.jpeg',
+    title: 'Card 3 Pilares (R$/Km, R$/Hora e Nota)',
+    category: 'atalhos',
+    categoryLabel: '3 Modelos de Janela Flutuante',
+    badge: '📊 MODELO 2: 3 PILARES',
+    badgeType: 'blue',
+    summary: 'Resumo superior em linha única e 3 colunas verticais com barras coloridas (R$ 9,10 · 2,6 km · 15 min) com tag inteligente de supermercado detectada na hora.',
+    highlightText: 'Equilíbrio perfeito de métricas em colunas limpas, com suporte a tema claro ou escuro e transparência ajustável.'
+  },
+  {
+    id: 'card-tipo-3',
+    filename: 'CardCompactoNew.jpeg',
+    title: 'Card Compacto (Discreto)',
+    category: 'atalhos',
+    categoryLabel: '3 Modelos de Janela Flutuante',
+    badge: '✨ MODELO 3: COMPACTO',
+    badgeType: 'purple',
+    summary: 'Formato limpo e objetivo que ocupa menos espaço da tela, mantendo a leitura instantânea de ganhos e nota.',
+    highlightText: 'Design minimalista para quem quer discrição sem abrir mão dos números essenciais da corrida.'
+  },
+  {
+    id: 'uber-ruim',
+    filename: 'UberRuimNew.jpeg',
+    title: 'Chamada no Prejuízo Detectada na Uber',
+    category: 'atalhos',
+    categoryLabel: 'Decisão em um Relance',
+    badge: '🔴 NÃO COMPENSA',
+    badgeType: 'red',
+    summary: 'Corrida com valor baixo e embarque longe: R$ 11,25 por 9,0 km (R$ 1,25/km aprox.). O GoOrNo avisa na hora em vermelho para você não pagar para trabalhar.',
+    highlightText: 'Proteja seu tempo e combustível recusando corridas deficitárias com apenas um olhar.'
+  },
+  {
+    id: 'uber-boa',
+    filename: 'UberBoaNew.jpeg',
+    title: 'Chamada Altamente Lucrativa Aprovada',
+    category: 'atalhos',
+    categoryLabel: 'Decisão em um Relance',
+    badge: '🟢 COMPENSA',
+    badgeType: 'green',
+    summary: 'Corrida excelente: R$ 10,83 por 5,0 km em 4 min (R$ 2,17/km · R$ 162,45/h). O GoOrNo aprova em verde com confirmação instantânea de lucro real.',
+    highlightText: 'Aceite com segurança chamadas que realmente colocam dinheiro limpo no seu bolso.'
+  },
+  {
+    id: 'viagem-compensa',
+    filename: 'ViagemCompensa.png',
+    title: 'Chamada Lucrativa: ✓ COMPENSA',
+    category: 'atalhos',
+    categoryLabel: 'Decisão em um Relance',
+    badge: '🟢 CORRIDA APROVADA',
+    badgeType: 'green',
+    summary: 'Card verde com veredito instantâneo aprovando a corrida (✓ COMPENSA: R$ 6,62 · 2,3 km em 10 min · R$ 2,88/km · R$ 39,72/h · passageiro nota 4,88).',
+    highlightText: 'Dinheiro no bolso garantido: cálculo automático descontando combustível e desgaste real do veículo.'
+  },
+  {
+    id: 'viagem-nao-compensa',
+    filename: 'ViagemNaoCompensa.png',
+    title: 'Chamada no Prejuízo: ✕ RECUSAR',
+    category: 'atalhos',
+    categoryLabel: 'Decisão em um Relance',
+    badge: '🔴 NÃO COMPENSA',
+    badgeType: 'red',
+    summary: 'Card com contorno vermelho alertando corrida no prejuízo com embarque longe (✕ NÃO COMPENSA: R$ 33,82 · 20,8 km em 44 min · R$ 1,63/km · R$ 46,12/h · ★ 4,97 · Emb. Longe 2,8 km).',
+    highlightText: 'Proteja seu patrimônio e evite pagar para trabalhar! O GoOrNo avisa embarque distante e tarifa insuficiente para cobrir seus custos.'
+  }
+];
+
+export const ALL_SCREENSHOTS = [...SCREENSHOTS, ...EXTRA_SCREENSHOTS];
 
 interface ScreenshotsShowcaseProps {
   onBackToLanding?: () => void;
@@ -341,7 +391,7 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
               <span className="font-space font-bold text-lg text-white tracking-tight flex items-center gap-2">
                 GoOrNo
                 <small className="font-dm text-[10px] font-bold px-2 py-0.5 rounded bg-[#d9ff4f] text-[#071d19]">
-                  22 Telas Oficiais
+                  18 Telas Oficiais
                 </small>
               </span>
             </a>
@@ -435,12 +485,10 @@ export function ScreenshotsShowcase({ onBackToLanding }: ScreenshotsShowcaseProp
       <section className="px-4 max-w-6xl mx-auto mb-8">
         <div className="flex flex-wrap items-center justify-center gap-2">
           {[
-            { key: 'all', label: 'Todas as Telas (22)', icon: Sparkles },
-            { key: 'cards_flutuantes', label: '🎛️ 4 Cards Flutuantes (7)', icon: Car },
+            { key: 'all', label: 'Todas as Telas (18)', icon: Sparkles },
             { key: 'streetview', label: '📍 Notificação & Street View (3)', icon: MapPin },
-            { key: 'atalhos', label: '⚡ Atalhos & Trânsito (4)', icon: Zap },
-            { key: 'safety', label: '🛡️ Segurança & Áreas de Risco (6)', icon: ShieldCheck },
-            { key: 'config', label: '⚙️ Metas & Custos (2)', icon: Sliders }
+            { key: 'atalhos', label: '⚡ Atalhos & Trânsito (9)', icon: Zap },
+            { key: 'safety', label: '🛡️ Áreas de Risco e Áreas Favoritas (6)', icon: ShieldCheck }
           ].map((cat) => {
             const Icon = cat.icon;
             const isSelected = activeCategory === cat.key;
