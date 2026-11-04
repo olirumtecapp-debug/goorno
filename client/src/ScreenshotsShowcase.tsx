@@ -131,8 +131,8 @@ export const SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: 'Atalhos & Trânsito',
     badge: '🚦 SEMÁFORO & METAS',
     badgeType: 'green',
-    summary: 'Calibre os limites numéricos para classificar chamadas em Ruim, Médio ou Bom: defina faixas de R$/km e R$/hora com régua visual colorida e botões [+] e [-].',
-    highlightText: 'O coração financeiro do GoOrNo: você decide quanto vale sua hora e seu km, e o aplicativo filtra o resto.'
+    summary: 'Calibre os limites exatos do Semáforo: Ganho por Km (Ruim até R$ 1,80/km, Bom a partir de R$ 2,00/km) e Ganho por Hora (Ruim até R$ 35,00/h, Bom a partir de R$ 40,00/h) com régua colorida e botões [+] e [-].',
+    highlightText: 'O cérebro financeiro do GoOrNo: você decide sua margem e o app aprova apenas corridas lucrativas.'
   },
   {
     id: 'tela-ganhos-2',
@@ -142,8 +142,8 @@ export const SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: 'Atalhos & Trânsito',
     badge: '⚠️ EMBARQUE & CORRIDA CURTA',
     badgeType: 'amber',
-    summary: 'Configure a distância máxima de deslocamento até o passageiro (alerta de ⚠️ Emb. Longe) e o raio máximo para identificar e destacar automaticamente corridas curtas.',
-    highlightText: 'Elimine corridas com busca excessiva que consom gasolina e identifique tiros curtos perfeitos para bater metas.'
+    summary: 'Configure com controle deslizante o Limite de Embarque Distante (máximo tolerado de 2,0 km com alerta ⚠️ Emb. Longe) e o Limite de Corrida Curta (até 5,0 km com selo ⚡ CORRIDA CURTA).',
+    highlightText: 'Evite deslocamentos longos não remunerados e priorize corridas rápidas para bater suas metas diárias.'
   },
   {
     id: 'tela-ganhos-3',
@@ -185,24 +185,24 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   {
     id: 'seguranca-area-risco-2',
     filename: 'AreaRisco2.jpeg',
-    title: 'Gerenciamento de Áreas de Risco Cadastradas',
+    title: 'Central de Segurança & Bloqueio de Risco',
     category: 'safety',
     categoryLabel: 'Áreas de Risco e Áreas Favoritas',
-    badge: '🛡️ LISTA DE ZONAS PERIGOSAS',
+    badge: '🛡️ PROTEÇÃO ATIVA',
     badgeType: 'red',
-    summary: 'Painel com a lista completa de ruas e bairros em quarentena de segurança, permitindo buscar, ativar, desativar ou excluir pontos de risco.',
-    highlightText: 'Mantenha sua base de proteção sempre atualizada de acordo com a realidade da sua cidade.'
+    summary: 'Ajuste de proteção ativa: ligue alertas na janela flutuante, force semáforo VERMELHO automático para locais perigosos e ative a Base Nacional de Zonas Críticas (favelas, vielas e comunidades).',
+    highlightText: 'Proteção inteligente que barra corridas perigosas mesmo que a tarifa oferecida pareça alta.'
   },
   {
     id: 'seguranca-area-risco-3',
     filename: 'AreaRisco3.jpeg',
-    title: 'Alerta de Área de Risco na Janela Flutuante',
+    title: 'Pesquisa e Gestão de Locais Bloqueados',
     category: 'safety',
     categoryLabel: 'Áreas de Risco e Áreas Favoritas',
-    badge: '🚨 ALERTA VISUAL VERMELHO',
+    badge: '🛡️ LOCAIS BLOQUEADOS (3)',
     badgeType: 'red',
-    summary: 'Quando uma oferta toca para uma região cadastrada como perigosa, o card flutuante emite destaque vermelho chamativo de alerta de perigo.',
-    highlightText: 'Sua integridade física em 1º lugar: recuse furadas antes de aceitar por impulso.'
+    summary: 'Pesquise e valide ruas no mapa oficial e visualize sua lista de Seus Locais Bloqueados (Rua Valdomiro Rodrigues, Vila São José, Jardim Santa Cristina) com botão para testar alerta na janela.',
+    highlightText: 'Controle total dos seus pontos de bloqueio com pesquisa geográfica e remoção a qualquer momento.'
   },
   {
     id: 'seguranca-regiao-favorita-1',
@@ -218,24 +218,24 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   {
     id: 'seguranca-regiao-favorita-2',
     filename: 'Favorita2.jpeg',
-    title: 'Gestão de Bairros e Destinos Favoritos',
+    title: 'Bairros Favoritos & Zona de Conforto',
     category: 'safety',
     categoryLabel: 'Áreas de Risco e Áreas Favoritas',
-    badge: '⭐ LISTA DE DESTINOS VIP',
+    badge: '⭐ ZONA DE CONFORTO',
     badgeType: 'green',
-    summary: 'Lista organizada de todas as suas regiões favoritas ativas, facilitando o gerenciamento de destinos prioritários na sua cidade.',
-    highlightText: 'Filtre suas corridas para as áreas que rendem mais e oferecem maior segurança para rodar.'
+    summary: 'Ative o destaque de bairros favoritos com selo verde e estrela no card flutuante e utilize a busca integrada no mapa para encontrar bairros nobres e regiões preferidas.',
+    highlightText: 'Trabalhe onde você gosta: destaque imediato no card quando a corrida tem origem ou destino na sua lista.'
   },
   {
     id: 'seguranca-regiao-favorita-3',
     filename: 'Favorita3.jpeg',
-    title: 'Destaque de Região Favorita no Card',
+    title: 'Lista de Bairros Favoritos Cadastrados',
     category: 'safety',
     categoryLabel: 'Áreas de Risco e Áreas Favoritas',
-    badge: '⭐ DESTAQUE VISUAL VERDE',
+    badge: '⭐ BAIRROS FAVORITOS (7)',
     badgeType: 'green',
-    summary: 'A janelinha flutuante identifica e destaca em verde vibrante quando a viagem vai para um bairro ou endereço da sua lista de favoritas.',
-    highlightText: 'Identifique na hora as melhores corridas do dia e aceite com prioridade absoluta.'
+    summary: 'Painel com a lista dos Seus Bairros Favoritos (Rua Doná Júlia César Ferreira, Rua Atílio Néris, Rua dos Vianas, etc.) com busca direta no mapa para adicionar novos locais com 1 clique.',
+    highlightText: 'Cadastre seus bairros seguros e destinos prioritários para direcionar seu dia de faturamento.'
   }
 ];
 
@@ -248,8 +248,8 @@ export const EXTRA_SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: '3 Modelos de Janela Flutuante',
     badge: '✨ MODELO 1: IMPACTO PRO',
     badgeType: 'green',
-    summary: 'Design moderno com valor gigante no centro, km e tempo no topo e faixa sólida com o veredito instantâneo (✓ COMPENSA: R$ 6,62 · 2,3 km · R$ 2,88/km · R$ 39,72/h).',
-    highlightText: 'Permite ao motorista decidir em frações de segundo com contraste impecável e leitura visual imediata no trânsito.'
+    summary: 'Design moderno com valor gigante no centro, km e tempo no topo e faixa sólida com veredito instantâneo (✓ COMPENSA: R$ 5,62 · 1,1 km em 8 min · R$ 5,11/km · R$ 42,15/h · ★ 4,93) com alerta de desembarque em área de risco.',
+    highlightText: 'Decisão em frações de segundo: leitura ultra nítida de R$/km e R$/hora com alerta preventivo de segurança.'
   },
   {
     id: 'card-tipo-2',
@@ -259,8 +259,8 @@ export const EXTRA_SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: '3 Modelos de Janela Flutuante',
     badge: '📊 MODELO 2: 3 PILARES',
     badgeType: 'blue',
-    summary: 'Resumo superior em linha única e 3 colunas verticais com barras coloridas (R$ 9,10 · 2,6 km · 15 min) com tag inteligente de supermercado detectada na hora.',
-    highlightText: 'Equilíbrio perfeito de métricas em colunas limpas, com suporte a tema claro ou escuro e transparência ajustável.'
+    summary: 'Resumo no topo em linha única e 3 colunas com barras coloridas: R$ 5,62 · 2,6 km em 8 min (R$ 2,16/km · R$ 42/h · ★ 4,96) com identificação automática de ⚡ CORRIDA CURTA.',
+    highlightText: 'Equilíbrio perfeito de métricas em colunas verticais com barras dinâmicas do semáforo financeiro.'
   },
   {
     id: 'card-tipo-3',
@@ -270,8 +270,8 @@ export const EXTRA_SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: '3 Modelos de Janela Flutuante',
     badge: '✨ MODELO 3: COMPACTO',
     badgeType: 'purple',
-    summary: 'Formato limpo e objetivo que ocupa menos espaço da tela, mantendo a leitura instantânea de ganhos e nota.',
-    highlightText: 'Design minimalista para quem quer discrição sem abrir mão dos números essenciais da corrida.'
+    summary: 'Formato compacto e objetivo que ocupa o mínimo de tela: R$ 39,60 por 20,9 km em 48 min (R$ 1,89/km · R$ 49,50/h · ★ 4,89) com alertas de ⚠️ EMBARQUE DISTANTE e ⏱️ VIAGEM LONGA.',
+    highlightText: 'Design minimalista e discreto que preserva a visão do mapa sem esconder nenhuma métrica financeira.'
   },
   {
     id: 'uber-ruim',
