@@ -34,7 +34,7 @@ data class PixChargeData(
     val copyPastePix: String,
     val plan: String = "mensal",
     val promoApplied: Boolean = false,
-    val renewalPrice: Double = 7.99,
+    val renewalPrice: Double = 6.99,
     val periodDays: Int = 30
 )
 

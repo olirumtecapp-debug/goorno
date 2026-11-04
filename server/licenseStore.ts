@@ -32,57 +32,57 @@ export const OFFICIAL_PLANS: SubscriptionPlanInfo[] = [
     name: "Plano Mensal",
     periodDays: 30,
     periodMonths: 1,
-    normalPrice: 7.99,
-    promoPrice: 5.09,
-    renewalPrice: 7.99,
-    monthlyEquivalentNormal: 7.99,
-    monthlyEquivalentPromo: 5.09,
-    savingsPromoVsMonthlyNormal: 2.90,
+    normalPrice: 6.99,
+    promoPrice: 4.99,
+    renewalPrice: 6.99,
+    monthlyEquivalentNormal: 6.99,
+    monthlyEquivalentPromo: 4.15,
+    savingsPromoVsMonthlyNormal: 2.00,
     savingsNormalVsMonthlyNormal: 0.00,
-    description: "Acesso completo por 30 dias. Renovação por R$ 7,99/mês.",
+    description: "Acesso completo por 30 dias. Renovação por R$ 6,99/mês.",
   },
   {
     id: "trimestral",
     name: "Plano Trimestral",
     periodDays: 90,
     periodMonths: 3,
-    normalPrice: 21.90,
-    promoPrice: 18.90,
-    renewalPrice: 21.90,
-    monthlyEquivalentNormal: 7.30,
-    monthlyEquivalentPromo: 6.30,
-    savingsPromoVsMonthlyNormal: 5.07,
+    normalPrice: 18.90,
+    promoPrice: 16.90,
+    renewalPrice: 18.90,
+    monthlyEquivalentNormal: 6.30,
+    monthlyEquivalentPromo: 5.63,
+    savingsPromoVsMonthlyNormal: 4.07,
     savingsNormalVsMonthlyNormal: 2.07,
-    description: "Acesso por 3 meses (90 dias). Renovação por R$ 21,90 a cada 3 meses.",
+    description: "Acesso por 3 meses (90 dias). Apenas R$ 6,30/mês. Renovação por R$ 18,90 a cada 3 meses.",
   },
   {
     id: "semestral",
     name: "Plano Semestral",
     periodDays: 180,
     periodMonths: 6,
-    normalPrice: 41.90,
-    promoPrice: 34.90,
-    renewalPrice: 41.90,
-    monthlyEquivalentNormal: 6.98,
-    monthlyEquivalentPromo: 5.81,
-    savingsPromoVsMonthlyNormal: 13.04,
-    savingsNormalVsMonthlyNormal: 6.04,
-    description: "Acesso por 6 meses (180 dias). Renovação por R$ 41,90 a cada 6 meses.",
+    normalPrice: 34.90,
+    promoPrice: 29.90,
+    renewalPrice: 34.90,
+    monthlyEquivalentNormal: 5.81,
+    monthlyEquivalentPromo: 4.98,
+    savingsPromoVsMonthlyNormal: 12.04,
+    savingsNormalVsMonthlyNormal: 7.04,
+    description: "Acesso por 6 meses (180 dias). Apenas R$ 5,81/mês. Renovação por R$ 34,90 a cada 6 meses.",
   },
   {
     id: "anual",
     name: "Plano Anual",
     periodDays: 365,
     periodMonths: 12,
-    normalPrice: 79.90,
-    promoPrice: 59.90,
-    renewalPrice: 79.90,
-    monthlyEquivalentNormal: 6.66,
-    monthlyEquivalentPromo: 4.99,
-    savingsPromoVsMonthlyNormal: 35.98,
-    savingsNormalVsMonthlyNormal: 15.98,
+    normalPrice: 59.90,
+    promoPrice: 49.90,
+    renewalPrice: 59.90,
+    monthlyEquivalentNormal: 4.99,
+    monthlyEquivalentPromo: 4.15,
+    savingsPromoVsMonthlyNormal: 33.98,
+    savingsNormalVsMonthlyNormal: 23.98,
     highlightBadge: "MAIS ECONÔMICO",
-    description: "Acesso por 1 ano (365 dias). Menos de R$ 5,00/mês. Renovação por R$ 79,90/ano.",
+    description: "Acesso por 1 ano (365 dias). Menos de R$ 5,00/mês. Renovação por R$ 59,90/ano.",
   },
 ];
 
@@ -598,7 +598,7 @@ export async function checkOrActivateLicense(params: {
   if (nowMs > validUntilMs) {
     record.status = "expired";
     await saveLicense(record);
-    const renewalVal = (record.nextRenewalPrice || 7.99).toFixed(2).replace(".", ",");
+    const renewalVal = (record.nextRenewalPrice || 6.99).toFixed(2).replace(".", ",");
     return {
       allowed: false,
       status: "expired",
@@ -670,7 +670,7 @@ export async function applyPayment(params: {
 
   let detectedPlan: ValidPlanId = "mensal";
   let addedDays = 30;
-  let renewalPrice = 7.99;
+  let renewalPrice = 6.99;
 
   const amt = Number(params.amount);
   if (params.planId && OFFICIAL_PLANS.some((p) => p.id === params.planId)) {
@@ -678,22 +678,22 @@ export async function applyPayment(params: {
     const pInfo = OFFICIAL_PLANS.find((p) => p.id === params.planId)!;
     addedDays = pInfo.periodDays;
     renewalPrice = pInfo.renewalPrice;
-  } else if (amt >= 55) {
+  } else if (amt >= 45) {
     detectedPlan = "anual";
     addedDays = 365;
-    renewalPrice = 79.90;
-  } else if (amt >= 30) {
+    renewalPrice = 59.90;
+  } else if (amt >= 25) {
     detectedPlan = "semestral";
     addedDays = 180;
-    renewalPrice = 41.90;
-  } else if (amt >= 15) {
+    renewalPrice = 34.90;
+  } else if (amt >= 14) {
     detectedPlan = "trimestral";
     addedDays = 90;
-    renewalPrice = 21.90;
+    renewalPrice = 18.90;
   } else {
     detectedPlan = "mensal";
     addedDays = 30;
-    renewalPrice = 7.99;
+    renewalPrice = 6.99;
   }
 
   let currentValidMs = record && record.validoAte ? new Date(record.validoAte).getTime() : 0;

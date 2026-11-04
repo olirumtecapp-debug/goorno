@@ -786,7 +786,7 @@ app.get("/api/admin/stats-and-licenses", async (req, res) => {
         const validMs = new Date(lic.validoAte || 0).getTime();
         if (validMs >= nowMs) {
           activePaid++;
-          const planCost = lic.plano === "mensal" ? 7.99 : lic.plano === "trimestral" ? 7.30 : lic.plano === "semestral" ? 6.98 : 6.65;
+          const planCost = lic.plano === "mensal" ? 6.99 : lic.plano === "trimestral" ? 6.30 : lic.plano === "semestral" ? 5.81 : 4.99;
           estimatedMonthlyRevenue += planCost;
         } else {
           expired++;
@@ -1095,11 +1095,12 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.70",
-    versionCode: 91,
-    releaseDate: "2026-11-02",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.70.apk",
+    versionName: "3.3.73",
+    versionCode: 94,
+    releaseDate: "2026-11-04",
+    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.73.apk",
     directDownload: "/GoOrNo.apk",
+  "/GoOrNo-v3.3.73.apk",
     fileSizeBytes: 55360990,
     fileSizeFormatted: "55.4 MB",
     changelog: [
