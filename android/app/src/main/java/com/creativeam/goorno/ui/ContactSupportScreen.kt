@@ -34,7 +34,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 data class DriverMailboxItem(
-    val id: string,
+    val id: String,
     val subject: String,
     val message: String,
     val categoryLabel: String,
@@ -779,7 +779,7 @@ fun ContactSupportScreenCard(
                                             color = PetrolHeader
                                         )
                                         Surface(
-                                            color = if (isReplied) TrafficGreen else TrafficAmber,
+                                            color = if (isReplied) TrafficGreen else TrafficYellow,
                                             shape = RoundedCornerShape(6.dp)
                                         ) {
                                             Text(

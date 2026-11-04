@@ -1025,9 +1025,5 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         return super.onUnbind(intent)
     }
 
-    override fun onDestroy() {
-        isLiveConnected = false
-        super.onDestroy()
-    }
 
 }
