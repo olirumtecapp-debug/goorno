@@ -281,7 +281,7 @@ export const EXTRA_SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: 'Decisão em um Relance',
     badge: '🔴 NÃO COMPENSA',
     badgeType: 'red',
-    summary: 'Corrida com valor baixo e embarque longe: R$ 11,25 por 9,0 km (R$ 1,25/km aprox.). O GoOrNo avisa na hora em vermelho para você não pagar para trabalhar.',
+    summary: 'Chamada no prejuízo: R$ 9,76 por 6,5 km em 18 min (apenas R$ 1,50/km · R$ 33/h · ★ 4,95). O GoOrNo calcula combustível e tempo, emitindo alerta vermelho imediato no card flutuante para você não pagar para trabalhar.',
     highlightText: 'Proteja seu tempo e combustível recusando corridas deficitárias com apenas um olhar.'
   },
   {
@@ -292,7 +292,7 @@ export const EXTRA_SCREENSHOTS: ScreenshotItem[] = [
     categoryLabel: 'Decisão em um Relance',
     badge: '🟢 COMPENSA',
     badgeType: 'green',
-    summary: 'Corrida excelente: R$ 10,83 por 5,0 km em 4 min (R$ 2,17/km · R$ 162,45/h). O GoOrNo aprova em verde com confirmação instantânea de lucro real.',
+    summary: 'Corrida excelente aprovada pelo semáforo: R$ 9,28 por 3,9 km em 12 min (R$ 2,38/km · R$ 46/h · ★ 4,95). O GoOrNo aprova com card verde e identifica automaticamente como ⚡ CORRIDA CURTA com margem limpa no bolso.',
     highlightText: 'Aceite com segurança chamadas que realmente colocam dinheiro limpo no seu bolso.'
   },
   {
