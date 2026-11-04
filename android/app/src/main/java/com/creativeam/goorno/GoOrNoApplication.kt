@@ -97,4 +97,43 @@ class GoOrNoApplication : Application() {
 
     
 
+
+    /**
+     * Blindagem Global contra Falhas e Fechamento Inesperado (CrashShield).
+     */
+    private fun installGlobalCrashShield() {
+        val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            Log.e("GoOrNoCrashShield", "🛡️ Exceção interceptada na thread '${thread.name}': ${throwable.message}", throwable)
+            if (throwable is OutOfMemoryError) {
+                try {
+                    System.gc()
+                } catch (_: Throwable) {}
+                return@setDefaultUncaughtExceptionHandler
+            }
+
+            val isRecoverable = throwable is android.view.WindowManager.BadTokenException ||
+                throwable is android.view.WindowManager.InvalidDisplayException ||
+                throwable is IllegalStateException ||
+                throwable is SecurityException ||
+                throwable is IllegalArgumentException ||
+                throwable is NullPointerException ||
+                throwable is java.util.ConcurrentModificationException ||
+                throwable.javaClass.name.contains("ForegroundService") ||
+                throwable.javaClass.name.contains("DeadSystem") ||
+                throwable.javaClass.name.contains("TransactionTooLarge")
+
+            if (isRecoverable) {
+                Log.w("GoOrNoCrashShield", "🛡️ Erro recuperável absorvido silenciosamente: ${throwable.javaClass.simpleName} - ${throwable.message}")
+                return@setDefaultUncaughtExceptionHandler
+            }
+
+            if (thread.name != "main") {
+                return@setDefaultUncaughtExceptionHandler
+            }
+
+            originalHandler?.uncaughtException(thread, throwable)
+        }
+    }
+
 }
