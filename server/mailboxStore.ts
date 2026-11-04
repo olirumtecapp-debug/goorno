@@ -7,7 +7,7 @@ const MAILBOX_FILE = path.join(DATA_DIR, "goorno-mailbox.json");
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "expedicao-brasil";
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
-const COL_MAILBOX = "goorno_mailbox";
+const COL_MAILBOX = "goorno_vault_snapshots";
 
 function firestoreUrl(collection: string, docId?: string): string {
   const base = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collection}`;
@@ -89,7 +89,7 @@ export async function listAllMessages(): Promise<MailboxMessage[]> {
       const json: any = await res.json();
       const docs = json.documents || [];
       for (const d of docs) {
-        if (!d.name) continue;
+        if (!d.name || !d.name.includes("/msg_")) continue;
         const raw = d.fields?.payload?.stringValue;
         if (!raw) continue;
         try {

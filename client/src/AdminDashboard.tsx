@@ -1053,6 +1053,17 @@ ${window.location.origin}
                                     Bloquear
                                   </button>
                                 )}
+                                <button
+                                  onClick={() => {
+                                    setDeleteConfirmText('');
+                                    setDeleteTargetDriver({ phone: lic.whatsapp });
+                                  }}
+                                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[11px] font-space font-bold transition cursor-pointer border-0 flex items-center gap-1 shadow-xs"
+                                  title="Excluir motorista permanentemente"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  Excluir
+                                </button>
                               </div>
                             </td>
                           </tr>
