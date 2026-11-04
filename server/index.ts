@@ -1066,51 +1066,26 @@ app.patch("/api/contact/:id", async (req, res) => {
   }
   try {
     const { id } = req.params;
-    const { status } = req.body || {};
-    const ok = await markMessageStatus(id, status);
+    const { status = "respondida", adminReply } = req.body || {};
+    const ok = await markMessageStatus(id, status, adminReply);
     res.json({ ok });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || "Erro ao atualizar status da mensagem." });
   }
 });
 
-// 16. Admin Route: Delete message
-app.delete("/api/contact/:id", async (req, res) => {
-  if (!checkAdminAuth(req) && process.env.NODE_ENV === "production") {
-    return res.status(401).json({ error: "Não autorizado" });
-  }
+// 15b. Route for Driver App: Get driver's own Caixa Postal messages & admin replies
+app.get("/api/contact/driver", async (req, res) => {
   try {
-    const { id } = req.params;
-    const ok = await deleteMessage(id);
-    res.json({ ok });
+    const phone = String(req.query.phone || "").trim();
+    if (!phone) {
+      return res.json({ ok: true, messages: [] });
+    }
+    const messages = await listDriverMessages(phone);
+    res.json({ ok: true, messages });
   } catch (err: any) {
-    res.status(500).json({ error: err?.message || "Erro ao excluir mensagem." });
+    res.status(500).json({ error: "Erro ao buscar mensagens do motorista." });
   }
-});
-
-
-// App Version endpoint for in-app and landing page updates
-app.get("/api/app-version", (_req, res) => {
-  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
-  res.status(200).json({
-    versionName: "3.3.73",
-    versionCode: 94,
-    releaseDate: "2026-11-04",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo-v3.3.73.apk",
-    directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 55360990,
-    fileSizeFormatted: "55.4 MB",
-    changelog: [
-      "🏷️ Novo Padrão de Pílulas Flutuantes: Badges de alto contraste para Mercado, Corrida Curta, Embarque Distante, Risco e Rodízio.",
-      "🚗 Rodízio Municipal de São Paulo: Alerta automático no destino/origem dentro do Centro Expandido com base na placa cadastrada.",
-      "📍 Cadastro de Risco e Favorito Flexível: Escolha rápida entre Rua ou Bairro e campo de texto livremente editável.",
-      "🎯 Refinamento de Leitura da Nota: Captura precisa da avaliação do passageiro sem exibir tracinhos.",
-      "⚡ R$/Km e R$/Hora Impecáveis: Separação rigorosa entre deslocamento de busca e corrida com passageiro."
-    ],
-    mandatory: false,
-  });
 });
 
 // Direct APK download routes
