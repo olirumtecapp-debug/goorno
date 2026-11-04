@@ -119,15 +119,15 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'vip' | 'trial' | 'expired' | 'fraud'>('all');
   const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers' | 'mailbox' | 'marketing' | 'juridico'>('overview');
-  const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'replied'>('all');
-  const [selectedUser, setSelectedUser] = useState<LicenseRecord | null>(null);
-  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
-  const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
-  const [deleteDriverTarget, setDeleteDriverTarget] = useState<LicenseRecord | null>(null);
+  const [deleteTargetDriver, setDeleteTargetDriver] = useState<{ phone: string; name?: string } | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState<string>('');
   const [replyingMessageId, setReplyingMessageId] = useState<string | null>(null);
   const [replyDraftText, setReplyDraftText] = useState<string>('');
   const [isSendingReply, setIsSendingReply] = useState<boolean>(false);
+  const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'replied'>('all');
+  const [selectedUser, setSelectedUser] = useState<LicenseRecord | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
 
   // Formulário de Novo Voucher
   const [newVoucherCode, setNewVoucherCode] = useState('');
@@ -1408,15 +1408,7 @@ ${window.location.origin}
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
-                          <span
-                            className={`text-[10px] font-space font-bold px-2 py-0.5 rounded-full border ${
-                              msg.preferredReply === 'email'
-                                ? 'bg-sky-50 text-sky-700 border-sky-300'
-                                : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                            }`}
-                          >
-                            {msg.preferredReply === 'email' ? '✉️ Prefere E-mail' : '💬 Prefere WhatsApp'}
-                          </span>
+                          <span className="text-[10px] font-space font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-300">📬 Caixa Postal do App</span>
                           <span
                             className={`text-[10px] font-space font-bold px-2 py-0.5 rounded-full border ${catInfo.color}`}
                           >
@@ -1736,6 +1728,75 @@ ${window.location.origin}
           </div>
         )}
       </main>
+    
+      {/* MODAL DE EXCLUSÃO BIG-TECH (EXIGE DIGITAR EXCLUIR) */}
+      {deleteTargetDriver && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full border border-red-200 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base sm:text-lg text-slate-900 leading-tight">Excluir Motorista Definitivamente</h3>
+                <p className="text-xs text-slate-500">Esta ação é irreversível e apagará os dados do banco.</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-800 space-y-1">
+              <p className="font-semibold">⚠️ O registro a seguir será completamente apagado:</p>
+              <p className="font-mono font-bold text-slate-900 text-sm bg-white/80 px-2 py-1 rounded border border-red-200 inline-block">{deleteTargetDriver.phone}</p>
+              <p className="text-[11px] text-red-700">A licença, dados de aparelho e histórico serão removidos do Cloud Firestore.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Para confirmar a exclusão, digite <span className="font-mono font-black text-red-600 tracking-wider">EXCLUIR</span> abaixo:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                placeholder="Digite EXCLUIR"
+                className="w-full px-3 py-2 border-2 border-slate-300 focus:border-red-500 rounded-xl text-sm font-mono tracking-widest text-center uppercase outline-none transition"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteTargetDriver(null);
+                  setDeleteConfirmText('');
+                }}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleteConfirmText.trim() !== 'EXCLUIR' || loading}
+                onClick={async () => {
+                  const phone = deleteTargetDriver.phone;
+                  setDeleteTargetDriver(null);
+                  setDeleteConfirmText('');
+                  await executeAction(phone, 'delete');
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  deleteConfirmText.trim() === 'EXCLUIR' && !loading
+                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-md'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Excluir Definitivamente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
-};
+}

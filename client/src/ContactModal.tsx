@@ -192,12 +192,12 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                 </div>
               </div>
 
-              {/* Linha 2: E-mail e Preferência de Retorno */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* Linha 2: E-mail e Canal de Retorno no App */}
+              <div className="space-y-2">
                 <div>
                   <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1 flex items-center gap-1.5">
                     <Mail className="w-3 h-3 text-[#d9ff4f]" />
-                    E-mail (Opcional)
+                    E-mail de Contato (Opcional)
                   </label>
                   <input
                     type="email"
@@ -208,34 +208,11 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1">
-                    Prefere Retorno por:
-                  </label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setPreferredReply('whatsapp')}
-                      className={`text-xs py-1.5 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
-                        preferredReply === 'whatsapp'
-                          ? 'bg-[#092b24] text-[#d9ff4f] border-[#d9ff4f] shadow-[0_0_12px_rgba(217,255,79,0.25)]'
-                          : 'bg-[#051915] text-[#94a89d] border-[#1b3830] hover:border-white/20 hover:text-white'
-                      }`}
-                    >
-                      <span>💬 WhatsApp</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreferredReply('email')}
-                      className={`text-xs py-1.5 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
-                        preferredReply === 'email'
-                          ? 'bg-[#092b24] text-[#d9ff4f] border-[#d9ff4f] shadow-[0_0_12px_rgba(217,255,79,0.25)]'
-                          : 'bg-[#051915] text-[#94a89d] border-[#1b3830] hover:border-white/20 hover:text-white'
-                      }`}
-                    >
-                      <span>✉️ E-mail</span>
-                    </button>
-                  </div>
+                <div className="bg-[#051915]/80 border border-[#1b3830] rounded-xl p-2.5 flex items-center gap-2 text-xs text-[#94a89d]">
+                  <MessageSquare className="w-4 h-4 text-[#d9ff4f] shrink-0" />
+                  <span>
+                    A resposta do desenvolvedor será enviada <strong>diretamente para a Caixa Postal do app GoOrNo</strong>.
+                  </span>
                 </div>
               </div>
 
