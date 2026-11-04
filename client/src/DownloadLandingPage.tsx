@@ -82,7 +82,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
   const [deleteSecret, setDeleteSecret] = useState('');
   const [deleteFeedback, setDeleteFeedback] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [appVersion, setAppVersion] = useState<string>('3.3.73');
+  const [appVersion, setAppVersion] = useState<string>('3.3.74');
 
   useEffect(() => {
     fetch('/api/app-version')

@@ -87,6 +87,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- Receptor de Atualização Automática do Aplicativo para limpeza e reativação sem exigir reinicialização manual -->
+        <receiver
+            android:name=".service.PackageReplacedReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
     
         <!-- Serviço de Primeiro Plano Persistente para Blindagem contra LMK do Android (Spotify, Instagram, etc) -->
         <service

@@ -35,6 +35,7 @@ class GoOrNoApplication : Application() {
         super.onCreate()
         try {
             installGlobalCrashShield()
+            checkAndPerformAutoCacheCleanupOnUpgrade()
             database = GoOrNoDatabase.getInstance(this)
             preferencesRepository = DriverPreferencesRepository(this)
             overlayPanel = FloatingOverlayPanel(this).apply {
@@ -140,4 +141,36 @@ class GoOrNoApplication : Application() {
             originalHandler?.uncaughtException(thread, throwable)
         }
     }
+
+    /**
+     * Limpeza automática de cache ao atualizar versão do APK.
+     * Evita que o app fique em estado zumbi ou exija forçar parada manualmente.
+     */
+    private fun checkAndPerformAutoCacheCleanupOnUpgrade() {
+        try {
+            val pInfo = packageManager.getPackageInfo(packageName, 0)
+            val currentVersionCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                pInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                pInfo.versionCode.toLong()
+            }
+            val sp = getSharedPreferences("goorno_app_lifecycle", Context.MODE_PRIVATE)
+            val lastVersionCode = sp.getLong("last_installed_version_code", -1L)
+
+            if (lastVersionCode != -1L && currentVersionCode > lastVersionCode) {
+                Log.i("GoOrNoApp", "🔄 Nova versão detectada ($lastVersionCode -> $currentVersionCode). Executando auto-limpeza de cache...")
+                try {
+                    cacheDir?.deleteRecursively()
+                    codeCacheDir?.deleteRecursively()
+                } catch (e: Throwable) {
+                    Log.w("GoOrNoApp", "Aviso na limpeza de cache: " + e.message)
+                }
+            }
+            sp.edit().putLong("last_installed_version_code", currentVersionCode).apply()
+        } catch (t: Throwable) {
+            Log.w("GoOrNoApp", "Falha ao verificar versao: " + t.message)
+        }
+    }
+
 }

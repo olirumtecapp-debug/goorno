@@ -123,6 +123,11 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
   const [selectedUser, setSelectedUser] = useState<LicenseRecord | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
+  const [deleteDriverTarget, setDeleteDriverTarget] = useState<LicenseRecord | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState<string>('');
+  const [replyingMessageId, setReplyingMessageId] = useState<string | null>(null);
+  const [replyDraftText, setReplyDraftText] = useState<string>('');
+  const [isSendingReply, setIsSendingReply] = useState<boolean>(false);
 
   // Formulário de Novo Voucher
   const [newVoucherCode, setNewVoucherCode] = useState('');
@@ -209,6 +214,46 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
       }
     } catch (e: any) {
       setActionFeedback(`Erro ao atualizar mensagem: ${e.message}`);
+    }
+  };
+
+  const handleSendMailboxReply = async (id: string) => {
+    if (!replyDraftText.trim()) return;
+    setIsSendingReply(true);
+    try {
+      const res = await fetch(`/api/contact/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminPassword,
+          status: 'replied',
+          adminReply: replyDraftText.trim()
+        })
+      });
+      if (res.ok) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === id
+              ? {
+                  ...m,
+                  status: 'replied',
+                  adminReply: replyDraftText.trim(),
+                  repliedAt: new Date().toISOString()
+                }
+              : m
+          )
+        );
+        setReplyingMessageId(null);
+        setReplyDraftText('');
+        setActionFeedback('Resposta entregue na Caixa Postal do aplicativo com sucesso!');
+        setTimeout(() => setActionFeedback(null), 3500);
+      } else {
+        alert('Falha ao enviar resposta para a Caixa Postal.');
+      }
+    } catch (e: any) {
+      alert(`Erro ao enviar: ${e.message}`);
+    } finally {
+      setIsSendingReply(false);
     }
   };
 

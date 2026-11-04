@@ -141,7 +141,7 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                 <span className="font-mono font-bold text-[#d9ff4f] bg-[#051915] px-2 py-0.5 rounded border border-[#1b3830]">
                   #{successTicket}
                 </span>
-                . O desenvolvedor analisa cada mensagem recebida e responderá conforme sua preferência.
+                . A resposta do desenvolvedor será enviada diretamente para a Caixa Postal do GoOrNo no seu aplicativo. Acompanhe a notificação por lá!
               </p>
               <div className="pt-2">
                 <button

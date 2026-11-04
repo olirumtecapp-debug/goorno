@@ -118,7 +118,8 @@ class MainActivity : ComponentActivity() {
             Settings.canDrawOverlays(this)
         } else true
 
-        hasAccessibilityPerm = isAccessibilityServiceEnabled()
+        val enabledInSettings = isAccessibilityServiceEnabled()
+        hasAccessibilityPerm = enabledInSettings && (GoOrNoAccessibilityService.isLiveConnected || !enabledInSettings)
         RuntimeDiagnosticsBus.setAccessibilityConnected(hasAccessibilityPerm)
 
         val app = applicationContext as? GoOrNoApplication

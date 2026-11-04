@@ -34,7 +34,7 @@ import {
 } from "./licenseStore.js";
 import { createPixCharge, verifyPaymentStatus, getPendingPixPhone } from "./asaas.js";
 import { sendFraudAlertEmail } from "./fraudAlert.js";
-import { saveMessage, listAllMessages, markMessageStatus, deleteMessage } from "./mailboxStore.js";
+import { saveMessage, listAllMessages, markMessageStatus, deleteMessage, listDriverMessages } from "./mailboxStore.js";
 
 export const app = express();
 app.use(express.json({ limit: "5mb" }));

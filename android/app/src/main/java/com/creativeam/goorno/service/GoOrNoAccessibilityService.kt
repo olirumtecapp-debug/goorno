@@ -49,6 +49,12 @@ import java.util.Locale
  */
 class GoOrNoAccessibilityService : AccessibilityService() {
 
+    companion object {
+        @Volatile
+        var isLiveConnected: Boolean = false
+            private set
+    }
+
     private val mainHandler = Handler(Looper.getMainLooper())
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var pollingJob: Job? = null
@@ -1013,4 +1019,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             if (list.size >= maxNodes) break
         }
     }
+
+    override fun onUnbind(intent: android.content.Intent?): Boolean {
+        isLiveConnected = false
+        return super.onUnbind(intent)
+    }
+
+    override fun onDestroy() {
+        isLiveConnected = false
+        super.onDestroy()
+    }
+
 }
