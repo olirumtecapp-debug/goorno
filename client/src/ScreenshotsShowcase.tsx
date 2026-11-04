@@ -31,7 +31,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   // --- 1. CARDS FLUTUANTES & PRÁTICA ---
   {
     id: 'card-tipo-1',
-    filename: 'ViagemCompensa.png',
+    filename: 'CardImpactoNew.jpeg',
     title: 'Card Impacto Pro (Recomendado)',
     category: 'cards_flutuantes',
     categoryLabel: 'Cards Flutuantes & Prática',
@@ -42,7 +42,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'card-tipo-2',
-    filename: 'card-3-pilares-real.png',
+    filename: 'Card3PilaresNew.jpeg',
     title: 'Card 3 Pilares (R$/Km, R$/Hora e Nota)',
     category: 'cards_flutuantes',
     categoryLabel: 'Cards Flutuantes & Prática',
@@ -53,26 +53,16 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'card-tipo-3',
-    filename: 'CarTipo3.jpeg',
-    title: 'Card Clássico (Tradicional)',
+    filename: 'CardCompactoNew.jpeg',
+    title: 'Card Compacto (Discreto)',
     category: 'cards_flutuantes',
     categoryLabel: 'Cards Flutuantes & Prática',
-    badge: '🏷️ MODELO 3: CLÁSSICO',
+    badge: '✨ MODELO 3: COMPACTO',
     badgeType: 'purple',
-    summary: 'Layout consagrado com etiquetas completas de km, hora, contagem regressiva e classificação do passageiro.',
-    highlightText: 'Ideal para motoristas que preferem tags individuais e visualização detalhada de cada indicador financeiro.'
+    summary: 'Formato limpo e objetivo que ocupa menos espaço da tela, mantendo a leitura instantânea de ganhos e nota.',
+    highlightText: 'Design minimalista para quem quer discrição sem abrir mão dos números essenciais da corrida.'
   },
-  {
-    id: 'card-tipo-4',
-    filename: 'CarTipo4.jpeg',
-    title: 'Card Discreto (Bolinha Semáforo)',
-    category: 'cards_flutuantes',
-    categoryLabel: 'Cards Flutuantes & Prática',
-    badge: '🟢 MODELO 4: ULTRA COMPACTO',
-    badgeType: 'amber',
-    summary: 'Pílula horizontal ultrafina que não tapa o GPS nem o mapa de navegação, com sinalizador semáforo e métricas limpas sem cortes.',
-    highlightText: 'Design minimalista para quem quer máxima discrição na tela sem abrir mão dos números essenciais da corrida.'
-  },
+  
   {
     id: 'viagem-compensa',
     filename: 'ViagemCompensa.png',
@@ -110,7 +100,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   // --- 2. NOTIFICAÇÃO & STREET VIEW 360° ---
   {
     id: 'notificacao-streetview',
-    filename: 'Notificacao_Origem_Destino.jpeg',
+    filename: 'Notificacao_Origem_DestinoNew.jpeg',
     title: 'Barra de Notificações com Street View 360°',
     category: 'streetview',
     categoryLabel: 'Notificação & Street View',
@@ -121,7 +111,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'streetview-origem',
-    filename: 'StreetViewOrigem.jpeg',
+    filename: 'StreetViewOrigemNew.jpeg',
     title: 'Street View 360° do Ponto de Embarque',
     category: 'streetview',
     categoryLabel: 'Notificação & Street View',
@@ -132,7 +122,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'streetview-destino',
-    filename: 'StreetViewDestino.jpeg',
+    filename: 'StreetViewDestinoNew.jpeg',
     title: 'Street View 360° do Ponto de Desembarque',
     category: 'streetview',
     categoryLabel: 'Notificação & Street View',
@@ -145,7 +135,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   // --- 3. ATALHOS RÁPIDOS & TRÂNSITO ---
   {
     id: 'atalho-rapido',
-    filename: 'AtalhoRapido.jpeg',
+    filename: 'TelaAtalho1.jpeg',
     title: 'Menu Flutuante de Atalhos Rápidos',
     category: 'atalhos',
     categoryLabel: 'Atalhos & Trânsito',
@@ -156,7 +146,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'semaforo-rapido',
-    filename: 'SemaforoRapido.jpeg',
+    filename: 'TelaAtalho2.jpeg',
     title: 'Ajuste Rápido do Semáforo no Trânsito',
     category: 'atalhos',
     categoryLabel: 'Atalhos & Trânsito',
@@ -167,7 +157,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'painel-inicial',
-    filename: 'TelaInicioUltimaCorridaLida.jpeg',
+    filename: 'TelaConfigCard1.jpeg',
     title: 'Painel Inicial & Última Corrida Capturada',
     category: 'atalhos',
     categoryLabel: 'Atalhos & Trânsito',
@@ -178,7 +168,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'historico-auditoria',
-    filename: 'DetalhesViagemOrigemDestino.jpeg',
+    filename: 'TelaHistorico.jpeg',
     title: 'Histórico de Corridas & Auditoria com Lucro Real',
     category: 'atalhos',
     categoryLabel: 'Atalhos & Trânsito',
@@ -191,7 +181,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   // --- 4. SEGURANÇA & ÁREAS DE RISCO ---
   {
     id: 'seguranca-area-risco',
-    filename: 'SegurancaAreaDeRisco.jpeg',
+    filename: 'AreaRisco1.jpeg',
     title: 'Central de Segurança & Áreas de Risco',
     category: 'safety',
     categoryLabel: 'Segurança & Áreas de Risco',
@@ -202,7 +192,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'seguranca-regiao-favorita',
-    filename: 'SegurancaRegiaoFavorita.jpeg',
+    filename: 'Favorita1.jpeg',
     title: 'Regiões Favoritas & Bairros Preferidos',
     category: 'safety',
     categoryLabel: 'Segurança & Áreas de Risco',
@@ -213,7 +203,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'adicionar-area-risco',
-    filename: 'AdicionarAreaDeRiscoManual.jpeg',
+    filename: 'AreaRisco2.jpeg',
     title: 'Busca e Bloqueio Geográfico no Mapa',
     category: 'safety',
     categoryLabel: 'Segurança & Áreas de Risco',
@@ -224,7 +214,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'adicionar-regiao-favorita',
-    filename: 'AdicionarRegiaoFavoritaManual.jpeg',
+    filename: 'Favorita2.jpeg',
     title: 'Cadastro de Locais e Destinos Favoritos',
     category: 'safety',
     categoryLabel: 'Segurança & Áreas de Risco',
@@ -235,7 +225,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'exemplo-area-risco-card',
-    filename: 'ExemploAreaDeRiscoNoCard.jpeg',
+    filename: 'AreaRisco3.jpeg',
     title: 'Alerta Ativo de Área de Risco no Card',
     category: 'safety',
     categoryLabel: 'Segurança & Áreas de Risco',
@@ -246,7 +236,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'exemplo-regiao-favorita-card',
-    filename: 'ExemploRegiaoFavoritaNoCard.jpeg',
+    filename: 'Favorita3.jpeg',
     title: 'Destaque de Região Favorita no Card',
     category: 'safety',
     categoryLabel: 'Segurança & Áreas de Risco',
@@ -259,7 +249,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   // --- 5. METAS & CUSTOS DO VEÍCULO ---
   {
     id: 'tela-semaforo',
-    filename: 'TelaSemaforo.jpeg',
+    filename: 'TelaConfigCard2.jpeg',
     title: 'Configuração de Metas & Faixas do Semáforo',
     category: 'config',
     categoryLabel: 'Metas & Custos',
@@ -270,7 +260,7 @@ export const SCREENSHOTS: ScreenshotItem[] = [
   },
   {
     id: 'tela-custo-carro',
-    filename: 'TelaCustoCarro.jpeg',
+    filename: 'TelaConfigCard3.jpeg',
     title: 'Calculadora de Custos Reais do Veículo',
     category: 'config',
     categoryLabel: 'Metas & Custos',
