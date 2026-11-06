@@ -314,19 +314,29 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // 3. DETECÇÃO DE OCIOSIDADE E FECHAMENTO DE CARDS RESIDUAIS (ALLOWED_NO_OFFER):
         val joinedScreenLower = normalizedTexts.joinToString(" ").lowercase(Locale.ROOT)
-        // ============================================================
-        // OFFER GUARD v2 — Rejeição imediata de telas de painel/ganhos
-        // da 99 e Uber que contêm R$, km e min mas NÃO são oferta real.
-        // "Recompensas", "Central de Ganhos", "Conectar", "Abastece",
-        // métricas semanais (semana + solicita sem aceitar/escolher).
-        // ============================================================
-        val hasRideActionBtn = joinedScreenLower.contains("aceitar") ||
-            joinedScreenLower.contains("escolher") ||
+        // hasRideActionBtn — apenas tokens EXCLUSIVOS de telas de oferta real.
+        val hasRideActionBtn = joinedScreenLower.contains("escolher") ||
+            joinedScreenLower.contains("aceitar") ||
             joinedScreenLower.contains("selecionar") ||
+            joinedScreenLower.contains("deslize") ||
+            joinedScreenLower.contains("nova corrida") ||
+            joinedScreenLower.contains("uberx") ||
+            joinedScreenLower.contains("comfort") ||
+            joinedScreenLower.contains("black") ||
+            joinedScreenLower.contains("flash") ||
+            joinedScreenLower.contains("priority") ||
+            joinedScreenLower.contains("prioridade") ||
             joinedScreenLower.contains("exclusivo") ||
             joinedScreenLower.contains("radar de viagens") ||
             joinedScreenLower.contains("nova viagem") ||
-            joinedScreenLower.contains("nova corrida")
+            joinedScreenLower.contains("entregar") ||
+            joinedScreenLower.contains("pgto. no app") ||
+            joinedScreenLower.contains("pagamento no app") ||
+            joinedScreenLower.contains("embarque") ||
+            joinedScreenLower.contains("99pop") ||
+            joinedScreenLower.contains("99moto") ||
+            joinedScreenLower.contains("99negocia") ||
+            joinedScreenLower.contains("99plus")
 
         // ============================================================
         // OFFER GUARD v3 — BLINDAGEM TOTAL DE TELA OCIOSA:
@@ -353,35 +363,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             shownOfferTimestamps.clear()
             lastScreenContextMode = ""
             consecutiveScansWithoutOffers++
-            isScanInProgress.set(false)
             return
         }
 
-        // hasRideActionBtn — apenas tokens EXCLUSIVOS de telas de oferta real.
-        // "corrida" e "viagem" removidos: aparecem em "corridas/semana" e
-        // "viagens realizadas" do painel. "pop" removido: confunde "99pop".
-        val hasRideActionBtn = joinedScreenLower.contains("escolher") ||
-            joinedScreenLower.contains("aceitar") ||
-            joinedScreenLower.contains("selecionar") ||
-            joinedScreenLower.contains("deslize") ||
-            joinedScreenLower.contains("nova corrida") ||
-            joinedScreenLower.contains("uberx") ||
-            joinedScreenLower.contains("comfort") ||
-            joinedScreenLower.contains("black") ||
-            joinedScreenLower.contains("flash") ||
-            joinedScreenLower.contains("priority") ||
-            joinedScreenLower.contains("prioridade") ||
-            joinedScreenLower.contains("exclusivo") ||
-            joinedScreenLower.contains("radar de viagens") ||
-            joinedScreenLower.contains("nova viagem") ||
-            joinedScreenLower.contains("entregar") ||
-            joinedScreenLower.contains("pgto. no app") ||
-            joinedScreenLower.contains("pagamento no app") ||
-            joinedScreenLower.contains("embarque") ||
-            joinedScreenLower.contains("99pop") ||
-            joinedScreenLower.contains("99moto") ||
-            joinedScreenLower.contains("99negocia") ||
-            joinedScreenLower.contains("99plus")
 
         val hasCurrency = normalizedTexts.any { it.contains("R$") }
         val isIdleSearchingScreen = !hasCurrency && !hasRideActionBtn && (
