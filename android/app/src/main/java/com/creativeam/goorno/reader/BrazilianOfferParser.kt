@@ -1382,7 +1382,11 @@ object BrazilianOfferParser {
             "central de ganhos", "ver central de ganhos",
             "recompensas",
             "por solicitacao",
-            "uber pro"
+            "uber pro",
+            // Modo 'Buscando' online e gaveta de postos
+            "buscando",
+            "solicitações (",
+            "solicitacoes ("
         )
         if (nonRideKeywords.any { joined.contains(it) }) {
             return true

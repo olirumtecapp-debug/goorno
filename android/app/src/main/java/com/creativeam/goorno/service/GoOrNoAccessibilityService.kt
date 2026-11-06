@@ -320,22 +320,32 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // "Recompensas", "Central de Ganhos", "Conectar", "Abastece",
         // métricas semanais (semana + solicita sem aceitar/escolher).
         // ============================================================
+        val hasRideActionBtn = joinedScreenLower.contains("aceitar") ||
+            joinedScreenLower.contains("escolher") ||
+            joinedScreenLower.contains("selecionar") ||
+            joinedScreenLower.contains("exclusivo") ||
+            joinedScreenLower.contains("radar de viagens") ||
+            joinedScreenLower.contains("nova viagem") ||
+            joinedScreenLower.contains("nova corrida")
+
+        // ============================================================
+        // OFFER GUARD v3 — BLINDAGEM TOTAL DE TELA OCIOSA:
+        // Se a tela do motorista está no modo "Buscando", "Conectar",
+        // ou mostrando "99 Abastece" / gaveta "Solicitações (X)"
+        // e NÃO HÁ botão explícito de chamada ("Aceitar" ou "Escolher"):
+        // É 100% TELA OCIOSA DO MAPA! ZERO OFERTAS! NÃO ABRE CARD!
+        // ============================================================
         val isPainelOrIdleScreen =
-            // Painel da 99: botão Conectar + recompensas/ganhos/solicita
-            (joinedScreenLower.contains("conectar") &&
-                (joinedScreenLower.contains("recompensas") || joinedScreenLower.contains("central de ganhos") ||
-                    joinedScreenLower.contains("solicita"))) ||
-            // Seção de Recompensas sem ação de corrida
-            (joinedScreenLower.contains("recompensas") &&
-                !joinedScreenLower.contains("aceitar") && !joinedScreenLower.contains("escolher")) ||
-            // Central de Ganhos
-            (joinedScreenLower.contains("central de ganhos") || joinedScreenLower.contains("ver central de ganhos")) ||
-            // 99 Abastece — posto de combustível
-            joinedScreenLower.contains("abastece") ||
-            // Métricas semanais (painel) sem botão de ação de corrida
-            (joinedScreenLower.contains("semana") &&
-                joinedScreenLower.contains("solicita") &&
-                !joinedScreenLower.contains("aceitar") && !joinedScreenLower.contains("escolher"))
+            // Modo "Buscando" (motorista online esperando corrida no mapa da 99)
+            (joinedScreenLower.contains("buscando") && !hasRideActionBtn) ||
+            // Modo "Conectar" (motorista offline ou painel inicial)
+            (joinedScreenLower.contains("conectar") && !hasRideActionBtn) ||
+            // Anúncios de combustível 99 Abastece sem chamada real
+            (joinedScreenLower.contains("abastece") && !hasRideActionBtn) ||
+            // Contador da gaveta de solicitações (ex: "Solicitações (3)") sem chamada ativa
+            ((joinedScreenLower.contains("solicitações (") || joinedScreenLower.contains("solicitacoes (")) && !hasRideActionBtn) ||
+            // Recompensas / Ganhos
+            ((joinedScreenLower.contains("recompensas") || joinedScreenLower.contains("central de ganhos")) && !hasRideActionBtn)
 
         if (isPainelOrIdleScreen) {
             currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
@@ -491,6 +501,19 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+
+        // NUNCA tira screenshot se o motorista estiver na tela de descanso ("Buscando", "Conectar" ou "Abastece")
+        val activeRootFast = try { rootInActiveWindow } catch (_: Exception) { null }
+        if (activeRootFast != null) {
+            val fastTexts = mutableListOf<String>()
+            collectFastTexts(activeRootFast, fastTexts, maxNodes = 30)
+            val fastJoined = fastTexts.joinToString(" ").lowercase(Locale.ROOT)
+            val hasRealAction = fastJoined.contains("aceitar") || fastJoined.contains("escolher") || fastJoined.contains("exclusivo") || fastJoined.contains("radar")
+            if (!hasRealAction && (fastJoined.contains("buscando") || fastJoined.contains("conectar") || fastJoined.contains("abastece"))) {
+                isTakingAutoScreenshot = false
+                return
+            }
+        }
         val app = applicationContext as? GoOrNoApplication
         if (app?.overlayPanel?.isCardCurrentlyVisible() == true || (now - lastOfferProcessedTimeMillis < 2_500L)) {
             isTakingAutoScreenshot = false
@@ -694,7 +717,22 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         )
                                     }
 
-                                    if (ocrOffers.isNotEmpty()) {
+                                    // FILTRO RIGOROSO DE SANIDADE NO OCR (elimina glitches como 1009 min ou preços inexistentes)
+                                    val validOcrOffers = ocrOffers.filter { offer ->
+                                        val price = offer.offeredPrice ?: 0.0
+                                        val km = offer.totalDistanceKmExplicit ?: ((offer.pickupDistanceKm ?: 0.0) + (offer.tripDistanceKm ?: 0.0))
+                                        val min = offer.totalDurationMinExplicit ?: ((offer.pickupDurationMin ?: 0) + (offer.tripDurationMin ?: 0))
+                                        val isSanePrice = price in 4.50..350.0 || (km >= 60.0 && price <= 1500.0)
+                                        val isSaneDuration = min in 1..240 // NUNCA aceita tempos absurdos como 1009 min!
+                                        val isSaneKm = km in 0.2..300.0
+                                        val ocrJoinedLow = normalizedOcr.joinToString(" ").lowercase(Locale.ROOT)
+                                        val hasRealAction = ocrJoinedLow.contains("aceitar") || ocrJoinedLow.contains("escolher") || ocrJoinedLow.contains("exclusivo") || ocrJoinedLow.contains("radar")
+                                        val isIdleScreen = (ocrJoinedLow.contains("buscando") || ocrJoinedLow.contains("conectar") || ocrJoinedLow.contains("abastece")) && !hasRealAction
+
+                                        isSanePrice && isSaneKm && isSaneDuration && !offer.hasFieldConflict && !isIdleScreen
+                                    }
+
+                                    if (validOcrOffers.isNotEmpty()) {
                                         consecutiveScansWithoutOffers = 0
                                         RuntimeDiagnosticsBus.recordAccessibilitySnapshot(
                                             AccessibilitySnapshot(
@@ -705,7 +743,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                                 extractedTexts = normalizedOcr.take(90)
                                             )
                                         )
-                                        mainHandler.post { processAndShowOffers(ocrOffers, normalizedOcr, System.currentTimeMillis()) }
+                                        mainHandler.post { processAndShowOffers(validOcrOffers, normalizedOcr, System.currentTimeMillis()) }
                                     } else {
                                         consecutiveScansWithoutOffers++
                                         // Se ficou 2 leituras sem nenhuma oferta na tela (ex: abriu WhatsApp ou saiu da chamada),

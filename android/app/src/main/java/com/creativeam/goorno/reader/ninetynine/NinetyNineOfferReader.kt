@@ -356,13 +356,10 @@ object NinetyNineOfferReader {
                 line.contains("Aceitar", ignoreCase = true) ||
                 line.contains("Recusar", ignoreCase = true) ||
                 line.contains("Escolher", ignoreCase = true) ||
-                line.contains("Solicitações", ignoreCase = true) ||
-                line.contains("Solicitacoes", ignoreCase = true) ||
                 line.contains("Pgto. no app", ignoreCase = true) ||
                 line.contains("Pagamento no app", ignoreCase = true) ||
                 line.contains("Embarque", ignoreCase = true) ||
-                line.contains("Desembarque", ignoreCase = true) ||
-                line.contains("corridas", ignoreCase = true)
+                line.contains("Desembarque", ignoreCase = true)
         }
 
         val isSelfReadingGoOrNo = cleanedLines.any { line ->
@@ -374,7 +371,7 @@ object NinetyNineOfferReader {
 
         // Trava de Sanidade Rigorosa (rejeita saldos do motorista como R$ 254 em corridas curtas ou durações absurdas como 974 min)
         val isSanePrice = (rawPrice in 4.50..350.0) || (totalKmVal != null && totalKmVal >= 60.0 && rawPrice <= 1500.0)
-        val isSaneDuration = totalMinVal == null || totalMinVal in 1..240
+        val isSaneDuration = totalMinVal != null && totalMinVal in 1..240
 
         val isOffer = isSanePrice && isSaneDuration && priceField.isPresent && totalKmVal != null && totalKmVal > 0.0 &&
             has99RideTrigger && !isSelfReadingGoOrNo &&

@@ -6,17 +6,17 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.76",
-    versionCode: 97,
+    versionName: "3.3.77",
+    versionCode: 98,
     releaseDate: "2026-11-06",
-    apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo-v3.3.76.apk",
-    directDownload: "/GoOrNo-v3.3.76.apk",
-    fileSizeBytes: 55393800,
+    apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo-v3.3.77.apk",
+    directDownload: "/GoOrNo-v3.3.77.apk",
+    fileSizeBytes: 55400000,
     fileSizeFormatted: "55.4 MB",
     changelog: [
-      "🛡️ Blindagem Total Anti-Falsos Positivos: Telas de painel, recompensas e postos de combustível da 99 totalmente ignoradas.",
-      "👤 Detecção Inteligente de Passageiro Novo: Fim dos '--' poluindo a tela e histórico.",
-      "⚡ Velocidade e semáforo financeiro 100% preservados."
+      "🛡️ Blindagem Total do Modo 'Buscando': Mapa ocioso com 99 Abastece ou Solicitações (3) 100% silenciado.",
+      "⏱️ Trava Anti-Glitch de Tempo: Rejeição absoluta de durações anômalas (ex: 1009 min).",
+      "👤 Detecção de Passageiro Novo preservada sem poluição de '--'."
     ],
     mandatory: false,
   });
