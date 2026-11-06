@@ -356,6 +356,10 @@ object NinetyNineOfferReader {
                 line.contains("Aceitar", ignoreCase = true) ||
                 line.contains("Recusar", ignoreCase = true) ||
                 line.contains("Escolher", ignoreCase = true) ||
+                line.contains("corridas", ignoreCase = true) ||
+                line.contains("Perfil Premium", ignoreCase = true) ||
+                line.contains("Prioritário", ignoreCase = true) ||
+                line.contains("Prioritario", ignoreCase = true) ||
                 line.contains("Pgto. no app", ignoreCase = true) ||
                 line.contains("Pagamento no app", ignoreCase = true) ||
                 line.contains("Embarque", ignoreCase = true) ||
