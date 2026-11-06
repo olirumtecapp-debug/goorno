@@ -9,9 +9,9 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
     versionName: "3.3.76",
     versionCode: 97,
     releaseDate: "2026-11-06",
-    apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
-    directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 55400000,
+    apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo-v3.3.76.apk",
+    directDownload: "/GoOrNo-v3.3.76.apk",
+    fileSizeBytes: 55393800,
     fileSizeFormatted: "55.4 MB",
     changelog: [
       "🛡️ Blindagem Total Anti-Falsos Positivos: Telas de painel, recompensas e postos de combustível da 99 totalmente ignoradas.",
