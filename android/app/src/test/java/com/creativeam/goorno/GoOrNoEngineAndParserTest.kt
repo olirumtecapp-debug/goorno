@@ -1941,4 +1941,89 @@ class GoOrNoEngineAndParserTest {
         assertNull(offers[0].passengerRating)
         assertEquals(4.94, offers[1].passengerRating!!, 0.001)
     }
+
+    // =========================================================================
+    // TESTES DE VALIDAÇÃO DAS TELAS REPORTADAS PELO USUÁRIO (V3.3.76)
+    // =========================================================================
+
+    @Test
+    fun testPainel99RecompensasAndAbasteceReturnsZeroOffers() {
+        // Cenário exato dos prints enviados pelo motorista:
+        // Tela ociosa do app 99 com painel de ganhos, recompensas e postos 99 Abastece.
+        val painel99Nodes = listOf(
+            "R$40,90",
+            "Painel",
+            "R$12,61",
+            "Valor da última corrida",
+            "25,00%",
+            "Taxa de aceitação",
+            "R$577,81",
+            "Ganhos desta semana",
+            "R$10,70",
+            "/ (solicitação) semana",
+            "3",
+            "Solicitações",
+            "Ver Central de ganhos",
+            "Recompensas (2)",
+            "Ganhe até R$20",
+            "R$1,9/km garantidos",
+            "Começa às 16:00",
+            "+R$10 por solicitação",
+            "Concluído",
+            "Rota 99",
+            "99 Abastece",
+            "Auto Posto Malu dos Vianas",
+            "R$3,54 R$3,79",
+            "R. dos Vianas, 3397 - Baeta ... 0,7km",
+            "Conectar"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(painel99Nodes)
+        // Deve ser ESTRITAMENTE VAZIO! Nenhuma oferta falsa deve ser gerada!
+        assertTrue("Tela de painel da 99 deve produzir ZERO ofertas", offers.isEmpty())
+    }
+
+    @Test
+    fun testPassageiroNovoWithDoubleDashDetectedCorrectly() {
+        // Cenário com passageiro novo sem avaliação anterior
+        val novoPassageiroNodes = listOf(
+            "99Pop",
+            "R$ 22,50",
+            "--",
+            "Passageiro Novo",
+            "5 min (1,2 km)",
+            "Rua das Palmeiras, 100",
+            "18 min (7,5 km)",
+            "Av. Paulista, 1500",
+            "Aceitar"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(novoPassageiroNodes)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+        assertEquals(22.50, offer.offeredPrice!!, 0.001)
+        assertTrue("Deve identificar como Passageiro Novo", offer.passengerIsNew)
+        assertNull("Nota numérica deve ser nula para não sujar com --", offer.passengerRating)
+    }
+
+    @Test
+    fun testLegitimatePassengerRatingNumericCapture() {
+        // Cenários reais com notas 4.85, 4.92 e 5.00
+        val ratingNodes = listOf(
+            "99Pop",
+            "R$ 19,80",
+            "★ 4,88 · 312 corridas",
+            "4 min (0,9 km)",
+            "Rua Augusta, 200",
+            "12 min (4,3 km)",
+            "Rua da Consolação, 1000",
+            "Aceitar"
+        )
+
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(ratingNodes)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+        assertEquals(4.88, offer.passengerRating!!, 0.001)
+        assertFalse(offer.passengerIsNew)
+    }
 }

@@ -314,6 +314,42 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // 3. DETECÇÃO DE OCIOSIDADE E FECHAMENTO DE CARDS RESIDUAIS (ALLOWED_NO_OFFER):
         val joinedScreenLower = normalizedTexts.joinToString(" ").lowercase(Locale.ROOT)
+        // ============================================================
+        // OFFER GUARD v2 — Rejeição imediata de telas de painel/ganhos
+        // da 99 e Uber que contêm R$, km e min mas NÃO são oferta real.
+        // "Recompensas", "Central de Ganhos", "Conectar", "Abastece",
+        // métricas semanais (semana + solicita sem aceitar/escolher).
+        // ============================================================
+        val isPainelOrIdleScreen =
+            // Painel da 99: botão Conectar + recompensas/ganhos/solicita
+            (joinedScreenLower.contains("conectar") &&
+                (joinedScreenLower.contains("recompensas") || joinedScreenLower.contains("central de ganhos") ||
+                    joinedScreenLower.contains("solicita"))) ||
+            // Seção de Recompensas sem ação de corrida
+            (joinedScreenLower.contains("recompensas") &&
+                !joinedScreenLower.contains("aceitar") && !joinedScreenLower.contains("escolher")) ||
+            // Central de Ganhos
+            (joinedScreenLower.contains("central de ganhos") || joinedScreenLower.contains("ver central de ganhos")) ||
+            // 99 Abastece — posto de combustível
+            joinedScreenLower.contains("abastece") ||
+            // Métricas semanais (painel) sem botão de ação de corrida
+            (joinedScreenLower.contains("semana") &&
+                joinedScreenLower.contains("solicita") &&
+                !joinedScreenLower.contains("aceitar") && !joinedScreenLower.contains("escolher"))
+
+        if (isPainelOrIdleScreen) {
+            currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
+            (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
+            shownOfferTimestamps.clear()
+            lastScreenContextMode = ""
+            consecutiveScansWithoutOffers++
+            isScanInProgress.set(false)
+            return
+        }
+
+        // hasRideActionBtn — apenas tokens EXCLUSIVOS de telas de oferta real.
+        // "corrida" e "viagem" removidos: aparecem em "corridas/semana" e
+        // "viagens realizadas" do painel. "pop" removido: confunde "99pop".
         val hasRideActionBtn = joinedScreenLower.contains("escolher") ||
             joinedScreenLower.contains("aceitar") ||
             joinedScreenLower.contains("selecionar") ||
@@ -326,11 +362,12 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             joinedScreenLower.contains("priority") ||
             joinedScreenLower.contains("prioridade") ||
             joinedScreenLower.contains("exclusivo") ||
-            joinedScreenLower.contains("radar") ||
-            joinedScreenLower.contains("viagem") ||
-            joinedScreenLower.contains("corrida") ||
+            joinedScreenLower.contains("radar de viagens") ||
+            joinedScreenLower.contains("nova viagem") ||
             joinedScreenLower.contains("entregar") ||
-            joinedScreenLower.contains("pop") ||
+            joinedScreenLower.contains("pgto. no app") ||
+            joinedScreenLower.contains("pagamento no app") ||
+            joinedScreenLower.contains("embarque") ||
             joinedScreenLower.contains("99pop") ||
             joinedScreenLower.contains("99moto") ||
             joinedScreenLower.contains("99negocia") ||

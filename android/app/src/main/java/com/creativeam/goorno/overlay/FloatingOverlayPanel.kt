@@ -561,7 +561,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val kmStr = if (grossKm > 0.0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm) else "--"
         val hrStr = if (grossHr > 0.0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossHr) else "--"
-        val ratStr = if (result.passengerRating != null) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", result.passengerRating) else "--"
+        val ratStr = if (result.offer.passengerIsNew || (result.passengerRating != null && result.passengerRating < 0.0)) "Novo" else if (result.passengerRating != null) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", result.passengerRating) else "--"
 
         pillarsRow.addView(makePillar("R$/Km", kmStr, kmBarColor))
         pillarsRow.addView(makePillar("R$/Hora", hrStr, hrBarColor))
@@ -1100,10 +1100,10 @@ class FloatingOverlayPanel(private val context: Context) {
             setTypeface(typeface, Typeface.BOLD)
             gravity = Gravity.CENTER
         }
-        val ratingText = if (result.passengerRating != null) {
-            String.format(Locale.forLanguageTag("pt-BR"), "%.2f", result.passengerRating)
-        } else {
-            "--"
+        val ratingText = when {
+            result.offer.passengerIsNew || (result.passengerRating != null && result.passengerRating < 0.0) -> "Novo"
+            result.passengerRating != null -> String.format(Locale.forLanguageTag("pt-BR"), "%.2f", result.passengerRating)
+            else -> "--"
         }
         val tvValRating = TextView(context).apply {
             text = ratingText

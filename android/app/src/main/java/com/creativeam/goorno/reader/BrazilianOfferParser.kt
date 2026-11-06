@@ -507,6 +507,32 @@ object BrazilianOfferParser {
      * ignorando preços (R$), tarifas por km (ex: "3,66/km", "R$3,65/km"), distâncias (km) e multiplicadores de dinâmico (ex: 1,2x).
      */
     fun extractPassengerRating(lines: List<String>): Double? {
+        // Deteccao PRIORITARIA de Passageiro Novo antes de qualquer processamento.
+        // Quando a nota aparece como "--" (placeholder da 99/Uber) com contexto
+        // de passageiro novo -> retorna -1.0 como sinal especial para a UI exibir
+        // "Passageiro Novo". Se "--" sem contexto -> ignora (null, nao polui).
+        val joinedLow = lines.joinToString(" ").lowercase(java.util.Locale.getDefault())
+        val hasDoubleDash = lines.any { it.trim() == "--" || it.trim() == "- -" }
+        if (hasDoubleDash) {
+            val hasNewCtx =
+                joinedLow.contains("passageiro novo") ||
+                joinedLow.contains("novo passageiro") ||
+                joinedLow.contains("usuario novo") ||
+                // "--" isolado na posicao da nota com rotulo de nota ao redor
+                lines.any { line ->
+                    val l = line.trim()
+                    (l == "--" || l == "- -") &&
+                        lines.any { ctx ->
+                            val c = ctx.lowercase(java.util.Locale.getDefault())
+                            c.contains("nota") || c.contains("passageir") ||
+                                c.contains("usuari")
+                        }
+                }
+            if (hasNewCtx) return -1.0  // Sinal: Passageiro Novo
+            // "--" sem contexto identificavel: nao polui o historico
+            if (lines.all { it.trim() == "--" || it.trim() == "- -" || it.isBlank() }) return null
+        }
+
         val normalized = normalizeFragmentedNodes(lines)
         if (normalized.isEmpty()) return null
 
@@ -1351,7 +1377,12 @@ object BrazilianOfferParser {
             "troca de óleo", "troca de oleo", "lava rápido", "lava rapido",
             "loja 99", "99pay", "uber pro card", "empréstimo", "emprestimo",
             "indique e ganhe", "compre com desconto", "compre seu carro", "aluguel de carro",
-            "fatura", "recarga de celular", "seguro auto"
+            "fatura", "recarga de celular", "seguro auto",
+            // Telas de painel/ganhos: nunca sao oferta de corrida
+            "central de ganhos", "ver central de ganhos",
+            "recompensas",
+            "por solicitacao",
+            "uber pro"
         )
         if (nonRideKeywords.any { joined.contains(it) }) {
             return true

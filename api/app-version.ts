@@ -6,17 +6,18 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.75",
-    versionCode: 96,
-    releaseDate: "2026-11-04",
-    apkUrl: "https://goorno-app.vercel.app/GoOrNo.apk",
+    versionName: "3.3.76",
+    versionCode: 97,
+    releaseDate: "2026-11-06",
+    apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 55393880,
+    fileSizeBytes: 55400000,
     fileSizeFormatted: "55.4 MB",
     changelog: [
-      "⚡ Restauração Completa da Acessibilidade: Conexão direta e imediata sem bloqueios ou telas travadas.",
-      "📬 Suporte no App: Visualize respostas direto na aba Caixa de Entrada do app GoOrNo."
+      "🛡️ Blindagem Total Anti-Falsos Positivos: Telas de painel, recompensas e postos de combustível da 99 totalmente ignoradas.",
+      "👤 Detecção Inteligente de Passageiro Novo: Fim dos '--' poluindo a tela e histórico.",
+      "⚡ Velocidade e semáforo financeiro 100% preservados."
     ],
-    mandatory: true,
+    mandatory: false,
   });
 }

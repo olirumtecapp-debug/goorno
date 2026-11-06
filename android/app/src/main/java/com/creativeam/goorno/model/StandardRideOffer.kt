@@ -125,6 +125,8 @@ data class StandardRideOffer(
     val originAddress: String? = null,
     val destinationAddress: String? = null,
     val passengerRating: Double? = null,
+    // -1.0 em passengerRating indica Passageiro Novo (sem historico de corridas)
+    val passengerIsNew: Boolean = false,
     val confidenceScore: Double = 1.0,
     val hasFieldConflict: Boolean = false,
     val conflictNotes: List<String> = emptyList(),

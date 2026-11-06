@@ -298,7 +298,10 @@ object UberOfferReader {
             rideCategory = detectedCategory,
             originAddress = origin,
             destinationAddress = destination,
-            passengerRating = passengerRating,
+            passengerRating = if (passengerRating != null && passengerRating > 0.0) passengerRating else null,
+            passengerIsNew = (passengerRating != null && passengerRating < 0.0) || cleanedLines.any { 
+                it.contains("passageiro novo", ignoreCase = true) || it.contains("novo passageiro", ignoreCase = true) 
+            },
             confidenceScore = confidence.coerceIn(0.0, 1.0),
             hasFieldConflict = conflictNotes.isNotEmpty(),
             conflictNotes = conflictNotes,
