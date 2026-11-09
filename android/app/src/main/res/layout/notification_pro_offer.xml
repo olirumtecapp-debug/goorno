@@ -63,7 +63,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <View
+            <ImageView
                 android:id="@+id/line_notif_km"
                 android:layout_width="32dp"
                 android:layout_height="2.5dp"
@@ -97,7 +97,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <View
+            <ImageView
                 android:id="@+id/line_notif_hr"
                 android:layout_width="32dp"
                 android:layout_height="2.5dp"
@@ -131,7 +131,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <View
+            <ImageView
                 android:id="@+id/line_notif_rating"
                 android:layout_width="32dp"
                 android:layout_height="2.5dp"

@@ -1,4 +1,4 @@
-﻿package com.creativeam.goorno.ui
+package com.creativeam.goorno.ui
 
 import android.content.Context
 import android.content.Intent
@@ -126,7 +126,11 @@ fun GoOrNoComposeApp(
     val runtimeState by RuntimeDiagnosticsBus.runtimeState.collectAsState()
     val accessibilityConnected by RuntimeDiagnosticsBus.accessibilityConnected.collectAsState()
     val ocrActive by RuntimeDiagnosticsBus.ocrActive.collectAsState()
-    val lastSnapshot by RuntimeDiagnosticsBus.lastSnapshot.collectAsState()
+    val lastSnapshot = if (currentScreen == GoOrNoScreen.DIAGNOSTICS_TESTS || currentScreen == GoOrNoScreen.CONNECTION_STATUS) {
+        RuntimeDiagnosticsBus.lastSnapshot.collectAsState().value
+    } else {
+        RuntimeDiagnosticsBus.lastSnapshot.value
+    }
     val lastRealEvaluation by RuntimeDiagnosticsBus.lastRealEvaluation.collectAsState()
     val lastSimulatedEvaluation by RuntimeDiagnosticsBus.lastSimulatedEvaluation.collectAsState()
 
@@ -269,23 +273,25 @@ fun GoOrNoComposeApp(
 
     LaunchedEffect(Unit) {
         checkForUpdates(false)
-        try {
-            val savedPhone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
-            if (savedPhone.length >= 10) {
-                val currentCfg = app.preferencesRepository.getConfigOnce()
-                if (currentCfg.customRiskZones.isBlank() && currentCfg.customFavoriteZones.isBlank()) {
-                    val res = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, savedPhone)
-                    res.onSuccess { (cloudCfg, cloudOffers) ->
-                        if (cloudCfg.customRiskZones.isNotBlank() || cloudCfg.customFavoriteZones.isNotBlank()) {
-                            app.preferencesRepository.saveConfig(cloudCfg)
-                            if (cloudOffers.isNotEmpty()) {
-                                app.database.rideOfferDao().insertAll(cloudOffers)
+        scope.launch(Dispatchers.IO) {
+            try {
+                val savedPhone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
+                if (savedPhone.length >= 10) {
+                    val currentCfg = app.preferencesRepository.getConfigOnce()
+                    if (currentCfg.customRiskZones.isBlank() && currentCfg.customFavoriteZones.isBlank()) {
+                        val res = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, savedPhone)
+                        res.onSuccess { (cloudCfg, cloudOffers) ->
+                            if (cloudCfg.customRiskZones.isNotBlank() || cloudCfg.customFavoriteZones.isNotBlank()) {
+                                app.preferencesRepository.saveConfig(cloudCfg)
+                                if (cloudOffers.isNotEmpty()) {
+                                    app.database.rideOfferDao().insertAll(cloudOffers)
+                                }
                             }
                         }
                     }
                 }
-            }
-        } catch (_: Throwable) {}
+            } catch (_: Throwable) {}
+        }
     }
 
     LaunchedEffect(resumeTrigger) {
@@ -594,35 +600,33 @@ fun GoOrNoComposeApp(
                                 GoOrNoScreen.SETTINGS -> currentScreen == GoOrNoScreen.SETTINGS || isSubScreenOfSettings || currentScreen == GoOrNoScreen.DRIVER_SETUP
                                 else -> false
                             }
-                            Surface(
-                                color = if (selected) PetrolHeader.copy(alpha = 0.10f) else Color.Transparent,
-                                shape = RoundedCornerShape(12.dp),
-                                border = if (selected) BorderStroke(1.dp, PetrolHeader.copy(alpha = 0.25f)) else null,
+                            Box(
                                 modifier = Modifier
+                                    .weight(1f)
                                     .clickable {
-                                        currentScreen = when (screen) {
-                                            GoOrNoScreen.SETTINGS -> GoOrNoScreen.SETTINGS
-                                            GoOrNoScreen.FINANCIAL_TARGETS -> GoOrNoScreen.FINANCIAL_TARGETS
-                                            else -> screen
-                                        }
+                                        currentScreen = screen
                                     }
-                                    .padding(vertical = 2.dp, horizontal = 2.dp)
+                                    .padding(vertical = 4.dp),
+                                contentAlignment = Alignment.Center
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (selected) PetrolHeader.copy(alpha = 0.12f) else Color.Transparent)
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
                                     Icon(
                                         imageVector = icon,
                                         contentDescription = label,
                                         tint = if (selected) PetrolHeader else MutedText,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(22.dp)
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = label,
-                                        fontSize = 10.5.sp,
-                                        fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
                                         color = if (selected) PetrolHeader else MutedText,
                                         maxLines = 1,
                                         softWrap = false

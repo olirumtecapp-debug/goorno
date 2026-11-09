@@ -6,19 +6,19 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.82",
-    versionCode: 103,
+    versionName: "3.3.83",
+    versionCode: 104,
     releaseDate: "2026-11-09",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
     fileSizeBytes: 55410000,
     fileSizeFormatted: "52.8 MB",
     changelog: [
-      "⭐ Novo Design PRO GoOrNo: Interface limpa e moderna com 4 abas diretas (Início, Histórico, Metas e Ajustes).",
-      "🚦 Semáforo & Copiloto com Ativação em 1 Toque: Acesso rápido aos filtros por km e hora com feedback visual imediato.",
-      "🗺️ Leitura Inteligente na 99: Bloqueio da lista de solicitações e leitura instantânea ao tocar no ícone do mapa.",
-      "🚗 Leitura Prioritária Uber 100% Ativa: Monitoramento total de chamadas entrantes e radar com Street View 360°.",
-      "⚡ Navegação Estável & Desempenho: Eliminação de travamentos e sincronização ultra-rápida."
+      "⚡ Navegação 100% Fluida: Correção estrutural das 4 abas (Início, Histórico, Metas e Ajustes) sem congelamento.",
+      "🛡️ Estabilidade Total: Eliminação de travamentos de inicialização e compatibilidade plena com Android.",
+      "🚦 Semáforo & Metas: Acesso direto às configurações de R$/km e R$/hora com resposta instantânea.",
+      "🗺️ Leitura Inteligente 99: Ignora a lista geral de chamados e lê imediatamente ao tocar no ícone do mapa.",
+      "🚗 Uber 100% Ativa: Monitoramento prioritário de todas as chamadas e radar preservado."
     ],
     mandatory: true,
   });
