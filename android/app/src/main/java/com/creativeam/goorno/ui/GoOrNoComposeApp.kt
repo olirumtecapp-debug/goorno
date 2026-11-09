@@ -1269,445 +1269,163 @@ fun GoOrNoComposeApp(
                                                 .padding(vertical = 8.dp)
                                         ) {
                                             when (selectedStyle) {
-                                                OverlayDisplayStyle.BANNER_PRO_STREETVIEW -> {
-                                                    // FORMATO: CARD IMPACTO PRO - CORRIDA TOCOU (DINÂMICO CLARO/ESCURO)
-                                                    val isDarkBanner = overlayTheme != "LIGHT"
-                                                    val bannerCardBg = if (isDarkBanner) Color(0xFF0D0D0E) else Color.White
-                                                    val bannerPrimaryText = if (isDarkBanner) Color.White else Color(0xFF111827)
-                                                    val bannerSecondaryText = if (isDarkBanner) Color(0xFF9CA3AF) else Color(0xFF4B5563)
-                                                    val bannerMetricsText = if (isDarkBanner) Color(0xFFD1D5DB) else Color(0xFF374151)
-                                                    val bannerTimerBg = if (isDarkBanner) Color(0xFF1E1E22) else Color(0xFFE5E7EB)
+                                                OverlayDisplayStyle.COMPLETO -> {
+                                                    val isColorido = overlayTheme == "COLORIDO"
+                                                    val isClaro = overlayTheme == "CLARO" || overlayTheme == "LIGHT"
+                                                    val isEscuro = !isColorido && !isClaro
 
-                                                    Surface(
-                                                        color = bannerCardBg,
-                                                        shape = RoundedCornerShape(14.dp),
-                                                        border = BorderStroke(2.dp, vColor),
-                                                        shadowElevation = 8.dp,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        Column {
-                                                            Column(modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 10.dp)) {
-                                                                Row(
-                                                                    modifier = Modifier.fillMaxWidth(),
-                                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                                    verticalAlignment = Alignment.CenterVertically
-                                                                ) {
-                                                                    Text(
-                                                                        text = "8 km · 15 min",
-                                                                        color = bannerSecondaryText,
-                                                                        fontSize = 13.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
-                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                        Surface(
-                                                                            color = bannerTimerBg,
-                                                                            shape = RoundedCornerShape(6.dp)
-                                                                        ) {
-                                                                            Text(
-                                                                                text = "15s",
-                                                                                color = bannerSecondaryText,
-                                                                                fontSize = 11.sp,
-                                                                                fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                                            )
-                                                                        }
-                                                                        Spacer(modifier = Modifier.width(6.dp))
-                                                                        Text(
-                                                                            text = "✕",
-                                                                            color = bannerSecondaryText,
-                                                                            fontSize = 13.sp,
-                                                                            fontWeight = FontWeight.Bold
-                                                                        )
-                                                                    }
-                                                                }
-
-                                                                Spacer(modifier = Modifier.height(4.dp))
-
-                                                                Text(
-                                                                    text = "R$ 18,40",
-                                                                    color = bannerPrimaryText,
-                                                                    fontSize = 34.sp,
-                                                                    fontWeight = FontWeight.Black
-                                                                )
-
-                                                                Spacer(modifier = Modifier.height(2.dp))
-
-                                                                Text(
-                                                                    text = "R$ 2,30/km · R$ 43,00/h",
-                                                                    color = bannerMetricsText,
-                                                                    fontSize = 13.5.sp,
-                                                                    fontWeight = FontWeight.Bold
-                                                                )
-                                                            }
-
-                                                            Surface(
-                                                                color = vColor,
-                                                                shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
-                                                                modifier = Modifier.fillMaxWidth().height(42.dp)
-                                                            ) {
-                                                                Box(contentAlignment = Alignment.Center) {
-                                                                    Text(
-                                                                        text = when (previewVerdictState) {
-                                                                            "GREEN" -> "✓ COMPENSA"
-                                                                            "YELLOW" -> "⚡ AVALIAR"
-                                                                            else -> "✕ NÃO COMPENSA"
-                                                                        },
-                                                                        color = Color.White,
-                                                                        fontWeight = FontWeight.Black,
-                                                                        fontSize = 14.sp
-                                                                    )
-                                                                }
-                                                            }
-                                                        }
+                                                    val cardBg = when {
+                                                        isColorido -> vColor
+                                                        isClaro -> Color.White
+                                                        else -> Color(0xFF1E2024)
                                                     }
-                                                }
-
-                                                OverlayDisplayStyle.PIRULITO_SIDEBAR -> {
-                                                    // FORMATO: CARD 3 PILARES (R$/KM, R$/HORA E NOTA)
-                                                    val isDarkPreview = overlayTheme != "LIGHT"
-                                                    val cardBg = if (isDarkPreview) Color(0xFF121316) else Color.White
-                                                    val primaryText = if (isDarkPreview) Color.White else Color(0xFF111827)
-                                                    val secondaryText = if (isDarkPreview) Color(0xFF9CA3AF) else Color(0xFF6B7280)
+                                                    val cardBorder = when {
+                                                        isColorido -> when (previewVerdictState) {
+                                                            "GREEN" -> Color(0xFF15803D)
+                                                            "YELLOW" -> Color(0xFFA16207)
+                                                            else -> Color(0xFFB91C1C)
+                                                        }
+                                                        else -> vColor
+                                                    }
+                                                    val primaryText = if (isClaro) Color(0xFF0F172A) else Color.White
+                                                    val secondaryText = when {
+                                                        isColorido -> Color(0xFFF1F5F9)
+                                                        isClaro -> Color(0xFF64748B)
+                                                        else -> Color(0xFF94A3B8)
+                                                    }
 
                                                     Surface(
                                                         color = cardBg,
                                                         shape = RoundedCornerShape(18.dp),
-                                                        border = BorderStroke(2.5.dp, vColor),
+                                                        border = BorderStroke(if (isColorido) 2.dp else 3.dp, cardBorder),
                                                         shadowElevation = 8.dp,
                                                         modifier = Modifier.fillMaxWidth()
                                                     ) {
                                                         Column(modifier = Modifier.padding(14.dp, 10.dp, 14.dp, 10.dp)) {
-                                                            // Linha Superior: Resumo + Timer + Fechar
+                                                            // Linha Superior
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                                 verticalAlignment = Alignment.CenterVertically
                                                             ) {
-                                                                Text(
-                                                                    text = "R$ 12,70 · 11 min · 5,6 km",
-                                                                    color = primaryText,
-                                                                    fontSize = 14.sp,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    modifier = Modifier.weight(1f)
-                                                                )
-                                                                Text("15s", color = secondaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                                Spacer(modifier = Modifier.width(6.dp))
-                                                                Text("✕", color = secondaryText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                                            }
-
-                                                            Spacer(modifier = Modifier.height(10.dp))
-
-                                                            // 3 Colunas: R$/Km | R$/Hora | Nota
-                                                            Row(
-                                                                modifier = Modifier.fillMaxWidth(),
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                // Coluna 1: R$/Km
-                                                                Column(
-                                                                    modifier = Modifier.weight(1f),
-                                                                    horizontalAlignment = Alignment.CenterHorizontally
-                                                                ) {
-                                                                    Text("R$/Km", color = secondaryText, fontSize = 11.sp)
-                                                                    Text("2,26", color = primaryText, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                                                                }
-
-                                                                // Barra 1
-                                                                Box(modifier = Modifier.size(3.dp, 36.dp).background(vColor, RoundedCornerShape(2.dp)))
-
-                                                                // Coluna 2: R$/Hora
-                                                                Column(
-                                                                    modifier = Modifier.weight(1f),
-                                                                    horizontalAlignment = Alignment.CenterHorizontally
-                                                                ) {
-                                                                    Text("R$/Hora", color = secondaryText, fontSize = 11.sp)
-                                                                    Text("69", color = primaryText, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                                                                }
-
-                                                                // Barra 2
-                                                                Box(modifier = Modifier.size(3.dp, 36.dp).background(vColor, RoundedCornerShape(2.dp)))
-
-                                                                // Coluna 3: Nota
-                                                                Column(
-                                                                    modifier = Modifier.weight(1f),
-                                                                    horizontalAlignment = Alignment.CenterHorizontally
-                                                                ) {
-                                                                    Text("Nota", color = secondaryText, fontSize = 11.sp)
-                                                                    Text("4,95", color = vColor, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-
-                                                OverlayDisplayStyle.CLASSIC_LIGHT -> {
-                                                    // FORMATO 2: CARD CLÁSSICO DIVIDIDO (BLOCO DE COR SÓLIDO NA DIREITA INTEGRADO)
-                                                    Surface(
-                                                        color = Color(0xFF0C0D11),
-                                                        shape = RoundedCornerShape(16.dp),
-                                                        border = BorderStroke(1.dp, vColor),
-                                                        shadowElevation = 8.dp,
-                                                        modifier = Modifier.fillMaxWidth().height(78.dp)
-                                                    ) {
-                                                        Row(
-                                                            modifier = Modifier.fillMaxSize(),
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            // Seção Esquerda (Dados)
-                                                            Column(
-                                                                modifier = Modifier
-                                                                    .weight(1f)
-                                                                    .fillMaxHeight()
-                                                                    .padding(start = 14.dp, top = 8.dp, end = 10.dp, bottom = 8.dp),
-                                                                verticalArrangement = Arrangement.SpaceBetween
-                                                            ) {
-                                                                // Linha 1: R$/km + [Timer e Fechar]
-                                                                Row(
-                                                                    modifier = Modifier.fillMaxWidth(),
-                                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                                    verticalAlignment = Alignment.CenterVertically
-                                                                ) {
-                                                                    Row(verticalAlignment = Alignment.Bottom) {
-                                                                        Text(
-                                                                            text = "R$ 1,92",
-                                                                            color = vColor,
-                                                                            fontSize = 21.sp,
-                                                                            fontWeight = FontWeight.Bold
-                                                                        )
-                                                                        Text(
-                                                                            text = " /km",
-                                                                            color = Color(0xFF9CA3AF),
-                                                                            fontSize = 12.5.sp,
-                                                                            modifier = Modifier.padding(bottom = 2.dp)
-                                                                        )
-                                                                    }
-                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                        Text(
-                                                                            text = "7s",
-                                                                            color = Color(0xFF6B7280),
-                                                                            fontSize = 10.5.sp,
-                                                                            fontWeight = FontWeight.Bold
-                                                                        )
-                                                                        Surface(
-                                                                            color = Color(0xFF262930),
-                                                                            shape = RoundedCornerShape(4.dp),
-                                                                            modifier = Modifier.padding(start = 5.dp)
-                                                                        ) {
-                                                                            Text(
-                                                                                text = "✕",
-                                                                                color = Color(0xFF9CA3AF),
-                                                                                fontSize = 10.sp,
-                                                                                fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                                                            )
-                                                                        }
-                                                                    }
-                                                                }
-
-                                                                // Linha 2: R$/hora + Nota
-                                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                    Text(
-                                                                        text = "R$ 33,33/h",
-                                                                        color = vColor,
-                                                                        fontSize = 14.5.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
-                                                                    Spacer(modifier = Modifier.width(14.dp))
-                                                                    Text(
-                                                                        text = "★ ",
-                                                                        color = Color(0xFFF59E0B),
-                                                                        fontSize = 12.sp
-                                                                    )
-                                                                    Text(
-                                                                        text = "4,92",
-                                                                        color = vColor,
-                                                                        fontSize = 13.5.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
-                                                                }
-
-                                                                // Linha 3: [99] 18 min - 5,2 km
                                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                                     Surface(
                                                                         color = Color(0xFFFACC15),
-                                                                        shape = RoundedCornerShape(3.dp)
+                                                                        shape = RoundedCornerShape(6.dp)
                                                                     ) {
                                                                         Text(
                                                                             text = "99",
                                                                             color = Color.Black,
-                                                                            fontSize = 9.sp,
-                                                                            fontWeight = FontWeight.Bold,
-                                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                                            fontWeight = FontWeight.Black,
+                                                                            fontSize = 11.sp,
+                                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                                         )
                                                                     }
                                                                     Spacer(modifier = Modifier.width(6.dp))
                                                                     Text(
-                                                                        text = "18 min - 5,2 km",
-                                                                        color = Color(0xFF9CA3AF),
-                                                                        fontSize = 11.5.sp
+                                                                        text = "22 min · 12,4 km",
+                                                                        color = primaryText,
+                                                                        fontSize = 14.sp,
+                                                                        fontWeight = FontWeight.Bold
                                                                     )
+                                                                }
+                                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                    Text("15s", color = secondaryText, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Text("✕", color = secondaryText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                                                 }
                                                             }
 
-                                                            // Bloco Direito: Bloco Sólido de Cor Integrado (SEM TEXTO, SÓ A COR)
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .width(44.dp)
-                                                                    .fillMaxHeight()
-                                                                    .background(
-                                                                        vColor,
-                                                                        RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
-                                                                    )
-                                                            )
-                                                        }
-                                                    }
-                                                }
+                                                            Spacer(modifier = Modifier.height(8.dp))
 
-                                                OverlayDisplayStyle.MINI_BALL -> {
-                                                    // FORMATO COMPACTO 3 PILARES (NÚMEROS GRANDES 22sp BOLD, BARRINHAS NÍTIDAS)
-                                                    Surface(
-                                                        color = Color(0xFF0C0D11),
-                                                        shape = RoundedCornerShape(16.dp),
-                                                        border = BorderStroke(2.dp, vColor),
-                                                        shadowElevation = 8.dp,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        Column(modifier = Modifier.padding(14.dp, 10.dp, 14.dp, 8.dp)) {
-                                                            // Os 3 Pilares
+                                                            // 3 Pilares
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                                 verticalAlignment = Alignment.CenterVertically
                                                             ) {
-                                                                // Pilar 1: R$/Km
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                                                                    Text("R$/Km", color = Color(0xFFCBD5E1), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                                                                        Box(modifier = Modifier.size(5.dp, 24.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                        Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("2,63", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                                                                    }
-                                                                }
-                                                                // Pilar 2: R$/Hora
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                                                                    Text("R$/Hora", color = Color(0xFFCBD5E1), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                                                                        Box(modifier = Modifier.size(5.dp, 24.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                        Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("48,43", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                                                                    }
-                                                                }
-                                                                // Pilar 3: Nota
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                                                                    Text("Nota", color = Color(0xFFCBD5E1), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                                                                        Box(modifier = Modifier.size(5.dp, 24.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                        Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("4,83", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                                                                listOf(
+                                                                    Triple("R$/Km", Color(0xFF16A34A), "2,00"),
+                                                                    Triple("R$/Hora", Color(0xFFCA8A04), "68"),
+                                                                    Triple("Nota", Color(0xFF16A34A), "4,92")
+                                                                ).forEach { (lbl, barColor, valStr) ->
+                                                                    Column(
+                                                                        modifier = Modifier.weight(1f),
+                                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                                    ) {
+                                                                        Text(lbl, color = secondaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                                        Row(
+                                                                            verticalAlignment = Alignment.CenterVertically,
+                                                                            modifier = Modifier.padding(top = 2.dp)
+                                                                        ) {
+                                                                            Box(
+                                                                                modifier = Modifier
+                                                                                    .size(3.5.dp, 18.dp)
+                                                                                    .background(if (isColorido) Color.White else barColor, RoundedCornerShape(2.dp))
+                                                                            )
+                                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                                            Text(
+                                                                                valStr,
+                                                                                color = primaryText,
+                                                                                fontSize = 22.sp,
+                                                                                fontWeight = FontWeight.Black
+                                                                            )
+                                                                        }
                                                                     }
                                                                 }
                                                             }
 
                                                             Spacer(modifier = Modifier.height(6.dp))
 
-                                                            // Subline
-                                                            Row(
-                                                                modifier = Modifier.fillMaxWidth(),
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                Surface(color = Color(0xFFFACC15), shape = RoundedCornerShape(3.dp)) {
-                                                                    Text(
-                                                                        text = "99",
-                                                                        color = Color.Black,
-                                                                        fontSize = 9.sp,
-                                                                        fontWeight = FontWeight.Bold,
-                                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                                                    )
-                                                                }
-                                                                Spacer(modifier = Modifier.width(6.dp))
-                                                                Text(
-                                                                    text = "R$ 15,80 • 14 min • 4,3 km",
-                                                                    color = Color(0xFFCBD5E1),
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    fontSize = 11.5.sp,
-                                                                    modifier = Modifier.weight(1f)
-                                                                )
-                                                                Text("7s", color = Color(0xFF6B7280), fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
-                                                                Surface(
-                                                                    color = Color(0xFF262930),
-                                                                    shape = RoundedCornerShape(4.dp),
-                                                                    modifier = Modifier.padding(start = 5.dp)
-                                                                ) {
-                                                                    Text("✕", color = Color(0xFF9CA3AF), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
-                                                                }
-                                                            }
+                                                            Text(
+                                                                text = "⚠️ Embarque (15 min)",
+                                                                color = if (isColorido) Color.White else Color(0xFFDC2626),
+                                                                fontSize = 11.5.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                textAlign = TextAlign.Center,
+                                                                modifier = Modifier.fillMaxWidth()
+                                                            )
                                                         }
                                                     }
                                                 }
 
-                                                OverlayDisplayStyle.MINI_BALL -> {
-                                                    // FORMATO 3: BOLINHA SEMÁFORO ULTRA DISCRETO (DINÂMICO CLARO/ESCURO)
-                                                    val isDarkMini = overlayTheme != "LIGHT"
-                                                    val miniCardBg = if (isDarkMini) Color(0xFF0D1714) else Color.White
-                                                    val miniPrimaryText = if (isDarkMini) Color.White else Color(0xFF111827)
-                                                    val miniSecondaryText = if (isDarkMini) Color(0xFF94A3B8) else Color(0xFF6B7280)
-
-                                                    Surface(
-                                                        color = miniCardBg,
-                                                        shape = RoundedCornerShape(18.dp),
-                                                        border = BorderStroke(1.5.dp, vColor),
-                                                        shadowElevation = 8.dp,
-                                                        modifier = Modifier.fillMaxWidth()
+                                                OverlayDisplayStyle.SECUNDARIO -> {
+                                                    Column(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalAlignment = Alignment.End
                                                     ) {
-                                                        Row(
-                                                            modifier = Modifier.padding(12.dp, 8.dp, 10.dp, 8.dp),
-                                                            verticalAlignment = Alignment.CenterVertically
+                                                        Surface(
+                                                            color = vColor,
+                                                            shape = RoundedCornerShape(16.dp),
+                                                            shadowElevation = 6.dp
                                                         ) {
                                                             Text(
-                                                                text = "⠿",
-                                                                color = miniSecondaryText,
-                                                                fontSize = 13.sp,
-                                                                modifier = Modifier.padding(end = 4.dp)
+                                                                text = when (previewVerdictState) {
+                                                                    "GREEN" -> "✓ ACEITAR"
+                                                                    "YELLOW" -> "● ATENÇÃO"
+                                                                    else -> "✕ RECUSAR"
+                                                                },
+                                                                color = Color.White,
+                                                                fontWeight = FontWeight.Black,
+                                                                fontSize = 14.sp,
+                                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                                                             )
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(16.dp)
-                                                                    .background(vColor, CircleShape)
-                                                            )
-                                                            Spacer(modifier = Modifier.width(8.dp))
-                                                            Column(modifier = Modifier.weight(1f)) {
-                                                                Text(
-                                                                    text = "Uber · 6,3 km · 17 min",
-                                                                    color = miniPrimaryText,
-                                                                    fontSize = 12.sp,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    maxLines = 1
-                                                                )
-                                                                Text(
-                                                                    text = "R$ 2,22 | 49,00 · ★ 4.96",
-                                                                    color = vColor,
-                                                                    fontSize = 13.5.sp,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    maxLines = 1
-                                                                )
-                                                            }
-                                                            Spacer(modifier = Modifier.width(6.dp))
-                                                            Text(
-                                                                text = "7s",
-                                                                color = miniSecondaryText,
-                                                                fontSize = 11.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                modifier = Modifier.padding(end = 6.dp)
-                                                            )
+                                                        }
+                                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                                        listOf("2,00 /km", "68 /h", "4,92 nota").forEach { item ->
                                                             Surface(
-                                                                color = Color(0xFFDC2626),
-                                                                shape = RoundedCornerShape(6.dp)
+                                                                color = Color(0xFF1E2024),
+                                                                shape = RoundedCornerShape(14.dp),
+                                                                border = BorderStroke(1.dp, Color(0xFF334155)),
+                                                                modifier = Modifier.padding(vertical = 2.dp)
                                                             ) {
                                                                 Text(
-                                                                    text = "✕",
+                                                                    text = item,
                                                                     color = Color.White,
-                                                                    fontSize = 11.sp,
                                                                     fontWeight = FontWeight.Bold,
-                                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                    fontSize = 16.sp,
+                                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                                                 )
                                                             }
                                                         }
@@ -1807,7 +1525,7 @@ fun GoOrNoComposeApp(
                                     color = PetrolHeader
                                 )
 
-                                OverlayDisplayStyle.entries.filter { it != OverlayDisplayStyle.CLASSIC_LIGHT }.forEach { style ->
+                                OverlayDisplayStyle.entries.forEach { style ->
                                     val isChosen = selectedStyle == style
                                     Surface(
                                         color = if (isChosen) TrafficGreenSoft.copy(alpha = 0.65f) else SoftSurfaceVariant,
@@ -1863,15 +1581,15 @@ fun GoOrNoComposeApp(
 
                                 HorizontalDivider(color = CleanCardBorder)
 
-                                // Tema do Cartão (Fundo Claro ou Escuro)
+                                // Tema do Cartão
                                 Text(
-                                    text = "Tema do Cartão (Fundo)",
+                                    text = "Tema do Cartão",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 13.5.sp,
                                     color = PetrolHeader
                                 )
                                 Text(
-                                    text = "Escolha se o fundo do cartão deve ser claro (branco) ou escuro (preto):",
+                                    text = "Escolha o acabamento visual do seu cartão flutuante:",
                                     fontSize = 11.5.sp,
                                     color = MutedText
                                 )
@@ -1881,10 +1599,11 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(
-                                        Pair("LIGHT", "☀️ Claro (Branco)"),
-                                        Pair("DARK", "🌙 Escuro (Preto)")
+                                        Pair("COLORIDO", "🎨 Colorido"),
+                                        Pair("ESCURO", "🌙 Escuro"),
+                                        Pair("CLARO", "☀️ Claro")
                                     ).forEach { (themeKey, label) ->
-                                        val isSel = overlayTheme == themeKey
+                                        val isSel = overlayTheme == themeKey || (themeKey == "ESCURO" && overlayTheme == "DARK") || (themeKey == "CLARO" && overlayTheme == "LIGHT")
                                         Surface(
                                             color = if (isSel) PetrolHeader else SoftSurfaceVariant,
                                             shape = RoundedCornerShape(12.dp),
@@ -1894,10 +1613,7 @@ fun GoOrNoComposeApp(
                                                 .clickable {
                                                     overlayTheme = themeKey
                                                     savedFlag = false
-                                                    val updated = config.copy(
-                                                        overlayTheme = themeKey,
-                                                        overlayHorizontalPosition = "CENTER"
-                                                    )
+                                                    val updated = config.copy(overlayTheme = themeKey)
                                                     scope.launch {
                                                         app.preferencesRepository.saveConfig(updated)
                                                         app.overlayPanel.applyConfig(updated)
@@ -1906,19 +1622,72 @@ fun GoOrNoComposeApp(
                                                 }
                                         ) {
                                             Row(
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 11.dp),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.Center
                                             ) {
-                                                Icon(
-                                                    imageVector = if (isSel) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                                                    contentDescription = null,
-                                                    tint = if (isSel) LimeBright else MutedText,
-                                                    modifier = Modifier.size(15.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(6.dp))
                                                 Text(
                                                     text = label,
+                                                    color = if (isSel) Color.White else PetrolDarkText,
+                                                    fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
+                                                    fontSize = 11.5.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                // Posição na Tela
+                                Text(
+                                    text = "Posição na Tela",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 13.5.sp,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = "Onde o cartão aparece na tela durante chamadas:",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(
+                                        Pair("LEFT", "Esquerda"),
+                                        Pair("CENTER", "Centro"),
+                                        Pair("RIGHT", "Direita")
+                                    ).forEach { (posKey, posLabel) ->
+                                        val isSel = horizontalPosition == posKey
+                                        Surface(
+                                            color = if (isSel) PetrolHeader else SoftSurfaceVariant,
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.5.dp, if (isSel) PetrolHeader else CleanCardBorder),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable {
+                                                    horizontalPosition = posKey
+                                                    savedFlag = false
+                                                    val updated = config.copy(overlayHorizontalPosition = posKey)
+                                                    scope.launch {
+                                                        app.preferencesRepository.saveConfig(updated)
+                                                        app.overlayPanel.applyConfig(updated)
+                                                        notifyUser("Posição alterada: $posLabel")
+                                                    }
+                                                }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Text(
+                                                    text = posLabel,
                                                     color = if (isSel) Color.White else PetrolDarkText,
                                                     fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
                                                     fontSize = 12.sp,
@@ -1929,8 +1698,6 @@ fun GoOrNoComposeApp(
                                         }
                                     }
                                 }
-
-
 
                                 HorizontalDivider(color = CleanCardBorder)
 

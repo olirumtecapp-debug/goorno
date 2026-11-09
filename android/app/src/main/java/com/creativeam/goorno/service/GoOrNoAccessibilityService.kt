@@ -328,6 +328,25 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             wasViewing99List = false
         }
 
+        // BLOQUEIO TOTAL DA LISTA DE SOLICITAÇÕES DA 99:
+        // O GoOrNo só avalia e abre card para chamados que TOCAM (chamada ativa no mapa com contagem regressiva).
+        // Se a tela atual for a lista de solicitações ("< Solicitações" / "Escolha uma"), não abre card de corrida!
+        val isNinetyNineListScreen = targetApp == SourceApp.NINETY_NINE_DRIVER &&
+            normalizedTexts.any { line ->
+                val l = line.trim().lowercase(Locale.ROOT)
+                l == "solicitações" || l == "solicitacoes" || l.startsWith("< solicita") ||
+                l.startsWith("solicitações") || l == "escolha uma" || l.contains("lista de solicita")
+            }
+
+        if (isNinetyNineListScreen) {
+            currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
+            (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
+            shownOfferTimestamps.clear()
+            lastScreenContextMode = ""
+            consecutiveScansWithoutOffers++
+            return
+        }
+
         // 3. DETECÇÃO DE OCIOSIDADE E FECHAMENTO DE CARDS RESIDUAIS (ALLOWED_NO_OFFER):
         val joinedScreenLower = normalizedTexts.joinToString(" ").lowercase(Locale.ROOT)
         // hasRideActionBtn — apenas tokens EXCLUSIVOS de telas de oferta real.

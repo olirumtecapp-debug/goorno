@@ -9,6 +9,8 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.widget.Toast
+import android.widget.RemoteViews
+import android.graphics.Color
 import androidx.core.app.NotificationCompat
 import com.creativeam.goorno.GoOrNoApplication
 import com.creativeam.goorno.MainActivity
@@ -277,100 +279,113 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val totalMin = prefs.getInt("total_min", -1)
                     val grossKm = prefs.getFloat("gross_km", -1f).toDouble()
                     val grossHr = prefs.getFloat("gross_hr", -1f).toDouble()
-                    val netProfit = prefs.getFloat("net_profit", 0f).toDouble()
-                    val totalCost = prefs.getFloat("total_cost", 0f).toDouble()
                     val origAddress = prefs.getString("origin_address", "") ?: ""
                     val destAddress = prefs.getString("dest_address", "") ?: ""
-                    val hasRisk = prefs.getBoolean("has_risk", false)
-                    val riskBadge = prefs.getString("risk_badge", "") ?: ""
                     val ratingBadge = prefs.getString("passenger_rating_badge", "") ?: ""
-                    val effectiveShowProfit = prefs.getBoolean("show_profit", false)
-                    val effectiveShowCost = prefs.getBoolean("show_cost", false)
-
-                    val emoji = when (verdictName) {
-                        TrafficLightVerdict.GREEN.name -> "🟢"
-                        TrafficLightVerdict.YELLOW.name -> "🟡"
-                        TrafficLightVerdict.RED.name -> "🔴"
-                        else -> "⚪"
-                    }
 
                     val priceStr = formatCurr(price)
-                    val kmStr = if (grossKm > 0) formatCurr(grossKm) + "/km" else "--/km"
-                    val hrStr = if (grossHr > 0) formatCurr(grossHr) + "/h" else "--/h"
-                    val netStr = formatCurr(netProfit)
-                    val costStr = formatCurr(totalCost)
                     val distStr = if (totalKm > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", totalKm) else "-- km"
                     val minStr = if (totalMin > 0) "$totalMin min" else "-- min"
+                    val headerText = "$priceStr · $minStr · $distStr"
 
-                    val extraParts = mutableListOf<String>()
-                    val opBadge = prefs.getString("operational_badge", "") ?: ""
-                    if (opBadge.isNotBlank()) extraParts.add(opBadge)
-                    if (ratingBadge.isNotBlank()) extraParts.add(ratingBadge)
-                    if (effectiveShowProfit) extraParts.add("Lucro: $netStr")
-                    if (effectiveShowCost) extraParts.add("Custo: $costStr")
-                    val extraSuffix = if (extraParts.isEmpty()) "" else " · " + extraParts.joinToString(" · ")
-                    val riskHeaderTag = if (hasRisk) " · ⚠️ RISCO" else ""
+                    val is99 = sourceApp.contains("99", ignoreCase = true)
+                    val badgeText = if (is99) "99" else "Uber"
+                    val badgeBg = if (is99) R.drawable.bg_notif_badge_99 else R.drawable.bg_notif_badge_uber
+                    val badgeTextColor = if (is99) Color.BLACK else Color.WHITE
 
-                    val origLine = origAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
-                    val destLine = destAddress.takeIf { it.isNotBlank() } ?: "Toque no histórico p/ detalhes"
+                    val kmValFormatted = if (grossKm > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm) else "--"
+                    val hrValFormatted = if (grossHr > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f", grossHr) else "--"
+                    val ratingValFormatted = if (ratingBadge.isNotBlank()) ratingBadge else "--"
 
-                    val title = "$emoji $verdictLabel$riskHeaderTag · $priceStr · $kmStr · $hrStr"
-                    val shortText = "$distStr · $minStr | 📍 $origLine ➔ 🏁 $destLine"
-                    val expandedText = buildString {
-                        if (hasRisk && riskBadge.isNotBlank()) {
-                            append("🚨 $riskBadge\n")
-                        }
-                        if (ratingBadge.isNotBlank()) {
-                            append("Passageiro: $ratingBadge\n")
-                        }
-                        append("$sourceApp · $priceStr ($distStr · $minStr)\n")
-                        append("$kmStr · $hrStr$extraSuffix\n")
-                        append("📍 $origLine\n")
-                        append("🏁 $destLine")
+                    val remoteViewsExpanded = RemoteViews(context.packageName, R.layout.notification_pro_offer)
+                    val remoteViewsCollapsed = RemoteViews(context.packageName, R.layout.notification_pro_offer_collapsed)
+
+                    remoteViewsExpanded.setTextViewText(R.id.tv_notif_title, headerText)
+                    remoteViewsExpanded.setTextViewText(R.id.tv_notif_badge, badgeText)
+                    remoteViewsExpanded.setInt(R.id.tv_notif_badge, "setBackgroundResource", badgeBg)
+                    remoteViewsExpanded.setTextColor(R.id.tv_notif_badge, badgeTextColor)
+
+                    remoteViewsCollapsed.setTextViewText(R.id.tv_notif_title, headerText)
+                    remoteViewsCollapsed.setTextViewText(R.id.tv_notif_badge, badgeText)
+                    remoteViewsCollapsed.setInt(R.id.tv_notif_badge, "setBackgroundResource", badgeBg)
+                    remoteViewsCollapsed.setTextColor(R.id.tv_notif_badge, badgeTextColor)
+
+                    remoteViewsExpanded.setTextViewText(R.id.tv_notif_km, kmValFormatted)
+                    remoteViewsExpanded.setTextViewText(R.id.tv_notif_hr, hrValFormatted)
+                    remoteViewsExpanded.setTextViewText(R.id.tv_notif_rating, ratingValFormatted)
+
+                    val kmColor = when {
+                        grossKm >= 2.50 -> Color.parseColor("#16A34A")
+                        grossKm >= 1.80 -> Color.parseColor("#CA8A04")
+                        else -> Color.parseColor("#DC2626")
                     }
+                    val hrColor = when {
+                        grossHr >= 50.0 -> Color.parseColor("#16A34A")
+                        grossHr >= 35.0 -> Color.parseColor("#CA8A04")
+                        else -> Color.parseColor("#DC2626")
+                    }
+                    val ratingColor = when {
+                        ratingValFormatted.startsWith("5") || ratingValFormatted.startsWith("4.9") || ratingValFormatted.startsWith("4,9") -> Color.parseColor("#16A34A")
+                        ratingValFormatted.startsWith("4.8") || ratingValFormatted.startsWith("4,8") || ratingValFormatted.startsWith("4.7") || ratingValFormatted.startsWith("4,7") -> Color.parseColor("#CA8A04")
+                        else -> Color.parseColor("#DC2626")
+                    }
+                    remoteViewsExpanded.setInt(R.id.line_notif_km, "setBackgroundColor", kmColor)
+                    remoteViewsExpanded.setInt(R.id.line_notif_hr, "setBackgroundColor", hrColor)
+                    remoteViewsExpanded.setInt(R.id.line_notif_rating, "setBackgroundColor", ratingColor)
 
-                    builder
-                        .setContentTitle(title)
-                        .setContentText(shortText)
-                        .setStyle(NotificationCompat.BigTextStyle().bigText(expandedText))
+                    remoteViewsExpanded.setTextViewText(
+                        R.id.tv_notif_origin,
+                        if (origAddress.isNotBlank()) "📍 $origAddress" else "📍 Aguardando endereço de embarque..."
+                    )
+                    remoteViewsExpanded.setTextViewText(
+                        R.id.tv_notif_dest,
+                        if (destAddress.isNotBlank()) "🏁 $destAddress" else "🏁 Aguardando endereço de destino..."
+                    )
 
-                    // Botão 1 na Notificação: Abrir Street View 360° da Origem (recolhe cortina e abre na hora)
-                    if (origAddress.isNotBlank()) {
+                    val subTextCollapsed = "R$/Km $kmValFormatted  ·  R$/Hr $hrValFormatted  ·  Nota $ratingValFormatted"
+                    remoteViewsCollapsed.setTextViewText(R.id.tv_notif_sub, subTextCollapsed)
+
+                    val origPending = if (origAddress.isNotBlank()) {
                         val origIntent = Intent(context, com.creativeam.goorno.activity.StreetViewTrampolineActivity::class.java).apply {
                             putExtra("EXTRA_ADDRESS", origAddress)
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }
-                        val origPending = PendingIntent.getActivity(
+                        PendingIntent.getActivity(
                             context,
                             201,
                             origIntent,
                             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                         )
-                        builder.addAction(
-                            android.R.drawable.ic_dialog_map,
-                            "📍 Origem 360°",
-                            origPending
-                        )
-                    }
+                    } else null
 
-                    // Botão 2 na Notificação: Abrir Street View 360° do Destino (recolhe cortina e abre na hora)
-                    if (destAddress.isNotBlank()) {
+                    val destPending = if (destAddress.isNotBlank()) {
                         val destIntent = Intent(context, com.creativeam.goorno.activity.StreetViewTrampolineActivity::class.java).apply {
                             putExtra("EXTRA_ADDRESS", destAddress)
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }
-                        val destPending = PendingIntent.getActivity(
+                        PendingIntent.getActivity(
                             context,
                             202,
                             destIntent,
                             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                         )
-                        builder.addAction(
-                            android.R.drawable.ic_menu_directions,
-                            "🏁 Destino 360°",
-                            destPending
-                        )
+                    } else null
+
+                    if (origPending != null) {
+                        remoteViewsExpanded.setOnClickPendingIntent(R.id.btn_notif_origin, origPending)
+                        builder.addAction(android.R.drawable.ic_dialog_map, "Embarque", origPending)
                     }
+                    if (destPending != null) {
+                        remoteViewsExpanded.setOnClickPendingIntent(R.id.btn_notif_dest, destPending)
+                        builder.addAction(android.R.drawable.ic_menu_directions, "Destino", destPending)
+                    }
+
+                    builder
+                        .setContentTitle(headerText)
+                        .setContentText(subTextCollapsed)
+                        .setCustomContentView(remoteViewsCollapsed)
+                        .setCustomBigContentView(remoteViewsExpanded)
+                        .setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 } else {
                     builder
                         .setContentTitle("🟢 GoOrNo Ativo")

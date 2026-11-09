@@ -55,7 +55,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
     private var currentOpacityPercent: Int = 92
     private var displayDurationSec: Int = 7
-    private var displayStyle: OverlayDisplayStyle = OverlayDisplayStyle.BANNER_PRO_STREETVIEW
+    private var displayStyle: OverlayDisplayStyle = OverlayDisplayStyle.COMPLETO
     private var overlayBubblePosition: String = "BELOW"
     private var overlayHorizontalPosition: String = "CENTER"
     private var showFloatingShortcutBubble: Boolean = true
@@ -338,10 +338,8 @@ class FloatingOverlayPanel(private val context: Context) {
         remainingSeconds = displayDurationSec.coerceIn(3, 45)
 
         val builtView = when (displayStyle) {
-            OverlayDisplayStyle.BANNER_PRO_STREETVIEW -> buildBannerProStreetView(currentEval, oneBasedIndex, totalInQueue)
-            OverlayDisplayStyle.PIRULITO_SIDEBAR -> buildPirulitoSidebarView(currentEval, oneBasedIndex, totalInQueue)
-            OverlayDisplayStyle.MINI_BALL -> buildMiniBallView(currentEval, oneBasedIndex, totalInQueue)
-            OverlayDisplayStyle.CLASSIC_LIGHT -> buildMiniBallView(currentEval, oneBasedIndex, totalInQueue)
+            OverlayDisplayStyle.COMPLETO -> buildCompletoCardView(currentEval, oneBasedIndex, totalInQueue)
+            OverlayDisplayStyle.SECUNDARIO -> buildSecundarioSidebarView(currentEval, oneBasedIndex, totalInQueue)
         }
 
         contentWrapper?.addView(builtView)
@@ -1993,6 +1991,361 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     @SuppressLint("ClickableViewAccessibility")
+    private fun buildCompletoCardView(
+        result: FinancialEvaluationResult,
+        index: Int,
+        totalCount: Int
+    ): View {
+        val offer = result.offer
+        val grossKm = result.grossPerKm ?: 0.0
+        val grossHr = result.grossPerHour ?: 0.0
+        val totalKm = result.totalConsideredDistanceKm ?: 0.0
+        val totalMin = result.totalConsideredDurationMin ?: 0
+
+        val targetKm = lastKnownConfig?.targetGrossPerKm ?: 2.50
+        val minKm = lastKnownConfig?.minGrossPerKm ?: 1.80
+        val targetHr = lastKnownConfig?.targetGrossPerHour ?: 50.00
+        val minHr = lastKnownConfig?.minGrossPerHour ?: 35.00
+
+        val theme = lastKnownConfig?.overlayTheme?.uppercase() ?: "COLORIDO"
+        val isColorido = theme == "COLORIDO"
+        val isClaro = theme == "CLARO" || theme == "LIGHT"
+
+        val verdictHex = when (result.verdict) {
+            TrafficLightVerdict.GREEN -> "#16A34A"
+            TrafficLightVerdict.YELLOW -> "#CA8A04"
+            TrafficLightVerdict.RED -> "#DC2626"
+            TrafficLightVerdict.GRAY_NEUTRAL -> "#475569"
+        }
+
+        val cardBg = when {
+            isColorido -> verdictHex
+            isClaro -> "#FFFFFF"
+            else -> "#1E2024"
+        }
+        val cardBorder = when {
+            isColorido -> when (result.verdict) {
+                TrafficLightVerdict.GREEN -> "#15803D"
+                TrafficLightVerdict.YELLOW -> "#A16207"
+                TrafficLightVerdict.RED -> "#B91C1C"
+                TrafficLightVerdict.GRAY_NEUTRAL -> "#334155"
+            }
+            else -> verdictHex
+        }
+
+        val primaryTextColor = if (isClaro) Color.parseColor("#0F172A") else Color.WHITE
+        val secondaryTextColor = when {
+            isColorido -> Color.parseColor("#F1F5F9")
+            isClaro -> Color.parseColor("#64748B")
+            else -> Color.parseColor("#94A3B8")
+        }
+
+        val kmBarColor = when {
+            grossKm >= targetKm -> "#16A34A"
+            grossKm >= minKm -> "#CA8A04"
+            else -> "#DC2626"
+        }
+        val hrBarColor = when {
+            grossHr >= targetHr -> "#16A34A"
+            grossHr >= minHr -> "#CA8A04"
+            else -> "#DC2626"
+        }
+        val ratingBadge = result.passengerRatingBadge.orEmpty()
+        val ratingBarColor = when {
+            ratingBadge.startsWith("5") || ratingBadge.startsWith("4.9") || ratingBadge.startsWith("4,9") -> "#16A34A"
+            ratingBadge.startsWith("4.8") || ratingBadge.startsWith("4,8") || ratingBadge.startsWith("4.7") || ratingBadge.startsWith("4,7") -> "#CA8A04"
+            else -> "#DC2626"
+        }
+
+        val root = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setOnTouchListener(createDragOrTapTouchListener())
+        }
+
+        val card = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = roundedCardBg(cardBg, cardBorder, 18f, if (isColorido) 2 else 3)
+            layoutParams = LinearLayout.LayoutParams(dp(310), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                elevation = dp(10).toFloat()
+            }
+        }
+
+        // Top Row: [Badge App] + Time/Distance + Timer + Close
+        val topRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(8)
+            }
+        }
+
+        val is99 = offer.sourceApp.displayName.contains("99", ignoreCase = true)
+        val tvAppBadge = TextView(context).apply {
+            text = if (is99) "99" else "Uber"
+            setTextColor(if (is99) Color.BLACK else Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(dp(6), dp(2), dp(6), dp(2))
+            background = if (is99) roundedBg("#FACC15", 6f) else roundedBg("#000000", 6f)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = dp(6)
+            }
+        }
+        topRow.addView(tvAppBadge)
+
+        val distStr = if (totalKm > 0.0) {
+            String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", totalKm)
+        } else "-- km"
+        val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
+        val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
+
+        val tvSummary = TextView(context).apply {
+            text = "$seqTag$minStr · $distStr"
+            setTextColor(primaryTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        topRow.addView(tvSummary)
+
+        val tvTimer = TextView(context).apply {
+            text = "${remainingSeconds}s"
+            setTextColor(secondaryTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(4), 0, dp(4), 0)
+        }
+        activeTimerLabel = tvTimer
+        topRow.addView(tvTimer)
+
+        val btnClose = TextView(context).apply {
+            text = "✕"
+            setTextColor(secondaryTextColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+            setOnClickListener { dismissCurrentOfferCardByUser() }
+            setOnTouchListener { v, ev ->
+                if (ev.action == MotionEvent.ACTION_UP) {
+                    v.performClick()
+                    dismissCurrentOfferCardByUser()
+                }
+                true
+            }
+        }
+        topRow.addView(btnClose)
+        card.addView(topRow)
+
+        // 3 Pillars Row: [R$/Km] | [R$/Hora] | [Nota]
+        val pillarsRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        fun createPillarCol(label: String, barColorHex: String, valueText: String): View {
+            return LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+
+                val tvL = TextView(context).apply {
+                    text = label
+                    setTextColor(secondaryTextColor)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                    setTypeface(typeface, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                }
+                addView(tvL)
+
+                val valRow = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER
+                    setPadding(0, dp(2), 0, 0)
+                }
+
+                val bar = View(context).apply {
+                    background = roundedBg(if (isColorido) "#FFFFFF" else barColorHex, 2f)
+                    layoutParams = LinearLayout.LayoutParams(dp(3), dp(18)).apply {
+                        marginEnd = dp(4)
+                    }
+                }
+                valRow.addView(bar)
+
+                val tvV = TextView(context).apply {
+                    text = valueText
+                    setTextColor(primaryTextColor)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+                    setTypeface(typeface, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                }
+                valRow.addView(tvV)
+
+                addView(valRow)
+            }
+        }
+
+        val kmVal = if (grossKm > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm) else "--"
+        val hrVal = if (grossHr > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f", grossHr) else "--"
+        val ratingVal = if (ratingBadge.isNotBlank()) ratingBadge else "--"
+
+        pillarsRow.addView(createPillarCol("R$/Km", kmBarColor, kmVal))
+        pillarsRow.addView(createPillarCol("R$/Hora", hrBarColor, hrVal))
+        pillarsRow.addView(createPillarCol("Nota", ratingBarColor, ratingVal))
+        card.addView(pillarsRow)
+
+        val alertText = when {
+            result.hasRiskAlert && result.riskAlertBadge?.isNotBlank() == true -> "🚨 ${result.riskAlertBadge}"
+            result.isDistantPickup -> "⚠️ Embarque distante"
+            else -> null
+        }
+        if (alertText != null) {
+            val tvAlert = TextView(context).apply {
+                text = alertText
+                setTextColor(if (isColorido) Color.WHITE else Color.parseColor("#DC2626"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(0, dp(6), 0, 0)
+            }
+            card.addView(tvAlert)
+        }
+
+        root.addView(card)
+        return root
+    }
+
+    private fun buildSecundarioSidebarView(
+        result: FinancialEvaluationResult,
+        index: Int,
+        totalCount: Int
+    ): View {
+        val offer = result.offer
+        val grossKm = result.grossPerKm ?: 0.0
+        val grossHr = result.grossPerHour ?: 0.0
+
+        val verdictHex = when (result.verdict) {
+            TrafficLightVerdict.GREEN -> "#16A34A"
+            TrafficLightVerdict.YELLOW -> "#CA8A04"
+            TrafficLightVerdict.RED -> "#DC2626"
+            TrafficLightVerdict.GRAY_NEUTRAL -> "#475569"
+        }
+        val verdictLabel = when (result.verdict) {
+            TrafficLightVerdict.GREEN -> "✓ ACEITAR"
+            TrafficLightVerdict.YELLOW -> "● ATENÇÃO"
+            else -> "✕ RECUSAR"
+        }
+
+        val root = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.END
+            setOnTouchListener(createDragOrTapTouchListener())
+        }
+
+        val timerRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL or Gravity.END
+            setPadding(0, 0, dp(4), dp(2))
+        }
+        val tvTimer = TextView(context).apply {
+            text = "${remainingSeconds}s"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(4), 0, dp(4), 0)
+        }
+        activeTimerLabel = tvTimer
+        timerRow.addView(tvTimer)
+
+        val btnClose = TextView(context).apply {
+            text = "✕"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(6), dp(2), dp(6), dp(2))
+            setOnClickListener { dismissCurrentOfferCardByUser() }
+        }
+        timerRow.addView(btnClose)
+        root.addView(timerRow)
+
+        val decisionPill = TextView(context).apply {
+            text = verdictLabel
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(dp(14), dp(8), dp(14), dp(8))
+            background = roundedBg(verdictHex, 16f)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(6)
+            }
+        }
+        root.addView(decisionPill)
+
+        fun createDarkMetricPill(valueStr: String, unitStr: String): View {
+            return LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(12), dp(7), dp(12), dp(7))
+                background = roundedCardBg("#1E2024", "#334155", 14f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    bottomMargin = dp(4)
+                }
+
+                val tvVal = TextView(context).apply {
+                    text = valueStr
+                    setTextColor(Color.WHITE)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+                    setTypeface(typeface, Typeface.BOLD)
+                }
+                addView(tvVal)
+
+                val tvUnit = TextView(context).apply {
+                    text = unitStr
+                    setTextColor(Color.parseColor("#94A3B8"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                    setTypeface(typeface, Typeface.BOLD)
+                    setPadding(dp(3), dp(2), 0, 0)
+                }
+                addView(tvUnit)
+            }
+        }
+
+        val kmStr = if (grossKm > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm) else "--"
+        val hrStr = if (grossHr > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f", grossHr) else "--"
+        val ratingStr = result.passengerRatingBadge?.takeIf { it.isNotBlank() } ?: "--"
+
+        root.addView(createDarkMetricPill(kmStr, " /km"))
+        root.addView(createDarkMetricPill(hrStr, " /h"))
+        root.addView(createDarkMetricPill(ratingStr, " nota"))
+
+        return root
+    }
+
     private fun showShortcutBubble() {
         if (isShortcutBubbleAdded && shortcutBubbleContainer != null) return
         if (!hasOverlayPermission()) return
@@ -2185,12 +2538,13 @@ class FloatingOverlayPanel(private val context: Context) {
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(16))
-            background = roundedCardBg("#FFFFFF", "#CBD5E1", 20f, 1)
+            background = roundedCardBg("#FFFFFF", "#E2E8F0", 22f, 1)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 elevation = dp(16).toFloat()
             }
         }
 
+        // Header: Logo/Icon + GoOrNo + Subtitle + Close Button
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -2208,15 +2562,15 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val tvTitle = TextView(context).apply {
-            text = "GoOrNo • Atalhos Rápidos"
+            text = "GoOrNo"
             setTextColor(Color.parseColor("#0F2F28"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f)
             setTypeface(typeface, Typeface.BOLD)
         }
         val tvSub = TextView(context).apply {
-            text = "● Monitorando Uber & 99"
-            setTextColor(Color.parseColor("#059669"))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            text = if (isMonitoringEnabled) "● Semáforo lendo ofertas" else "● Semáforo pausado"
+            setTextColor(if (isMonitoringEnabled) Color.parseColor("#059669") else Color.parseColor("#64748B"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTypeface(typeface, Typeface.BOLD)
         }
         titleCol.addView(tvTitle)
@@ -2236,161 +2590,394 @@ class FloatingOverlayPanel(private val context: Context) {
         topRow.addView(btnClose)
         root.addView(topRow)
 
-        val contentContainer = LinearLayout(context).apply {
+        // Quick Toggles Row (Recursos Reais do GoOrNo: Semáforo, Áreas de Risco, Metas Financeiras)
+        val togglesRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(12)
+            }
+        }
+
+        fun createQuickCard(icon: String, title: String, subtitle: String, isHighlighted: Boolean, onClick: (View) -> Unit): View {
+            return LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(dp(6), dp(10), dp(6), dp(10))
+                background = if (isHighlighted) {
+                    roundedCardBg("#F0FDF4", "#10B981", 14f, 1)
+                } else {
+                    roundedCardBg("#F8FAFC", "#E2E8F0", 14f, 1)
+                }
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    setMargins(dp(3), 0, dp(3), 0)
+                }
+                setOnClickListener { onClick(this) }
+
+                val tvI = TextView(context).apply {
+                    text = icon
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+                    gravity = Gravity.CENTER
+                }
+                addView(tvI)
+
+                val tvT = TextView(context).apply {
+                    text = title
+                    setTextColor(Color.parseColor("#0F2F28"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                    setTypeface(typeface, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                    setPadding(0, dp(2), 0, 0)
+                }
+                addView(tvT)
+
+                val tvS = TextView(context).apply {
+                    text = subtitle
+                    setTextColor(if (isHighlighted) Color.parseColor("#059669") else Color.parseColor("#64748B"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f)
+                    setTypeface(typeface, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                }
+                addView(tvS)
+            }
+        }
+
+        lateinit var semaforoCard: View
+        semaforoCard = createQuickCard(
+            "🚦",
+            "Semáforo",
+            if (isMonitoringEnabled) "Ligado" else "Desligado",
+            isMonitoringEnabled
+        ) {
+            val newState = !isMonitoringEnabled
+            setMonitoringEnabled(newState, accessibilityEnabled = true)
+            tvSub.text = if (newState) "● Semáforo lendo ofertas" else "● Semáforo pausado"
+            tvSub.setTextColor(if (newState) Color.parseColor("#059669") else Color.parseColor("#64748B"))
+            (semaforoCard as LinearLayout).background = if (newState) {
+                roundedCardBg("#F0FDF4", "#10B981", 14f, 1)
+            } else {
+                roundedCardBg("#F8FAFC", "#E2E8F0", 14f, 1)
+            }
+            val subTextChild = (semaforoCard as LinearLayout).getChildAt(2) as? TextView
+            subTextChild?.text = if (newState) "Ligado" else "Desligado"
+            subTextChild?.setTextColor(if (newState) Color.parseColor("#059669") else Color.parseColor("#64748B"))
+            android.widget.Toast.makeText(
+                context,
+                if (newState) "🚦 Semáforo ATIVADO!" else "⏸️ Semáforo PAUSADO!",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+        togglesRow.addView(semaforoCard)
+
+        togglesRow.addView(createQuickCard("🛡️", "Áreas Risco", "Segurança", false) {
+            launchAppScreen("SECURITY")
+            dismissQuickSettingsModal()
+        })
+
+        togglesRow.addView(createQuickCard("🎯", "Metas", "Financeiro", false) {
+            launchAppScreen("FINANCIAL_TARGETS")
+            dismissQuickSettingsModal()
+        })
+
+        root.addView(togglesRow)
+
+        // "Última Oferta" Card
+        val prefs = context.getSharedPreferences("goorno_persisted_notification", Context.MODE_PRIVATE)
+        val hasRide = prefs.getBoolean("has_ride", false)
+        val price = prefs.getFloat("price", 0f).toDouble()
+        val sourceApp = prefs.getString("source_app", "99") ?: "99"
+        val origAddress = prefs.getString("origin_address", "") ?: ""
+        val destAddress = prefs.getString("dest_address", "") ?: ""
+        val timestamp = prefs.getLong("timestamp", 0L)
+
+        val timeStr = if (timestamp > 0) {
+            java.text.SimpleDateFormat("HH:mm", Locale.getDefault()).format(java.util.Date(timestamp))
+        } else {
+            java.text.SimpleDateFormat("HH:mm", Locale.getDefault()).format(java.util.Date())
+        }
+
+        val offerCard = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = roundedCardBg("#F8FAFC", "#E2E8F0", 16f, 1)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(12)
+            }
+        }
+
+        // Top row inside Offer Card: Badge + Price + "Última oferta · HH:mm"
+        val offerHeaderRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(8)
+            }
+        }
+
+        val is99Offer = sourceApp.contains("99", ignoreCase = true)
+        val tvAppPill = TextView(context).apply {
+            text = if (is99Offer) "99" else "Uber"
+            setTextColor(if (is99Offer) Color.BLACK else Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(dp(7), dp(2), dp(7), dp(2))
+            background = if (is99Offer) roundedBg("#FACC15", 6f) else roundedBg("#000000", 6f)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = dp(8)
+            }
+        }
+        offerHeaderRow.addView(tvAppPill)
+
+        val tvOfferPrice = TextView(context).apply {
+            text = if (hasRide && price > 0) formatCurrency(price) else "R$ --"
+            setTextColor(Color.parseColor("#0F2F28"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            setTypeface(typeface, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        offerHeaderRow.addView(tvOfferPrice)
+
+        val tvOfferTime = TextView(context).apply {
+            text = if (hasRide) "Última oferta · $timeStr" else "Aguardando oferta"
+            setTextColor(Color.parseColor("#64748B"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        offerHeaderRow.addView(tvOfferTime)
+        offerCard.addView(offerHeaderRow)
+
+        // Route section: EMBARQUE and DESTINO with Street View clicks
+        val routeContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(4), 0, dp(4))
+        }
+
+        val timelineCol = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(dp(18), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                marginEnd = dp(8)
+            }
+        }
+        val ringEmbarque = TextView(context).apply {
+            text = "○"
+            setTextColor(Color.parseColor("#059669"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.CENTER
+        }
+        val lineTimeline = View(context).apply {
+            background = roundedBg("#CBD5E1", 1f)
+            layoutParams = LinearLayout.LayoutParams(dp(2), dp(22))
+        }
+        val sqDestino = TextView(context).apply {
+            text = "■"
+            setTextColor(Color.parseColor("#0F2F28"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            gravity = Gravity.CENTER
+        }
+        timelineCol.addView(ringEmbarque)
+        timelineCol.addView(lineTimeline)
+        timelineCol.addView(sqDestino)
+        routeContainer.addView(timelineCol)
+
+        val addrCol = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+
+        // Embarque Row
+        val embarqueRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setOnClickListener {
+                if (origAddress.isNotBlank()) {
+                    val intent = Intent(context, com.creativeam.goorno.activity.StreetViewTrampolineActivity::class.java).apply {
+                        putExtra("EXTRA_ADDRESS", origAddress)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+                    context.startActivity(intent)
+                    dismissQuickSettingsModal()
+                } else {
+                    android.widget.Toast.makeText(context, "Endereço de embarque não disponível.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        val embarqueTextCol = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val tvLblEmbarque = TextView(context).apply {
+            text = "EMBARQUE"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        val tvValEmbarque = TextView(context).apply {
+            text = if (origAddress.isNotBlank()) origAddress else "Toque para abrir Street View"
+            setTextColor(Color.parseColor("#1E293B"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        }
+        embarqueTextCol.addView(tvLblEmbarque)
+        embarqueTextCol.addView(tvValEmbarque)
+        embarqueRow.addView(embarqueTextCol)
+
+        val tvArrow1 = TextView(context).apply {
+            text = "›"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        embarqueRow.addView(tvArrow1)
+        addrCol.addView(embarqueRow)
+
+        val divLine = View(context).apply {
+            background = roundedBg("#E2E8F0", 1f)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply {
+                topMargin = dp(4)
+                bottomMargin = dp(4)
+            }
+        }
+        addrCol.addView(divLine)
+
+        // Destino Row
+        val destinoRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setOnClickListener {
+                if (destAddress.isNotBlank()) {
+                    val intent = Intent(context, com.creativeam.goorno.activity.StreetViewTrampolineActivity::class.java).apply {
+                        putExtra("EXTRA_ADDRESS", destAddress)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+                    context.startActivity(intent)
+                    dismissQuickSettingsModal()
+                } else {
+                    android.widget.Toast.makeText(context, "Endereço de destino não disponível.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        val destinoTextCol = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val tvLblDestino = TextView(context).apply {
+            text = "DESTINO"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        val tvValDestino = TextView(context).apply {
+            text = if (destAddress.isNotBlank()) destAddress else "Toque para abrir Street View"
+            setTextColor(Color.parseColor("#1E293B"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTypeface(typeface, Typeface.BOLD)
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        }
+        destinoTextCol.addView(tvLblDestino)
+        destinoTextCol.addView(tvValDestino)
+        destinoRow.addView(destinoTextCol)
+
+        val tvArrow2 = TextView(context).apply {
+            text = "›"
+            setTextColor(Color.parseColor("#94A3B8"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        destinoRow.addView(tvArrow2)
+        addrCol.addView(destinoRow)
+
+        routeContainer.addView(addrCol)
+        offerCard.addView(routeContainer)
+        root.addView(offerCard)
+
+        // Icon Actions Row: [🕒 Corridas] [▶️ Gravações] [⏱️ Jornadas] [🏠 Abrir app]
+        val actionsRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(10)
+            }
+        }
+
+        fun createCircularAction(icon: String, label: String, isHome: Boolean = false, onClick: () -> Unit): View {
+            return LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                setOnClickListener { onClick() }
+
+                val iconBtn = TextView(context).apply {
+                    text = icon
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+                    setTextColor(if (isHome) Color.WHITE else Color.parseColor("#0F2F28"))
+                    gravity = Gravity.CENTER
+                    background = if (isHome) roundedBg("#0F2F28", 22f) else roundedBg("#F1F5F9", 22f)
+                    layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+                }
+                addView(iconBtn)
+
+                val tvLbl = TextView(context).apply {
+                    text = label
+                    setTextColor(Color.parseColor("#64748B"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                    setTypeface(typeface, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                    setPadding(0, dp(3), 0, 0)
+                }
+                addView(tvLbl)
+            }
+        }
+
+        actionsRow.addView(createCircularAction("📋", "Corridas") {
+            launchAppScreen("HISTORY")
+            dismissQuickSettingsModal()
+        })
+        actionsRow.addView(createCircularAction("🎯", "Metas") {
+            launchAppScreen("FINANCIAL_TARGETS")
+            dismissQuickSettingsModal()
+        })
+        actionsRow.addView(createCircularAction("🛡️", "Segurança") {
+            launchAppScreen("SECURITY")
+            dismissQuickSettingsModal()
+        })
+        actionsRow.addView(createCircularAction("🏠", "Abrir app", isHome = true) {
+            launchAppScreen("HOME")
+            dismissQuickSettingsModal()
+        })
+        root.addView(actionsRow)
+
+        // Bottom Pill: [ ⏻ ] Desativar o copiloto
+        val btnDisable = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = roundedBg("#F1F5F9", 14f)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-        }
-
-        lateinit var showHubView: () -> Unit
-        lateinit var showSemaforoAdjusterView: () -> Unit
-
-        showHubView = {
-            contentContainer.removeAllViews()
-
-            val cardsRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    bottomMargin = dp(12)
-                }
-            }
-
-            fun createActionCard(
-                icon: String,
-                title: String,
-                sub: String,
-                borderHex: String,
-                bgHex: String,
-                subTextColor: String,
-                onClick: () -> Unit
-            ): View {
-                return LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    gravity = Gravity.CENTER
-                    setPadding(dp(8), dp(10), dp(8), dp(10))
-                    background = roundedCardBg(bgHex, borderHex, 14f, 1)
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                        setMargins(dp(3), 0, dp(3), 0)
-                    }
-                    setOnClickListener { onClick() }
-
-                    val tvIcon = TextView(context).apply {
-                        text = icon
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
-                        gravity = Gravity.CENTER
-                    }
-                    addView(tvIcon)
-
-                    val tvT = TextView(context).apply {
-                        text = title
-                        setTextColor(Color.parseColor("#0F2F28"))
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
-                        setTypeface(typeface, Typeface.BOLD)
-                        gravity = Gravity.CENTER
-                        setPadding(0, dp(3), 0, 0)
-                    }
-                    addView(tvT)
-
-                    val tvS = TextView(context).apply {
-                        text = sub
-                        setTextColor(Color.parseColor(subTextColor))
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
-                        setTypeface(typeface, Typeface.BOLD)
-                        gravity = Gravity.CENTER
-                    }
-                    addView(tvS)
-                }
-            }
-
-            val kmStr = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", lastKnownConfig?.targetGrossPerKm ?: 2.0)
-            cardsRow.addView(createActionCard("🚦", "Semáforo", kmStr, "#BBF7D0", "#F0FDF4", "#15803D") {
-                showSemaforoAdjusterView()
-            })
-            cardsRow.addView(createActionCard("⏱️", "Metas", "Financeiro", "#BAE6FD", "#F0F9FF", "#0369A1") {
-                launchAppScreen("FINANCIAL_TARGETS")
-                dismissQuickSettingsModal()
-            })
-            cardsRow.addView(createActionCard("🛡️", "Segurança", "Áreas Risco", "#FECDD3", "#FFF1F2", "#BE123C") {
-                launchAppScreen("SECURITY")
-                dismissQuickSettingsModal()
-            })
-            contentContainer.addView(cardsRow)
-
-            fun createListAction(icon: String, title: String, subtitle: String, onClick: () -> Unit): View {
-                return LinearLayout(context).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER_VERTICAL
-                    setPadding(dp(12), dp(9), dp(12), dp(9))
-                    background = roundedCardBg("#F8FAFC", "#E2E8F0", 12f, 1)
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        bottomMargin = dp(8)
-                    }
-                    setOnClickListener { onClick() }
-
-                    val tvI = TextView(context).apply {
-                        text = icon
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-                        setPadding(0, 0, dp(10), 0)
-                    }
-                    addView(tvI)
-
-                    val textCol = LinearLayout(context).apply {
-                        orientation = LinearLayout.VERTICAL
-                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                    }
-                    val tvT = TextView(context).apply {
-                        text = title
-                        setTextColor(Color.parseColor("#0F2F28"))
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-                        setTypeface(typeface, Typeface.BOLD)
-                    }
-                    val tvSub = TextView(context).apply {
-                        text = subtitle
-                        setTextColor(Color.parseColor("#64748B"))
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
-                    }
-                    textCol.addView(tvT)
-                    textCol.addView(tvSub)
-                    addView(textCol)
-
-                    val tvArrow = TextView(context).apply {
-                        text = "›"
-                        setTextColor(Color.parseColor("#94A3B8"))
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
-                        setTypeface(typeface, Typeface.BOLD)
-                    }
-                    addView(tvArrow)
-                }
-            }
-
-            contentContainer.addView(createListAction("📋", "Histórico de Corridas", "Ver chamadas capturadas e mapas") {
-                launchAppScreen("HISTORY")
-                dismissQuickSettingsModal()
-            })
-            contentContainer.addView(createListAction("⚙️", "Abrir GoOrNo Completo", "Painel principal e configurações") {
-                launchAppScreen("HOME")
-                dismissQuickSettingsModal()
-            })
-            contentContainer.addView(createListAction("👁️", "Ocultar Botão da Tela", "Esconde este atalho; reative na notificação superior") {
-                dismissQuickSettingsModal()
-                hideShortcutBubble()
-                onUserRequestedHideShortcutBubble?.invoke()
-                com.creativeam.goorno.service.CopilotNotificationReceiver.showActiveNotification(context, showShortcutBubble = false)
-                android.widget.Toast.makeText(
-                    context,
-                    "Botão ocultado. Toque em '👁️ Mostrar Botão' na notificação superior para reexibir.",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
-            })
-            contentContainer.addView(createListAction("⏹️", "Desativar Copiloto", "Desliga o monitoramento do GoOrNo") {
+            setOnClickListener {
                 dismissQuickSettingsModal()
                 onUserRequestedDisableCopilot?.invoke()
                 try {
@@ -2399,170 +2986,36 @@ class FloatingOverlayPanel(private val context: Context) {
                     }
                     context.sendBroadcast(disableIntent)
                 } catch (_: Throwable) {}
-            })
-        }
+            }
 
-        showSemaforoAdjusterView = {
-            contentContainer.removeAllViews()
+            val tvPowerIcon = TextView(context).apply {
+                text = "⏻"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+                setTextColor(Color.parseColor("#64748B"))
+                setPadding(0, 0, dp(10), 0)
+            }
+            addView(tvPowerIcon)
 
-            val editorLayout = LinearLayout(context).apply {
+            val textCol = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(4), dp(4), dp(4), dp(4))
             }
-
-            val tvH = TextView(context).apply {
-                text = "⚡ Ajuste Rápido do Semáforo"
+            val tvDisableTitle = TextView(context).apply {
+                text = "Desativar o copiloto"
                 setTextColor(Color.parseColor("#0F2F28"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
                 setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, 0, 0, dp(8))
             }
-            editorLayout.addView(tvH)
-
-            var curKm = lastKnownConfig?.targetGrossPerKm ?: 2.0
-            var curHr = lastKnownConfig?.targetGrossPerHour ?: 40.0
-            var curRating = lastKnownConfig?.targetGoodPassengerRating ?: 4.85
-            var curPickup = lastKnownConfig?.distantPickupKmThreshold ?: 2.5
-
-            fun createStepperRow(label: String, initialValueText: String, onMinus: () -> String, onPlus: () -> String): View {
-                val row = LinearLayout(context).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER_VERTICAL
-                    setPadding(dp(10), dp(8), dp(10), dp(8))
-                    background = roundedCardBg("#F8FAFC", "#E2E8F0", 10f, 1)
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        bottomMargin = dp(6)
-                    }
-                }
-
-                val tvL = TextView(context).apply {
-                    text = label
-                    setTextColor(Color.parseColor("#0F2F28"))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-                    setTypeface(typeface, Typeface.BOLD)
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                }
-                row.addView(tvL)
-
-                val tvVal = TextView(context).apply {
-                    text = initialValueText
-                    setTextColor(Color.parseColor("#047857"))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-                    setTypeface(typeface, Typeface.BOLD)
-                    setPadding(dp(8), 0, dp(8), 0)
-                }
-
-                val btnMinus = TextView(context).apply {
-                    text = "−"
-                    setTextColor(Color.parseColor("#0F2F28"))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-                    setTypeface(typeface, Typeface.BOLD)
-                    gravity = Gravity.CENTER
-                    setPadding(dp(12), dp(4), dp(12), dp(4))
-                    background = roundedBg("#E2E8F0", 6f)
-                    setOnClickListener { tvVal.text = onMinus() }
-                }
-
-                val btnPlus = TextView(context).apply {
-                    text = "+"
-                    setTextColor(Color.parseColor("#0F2F28"))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-                    setTypeface(typeface, Typeface.BOLD)
-                    gravity = Gravity.CENTER
-                    setPadding(dp(12), dp(4), dp(12), dp(4))
-                    background = roundedBg("#E2E8F0", 6f)
-                    setOnClickListener { tvVal.text = onPlus() }
-                }
-
-                row.addView(btnMinus)
-                row.addView(tvVal)
-                row.addView(btnPlus)
-                return row
+            val tvDisableSub = TextView(context).apply {
+                text = "Desliga tudo e oculta a bolha"
+                setTextColor(Color.parseColor("#64748B"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             }
-
-            editorLayout.addView(createStepperRow("R$/Km Mín:", String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", curKm), {
-                curKm = (curKm - 0.10).coerceAtLeast(0.50)
-                String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", curKm)
-            }, {
-                curKm = (curKm + 0.10).coerceAtMost(10.00)
-                String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", curKm)
-            }))
-
-            editorLayout.addView(createStepperRow("R$/Hora Mín:", String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", curHr), {
-                curHr = (curHr - 5.0).coerceAtLeast(10.0)
-                String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", curHr)
-            }, {
-                curHr = (curHr + 5.0).coerceAtMost(200.0)
-                String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f/h", curHr)
-            }))
-
-            editorLayout.addView(createStepperRow("Nota Mínima:", String.format(Locale.forLanguageTag("pt-BR"), "%.2f", curRating), {
-                curRating = (curRating - 0.05).coerceAtLeast(4.00)
-                String.format(Locale.forLanguageTag("pt-BR"), "%.2f", curRating)
-            }, {
-                curRating = (curRating + 0.05).coerceAtMost(5.00)
-                String.format(Locale.forLanguageTag("pt-BR"), "%.2f", curRating)
-            }))
-
-            editorLayout.addView(createStepperRow("Emb. Longe Máx:", String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", curPickup), {
-                curPickup = (curPickup - 0.5).coerceAtLeast(0.5)
-                String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", curPickup)
-            }, {
-                curPickup = (curPickup + 0.5).coerceAtMost(8.0)
-                String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", curPickup)
-            }))
-
-            val actionsRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = dp(8)
-                }
-            }
-
-            val btnBack = TextView(context).apply {
-                text = "Voltar"
-                setTextColor(Color.parseColor("#475569"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-                setTypeface(typeface, Typeface.BOLD)
-                gravity = Gravity.CENTER
-                setPadding(dp(12), dp(8), dp(12), dp(8))
-                background = roundedBg("#F1F5F9", 8f)
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginEnd = dp(6)
-                }
-                setOnClickListener { showHubView() }
-            }
-            actionsRow.addView(btnBack)
-
-            val btnSave = TextView(context).apply {
-                text = "Salvar Semáforo"
-                setTextColor(Color.WHITE)
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-                setTypeface(typeface, Typeface.BOLD)
-                gravity = Gravity.CENTER
-                setPadding(dp(12), dp(8), dp(12), dp(8))
-                background = roundedBg("#10B981", 8f)
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.5f)
-                setOnClickListener {
-                    onUserUpdatedSemaforoQuickly?.invoke(curKm, curHr, curRating, curPickup)
-                    android.widget.Toast.makeText(context, "✓ Semáforo e Embarque Atualizados!", android.widget.Toast.LENGTH_SHORT).show()
-                    showHubView()
-                }
-            }
-            actionsRow.addView(btnSave)
-
-            editorLayout.addView(actionsRow)
-            contentContainer.addView(editorLayout)
+            textCol.addView(tvDisableTitle)
+            textCol.addView(tvDisableSub)
+            addView(textCol)
         }
+        root.addView(btnDisable)
 
-        showHubView()
-        root.addView(contentContainer)
         return root
     }
 
