@@ -22,6 +22,7 @@ import com.creativeam.goorno.model.OfferLifecycleState
 import com.creativeam.goorno.model.StandardRideOffer
 import com.creativeam.goorno.reader.BrazilianOfferParser
 import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
+import com.creativeam.goorno.reader.ninetynine.NinetyNineStructuredReader
 import com.creativeam.goorno.reader.ninetynine.NinetyNineVisualRatingMatcher
 import com.creativeam.goorno.reader.ninetynine.NinetyNineListDisplayPolicy
 import com.creativeam.goorno.reader.uber.UberOfferReader
@@ -418,7 +419,23 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // 4. EXTRAÇÃO EXCLUSIVA PARA O APLICATIVO ALVO (OFFER_CANDIDATE):
         currentLifecycleState = OfferLifecycleState.OFFER_CANDIDATE
-        val parsedOffers = extractOffersForApp(targetApp, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
+        val parsedOffers = if (targetApp == SourceApp.NINETY_NINE_DRIVER) {
+            // LAB Leitor 2: identifica cartões da 99 pelas coordenadas REAIS
+            // antes de extrair preço/tempo/nota. Quando não há lista estruturada,
+            // mantém o caminho comprovado de chamadas únicas no mapa.
+            val positioned = positionedNodes.map {
+                NinetyNineStructuredReader.Fragment(it.text, it.centerY, it.leftX)
+            }
+            NinetyNineStructuredReader.parse(
+                sourceApp = targetApp,
+                fragments = positioned,
+                captureMethod = CaptureMethod.ACCESSIBILITY,
+                timestampMillis = now
+            ) ?: extractOffersForApp(targetApp, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
+        } else {
+            // UBER INTACTA: não altera algoritmo, dados, eventos nem OCR Uber.
+            extractOffersForApp(targetApp, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
+        }
         if (parsedOffers.isEmpty()) {
             if (hasRideActionBtn) {
                 triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
@@ -704,12 +721,29 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         else -> SourceApp.NINETY_NINE_DRIVER
                                     }
 
-                                    var ocrOffers = extractOffersForApp(
-                                        appType = effectiveOcrApp,
-                                        lines = normalizedOcr,
-                                        method = CaptureMethod.OCR,
-                                        timestampMillis = System.currentTimeMillis()
-                                    )
+                                    var ocrOffers = if (effectiveOcrApp == SourceApp.NINETY_NINE_DRIVER) {
+                                        NinetyNineStructuredReader.parse(
+                                            sourceApp = effectiveOcrApp,
+                                            fragments = positionedOcr.map {
+                                                NinetyNineStructuredReader.Fragment(it.text, it.centerY, it.leftX)
+                                            },
+                                            captureMethod = CaptureMethod.OCR,
+                                            timestampMillis = System.currentTimeMillis()
+                                        ) ?: extractOffersForApp(
+                                            appType = effectiveOcrApp,
+                                            lines = normalizedOcr,
+                                            method = CaptureMethod.OCR,
+                                            timestampMillis = System.currentTimeMillis()
+                                        )
+                                    } else {
+                                        // Uber permanece no leitor original.
+                                        extractOffersForApp(
+                                            appType = effectiveOcrApp,
+                                            lines = normalizedOcr,
+                                            method = CaptureMethod.OCR,
+                                            timestampMillis = System.currentTimeMillis()
+                                        )
+                                    }
 
                                     if (ocrOffers.isEmpty()) {
                                         val altApp = if (effectiveOcrApp == SourceApp.NINETY_NINE_DRIVER) {
