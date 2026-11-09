@@ -64,3 +64,13 @@ Esses projetos não fornecem código privado de concorrentes nem garantem compor
 - `NinetyNineMultiCardFlowRegressionTest.kt`: novo teste `overlayPriceThatMatchesBottomCardDoesNotStealTopPassengerRating`.
 - O fluxo correto de homologação é verificar a **última execução** do GitHub Actions correspondente ao commit atual da branch, e não usar um artefato antigo que tenha o mesmo `versionName`.
 - Nome dos artefatos: `GoOrNo-APK-v3.3.79-teste01-run<numero>-<sha>`, verificar também `versionCode 100`.
+
+## Resultado comprovado do GitHub Actions (Build 100)
+- Execução #206: https://github.com/olirumtecapp-debug/goorno/actions/runs/42637571650
+- Commit de código compilado: `d25d4b42d9ab1969a0e8be55d3c1b8f0b68e2722`
+- **SUCESSO**: `gradle testDebugUnitTest`, `gradle assembleDebug` e `gradle assembleRelease`.
+- Artefato APK: https://github.com/olirumtecapp-debug/goorno/actions/runs/42637571650/artifacts/13684007732
+- Nome: `GoOrNo-APK-v3.3.79-teste01-run206-d25d4b4`.
+- Verificado que a etapa "Push APK to main repo" foi **IGNORADA**; não houve publicação da branch de teste na `main`.
+- **PENDENTE**: teste de campo no Android/99 e prova de que nota 4,99/4,79 aparece em sequência sob sobreposição real.
+- Se Antigravity mexer no código após esta execução, recompilar e instalar o artefato do novo commit, nunca reutilizar o Run #206 para código diferente.
