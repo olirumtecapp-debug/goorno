@@ -64,6 +64,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var lastAutoScreenshotTimeMillis: Long = 0L
     private var lastCardClosedTimeMillis: Long = 0L
     private var lastOfferProcessedTimeMillis: Long = 0L
+    private var lastRatingOcrAttemptMillis: Long = 0L
+    @Volatile private var recentlyDisplayedOffers: List<StandardRideOffer> = emptyList()
+    @Volatile private var recentlyDisplayedAtMillis: Long = 0L
     private var isTakingAutoScreenshot: Boolean = false
     private var consecutiveScansWithoutOffers: Int = 0
 
@@ -427,6 +430,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         if (completeAccessibilityOffers.isNotEmpty()) {
+            // A 99 pode fornecer preço/km/min via Accessibility sem expor a nota.
+            // OCR complementar é assíncrono para manter a resposta financeira imediata.
+            if (targetApp == SourceApp.NINETY_NINE_DRIVER &&
+                completeAccessibilityOffers.any { it.passengerRating == null && !it.passengerIsNew } &&
+                now - lastRatingOcrAttemptMillis >= 8_000L
+            ) {
+                lastRatingOcrAttemptMillis = now
+                triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now, ratingOnly = true)
+            }
             currentLifecycleState = OfferLifecycleState.OFFER_ACTIVE
             consecutiveScansWithoutOffers = 0
             processAndShowOffers(completeAccessibilityOffers, normalizedTexts, now)
@@ -482,7 +494,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private fun triggerAutomaticAccessibilityOcrIfNeeded(
         targetApp: SourceApp,
         targetPkg: String,
-        now: Long
+        now: Long,
+        ratingOnly: Boolean = false
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
 
@@ -499,7 +512,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             }
         }
         val app = applicationContext as? GoOrNoApplication
-        if (app?.overlayPanel?.isCardCurrentlyVisible() == true || (now - lastOfferProcessedTimeMillis < 2_500L)) {
+        if (!ratingOnly &&
+            (app?.overlayPanel?.isCardCurrentlyVisible() == true || now - lastOfferProcessedTimeMillis < 2_500L)) {
             isTakingAutoScreenshot = false
             return
         }
@@ -617,7 +631,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                     isTakingAutoScreenshot = false
                                     return@addOnSuccessListener
                                 }
-                                if (now < lastOfferProcessedTimeMillis) {
+                                if (!ratingOnly && now < lastOfferProcessedTimeMillis) {
                                     try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
                                     isTakingAutoScreenshot = false
                                     return@addOnSuccessListener
@@ -716,7 +730,12 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         isSanePrice && isSaneKm && isSaneDuration && !offer.hasFieldConflict && !isIdleScreen
                                     }
 
-                                    if (validOcrOffers.isNotEmpty()) {
+                                    if (ratingOnly) {
+                                        // Jamais processar OCR de nota como NOVA corrida.
+                                        if (validOcrOffers.isNotEmpty()) {
+                                            mainHandler.post { updateDisplayedPassengerRatings(validOcrOffers, now) }
+                                        }
+                                    } else if (validOcrOffers.isNotEmpty()) {
                                         consecutiveScansWithoutOffers = 0
                                         RuntimeDiagnosticsBus.recordAccessibilitySnapshot(
                                             AccessibilitySnapshot(
@@ -759,6 +778,32 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             )
         } catch (_: Throwable) {
             isTakingAutoScreenshot = false
+        }
+    }
+
+    private fun updateDisplayedPassengerRatings(ocrOffers: List<StandardRideOffer>, capturedAt: Long) {
+        val app = applicationContext as? GoOrNoApplication ?: return
+        if (!app.overlayPanel.isCardCurrentlyVisible()) return
+        if (recentlyDisplayedAtMillis < capturedAt - 2_500L ||
+            System.currentTimeMillis() - recentlyDisplayedAtMillis > 5_000L) return
+        val original = recentlyDisplayedOffers
+        if (original.isEmpty()) return
+        val enhanced = NinetyNineOfferReader.enrichRatingsFromOcr(original, ocrOffers)
+        if (enhanced == original) return
+        serviceScope.launch {
+            val config = app.preferencesRepository.getInMemoryConfig()
+            val evaluations = enhanced.map { FinancialEngine.evaluate(it, config) }
+                .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
+            if (evaluations.isNotEmpty()) {
+                mainHandler.post {
+                    // Atualiza o card sem gerar nova oferta, novo registro ou novo alerta.
+                    if (app.overlayPanel.isCardCurrentlyVisible() &&
+                        recentlyDisplayedOffers == original) {
+                        recentlyDisplayedOffers = enhanced
+                        app.overlayPanel.showEvaluations(evaluations)
+                    }
+                }
+            }
         }
     }
 
@@ -842,6 +887,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 shownOfferTimestamps[key] = now
             }
 
+            recentlyDisplayedOffers = evaluations.map { it.offer }
+            recentlyDisplayedAtMillis = System.currentTimeMillis()
             RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.OFFER_DETECTED)
 
             // Escolhe a avaliação mais completa (com Origem, Destino e Tempo) para persistir na Notificação do Topo!
