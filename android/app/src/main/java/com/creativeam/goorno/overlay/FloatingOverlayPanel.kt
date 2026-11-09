@@ -280,6 +280,38 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
+    /**
+     * Atualiza somente avaliações/nota dos cartões já enfileirados, mantendo
+     * o card atual, sua posição e a contagem regressiva. O OCR suplementar
+     * nunca deve fazer a fila retornar ao primeiro chamado.
+     */
+    fun updateRatingsWithoutReset(results: List<FinancialEvaluationResult>) {
+        if (results.isEmpty()) return
+        mainHandler.post {
+            if (!isCardCurrentlyVisible() || offerQueue.size != results.size) return@post
+            val sameOffers = offerQueue.zip(results).all { (before, after) ->
+                val beforePrice = before.offer.offeredPrice ?: 0.0
+                val afterPrice = after.offer.offeredPrice ?: 0.0
+                val beforeKm = before.totalConsideredDistanceKm ?: 0.0
+                val afterKm = after.totalConsideredDistanceKm ?: 0.0
+                before.offer.sourceApp == after.offer.sourceApp &&
+                    kotlin.math.abs(beforePrice - afterPrice) < 0.02 &&
+                    kotlin.math.abs(beforeKm - afterKm) < 0.16
+            }
+            if (!sameOffers) return@post
+            val current = currentQueueIndex
+            val oldRating = offerQueue.getOrNull(current)?.passengerRating
+            offerQueue = results.take(5)
+            val newRating = offerQueue.getOrNull(current)?.passengerRating
+            if (oldRating != newRating && current in offerQueue.indices) {
+                val secondsLeft = remainingSeconds
+                showCurrentQueuedOffer()
+                remainingSeconds = secondsLeft
+                activeTimerLabel?.text = "${remainingSeconds}s"
+            }
+        }
+    }
+
     private fun showCurrentQueuedOffer() {
         if (currentQueueIndex >= offerQueue.size) {
             hidePanel()
