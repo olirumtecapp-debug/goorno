@@ -120,6 +120,8 @@ fun GoOrNoComposeApp(
     val app = remember { context.applicationContext as GoOrNoApplication }
     val scope = rememberCoroutineScope()
 
+    var currentScreen by remember { mutableStateOf(GoOrNoScreen.HOME) }
+
     val config by app.preferencesRepository.configFlow.collectAsState(initial = DriverFinancialConfig())
     val realHistory by app.database.rideOfferDao().observeRealOffers().collectAsState(initial = emptyList())
 
@@ -133,8 +135,6 @@ fun GoOrNoComposeApp(
     }
     val lastRealEvaluation by RuntimeDiagnosticsBus.lastRealEvaluation.collectAsState()
     val lastSimulatedEvaluation by RuntimeDiagnosticsBus.lastSimulatedEvaluation.collectAsState()
-
-    var currentScreen by remember { mutableStateOf(GoOrNoScreen.HOME) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
     val currentAppVersionName = remember {
