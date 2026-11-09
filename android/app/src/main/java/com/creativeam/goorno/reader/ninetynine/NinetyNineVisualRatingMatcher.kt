@@ -20,7 +20,7 @@ object NinetyNineVisualRatingMatcher {
     private data class RatingAnchor(val rating: Double, val y: Int)
 
     private val currencyRegex = Regex("""R\$\s*(\d{1,4}[.,]\d{2})""", RegexOption.IGNORE_CASE)
-    private val ratingRegex = Regex("""(?<![\d.,/])([3-5][.,]\d{2})(?!\s*(?:/\s*km|km\b|m\b|min\b|x\b))""")
+    private val ratingRegex = Regex("""^\s*[^A-Za-z0-9R$]{0,4}\s*([3-5][.,]\d{2})(?!\s*(?:/\s*km|km\b|m\b|min\b|x\b))""")
     private val passengerKeywords = listOf("corrida", "viagen", "perfil", "cartão", "cartao", "verif", "passageir")
 
     fun enrich(
