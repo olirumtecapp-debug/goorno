@@ -1,6 +1,8 @@
 package com.creativeam.goorno
 
 import com.creativeam.goorno.overlay.OfferQueueProgression
+import com.creativeam.goorno.service.PositionedTextRowMerger
+import com.creativeam.goorno.reader.ninetynine.NinetyNineListDisplayPolicy
 import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
 import com.creativeam.goorno.reader.ninetynine.NinetyNineVisualRatingMatcher
 import org.junit.Assert.assertEquals
@@ -23,6 +25,48 @@ class NinetyNineMultiCardFlowRegressionTest {
         "(7 min 2,4 km) Rua Itaúba, 188",
         "Escolher"
     )
+
+    @Test
+    fun samePopNovaAndEscolherLabelsMustBePreservedAtDifferentRows() {
+        val fragments = screenshot99.mapIndexed { i, label ->
+            PositionedTextRowMerger.Fragment(label, 60 + i * 65, 25)
+        }
+        val merged = PositionedTextRowMerger.merge(fragments)
+        assertEquals(2, merged.count { it == "Pop Nova" })
+        assertEquals(2, merged.count { it == "Escolher" })
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(merged)
+        assertEquals(2, offers.size)
+        assertEquals(10.20, offers[0].offeredPrice!!, 0.001)
+        assertEquals(9.80, offers[1].offeredPrice!!, 0.001)
+    }
+
+    @Test
+    fun sameRowDuplicatesAreRemovedButDifferentRowsStay() {
+        val fragments = listOf(
+            PositionedTextRowMerger.Fragment("Pop Nova", 100, 10),
+            PositionedTextRowMerger.Fragment("Pop Nova", 100, 10),
+            PositionedTextRowMerger.Fragment("R$10,20", 160, 10),
+            PositionedTextRowMerger.Fragment("4,99", 225, 10),
+            PositionedTextRowMerger.Fragment("135 corridas", 228, 110),
+            PositionedTextRowMerger.Fragment("Escolher", 500, 10),
+            PositionedTextRowMerger.Fragment("Pop Nova", 700, 10),
+            PositionedTextRowMerger.Fragment("R$9,80", 770, 10),
+            PositionedTextRowMerger.Fragment("Escolher", 1020, 10)
+        )
+        val merged = PositionedTextRowMerger.merge(fragments)
+        assertEquals(2, merged.count { it == "Pop Nova" })
+        assertEquals(2, merged.count { it == "Escolher" })
+        assertTrue(merged.any { it == "4,99 135 corridas" })
+    }
+
+    @Test
+    fun switchingFromMapToRequestsMustReplayTopCardOnce() {
+        val oldPrice = "NINETY_NINE_DRIVER|10.2|3.5|..."
+        val bothCards = oldPrice + ";NINETY_NINE_DRIVER|9.8|3.5|..."
+        assertTrue(NinetyNineListDisplayPolicy.shouldRefresh(false, oldPrice, bothCards))
+        assertTrue(!NinetyNineListDisplayPolicy.shouldRefresh(true, bothCards, bothCards))
+        assertTrue(NinetyNineListDisplayPolicy.shouldRefresh(true, bothCards, oldPrice))
+    }
 
     @Test
     fun realTwoCardScreenshotKeepsTopFirstWithDistinctRatings() {
