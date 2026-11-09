@@ -44,9 +44,13 @@ jobs:
           gradle assembleDebug assembleRelease --stacktrace
 
       - name: Prepare APK for Artifact
+        id: apk_meta
         run: |
           VERSION_NAME=$(grep 'versionName' android/app/build.gradle | head -n 1 | awk -F'"' '{print $2}')
-          echo "Building version: $VERSION_NAME"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "version=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          echo "Building version: $VERSION_NAME / Build ${GITHUB_RUN_NUMBER} / $SHORT_SHA"
           mkdir -p release-apk
           mkdir -p client/public
           mkdir -p dist/public
@@ -54,6 +58,7 @@ jobs:
           if [ ! -f "$APK_SRC" ]; then
             APK_SRC="android/app/build/outputs/apk/debug/app-debug.apk"
           fi
+          cp "$APK_SRC" "release-apk/GoOrNo-v${VERSION_NAME}-run${GITHUB_RUN_NUMBER}-${SHORT_SHA}.apk"
           cp "$APK_SRC" "release-apk/GoOrNo-v${VERSION_NAME}.apk"
           cp "$APK_SRC" "release-apk/GoOrNo.apk"
           cp "$APK_SRC" "GoOrNo-v${VERSION_NAME}.apk"
@@ -66,11 +71,12 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: GoOrNo-APK-v3.3.20
+          name: GoOrNo-APK-v${{ steps.apk_meta.outputs.version }}-run${{ github.run_number }}-${{ steps.apk_meta.outputs.short_sha }}
           path: release-apk/*
           retention-days: 30
 
       - name: Push APK to main repo
+        if: github.ref == 'refs/heads/main'
         run: |
           VERSION_NAME=$(grep 'versionName' android/app/build.gradle | head -n 1 | awk -F'"' '{print $2}')
           git config --global user.name "github-actions[bot]"
