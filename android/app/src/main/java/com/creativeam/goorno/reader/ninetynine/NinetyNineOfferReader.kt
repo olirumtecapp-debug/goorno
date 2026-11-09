@@ -99,6 +99,16 @@ object NinetyNineOfferReader {
                 context.contains("perfil") || context.contains("cartão") ||
                 context.contains("cartao") || context.contains("verif")
             if (!hasContext) continue
+            val lineLower = line.lowercase(Locale.ROOT)
+            val passengerContextOnLine = lineLower.contains("corrida") ||
+                lineLower.contains("viagen") || lineLower.contains("perfil") ||
+                lineLower.contains("cartão") || lineLower.contains("cartao") ||
+                lineLower.contains("verif")
+            // Só um decimal isolado pode aproveitar contexto da linha vizinha.
+            // "Rua 4,90" e demais textos de endereço não são avaliações.
+            val isolatedRating = Regex("""^[★⭐☆👤\s]*[3-5][.,]\d{2}$""")
+                .matches(line.trim())
+            if (!passengerContextOnLine && !isolatedRating) continue
             if (line.contains("R$", ignoreCase = true) ||
                 line.contains("/km", ignoreCase = true)) continue
             for (match in ratingPattern.findAll(line)) {
