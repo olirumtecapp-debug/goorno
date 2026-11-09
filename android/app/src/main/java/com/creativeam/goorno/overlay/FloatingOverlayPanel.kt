@@ -85,7 +85,7 @@ class FloatingOverlayPanel(private val context: Context) {
         override fun run() {
             remainingSeconds--
             if (remainingSeconds <= 0) {
-                dismissCurrentOfferCardByUser()
+                advanceToNextOfferOrFinish()
             } else {
                 activeTimerLabel?.text = "${remainingSeconds}s"
                 mainHandler.postDelayed(this, 1000L)
@@ -320,6 +320,9 @@ class FloatingOverlayPanel(private val context: Context) {
         }
 
         val currentEval = offerQueue[currentQueueIndex]
+        val cardPrice = currentEval.offer.offeredPrice ?: 0.0
+        val cardKm = currentEval.totalConsideredDistanceKm ?: 0.0
+        activeCardFingerprint = "${currentEval.offer.sourceApp.name}|${String.format(Locale.US, "%.2f", cardPrice)}|${String.format(Locale.US, "%.1f", cardKm)}"
         val totalInQueue = offerQueue.size
         val oneBasedIndex = currentQueueIndex + 1
 
@@ -353,8 +356,9 @@ class FloatingOverlayPanel(private val context: Context) {
         if (activeCardFingerprint.isNotBlank()) {
             recentlyDismissedOfferTimestamps[activeCardFingerprint] = System.currentTimeMillis()
         }
-        currentQueueIndex++
-        if (currentQueueIndex < offerQueue.size) {
+        val nextIndex = OfferQueueProgression.nextIndex(currentQueueIndex, offerQueue.size)
+        if (nextIndex != null) {
+            currentQueueIndex = nextIndex
             removeWindowViewOnly()
             isTransitioningBetweenOffers = true
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
