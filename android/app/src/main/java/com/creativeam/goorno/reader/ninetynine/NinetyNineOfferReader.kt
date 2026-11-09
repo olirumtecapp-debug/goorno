@@ -27,6 +27,35 @@ object NinetyNineOfferReader {
     /**
      * Extrai TODAS as ofertas visíveis na tela da 99 (1 ou várias viagens simultâneas na lista de ofertas).
      */
+
+    /**
+     * Completa SOMENTE a nota de uma oferta já exibida usando OCR da MESMA
+     * oferta. Nunca substitui preço, quilômetros ou minutos por leitura OCR.
+     * A comparação estrita evita atribuir a nota de outro card da 99.
+     */
+    fun enrichRatingsFromOcr(
+        displayed: List<StandardRideOffer>,
+        visualOffers: List<StandardRideOffer>
+    ): List<StandardRideOffer> = displayed.map { original ->
+        if (original.passengerRating != null || original.passengerIsNew) return@map original
+        val matches = visualOffers.filter { candidate ->
+            val originalPrice = original.offeredPrice
+            val candidatePrice = candidate.offeredPrice
+            val originalKm = original.totalDistanceKmExplicit
+                ?: ((original.pickupDistanceKm ?: 0.0) + (original.tripDistanceKm ?: 0.0))
+            val candidateKm = candidate.totalDistanceKmExplicit
+                ?: ((candidate.pickupDistanceKm ?: 0.0) + (candidate.tripDistanceKm ?: 0.0))
+            candidate.passengerRating != null &&
+                originalPrice != null && candidatePrice != null &&
+                kotlin.math.abs(originalPrice - candidatePrice) < 0.02 &&
+                originalKm > 0.0 && candidateKm > 0.0 &&
+                kotlin.math.abs(originalKm - candidateKm) < 0.16 &&
+                candidate.sourceApp == original.sourceApp
+        }
+        if (matches.size == 1) original.copy(passengerRating = matches.first().passengerRating)
+        else original
+    }
+
     fun parseMultipleOffersFromScreen(
         rawNodes: List<String>,
         captureMethod: CaptureMethod = CaptureMethod.ACCESSIBILITY,

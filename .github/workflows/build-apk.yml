@@ -71,6 +71,7 @@ jobs:
           retention-days: 30
 
       - name: Push APK to main repo
+        if: github.ref == 'refs/heads/main'
         run: |
           VERSION_NAME=$(grep 'versionName' android/app/build.gradle | head -n 1 | awk -F'"' '{print $2}')
           git config --global user.name "github-actions[bot]"
