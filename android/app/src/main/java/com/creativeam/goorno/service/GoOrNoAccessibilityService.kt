@@ -430,15 +430,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         if (completeAccessibilityOffers.isNotEmpty()) {
-            // A 99 pode fornecer preço/km/min via Accessibility sem expor a nota.
-            // OCR complementar é assíncrono para manter a resposta financeira imediata.
-            if (targetApp == SourceApp.NINETY_NINE_DRIVER &&
-                completeAccessibilityOffers.any { it.passengerRating == null && !it.passengerIsNew } &&
-                now - lastRatingOcrAttemptMillis >= 8_000L
-            ) {
-                lastRatingOcrAttemptMillis = now
-                triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now, ratingOnly = true)
-            }
+            // Captura complementar da nota somente DEPOIS de exibir uma nova oferta.
+            // Nunca inicia OCR enquanto a leitura principal ainda percorre a árvore.
             currentLifecycleState = OfferLifecycleState.OFFER_ACTIVE
             consecutiveScansWithoutOffers = 0
             processAndShowOffers(completeAccessibilityOffers, normalizedTexts, now)
@@ -731,9 +724,13 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                     }
 
                                     if (ratingOnly) {
-                                        // Jamais processar OCR de nota como NOVA corrida.
-                                        if (validOcrOffers.isNotEmpty()) {
-                                            mainHandler.post { updateDisplayedPassengerRatings(validOcrOffers, now) }
+                                        // OCR parcial frequentemente não enxerga preço sob o overlay,
+                                        // mas enxerga a linha "4,94 • 728 corridas" mais abaixo.
+                                        // O fallback seguro exige uma única oferta e uma única nota.
+                                        mainHandler.post {
+                                            updateDisplayedPassengerRatings(
+                                                validOcrOffers, normalizedOcr, now
+                                            )
                                         }
                                     } else if (validOcrOffers.isNotEmpty()) {
                                         consecutiveScansWithoutOffers = 0
@@ -781,14 +778,20 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun updateDisplayedPassengerRatings(ocrOffers: List<StandardRideOffer>, capturedAt: Long) {
+    private fun updateDisplayedPassengerRatings(
+        ocrOffers: List<StandardRideOffer>,
+        ocrLines: List<String>,
+        capturedAt: Long
+    ) {
         val app = applicationContext as? GoOrNoApplication ?: return
         if (!app.overlayPanel.isCardCurrentlyVisible()) return
         if (recentlyDisplayedAtMillis < capturedAt - 2_500L ||
             System.currentTimeMillis() - recentlyDisplayedAtMillis > 5_000L) return
         val original = recentlyDisplayedOffers
         if (original.isEmpty()) return
-        val enhanced = NinetyNineOfferReader.enrichRatingsFromOcr(original, ocrOffers)
+        val matching = NinetyNineOfferReader.enrichRatingsFromOcr(original, ocrOffers)
+        val enhanced = if (matching != original) matching else
+            NinetyNineOfferReader.recoverSingleOfferRatingFromOcr(original, ocrLines)
         if (enhanced == original) return
         serviceScope.launch {
             val config = app.preferencesRepository.getInMemoryConfig()
@@ -824,7 +827,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (parsedOffers.isEmpty()) return
-        lastOfferProcessedTimeMillis = now
 
         val app = applicationContext as? GoOrNoApplication ?: return
 
@@ -870,6 +872,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             }
         }
 
+        lastOfferProcessedTimeMillis = now
         serviceScope.launch {
             val config = app.preferencesRepository.getInMemoryConfig()
             val evaluations = validOffers
@@ -902,6 +905,28 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             RuntimeDiagnosticsBus.publishEvaluation(richestEval)
             app.overlayPanel.applyConfig(config)
             app.overlayPanel.showEvaluations(evaluations)
+
+            // OCR da NOTA roda uma única vez por nova avaliação exibida.
+            // Não compete com o scan atual nem precisa ler de novo preço/tempo/km.
+            if (evaluations.any {
+                    it.offer.sourceApp == SourceApp.NINETY_NINE_DRIVER &&
+                    it.offer.passengerRating == null && !it.offer.passengerIsNew
+                } && System.currentTimeMillis() - lastRatingOcrAttemptMillis >= 1_500L
+            ) {
+                val requestAt = System.currentTimeMillis()
+                lastRatingOcrAttemptMillis = requestAt
+                mainHandler.post {
+                    val activePkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Throwable) { null }
+                    if (activePkg != null && SourceApp.fromPackageName(activePkg) == SourceApp.NINETY_NINE_DRIVER &&
+                        recentlyDisplayedAtMillis >= requestAt - 2_500L &&
+                        app.overlayPanel.isCardCurrentlyVisible()
+                    ) {
+                        triggerAutomaticAccessibilityOcrIfNeeded(
+                            SourceApp.NINETY_NINE_DRIVER, activePkg, requestAt, ratingOnly = true
+                        )
+                    }
+                }
+            }
             CopilotNotificationReceiver.showActiveNotification(
                 context = this@GoOrNoAccessibilityService,
                 latestEvaluation = richestEval,
