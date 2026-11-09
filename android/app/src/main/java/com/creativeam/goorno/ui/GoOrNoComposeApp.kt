@@ -158,26 +158,134 @@ fun GoOrNoComposeApp(
     var showWhatsNewDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        val lastSeenCode = versionPrefs.getInt("last_seen_version_code", 0)
+        if (lastSeenCode != 0 && currentAppVersionCode > lastSeenCode) {
+            showWhatsNewDialog = true
+        } else if (lastSeenCode == 0) {
+            versionPrefs.edit().putInt("last_seen_version_code", currentAppVersionCode).apply()
+        }
+    }
+
+    var updateInfoState by remember { mutableStateOf<AppUpdateInfo?>(null) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var isCheckingUpdates by remember { mutableStateOf(false) }
+
+    var showAdjustFaixasDialog by remember { mutableStateOf(false) }
+    var pendingRiskAddressToConfirm by remember { mutableStateOf<String?>(null) }
+    var pendingFavoriteAddressToConfirm by remember { mutableStateOf<String?>(null) }
+    var securitySelectedTab by remember { mutableStateOf(0) }
+    var showAccessibilityDisclosureDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountConfirmDialog by remember { mutableStateOf(false) }
+    var isDeletingAccount by remember { mutableStateOf(false) }
+    var showLegalNatureDialog by remember { mutableStateOf(false) }
+
+    val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
+        val cleanTerm = rawAddr.trim()
+        if (cleanTerm.length >= 3) {
+            pendingRiskAddressToConfirm = cleanTerm
+        } else {
+            Toast.makeText(context, "Endereço muito curto para cadastrar como risco.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val promptMarkAddressAsFavorite: (String) -> Unit = { rawAddr ->
+        val cleanTerm = rawAddr.trim()
+        if (cleanTerm.length >= 3) {
+            pendingFavoriteAddressToConfirm = cleanTerm
+        } else {
+            Toast.makeText(context, "Endereço muito curto para cadastrar como favorito.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val checkForUpdates: (Boolean) -> Unit = { manual ->
+        isCheckingUpdates = true
         scope.launch(Dispatchers.IO) {
-            checkForUpdates(false)
             try {
-                val savedPhone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
-                if (savedPhone.length >= 10) {
-                    val currentCfg = app.preferencesRepository.getConfigOnce()
-                    if (currentCfg.customRiskZones.isBlank() && currentCfg.customFavoriteZones.isBlank()) {
-                        val res = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, savedPhone)
-                        res.onSuccess { (cloudCfg, cloudOffers) ->
-                            if (cloudCfg.customRiskZones.isNotBlank() || cloudCfg.customFavoriteZones.isNotBlank()) {
-                                app.preferencesRepository.saveConfig(cloudCfg)
-                                if (cloudOffers.isNotEmpty()) {
-                                    app.database.rideOfferDao().insertAll(cloudOffers)
-                                }
+                val conn = (URL("https://goorno-app.vercel.app/api/app-version").openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 8000
+                    readTimeout = 8000
+                    requestMethod = "GET"
+                    setRequestProperty("Accept", "application/json")
+                }
+                if (conn.responseCode == 200) {
+                    val body = conn.inputStream.bufferedReader().use { it.readText() }
+                    val json = JSONObject(body)
+                    val rCode = json.optInt("versionCode", 0)
+                    val rName = json.optString("versionName", "")
+                    val rDate = json.optString("releaseDate", "")
+                    val rUrl = json.optString("apkUrl", "https://goorno-app.vercel.app/GoOrNo.apk")
+                    val rDirect = json.optString("directDownload", "/GoOrNo.apk")
+                    val rBytes = json.optLong("fileSizeBytes", 0L)
+                    val rSizeFormatted = json.optString("fileSizeFormatted", "")
+                    val rMandatory = json.optBoolean("mandatory", false)
+                    val changelogList = mutableListOf<String>()
+                    val clArray = json.optJSONArray("changelog")
+                    if (clArray != null) {
+                        for (i in 0 until clArray.length()) {
+                            changelogList.add(clArray.optString(i))
+                        }
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        isCheckingUpdates = false
+                        if (rCode > currentAppVersionCode) {
+                            val info = AppUpdateInfo(
+                                versionName = rName,
+                                versionCode = rCode,
+                                releaseDate = rDate,
+                                apkUrl = rUrl,
+                                directDownload = rDirect,
+                                fileSizeBytes = rBytes,
+                                fileSizeFormatted = rSizeFormatted,
+                                changelog = changelogList,
+                                mandatory = rMandatory
+                            )
+                            updateInfoState = info
+                            showUpdateDialog = true
+                        } else if (manual) {
+                            Toast.makeText(context, "✅ Você já está na versão mais recente (v$currentAppVersionName)!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else if (manual) {
+                    withContext(Dispatchers.Main) {
+                        isCheckingUpdates = false
+                        Toast.makeText(context, "Não foi possível verificar no momento (código ${conn.responseCode}).", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                if (manual) {
+                    withContext(Dispatchers.Main) {
+                        isCheckingUpdates = false
+                        Toast.makeText(context, "Falha de conexão ao verificar atualizações: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        isCheckingUpdates = false
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        checkForUpdates(false)
+        try {
+            val savedPhone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
+            if (savedPhone.length >= 10) {
+                val currentCfg = app.preferencesRepository.getConfigOnce()
+                if (currentCfg.customRiskZones.isBlank() && currentCfg.customFavoriteZones.isBlank()) {
+                    val res = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, savedPhone)
+                    res.onSuccess { (cloudCfg, cloudOffers) ->
+                        if (cloudCfg.customRiskZones.isNotBlank() || cloudCfg.customFavoriteZones.isNotBlank()) {
+                            app.preferencesRepository.saveConfig(cloudCfg)
+                            if (cloudOffers.isNotEmpty()) {
+                                app.database.rideOfferDao().insertAll(cloudOffers)
                             }
                         }
                     }
                 }
-            } catch (_: Throwable) {}
-        }
+            }
+        } catch (_: Throwable) {}
     }
 
     LaunchedEffect(resumeTrigger) {
