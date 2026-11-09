@@ -123,6 +123,23 @@ class NinetyNineMultiCardFlowRegressionTest {
     }
 
     @Test
+    fun overlayPriceThatMatchesBottomCardDoesNotStealTopPassengerRating() {
+        val base = NinetyNineOfferReader.parseMultipleOffersFromScreen(
+            screenshot99.filterNot { it.contains("4,99") || it.contains("4,79") }
+        )
+        val fragments = listOf(
+            NinetyNineVisualRatingMatcher.VisualText("R$9,80", 350), // overlay
+            NinetyNineVisualRatingMatcher.VisualText("R$10,20", 390),
+            NinetyNineVisualRatingMatcher.VisualText("4,99 • 135 corridas", 455),
+            NinetyNineVisualRatingMatcher.VisualText("R$9,80", 970), // card real
+            NinetyNineVisualRatingMatcher.VisualText("4,79 • 160 corridas", 1030)
+        )
+        val result = NinetyNineVisualRatingMatcher.enrich(base, fragments)
+        assertEquals(4.99, result[0].passengerRating!!, 0.001)
+        assertEquals(4.79, result[1].passengerRating!!, 0.001)
+    }
+
+    @Test
     fun lowerCardRatingDoesNotContaminateTopWhenTopPriceIsHidden() {
         val base = NinetyNineOfferReader.parseMultipleOffersFromScreen(
             screenshot99.filterNot { it.contains("4,99") || it.contains("4,79") }
