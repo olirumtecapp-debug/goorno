@@ -22,6 +22,9 @@ import com.creativeam.goorno.model.OfferLifecycleState
 import com.creativeam.goorno.model.StandardRideOffer
 import com.creativeam.goorno.reader.BrazilianOfferParser
 import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
+import com.creativeam.goorno.reader.ninetynine.NinetyNineStructuredReader
+import com.creativeam.goorno.reader.ninetynine.NinetyNineVisualRatingMatcher
+import com.creativeam.goorno.reader.ninetynine.NinetyNineListDisplayPolicy
 import com.creativeam.goorno.reader.uber.UberOfferReader
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
@@ -64,6 +67,12 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var lastAutoScreenshotTimeMillis: Long = 0L
     private var lastCardClosedTimeMillis: Long = 0L
     private var lastOfferProcessedTimeMillis: Long = 0L
+    private var lastRatingOcrAttemptMillis: Long = 0L
+    private var lastRatingOcrOfferKey: String = ""
+    private var last99ListSignature: String = ""
+    private var wasViewing99List: Boolean = false
+    @Volatile private var recentlyDisplayedOffers: List<StandardRideOffer> = emptyList()
+    @Volatile private var recentlyDisplayedAtMillis: Long = 0L
     private var isTakingAutoScreenshot: Boolean = false
     private var consecutiveScansWithoutOffers: Int = 0
 
@@ -311,6 +320,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         val mergedLines = mergeSameRowNodes(positionedNodes)
         val normalizedTexts = BrazilianOfferParser.normalizeFragmentedNodes(mergedLines)
+        // Mudança de página: a mesma corrida pode aparecer primeiro no mapa e
+        // depois na lista. Não mantenha o filtro de duplicidade entre telas.
+        if (targetApp == SourceApp.NINETY_NINE_DRIVER &&
+            normalizedTexts.none { it.contains("Solicitações", ignoreCase = true) ||
+                it.contains("Solicitacoes", ignoreCase = true) }
+        ) {
+            wasViewing99List = false
+        }
 
         // 3. DETECÇÃO DE OCIOSIDADE E FECHAMENTO DE CARDS RESIDUAIS (ALLOWED_NO_OFFER):
         val joinedScreenLower = normalizedTexts.joinToString(" ").lowercase(Locale.ROOT)
@@ -402,7 +419,23 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // 4. EXTRAÇÃO EXCLUSIVA PARA O APLICATIVO ALVO (OFFER_CANDIDATE):
         currentLifecycleState = OfferLifecycleState.OFFER_CANDIDATE
-        val parsedOffers = extractOffersForApp(targetApp, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
+        val parsedOffers = if (targetApp == SourceApp.NINETY_NINE_DRIVER) {
+            // LAB Leitor 2: identifica cartões da 99 pelas coordenadas REAIS
+            // antes de extrair preço/tempo/nota. Quando não há lista estruturada,
+            // mantém o caminho comprovado de chamadas únicas no mapa.
+            val positioned = positionedNodes.map {
+                NinetyNineStructuredReader.Fragment(it.text, it.centerY, it.leftX)
+            }
+            NinetyNineStructuredReader.parse(
+                sourceApp = targetApp,
+                fragments = positioned,
+                captureMethod = CaptureMethod.ACCESSIBILITY,
+                timestampMillis = now
+            ) ?: extractOffersForApp(targetApp, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
+        } else {
+            // UBER INTACTA: não altera algoritmo, dados, eventos nem OCR Uber.
+            extractOffersForApp(targetApp, normalizedTexts, CaptureMethod.ACCESSIBILITY, now)
+        }
         if (parsedOffers.isEmpty()) {
             if (hasRideActionBtn) {
                 triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
@@ -427,6 +460,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         if (completeAccessibilityOffers.isNotEmpty()) {
+            // Captura complementar da nota somente DEPOIS de exibir uma nova oferta.
+            // Nunca inicia OCR enquanto a leitura principal ainda percorre a árvore.
             currentLifecycleState = OfferLifecycleState.OFFER_ACTIVE
             consecutiveScansWithoutOffers = 0
             processAndShowOffers(completeAccessibilityOffers, normalizedTexts, now)
@@ -482,7 +517,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private fun triggerAutomaticAccessibilityOcrIfNeeded(
         targetApp: SourceApp,
         targetPkg: String,
-        now: Long
+        now: Long,
+        ratingOnly: Boolean = false
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
 
@@ -499,7 +535,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             }
         }
         val app = applicationContext as? GoOrNoApplication
-        if (app?.overlayPanel?.isCardCurrentlyVisible() == true || (now - lastOfferProcessedTimeMillis < 2_500L)) {
+        if (!ratingOnly &&
+            (app?.overlayPanel?.isCardCurrentlyVisible() == true || now - lastOfferProcessedTimeMillis < 2_500L)) {
             isTakingAutoScreenshot = false
             return
         }
@@ -607,7 +644,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                 // Valida atualidade da captura: se o motorista mudou de app ou a tela mudou antes do OCR terminar, descarta
                                 val currentForeground = try { rootInActiveWindow?.packageName?.toString() } catch (_: Exception) { null }
                                     ?: lastKnownForegroundPkg
-                                if (currentForeground != targetPkg) {
+                                val ownOverlayFocused = ratingOnly &&
+                                    currentForeground == packageName &&
+                                    lastKnownForegroundPkg == targetPkg &&
+                                    (applicationContext as? GoOrNoApplication)?.overlayPanel?.isCardCurrentlyVisible() == true
+                                if (currentForeground != targetPkg && !ownOverlayFocused) {
                                     try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
                                     isTakingAutoScreenshot = false
                                     return@addOnSuccessListener
@@ -617,7 +658,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                     isTakingAutoScreenshot = false
                                     return@addOnSuccessListener
                                 }
-                                if (now < lastOfferProcessedTimeMillis) {
+                                if (!ratingOnly && now < lastOfferProcessedTimeMillis) {
                                     try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
                                     isTakingAutoScreenshot = false
                                     return@addOnSuccessListener
@@ -680,12 +721,29 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         else -> SourceApp.NINETY_NINE_DRIVER
                                     }
 
-                                    var ocrOffers = extractOffersForApp(
-                                        appType = effectiveOcrApp,
-                                        lines = normalizedOcr,
-                                        method = CaptureMethod.OCR,
-                                        timestampMillis = System.currentTimeMillis()
-                                    )
+                                    var ocrOffers = if (effectiveOcrApp == SourceApp.NINETY_NINE_DRIVER) {
+                                        NinetyNineStructuredReader.parse(
+                                            sourceApp = effectiveOcrApp,
+                                            fragments = positionedOcr.map {
+                                                NinetyNineStructuredReader.Fragment(it.text, it.centerY, it.leftX)
+                                            },
+                                            captureMethod = CaptureMethod.OCR,
+                                            timestampMillis = System.currentTimeMillis()
+                                        ) ?: extractOffersForApp(
+                                            appType = effectiveOcrApp,
+                                            lines = normalizedOcr,
+                                            method = CaptureMethod.OCR,
+                                            timestampMillis = System.currentTimeMillis()
+                                        )
+                                    } else {
+                                        // Uber permanece no leitor original.
+                                        extractOffersForApp(
+                                            appType = effectiveOcrApp,
+                                            lines = normalizedOcr,
+                                            method = CaptureMethod.OCR,
+                                            timestampMillis = System.currentTimeMillis()
+                                        )
+                                    }
 
                                     if (ocrOffers.isEmpty()) {
                                         val altApp = if (effectiveOcrApp == SourceApp.NINETY_NINE_DRIVER) {
@@ -716,7 +774,19 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         isSanePrice && isSaneKm && isSaneDuration && !offer.hasFieldConflict && !isIdleScreen
                                     }
 
-                                    if (validOcrOffers.isNotEmpty()) {
+                                    if (ratingOnly) {
+                                        // OCR parcial frequentemente não enxerga preço sob o overlay,
+                                        // mas enxerga a linha "4,94 • 728 corridas" mais abaixo.
+                                        // O fallback seguro exige uma única oferta e uma única nota.
+                                        val ratingGeometry = positionedOcr.map {
+                                            NinetyNineVisualRatingMatcher.VisualText(it.text, it.centerY)
+                                        }
+                                        mainHandler.post {
+                                            updateDisplayedPassengerRatings(
+                                                validOcrOffers, normalizedOcr, ratingGeometry, now
+                                            )
+                                        }
+                                    } else if (validOcrOffers.isNotEmpty()) {
                                         consecutiveScansWithoutOffers = 0
                                         RuntimeDiagnosticsBus.recordAccessibilitySnapshot(
                                             AccessibilitySnapshot(
@@ -762,6 +832,42 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
     }
 
+    private fun updateDisplayedPassengerRatings(
+        ocrOffers: List<StandardRideOffer>,
+        ocrLines: List<String>,
+        ratingGeometry: List<NinetyNineVisualRatingMatcher.VisualText>,
+        capturedAt: Long
+    ) {
+        val app = applicationContext as? GoOrNoApplication ?: return
+        if (!app.overlayPanel.isCardCurrentlyVisible()) return
+        if (recentlyDisplayedAtMillis < capturedAt - 2_500L ||
+            System.currentTimeMillis() - recentlyDisplayedAtMillis > 5_000L) return
+        val original = recentlyDisplayedOffers
+        if (original.isEmpty()) return
+        // OCR com posição Y consegue associar a linha da nota ao preço correto
+        // mesmo com dois cartões na mesma tela. Mantém as outras métricas intactas.
+        val positionMatched = NinetyNineVisualRatingMatcher.enrich(original, ratingGeometry)
+        val matching = NinetyNineOfferReader.enrichRatingsFromOcr(positionMatched, ocrOffers)
+        val enhanced = if (matching != original) matching else
+            NinetyNineOfferReader.recoverSingleOfferRatingFromOcr(original, ocrLines)
+        if (enhanced == original) return
+        serviceScope.launch {
+            val config = app.preferencesRepository.getInMemoryConfig()
+            val evaluations = enhanced.map { FinancialEngine.evaluate(it, config) }
+                .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
+            if (evaluations.isNotEmpty()) {
+                mainHandler.post {
+                    // Atualiza o card sem gerar nova oferta, novo registro ou novo alerta.
+                    if (app.overlayPanel.isCardCurrentlyVisible() &&
+                        recentlyDisplayedOffers == original) {
+                        recentlyDisplayedOffers = enhanced
+                        app.overlayPanel.updateRatingsWithoutReset(evaluations)
+                    }
+                }
+            }
+        }
+    }
+
     private fun buildStableOfferKey(offer: StandardRideOffer): String {
         val price = offer.offeredPrice ?: 0.0
         val priceRounded = (Math.round(price * 10.0) / 10.0)
@@ -779,9 +885,30 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         now: Long
     ) {
         if (parsedOffers.isEmpty()) return
-        lastOfferProcessedTimeMillis = now
 
         val app = applicationContext as? GoOrNoApplication ?: return
+        // A lista da 99 é uma apresentação nova da tela; prioriza todos os
+        // cartões de cima para baixo, inclusive o que já tocou no mapa.
+        val is99RequestList = parsedOffers.any { it.sourceApp == SourceApp.NINETY_NINE_DRIVER } &&
+            screenLines.any { line ->
+                line.contains("Solicitações", ignoreCase = true) ||
+                    line.contains("Solicitacoes", ignoreCase = true)
+            }
+        val listSignature = if (is99RequestList) parsedOffers.joinToString(";") {
+            buildStableOfferKey(it)
+        } else ""
+        val isNewListPresentation = is99RequestList &&
+            NinetyNineListDisplayPolicy.shouldRefresh(
+                wasViewing99List, last99ListSignature, listSignature
+            )
+        if (is99RequestList) {
+            if (!isNewListPresentation) return
+            wasViewing99List = true
+            last99ListSignature = listSignature
+        } else {
+            wasViewing99List = false
+            last99ListSignature = ""
+        }
 
         // Remove chaves que expiraram há mais de 120 segundos
         val expiredKeys = shownOfferTimestamps.entries
@@ -791,11 +918,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // Identifica ofertas novas e ofertas repetidas (re-oferta após término ou recusa)
         val validOffers = mutableListOf<StandardRideOffer>()
+        val alreadyShownBeforeList = mutableSetOf<String>()
         for (offer in parsedOffers) {
             val key = buildStableOfferKey(offer)
             val lastShown = shownOfferTimestamps[key]
-
-            if (lastShown == null) {
+            if (isNewListPresentation) {
+                // Não eliminar o primeiro card só porque já foi lido no mapa.
+                if (lastShown != null) alreadyShownBeforeList.add(key)
+                validOffers.add(offer.copy(isRepeatedOffer = false))
+            } else if (lastShown == null) {
                 // Primeira vez que esta oferta toca
                 validOffers.add(offer.copy(isRepeatedOffer = false))
             } else if (now - lastShown >= 15_000L && now - lastShown <= 120_000L) {
@@ -825,6 +956,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             }
         }
 
+        lastOfferProcessedTimeMillis = now
         serviceScope.launch {
             val config = app.preferencesRepository.getInMemoryConfig()
             val evaluations = validOffers
@@ -842,6 +974,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 shownOfferTimestamps[key] = now
             }
 
+            recentlyDisplayedOffers = evaluations.map { it.offer }
+            recentlyDisplayedAtMillis = System.currentTimeMillis()
             RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.OFFER_DETECTED)
 
             // Escolhe a avaliação mais completa (com Origem, Destino e Tempo) para persistir na Notificação do Topo!
@@ -855,6 +989,38 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             RuntimeDiagnosticsBus.publishEvaluation(richestEval)
             app.overlayPanel.applyConfig(config)
             app.overlayPanel.showEvaluations(evaluations)
+
+            // OCR da NOTA roda uma única vez por nova avaliação exibida.
+            // Não compete com o scan atual nem precisa ler de novo preço/tempo/km.
+            val ratingOfferKey = evaluations.joinToString("|") { buildStableOfferKey(it.offer) }
+            if (evaluations.any {
+                    it.offer.sourceApp == SourceApp.NINETY_NINE_DRIVER &&
+                    it.offer.passengerRating == null && !it.offer.passengerIsNew
+                } && (ratingOfferKey != lastRatingOcrOfferKey ||
+                    System.currentTimeMillis() - lastRatingOcrAttemptMillis >= 1_500L)
+            ) {
+                val requestAt = System.currentTimeMillis()
+                lastRatingOcrAttemptMillis = requestAt
+                lastRatingOcrOfferKey = ratingOfferKey
+                mainHandler.post {
+                    val activePkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Throwable) { null }
+                    val driverStillActive = activePkg != null &&
+                        SourceApp.fromPackageName(activePkg) == SourceApp.NINETY_NINE_DRIVER
+                    val ownOverlayFocused = activePkg == packageName &&
+                        lastKnownForegroundPkg.let { SourceApp.fromPackageName(it) == SourceApp.NINETY_NINE_DRIVER } &&
+                        app.overlayPanel.isCardCurrentlyVisible()
+                    if ((driverStillActive || ownOverlayFocused) &&
+                        recentlyDisplayedAtMillis >= requestAt - 2_500L &&
+                        app.overlayPanel.isCardCurrentlyVisible()
+                    ) {
+                        triggerAutomaticAccessibilityOcrIfNeeded(
+                            SourceApp.NINETY_NINE_DRIVER,
+                            if (driverStillActive) activePkg!! else lastKnownForegroundPkg,
+                            requestAt, ratingOnly = true
+                        )
+                    }
+                }
+            }
             CopilotNotificationReceiver.showActiveNotification(
                 context = this@GoOrNoAccessibilityService,
                 latestEvaluation = richestEval,
@@ -872,7 +1038,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     val hasAddresses = !offer.originAddress.isNullOrBlank() || !offer.destinationAddress.isNullOrBlank()
                     val isLegitOffer = isSanePrice && totalKm >= 0.2 && totalMin > 0 && hasAddresses && !offer.hasFieldConflict
 
-                    if (!offer.isSimulated && isLegitOffer) {
+                    if (!offer.isSimulated && isLegitOffer &&
+                        buildStableOfferKey(offer) !in alreadyShownBeforeList) {
                         val entity = RideOfferEntity(
                             id = offer.offerId,
                             timestampMillis = offer.timestampMillis,
@@ -909,32 +1076,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     }
 
     private fun mergeSameRowNodes(nodes: List<PositionedText>): List<String> {
-        if (nodes.isEmpty()) return emptyList()
-        val sorted = nodes.sortedWith(compareBy<PositionedText>({ it.centerY }, { it.leftX }))
-
-        val rows = mutableListOf<MutableList<PositionedText>>()
-        for (item in sorted) {
-            val lastRow = rows.lastOrNull()
-            if (lastRow != null && kotlin.math.abs(lastRow.first().centerY - item.centerY) <= 38) {
-                if (lastRow.none { it.text == item.text }) {
-                    lastRow.add(item)
-                }
-            } else {
-                rows.add(mutableListOf(item))
-            }
-        }
-
-        val output = mutableListOf<String>()
-        for (row in rows) {
-            row.sortBy { it.leftX }
-            val joinedRow = row.joinToString(" ") { it.text }.trim()
-            if (joinedRow.isNotEmpty()) {
-                output.add(joinedRow)
-            }
-        }
-        return output.distinct()
+        return PositionedTextRowMerger.merge(nodes.map {
+            PositionedTextRowMerger.Fragment(it.text, it.centerY, it.leftX)
+        })
     }
-
 
     private fun collectPositionedTexts(
         node: AccessibilityNodeInfo?,
