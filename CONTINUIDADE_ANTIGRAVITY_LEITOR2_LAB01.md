@@ -59,3 +59,15 @@ Arquivo `android/app/src/test/java/com/creativeam/goorno/NinetyNineStructuredRea
 
 ## Limitações
 Sem teste em aparelho, não é possível garantir que a 99 exponha todas as notas à árvore de acessibilidade ou ao OCR. Não inventar nota para eliminar tracinhos: identificar origem exata do problema em snapshot real. Esta implementação reorganiza a SEGMENTAÇÃO da lista da 99, não reescreve o GoOrNo.
+
+
+## GitHub Actions confirmado — Build 101 (código do LAB)
+- Workflow **Run #210**: https://github.com/olirumtecapp-debug/goorno/actions/runs/42642549762
+- Commit compilado: `ce017f4b55a8d659730f74e5c4cb2b94109c019c`
+- Resultado: `testDebugUnitTest` **SUCESSO**, `assembleDebug` **SUCESSO**, `assembleRelease` **SUCESSO**.
+- Artefato confirmado: https://github.com/olirumtecapp-debug/goorno/actions/runs/42642549762/artifacts/13686307125
+- Nome: `GoOrNo-APK-v3.3.80-LAB01-Leitor2-run210-ce017f4`.
+- Etapa de publicar APK na `main`: **IGNORADA**, por ser uma branch experimental.
+- O documento foi adicionado depois do commit compilado; isso não altera o código do APK.
+- **Teste no aparelho ainda não feito**: a compilação e os testes JUnit não demonstram sozinhos reconhecimento real da nota da 99 ou ausência de regressões na Uber em campo.
+
