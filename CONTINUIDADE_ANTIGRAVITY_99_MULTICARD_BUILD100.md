@@ -57,3 +57,10 @@ Esses projetos não fornecem código privado de concorrentes nem garantem compor
 10. SOMENTE depois da homologação em dispositivo e autorização do usuário, coordenar merge na main e publicação pelo GitHub.
 
 **Limitação:** testes automatizados validam os casos simulados e código compilável, não substituem o teste no aparelho com a versão atual da 99.
+
+## Ajustes finais realizados depois deste documento inicial
+- `GoOrNoAccessibilityService.kt`: OCR de nota permanece autorizado quando o foco Android está no próprio overlay GoOrNo, desde que a última aplicação ativa seja a 99 e o card do GoOrNo continue visível. Isso evita descartar OCR válido pelo foco da janela flutuante.
+- `NinetyNineVisualRatingMatcher.kt`: quando a moeda do overlay duplica o preço de uma oferta, prioriza a âncora geométrica **mais próxima** da nota e bloqueia conflito de duas notas com distâncias semelhantes. Não confundir a nota de cima com a de baixo.
+- `NinetyNineMultiCardFlowRegressionTest.kt`: novo teste `overlayPriceThatMatchesBottomCardDoesNotStealTopPassengerRating`.
+- O fluxo correto de homologação é verificar a **última execução** do GitHub Actions correspondente ao commit atual da branch, e não usar um artefato antigo que tenha o mesmo `versionName`.
+- Nome dos artefatos: `GoOrNo-APK-v3.3.79-teste01-run<numero>-<sha>`, verificar também `versionCode 100`.
