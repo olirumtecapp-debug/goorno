@@ -478,7 +478,6 @@ fun GoOrNoComposeApp(
                             Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
                             Triple(GoOrNoScreen.SETTINGS, Icons.Default.Settings, "Ajustes")
                         )
-                        )
                         quickTabs.forEach { (screen, icon, label) ->
                             val selected = when (screen) {
                                 GoOrNoScreen.HOME -> currentScreen == GoOrNoScreen.HOME
