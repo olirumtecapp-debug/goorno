@@ -68,9 +68,9 @@ object NinetyNineVisualRatingMatcher {
             val anchors = prices.filter { abs(it.price - wantedPrice) < 0.02 }
             if (anchors.isEmpty()) return@map offer
 
-            val possibleRatings = mutableSetOf<Double>()
+            val candidates = mutableListOf<Pair<Int, Double>>()
             for (anchor in anchors) {
-                val nearest = ratings.filter { it.y - anchor.y in 8..210 }
+                val nearest = ratings.filter { it.y - anchor.y in 8..170 }
                     .minByOrNull { it.y - anchor.y } ?: continue
 
                 // Entre o preço e a avaliação não pode haver o preço de outra oferta.
@@ -78,9 +78,17 @@ object NinetyNineVisualRatingMatcher {
                     abs(it.price - wantedPrice) >= 0.02 && it.y > anchor.y + 5 &&
                         it.y < nearest.y - 5
                 }
-                if (!crossingAnotherCard) possibleRatings.add(nearest.rating)
+                if (!crossingAnotherCard) {
+                    candidates.add((nearest.y - anchor.y) to nearest.rating)
+                }
             }
-            if (possibleRatings.size == 1) offer.copy(passengerRating = possibleRatings.single())
+            val shortestGap = candidates.minOfOrNull { it.first } ?: return@map offer
+            // O preço desenhado pelo overlay pode duplicar o do card:
+            // selecionar a associação visual mais próxima, sem confiar em
+            // duas notas conflitantes em distâncias semelhantes.
+            val nearestValues = candidates.filter { it.first <= shortestGap + 10 }
+                .map { it.second }.distinct()
+            if (nearestValues.size == 1) offer.copy(passengerRating = nearestValues.single())
             else offer
         }
     }
