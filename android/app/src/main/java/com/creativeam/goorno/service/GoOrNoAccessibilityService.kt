@@ -23,6 +23,7 @@ import com.creativeam.goorno.model.StandardRideOffer
 import com.creativeam.goorno.reader.BrazilianOfferParser
 import com.creativeam.goorno.reader.ninetynine.NinetyNineOfferReader
 import com.creativeam.goorno.reader.ninetynine.NinetyNineVisualRatingMatcher
+import com.creativeam.goorno.reader.ninetynine.NinetyNineListDisplayPolicy
 import com.creativeam.goorno.reader.uber.UberOfferReader
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
@@ -859,7 +860,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             buildStableOfferKey(it)
         } else ""
         val isNewListPresentation = is99RequestList &&
-            (!wasViewing99List || last99ListSignature != listSignature)
+            NinetyNineListDisplayPolicy.shouldRefresh(
+                wasViewing99List, last99ListSignature, listSignature
+            )
         if (is99RequestList) {
             if (!isNewListPresentation) return
             wasViewing99List = true
