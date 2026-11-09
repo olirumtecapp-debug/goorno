@@ -87,7 +87,7 @@ data class AppUpdateInfo(
  */
 enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: String) {
     HOME(1, "Copiloto & Status", "Início"),
-    FINANCIAL_TARGETS(2, "Metas & Semáforo", "Ganhos"),
+    FINANCIAL_TARGETS(2, "Metas & Semáforo", "Metas"),
     DRIVER_SETUP(3, "Formato da Janela & Visual", "Janela"),
     HISTORY(4, "Histórico de Corridas", "Histórico"),
     SETTINGS(5, "Ajustes do Aplicativo", "Ajustes"),
@@ -158,134 +158,26 @@ fun GoOrNoComposeApp(
     var showWhatsNewDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val lastSeenCode = versionPrefs.getInt("last_seen_version_code", 0)
-        if (lastSeenCode != 0 && currentAppVersionCode > lastSeenCode) {
-            showWhatsNewDialog = true
-        } else if (lastSeenCode == 0) {
-            versionPrefs.edit().putInt("last_seen_version_code", currentAppVersionCode).apply()
-        }
-    }
-
-    var updateInfoState by remember { mutableStateOf<AppUpdateInfo?>(null) }
-    var showUpdateDialog by remember { mutableStateOf(false) }
-    var isCheckingUpdates by remember { mutableStateOf(false) }
-
-    var showAdjustFaixasDialog by remember { mutableStateOf(false) }
-    var pendingRiskAddressToConfirm by remember { mutableStateOf<String?>(null) }
-    var pendingFavoriteAddressToConfirm by remember { mutableStateOf<String?>(null) }
-    var securitySelectedTab by remember { mutableStateOf(0) }
-    var showAccessibilityDisclosureDialog by remember { mutableStateOf(false) }
-    var showDeleteAccountConfirmDialog by remember { mutableStateOf(false) }
-    var isDeletingAccount by remember { mutableStateOf(false) }
-    var showLegalNatureDialog by remember { mutableStateOf(false) }
-
-    val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
-        val cleanTerm = rawAddr.trim()
-        if (cleanTerm.length >= 3) {
-            pendingRiskAddressToConfirm = cleanTerm
-        } else {
-            Toast.makeText(context, "Endereço muito curto para cadastrar como risco.", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    val promptMarkAddressAsFavorite: (String) -> Unit = { rawAddr ->
-        val cleanTerm = rawAddr.trim()
-        if (cleanTerm.length >= 3) {
-            pendingFavoriteAddressToConfirm = cleanTerm
-        } else {
-            Toast.makeText(context, "Endereço muito curto para cadastrar como favorito.", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    val checkForUpdates: (Boolean) -> Unit = { manual ->
-        isCheckingUpdates = true
         scope.launch(Dispatchers.IO) {
+            checkForUpdates(false)
             try {
-                val conn = (URL("https://goorno-app.vercel.app/api/app-version").openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 8000
-                    readTimeout = 8000
-                    requestMethod = "GET"
-                    setRequestProperty("Accept", "application/json")
-                }
-                if (conn.responseCode == 200) {
-                    val body = conn.inputStream.bufferedReader().use { it.readText() }
-                    val json = JSONObject(body)
-                    val rCode = json.optInt("versionCode", 0)
-                    val rName = json.optString("versionName", "")
-                    val rDate = json.optString("releaseDate", "")
-                    val rUrl = json.optString("apkUrl", "https://goorno-app.vercel.app/GoOrNo.apk")
-                    val rDirect = json.optString("directDownload", "/GoOrNo.apk")
-                    val rBytes = json.optLong("fileSizeBytes", 0L)
-                    val rSizeFormatted = json.optString("fileSizeFormatted", "")
-                    val rMandatory = json.optBoolean("mandatory", false)
-                    val changelogList = mutableListOf<String>()
-                    val clArray = json.optJSONArray("changelog")
-                    if (clArray != null) {
-                        for (i in 0 until clArray.length()) {
-                            changelogList.add(clArray.optString(i))
-                        }
-                    }
-
-                    withContext(Dispatchers.Main) {
-                        isCheckingUpdates = false
-                        if (rCode > currentAppVersionCode) {
-                            val info = AppUpdateInfo(
-                                versionName = rName,
-                                versionCode = rCode,
-                                releaseDate = rDate,
-                                apkUrl = rUrl,
-                                directDownload = rDirect,
-                                fileSizeBytes = rBytes,
-                                fileSizeFormatted = rSizeFormatted,
-                                changelog = changelogList,
-                                mandatory = rMandatory
-                            )
-                            updateInfoState = info
-                            showUpdateDialog = true
-                        } else if (manual) {
-                            Toast.makeText(context, "✅ Você já está na versão mais recente (v$currentAppVersionName)!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                } else if (manual) {
-                    withContext(Dispatchers.Main) {
-                        isCheckingUpdates = false
-                        Toast.makeText(context, "Não foi possível verificar no momento (código ${conn.responseCode}).", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                if (manual) {
-                    withContext(Dispatchers.Main) {
-                        isCheckingUpdates = false
-                        Toast.makeText(context, "Falha de conexão ao verificar atualizações: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        isCheckingUpdates = false
-                    }
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        checkForUpdates(false)
-        try {
-            val savedPhone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
-            if (savedPhone.length >= 10) {
-                val currentCfg = app.preferencesRepository.getConfigOnce()
-                if (currentCfg.customRiskZones.isBlank() && currentCfg.customFavoriteZones.isBlank()) {
-                    val res = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, savedPhone)
-                    res.onSuccess { (cloudCfg, cloudOffers) ->
-                        if (cloudCfg.customRiskZones.isNotBlank() || cloudCfg.customFavoriteZones.isNotBlank()) {
-                            app.preferencesRepository.saveConfig(cloudCfg)
-                            if (cloudOffers.isNotEmpty()) {
-                                app.database.rideOfferDao().insertAll(cloudOffers)
+                val savedPhone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
+                if (savedPhone.length >= 10) {
+                    val currentCfg = app.preferencesRepository.getConfigOnce()
+                    if (currentCfg.customRiskZones.isBlank() && currentCfg.customFavoriteZones.isBlank()) {
+                        val res = com.creativeam.goorno.data.cloud.CloudSyncManager.autoRestoreSettings(context, savedPhone)
+                        res.onSuccess { (cloudCfg, cloudOffers) ->
+                            if (cloudCfg.customRiskZones.isNotBlank() || cloudCfg.customFavoriteZones.isNotBlank()) {
+                                app.preferencesRepository.saveConfig(cloudCfg)
+                                if (cloudOffers.isNotEmpty()) {
+                                    app.database.rideOfferDao().insertAll(cloudOffers)
+                                }
                             }
                         }
                     }
                 }
-            }
-        } catch (_: Throwable) {}
+            } catch (_: Throwable) {}
+        }
     }
 
     LaunchedEffect(resumeTrigger) {
@@ -450,6 +342,7 @@ fun GoOrNoComposeApp(
                     }
 
                     val isSubScreenOfSettings = currentScreen in listOf(
+                            GoOrNoScreen.DRIVER_SETUP,
                         GoOrNoScreen.SECURITY,
                         GoOrNoScreen.SERVICES_ACTIVATION,
                         GoOrNoScreen.CONNECTION_STATUS,
@@ -581,18 +474,17 @@ fun GoOrNoComposeApp(
                         )
                         val quickTabs = listOf(
                             Triple(GoOrNoScreen.HOME, Icons.Default.Dashboard, "Início"),
-                            Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Ganhos"),
-                            Triple(GoOrNoScreen.DRIVER_SETUP, Icons.Default.Layers, "Janela"),
                             Triple(GoOrNoScreen.HISTORY, Icons.Default.History, "Histórico"),
+                            Triple(GoOrNoScreen.FINANCIAL_TARGETS, Icons.Default.Tune, "Metas"),
                             Triple(GoOrNoScreen.SETTINGS, Icons.Default.Settings, "Ajustes")
+                        )
                         )
                         quickTabs.forEach { (screen, icon, label) ->
                             val selected = when (screen) {
                                 GoOrNoScreen.HOME -> currentScreen == GoOrNoScreen.HOME
-                                GoOrNoScreen.FINANCIAL_TARGETS -> currentScreen == GoOrNoScreen.FINANCIAL_TARGETS || currentScreen == GoOrNoScreen.VEHICLE_COSTS
-                                GoOrNoScreen.DRIVER_SETUP -> currentScreen == GoOrNoScreen.DRIVER_SETUP
                                 GoOrNoScreen.HISTORY -> currentScreen == GoOrNoScreen.HISTORY
-                                GoOrNoScreen.SETTINGS -> currentScreen == GoOrNoScreen.SETTINGS || isSubScreenOfSettings
+                                GoOrNoScreen.FINANCIAL_TARGETS -> currentScreen == GoOrNoScreen.FINANCIAL_TARGETS || currentScreen == GoOrNoScreen.VEHICLE_COSTS
+                                GoOrNoScreen.SETTINGS -> currentScreen == GoOrNoScreen.SETTINGS || isSubScreenOfSettings || currentScreen == GoOrNoScreen.DRIVER_SETUP
                                 else -> false
                             }
                             Surface(
@@ -685,280 +577,496 @@ fun GoOrNoComposeApp(
                 // TELA 1: TELA INICIAL (COPILOTO & ÚLTIMA OFERTA REAL)
                 // =====================================================
                 GoOrNoScreen.HOME -> {
+                    val isPermsReady = hasOverlayPermission && (hasAccessibilityPermission || ocrActive)
+                    val isCopilotActive = isPermsReady && config.copilotMonitoringEnabled
+                    val riskCount = remember(config.customRiskZones) {
+                        config.customRiskZones.split("\n", ";").filter { it.isNotBlank() }.size
+                    }
+
+                    // 1. BANNER DE PERMISSÕES PENDENTES (Alerta limpo no topo apenas se faltar algo)
+                    if (!isPermsReady) {
+                        item {
+                            Surface(
+                                color = Color(0xFFFEF3C7),
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { currentScreen = GoOrNoScreen.SERVICES_ACTIVATION }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("⚠️", fontSize = 16.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Permissões pendentes para leitura automática",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF92400E)
+                                        )
+                                        Text(
+                                            text = "Toque aqui para ativar Sobreposição e Acessibilidade",
+                                            fontSize = 11.sp,
+                                            color = Color(0xFFB45309)
+                                        )
+                                    }
+                                    Text(">", fontWeight = FontWeight.Bold, color = Color(0xFF92400E))
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. CARD 1: COPILOTO (VISÍVEL FORA DO APP)
                     item {
-                        val isPermsReady = hasOverlayPermission && (hasAccessibilityPermission || ocrActive)
-                        val isCopilotActive = isPermsReady && config.copilotMonitoringEnabled
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            border = BorderStroke(
-                                1.5.dp,
-                                when {
-                                    !config.copilotMonitoringEnabled -> TrafficRed
-                                    isCopilotActive -> TrafficGreen
-                                    else -> TrafficYellow
-                                }
-                            ),
-                            shape = RoundedCornerShape(20.dp)
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(18.dp)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
                                 ) {
                                     Surface(
-                                        color = when {
-                                            !config.copilotMonitoringEnabled -> TrafficRedSoft
-                                            isCopilotActive -> TrafficGreenSoft
-                                            else -> TrafficYellowSoft
-                                        },
-                                        shape = RoundedCornerShape(8.dp)
+                                        color = if (isCopilotActive) Color(0xFFDCFCE7) else Color(0xFFF1F5F9),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.size(44.dp)
                                     ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(if (isCopilotActive) "✨" else "💤", fontSize = 20.sp)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
                                         Text(
-                                            text = when {
-                                                !config.copilotMonitoringEnabled -> "🔴 DESATIVADO"
-                                                isCopilotActive -> "🟢 COPILOTO ATIVO"
-                                                else -> "🟡 PENDENTE"
-                                            },
+                                            text = "Copiloto",
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 11.sp,
-                                            color = when {
-                                                !config.copilotMonitoringEnabled -> TrafficRed
-                                                isCopilotActive -> TrafficGreen
-                                                else -> TrafficYellow
-                                            },
-                                            maxLines = 1,
-                                            softWrap = false,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                                            fontSize = 16.sp,
+                                            color = PetrolDarkText
+                                        )
+                                        Text(
+                                            text = if (isCopilotActive) "Visível fora do app • Pronto" else "Pausado • Toque para ativar",
+                                            fontSize = 11.5.sp,
+                                            color = if (isCopilotActive) TrafficGreen else MutedText,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     }
+                                }
 
-                                    // Botão Ligar / Desligar Copiloto (ou Ativar permissão se faltar)
-                                    Button(
-                                        onClick = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(
+                                        onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Tune,
+                                            contentDescription = "Ajustes do Copiloto",
+                                            tint = MutedText,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Switch(
+                                        checked = config.copilotMonitoringEnabled,
+                                        onCheckedChange = { checked ->
                                             if (!hasOverlayPermission) {
                                                 onRequestOverlayPermission()
                                             } else if (!hasAccessibilityPermission) {
                                                 showAccessibilityDisclosureDialog = true
                                             } else {
-                                                val newEnabled = !config.copilotMonitoringEnabled
-                                                val updated = config.copy(copilotMonitoringEnabled = newEnabled)
+                                                val updated = config.copy(copilotMonitoringEnabled = checked)
                                                 scope.launch {
                                                     app.preferencesRepository.saveConfig(updated)
-                                                    app.overlayPanel.setMonitoringEnabled(newEnabled, hasAccessibilityPermission)
-                                                    if (!newEnabled) {
+                                                    app.overlayPanel.setMonitoringEnabled(checked, hasAccessibilityPermission)
+                                                    if (!checked) {
                                                         CopilotNotificationReceiver.cancelActiveNotification(context)
                                                         onStopAllBackgroundServices()
-                                                        notifyUser("GoOrNo desativado! Notificação e leitura em segundo plano foram desligadas.")
+                                                        notifyUser("Copiloto desativado")
                                                     } else {
                                                         CopilotNotificationReceiver.showActiveNotification(context)
-                                                        RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READING_IN_PROGRESS)
-                                                        notifyUser("GoOrNo ligado! Monitorando chamadas da Uber e 99 (sem nada flutuando em espera).")
+                                                        notifyUser("Copiloto ativado")
                                                     }
                                                 }
                                             }
                                         },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = when {
-                                                !isPermsReady -> PetrolHeader
-                                                config.copilotMonitoringEnabled -> TrafficRed
-                                                else -> TrafficGreen
-                                            },
-                                            contentColor = Color.White
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                        modifier = Modifier.height(34.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (config.copilotMonitoringEnabled && isPermsReady)
-                                                Icons.Default.PowerSettingsNew
-                                            else
-                                                Icons.Default.PlayArrow,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(15.dp)
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = TrafficGreen,
+                                            uncheckedThumbColor = Color.White,
+                                            uncheckedTrackColor = Color(0xFFCBD5E1)
                                         )
-                                        Spacer(modifier = Modifier.width(5.dp))
-                                        Text(
-                                            text = when {
-                                                !isPermsReady -> "Ativar"
-                                                config.copilotMonitoringEnabled -> "Desativar"
-                                                else -> "Ligar Copiloto"
-                                            },
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 11.5.sp,
-                                            maxLines = 1,
-                                            softWrap = false
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Text(
-                                    text = when {
-                                        !config.copilotMonitoringEnabled ->
-                                            "O GoOrNo está desligado e a barrinha do topo foi ocultada. Toque em 'Ligar Copiloto' quando for rodar."
-                                        isCopilotActive ->
-                                            "A janelinha abre SOZINHA ao tocar chamada ou abrir ofertas na Uber/99 e some após ${config.overlayAutoMinimizeSec}s."
-                                        else ->
-                                            "Ative os botões abaixo para o GoOrNo ler as ofertas da Uber e da 99 automaticamente."
-                                    },
-                                    fontSize = 12.sp,
-                                    color = MutedText,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-
-
-
-                                Spacer(modifier = Modifier.height(14.dp))
-                                HorizontalDivider(color = CleanCardBorder)
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                // Checklist Rápido das 2 Permissões Essenciais
-                                PermissionRowItem(
-                                    number = "1",
-                                    title = "Sobreposição de Tela",
-                                    subtitle = "Exibe a barrinha ativa no topo e o painel sobre a Uber/99",
-                                    granted = hasOverlayPermission,
-                                    onAction = onRequestOverlayPermission
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                PermissionRowItem(
-                                    number = "2",
-                                    title = "Acessibilidade GoOrNo",
-                                    subtitle = "Lê R$, km, minutos e endereços automaticamente",
-                                    granted = hasAccessibilityPermission,
-                                    onAction = onRequestAccessibilityPermission
-                                )
-
-                                val powerManager = context.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
-                                val isBatteryUnrestricted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                                    powerManager?.isIgnoringBatteryOptimizations(context.packageName) ?: false
-                                } else {
-                                    true
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-                                PermissionRowItem(
-                                    number = "3",
-                                    title = "Sem Restrições de Bateria",
-                                    subtitle = if (isBatteryUnrestricted)
-                                        "Bateria sem restrições. O Android nunca fechará o GoOrNo sozinho."
-                                    else
-                                        "Toque para desativar as restrições de bateria do Android e evitar que ele pare sozinho.",
-                                    granted = isBatteryUnrestricted,
-                                    onAction = {
-                                        try {
-                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                                                val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                                    data = android.net.Uri.parse("package:${context.packageName}")
-                                                }
-                                                context.startActivity(intent)
-                                            }
-                                        } catch (_: Exception) {
-                                            try {
-                                                val fallback = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                                                context.startActivity(fallback)
-                                            } catch (_: Exception) {
-                                                notifyUser("Abra Configurações do Celular > Apps > GoOrNo > Bateria > Sem Restrições.")
-                                            }
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    // ATALHOS RÁPIDOS & FERRAMENTAS (Design Limpo e Otimizado)
-                    item {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "ATALHOS RÁPIDOS",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = PetrolHeader
-                                )
-                                Surface(
-                                    color = TrafficGreen.copy(alpha = 0.12f),
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        text = "• Praticidade no Volante",
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TrafficGreen,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
                             }
-
-                            // Linha com 3 Cards Coloridos Centrais (Estilo Oficial dos Atalhos Rápidos)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                QuickHubActionCard(
-                                    modifier = Modifier.weight(1f),
-                                    icon = "🚦",
-                                    title = "Semáforo",
-                                    badgeText = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f/km", config.targetGrossPerKm),
-                                    badgeColor = Color(0xFF15803D),
-                                    bgColor = Color(0xFFF0FDF4),
-                                    borderColor = Color(0xFFBBF7D0),
-                                    onClick = { currentScreen = GoOrNoScreen.FINANCIAL_TARGETS }
-                                )
-                                QuickHubActionCard(
-                                    modifier = Modifier.weight(1f),
-                                    icon = "⛽",
-                                    title = "Custo Carro",
-                                    badgeText = String.format(Locale.forLanguageTag("pt-BR"), "%.1f km/L", config.fuelConsumptionKmPerLiter),
-                                    badgeColor = Color(0xFF0369A1),
-                                    bgColor = Color(0xFFF0F9FF),
-                                    borderColor = Color(0xFFBAE6FD),
-                                    onClick = { currentScreen = GoOrNoScreen.VEHICLE_COSTS }
-                                )
-                                QuickHubActionCard(
-                                    modifier = Modifier.weight(1f),
-                                    icon = "🛡️",
-                                    title = "Segurança",
-                                    badgeText = if (config.riskAlertEnabled) "Ativo" else "Off",
-                                    badgeColor = if (config.riskAlertEnabled) Color(0xFFBE123C) else Color(0xFF64748B),
-                                    bgColor = if (config.riskAlertEnabled) Color(0xFFFFF1F2) else Color(0xFFF8FAFC),
-                                    borderColor = if (config.riskAlertEnabled) Color(0xFFFECDD3) else Color(0xFFE2E8F0),
-                                    onClick = { currentScreen = GoOrNoScreen.SECURITY }
-                                )
-                            }
-
-                            // Ações Rápidas em Linha Cheia (Zero redundância com a barra de navegação)
-                            QuickHubListActionRow(
-                                icon = "🔘",
-                                title = "Botão Flutuante",
-                                subtitle = "Bolinha permanente na borda da tela",
-                                badge = if (config.showFloatingShortcutBubble) "Visível" else "Oculto",
-                                badgeColor = if (config.showFloatingShortcutBubble) TrafficGreen else MutedText,
-                                onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
-                            )
-
-                            QuickHubListActionRow(
-                                icon = "⚙️",
-                                title = "Mais Ajustes",
-                                subtitle = "Serviços, Conexão, Simulador, Backup e Pro",
-                                badge = "Abrir",
-                                badgeColor = PetrolHeader,
-                                onClick = { currentScreen = GoOrNoScreen.SETTINGS }
-                            )
                         }
                     }
 
-                    // Última Oferta Real Analisada (com Botões 1-Toque Street View Origem e Destino)
+                    // 3. CARD 2: SEMÁFORO DE VALORES (UBER & 99)
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Surface(
+                                            color = Color(0xFFF1F5F9),
+                                            shape = RoundedCornerShape(12.dp),
+                                            modifier = Modifier.size(44.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("🚦", fontSize = 20.sp)
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = "Semáforo de Valores",
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 16.sp,
+                                                color = PetrolDarkText
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Surface(
+                                                    color = Color(0xFFFACC15),
+                                                    shape = RoundedCornerShape(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "99",
+                                                        fontWeight = FontWeight.Black,
+                                                        fontSize = 10.sp,
+                                                        color = Color.Black,
+                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                                    )
+                                                }
+                                                Surface(
+                                                    color = Color(0xFF0F172A),
+                                                    shape = RoundedCornerShape(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "Uber",
+                                                        fontWeight = FontWeight.Black,
+                                                        fontSize = 10.sp,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        IconButton(
+                                            onClick = { currentScreen = GoOrNoScreen.FINANCIAL_TARGETS },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Tune,
+                                                contentDescription = "Configurar Semáforo",
+                                                tint = MutedText,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Switch(
+                                            checked = isCopilotActive,
+                                            onCheckedChange = { checked ->
+                                                if (!hasOverlayPermission) {
+                                                    onRequestOverlayPermission()
+                                                } else if (!hasAccessibilityPermission) {
+                                                    showAccessibilityDisclosureDialog = true
+                                                } else {
+                                                    val updated = config.copy(copilotMonitoringEnabled = checked)
+                                                    scope.launch {
+                                                        app.preferencesRepository.saveConfig(updated)
+                                                        app.overlayPanel.setMonitoringEnabled(checked, hasAccessibilityPermission)
+                                                        if (!checked) {
+                                                            CopilotNotificationReceiver.cancelActiveNotification(context)
+                                                            onStopAllBackgroundServices()
+                                                            notifyUser("Semáforo pausado")
+                                                        } else {
+                                                            CopilotNotificationReceiver.showActiveNotification(context)
+                                                            notifyUser("Semáforo monitorando")
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = TrafficGreen,
+                                                uncheckedThumbColor = Color.White,
+                                                uncheckedTrackColor = Color(0xFFCBD5E1)
+                                            )
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Surface(
+                                    color = Color(0xFFF0FDF4),
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showAdjustFaixasDialog = true }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .background(TrafficGreen, CircleShape)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Verde a partir de R$ ${String.format(Locale.forLanguageTag("pt-BR"), "%.2f", config.minGrossPerKm)}/km · R$ ${config.minGrossPerHour.toInt()}/h",
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF15803D)
+                                            )
+                                        }
+                                        Text(">", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF15803D))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 4. CARD 3: ÁREAS DE RISCO & SEGURANÇA
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Surface(
+                                            color = Color(0xFFFEE2E2),
+                                            shape = RoundedCornerShape(12.dp),
+                                            modifier = Modifier.size(44.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("🛡️", fontSize = 20.sp)
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = "Áreas de Risco",
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 16.sp,
+                                                color = PetrolDarkText
+                                            )
+                                            Text(
+                                                text = "Alertas no embarque e destino",
+                                                fontSize = 11.5.sp,
+                                                color = MutedText
+                                            )
+                                        }
+                                    }
+
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        IconButton(
+                                            onClick = { currentScreen = GoOrNoScreen.SECURITY },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Tune,
+                                                contentDescription = "Configurar Segurança",
+                                                tint = MutedText,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Switch(
+                                            checked = config.riskAlertEnabled,
+                                            onCheckedChange = { checked ->
+                                                val updated = config.copy(riskAlertEnabled = checked)
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(updated)
+                                                    notifyUser(if (checked) "Áreas de Risco ativadas" else "Áreas de Risco pausadas")
+                                                }
+                                            },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = TrafficRed,
+                                                uncheckedThumbColor = Color.White,
+                                                uncheckedTrackColor = Color(0xFFCBD5E1)
+                                            )
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Surface(
+                                    color = Color(0xFFFFF1F2),
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFFECDD3)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { currentScreen = GoOrNoScreen.SECURITY }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .background(TrafficRed, CircleShape)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = if (riskCount > 0) "$riskCount bairros cadastrados para alerta" else "Nenhum bairro cadastrado",
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFB91C1C)
+                                            )
+                                        }
+                                        Text("Gerenciar >", fontWeight = FontWeight.Bold, fontSize = 11.5.sp, color = Color(0xFFB91C1C))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 5. CARD 4: METAS DO MOTORISTA
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            border = BorderStroke(1.dp, CleanCardBorder),
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Surface(
+                                            color = Color(0xFFEFF6FF),
+                                            shape = RoundedCornerShape(12.dp),
+                                            modifier = Modifier.size(44.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("🎯", fontSize = 20.sp)
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = "Metas de Faturamento",
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 16.sp,
+                                                color = PetrolDarkText
+                                            )
+                                            Text(
+                                                text = "Rentabilidade líquida e custos",
+                                                fontSize = 11.5.sp,
+                                                color = MutedText
+                                            )
+                                        }
+                                    }
+
+                                    IconButton(
+                                        onClick = { currentScreen = GoOrNoScreen.FINANCIAL_TARGETS },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowForward,
+                                            contentDescription = "Abrir Metas",
+                                            tint = PetrolHeader,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Surface(
+                                    color = Color(0xFFF0F9FF),
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFBAE6FD)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { currentScreen = GoOrNoScreen.FINANCIAL_TARGETS }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "Configurar metas e custos do carro",
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF0369A1)
+                                        )
+                                        Text(">", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF0369A1))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 6. ÚLTIMA OFERTA REAL DETECTADA (Se existir)
                     item {
                         val latestEval = lastRealEvaluation
                         val latestDbOffer = realHistory.firstOrNull()
@@ -967,12 +1075,12 @@ fun GoOrNoComposeApp(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                             border = BorderStroke(1.dp, CleanCardBorder),
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(18.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = "ÚLTIMA OFERTA REAL DETECTADA",
-                                    fontSize = 11.5.sp,
+                                    text = "ÚLTIMA CORRIDA ANALISADA",
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Black,
                                     color = PetrolHeader
                                 )
@@ -993,13 +1101,13 @@ fun GoOrNoComposeApp(
                                         onUpdateReceivedPrice = { newVal ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(latestDbOffer.id, newVal)
-                                                notifyUser("Valor recebido conferido e salvo!")
+                                                notifyUser("Valor conferido com sucesso!")
                                             }
                                         }
                                     )
                                 } else {
                                     Text(
-                                        text = "Nenhuma chamada real da Uber ou 99 foi capturada ainda nesta sessão. Quando tocar uma corrida na Uber Driver ou 99 Motorista, ela aparecerá automaticamente na janela flutuante e ficará gravada aqui.",
+                                        text = "Nenhuma chamada foi capturada ainda. Quando tocar uma corrida na Uber ou 99, ela aparecerá automaticamente.",
                                         fontSize = 12.sp,
                                         color = MutedText
                                     )
@@ -1010,7 +1118,11 @@ fun GoOrNoComposeApp(
                 }
 
                 // =====================================================
-                // TELA: AJUSTES DO APLICATIVO (CENTRAL DE CONFIGURAÇÕES)
+                // TELA 2: ESTILO DO CARTÃO & ATALHOS FLUTUANTES
+                // =====================================================
+                
+                // =====================================================
+                // TELA 4: AJUSTES DO APLICATIVO (CENTRAL DE CONFIGURAÇÕES)
                 // =====================================================
                 GoOrNoScreen.SETTINGS -> {
                     item {
@@ -1024,6 +1136,26 @@ fun GoOrNoComposeApp(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
+                                Text(
+                                    text = "PERSONALIZAÇÃO & ESTILO",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = PetrolHeader
+                                )
+
+                                QuickHubListActionRow(
+                                    icon = "🎨",
+                                    title = "Estilo do Cartão",
+                                    subtitle = "Tema, formato (completo/secundário) e posição",
+                                    badge = "Visual",
+                                    badgeColor = PetrolHeader,
+                                    onClick = { currentScreen = GoOrNoScreen.DRIVER_SETUP }
+                                )
+
+                                Spacer(modifier = Modifier.height(4.dp))
+                                HorizontalDivider(color = CleanCardBorder)
+                                Spacer(modifier = Modifier.height(4.dp))
+
                                 Text(
                                     text = "SEGURANÇA & LEITURA",
                                     fontSize = 11.5.sp,
@@ -1115,7 +1247,7 @@ fun GoOrNoComposeApp(
                                 QuickHubListActionRow(
                                     icon = "✉️",
                                     title = "Fale Conosco / Suporte",
-                                    subtitle = "Caixa Postal direta com o desenvolvedor Murilo Ferreira",
+                                    subtitle = "Contato direto com o suporte GoOrNo",
                                     badge = "Direto",
                                     badgeColor = TrafficGreen,
                                     onClick = { currentScreen = GoOrNoScreen.CONTACT_SUPPORT }
@@ -1134,12 +1266,6 @@ fun GoOrNoComposeApp(
                     }
                 }
 
-                // =====================================================
-                // TELA 2: FORMATO DA JANELA FLUTUANTE & MOTORISTA
-                // =====================================================
-                // =====================================================
-                // TELA 2: ESTILO DO CARTÃO & ATALHOS FLUTUANTES
-                // =====================================================
                 GoOrNoScreen.DRIVER_SETUP -> {
                     item {
                         var driverName by remember(config.driverName) { mutableStateOf(config.driverName) }
@@ -1269,445 +1395,163 @@ fun GoOrNoComposeApp(
                                                 .padding(vertical = 8.dp)
                                         ) {
                                             when (selectedStyle) {
-                                                OverlayDisplayStyle.BANNER_PRO_STREETVIEW -> {
-                                                    // FORMATO: CARD IMPACTO PRO - CORRIDA TOCOU (DINÂMICO CLARO/ESCURO)
-                                                    val isDarkBanner = overlayTheme != "LIGHT"
-                                                    val bannerCardBg = if (isDarkBanner) Color(0xFF0D0D0E) else Color.White
-                                                    val bannerPrimaryText = if (isDarkBanner) Color.White else Color(0xFF111827)
-                                                    val bannerSecondaryText = if (isDarkBanner) Color(0xFF9CA3AF) else Color(0xFF4B5563)
-                                                    val bannerMetricsText = if (isDarkBanner) Color(0xFFD1D5DB) else Color(0xFF374151)
-                                                    val bannerTimerBg = if (isDarkBanner) Color(0xFF1E1E22) else Color(0xFFE5E7EB)
+                                                OverlayDisplayStyle.COMPLETO -> {
+                                                    val isColorido = overlayTheme == "COLORIDO"
+                                                    val isClaro = overlayTheme == "CLARO" || overlayTheme == "LIGHT"
+                                                    val isEscuro = !isColorido && !isClaro
 
-                                                    Surface(
-                                                        color = bannerCardBg,
-                                                        shape = RoundedCornerShape(14.dp),
-                                                        border = BorderStroke(2.dp, vColor),
-                                                        shadowElevation = 8.dp,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        Column {
-                                                            Column(modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 10.dp)) {
-                                                                Row(
-                                                                    modifier = Modifier.fillMaxWidth(),
-                                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                                    verticalAlignment = Alignment.CenterVertically
-                                                                ) {
-                                                                    Text(
-                                                                        text = "8 km · 15 min",
-                                                                        color = bannerSecondaryText,
-                                                                        fontSize = 13.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
-                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                        Surface(
-                                                                            color = bannerTimerBg,
-                                                                            shape = RoundedCornerShape(6.dp)
-                                                                        ) {
-                                                                            Text(
-                                                                                text = "15s",
-                                                                                color = bannerSecondaryText,
-                                                                                fontSize = 11.sp,
-                                                                                fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                                            )
-                                                                        }
-                                                                        Spacer(modifier = Modifier.width(6.dp))
-                                                                        Text(
-                                                                            text = "✕",
-                                                                            color = bannerSecondaryText,
-                                                                            fontSize = 13.sp,
-                                                                            fontWeight = FontWeight.Bold
-                                                                        )
-                                                                    }
-                                                                }
-
-                                                                Spacer(modifier = Modifier.height(4.dp))
-
-                                                                Text(
-                                                                    text = "R$ 18,40",
-                                                                    color = bannerPrimaryText,
-                                                                    fontSize = 34.sp,
-                                                                    fontWeight = FontWeight.Black
-                                                                )
-
-                                                                Spacer(modifier = Modifier.height(2.dp))
-
-                                                                Text(
-                                                                    text = "R$ 2,30/km · R$ 43,00/h",
-                                                                    color = bannerMetricsText,
-                                                                    fontSize = 13.5.sp,
-                                                                    fontWeight = FontWeight.Bold
-                                                                )
-                                                            }
-
-                                                            Surface(
-                                                                color = vColor,
-                                                                shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
-                                                                modifier = Modifier.fillMaxWidth().height(42.dp)
-                                                            ) {
-                                                                Box(contentAlignment = Alignment.Center) {
-                                                                    Text(
-                                                                        text = when (previewVerdictState) {
-                                                                            "GREEN" -> "✓ COMPENSA"
-                                                                            "YELLOW" -> "⚡ AVALIAR"
-                                                                            else -> "✕ NÃO COMPENSA"
-                                                                        },
-                                                                        color = Color.White,
-                                                                        fontWeight = FontWeight.Black,
-                                                                        fontSize = 14.sp
-                                                                    )
-                                                                }
-                                                            }
-                                                        }
+                                                    val cardBg = when {
+                                                        isColorido -> vColor
+                                                        isClaro -> Color.White
+                                                        else -> Color(0xFF1E2024)
                                                     }
-                                                }
-
-                                                OverlayDisplayStyle.PIRULITO_SIDEBAR -> {
-                                                    // FORMATO: CARD 3 PILARES (R$/KM, R$/HORA E NOTA)
-                                                    val isDarkPreview = overlayTheme != "LIGHT"
-                                                    val cardBg = if (isDarkPreview) Color(0xFF121316) else Color.White
-                                                    val primaryText = if (isDarkPreview) Color.White else Color(0xFF111827)
-                                                    val secondaryText = if (isDarkPreview) Color(0xFF9CA3AF) else Color(0xFF6B7280)
+                                                    val cardBorder = when {
+                                                        isColorido -> when (previewVerdictState) {
+                                                            "GREEN" -> Color(0xFF15803D)
+                                                            "YELLOW" -> Color(0xFFA16207)
+                                                            else -> Color(0xFFB91C1C)
+                                                        }
+                                                        else -> vColor
+                                                    }
+                                                    val primaryText = if (isClaro) Color(0xFF0F172A) else Color.White
+                                                    val secondaryText = when {
+                                                        isColorido -> Color(0xFFF1F5F9)
+                                                        isClaro -> Color(0xFF64748B)
+                                                        else -> Color(0xFF94A3B8)
+                                                    }
 
                                                     Surface(
                                                         color = cardBg,
                                                         shape = RoundedCornerShape(18.dp),
-                                                        border = BorderStroke(2.5.dp, vColor),
+                                                        border = BorderStroke(if (isColorido) 2.dp else 3.dp, cardBorder),
                                                         shadowElevation = 8.dp,
                                                         modifier = Modifier.fillMaxWidth()
                                                     ) {
                                                         Column(modifier = Modifier.padding(14.dp, 10.dp, 14.dp, 10.dp)) {
-                                                            // Linha Superior: Resumo + Timer + Fechar
+                                                            // Linha Superior
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                                 verticalAlignment = Alignment.CenterVertically
                                                             ) {
-                                                                Text(
-                                                                    text = "R$ 12,70 · 11 min · 5,6 km",
-                                                                    color = primaryText,
-                                                                    fontSize = 14.sp,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    modifier = Modifier.weight(1f)
-                                                                )
-                                                                Text("15s", color = secondaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                                Spacer(modifier = Modifier.width(6.dp))
-                                                                Text("✕", color = secondaryText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                                            }
-
-                                                            Spacer(modifier = Modifier.height(10.dp))
-
-                                                            // 3 Colunas: R$/Km | R$/Hora | Nota
-                                                            Row(
-                                                                modifier = Modifier.fillMaxWidth(),
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                // Coluna 1: R$/Km
-                                                                Column(
-                                                                    modifier = Modifier.weight(1f),
-                                                                    horizontalAlignment = Alignment.CenterHorizontally
-                                                                ) {
-                                                                    Text("R$/Km", color = secondaryText, fontSize = 11.sp)
-                                                                    Text("2,26", color = primaryText, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                                                                }
-
-                                                                // Barra 1
-                                                                Box(modifier = Modifier.size(3.dp, 36.dp).background(vColor, RoundedCornerShape(2.dp)))
-
-                                                                // Coluna 2: R$/Hora
-                                                                Column(
-                                                                    modifier = Modifier.weight(1f),
-                                                                    horizontalAlignment = Alignment.CenterHorizontally
-                                                                ) {
-                                                                    Text("R$/Hora", color = secondaryText, fontSize = 11.sp)
-                                                                    Text("69", color = primaryText, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                                                                }
-
-                                                                // Barra 2
-                                                                Box(modifier = Modifier.size(3.dp, 36.dp).background(vColor, RoundedCornerShape(2.dp)))
-
-                                                                // Coluna 3: Nota
-                                                                Column(
-                                                                    modifier = Modifier.weight(1f),
-                                                                    horizontalAlignment = Alignment.CenterHorizontally
-                                                                ) {
-                                                                    Text("Nota", color = secondaryText, fontSize = 11.sp)
-                                                                    Text("4,95", color = vColor, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-
-                                                OverlayDisplayStyle.CLASSIC_LIGHT -> {
-                                                    // FORMATO 2: CARD CLÁSSICO DIVIDIDO (BLOCO DE COR SÓLIDO NA DIREITA INTEGRADO)
-                                                    Surface(
-                                                        color = Color(0xFF0C0D11),
-                                                        shape = RoundedCornerShape(16.dp),
-                                                        border = BorderStroke(1.dp, vColor),
-                                                        shadowElevation = 8.dp,
-                                                        modifier = Modifier.fillMaxWidth().height(78.dp)
-                                                    ) {
-                                                        Row(
-                                                            modifier = Modifier.fillMaxSize(),
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            // Seção Esquerda (Dados)
-                                                            Column(
-                                                                modifier = Modifier
-                                                                    .weight(1f)
-                                                                    .fillMaxHeight()
-                                                                    .padding(start = 14.dp, top = 8.dp, end = 10.dp, bottom = 8.dp),
-                                                                verticalArrangement = Arrangement.SpaceBetween
-                                                            ) {
-                                                                // Linha 1: R$/km + [Timer e Fechar]
-                                                                Row(
-                                                                    modifier = Modifier.fillMaxWidth(),
-                                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                                    verticalAlignment = Alignment.CenterVertically
-                                                                ) {
-                                                                    Row(verticalAlignment = Alignment.Bottom) {
-                                                                        Text(
-                                                                            text = "R$ 1,92",
-                                                                            color = vColor,
-                                                                            fontSize = 21.sp,
-                                                                            fontWeight = FontWeight.Bold
-                                                                        )
-                                                                        Text(
-                                                                            text = " /km",
-                                                                            color = Color(0xFF9CA3AF),
-                                                                            fontSize = 12.5.sp,
-                                                                            modifier = Modifier.padding(bottom = 2.dp)
-                                                                        )
-                                                                    }
-                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                        Text(
-                                                                            text = "7s",
-                                                                            color = Color(0xFF6B7280),
-                                                                            fontSize = 10.5.sp,
-                                                                            fontWeight = FontWeight.Bold
-                                                                        )
-                                                                        Surface(
-                                                                            color = Color(0xFF262930),
-                                                                            shape = RoundedCornerShape(4.dp),
-                                                                            modifier = Modifier.padding(start = 5.dp)
-                                                                        ) {
-                                                                            Text(
-                                                                                text = "✕",
-                                                                                color = Color(0xFF9CA3AF),
-                                                                                fontSize = 10.sp,
-                                                                                fontWeight = FontWeight.Bold,
-                                                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                                                            )
-                                                                        }
-                                                                    }
-                                                                }
-
-                                                                // Linha 2: R$/hora + Nota
-                                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                    Text(
-                                                                        text = "R$ 33,33/h",
-                                                                        color = vColor,
-                                                                        fontSize = 14.5.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
-                                                                    Spacer(modifier = Modifier.width(14.dp))
-                                                                    Text(
-                                                                        text = "★ ",
-                                                                        color = Color(0xFFF59E0B),
-                                                                        fontSize = 12.sp
-                                                                    )
-                                                                    Text(
-                                                                        text = "4,92",
-                                                                        color = vColor,
-                                                                        fontSize = 13.5.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
-                                                                }
-
-                                                                // Linha 3: [99] 18 min - 5,2 km
                                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                                     Surface(
                                                                         color = Color(0xFFFACC15),
-                                                                        shape = RoundedCornerShape(3.dp)
+                                                                        shape = RoundedCornerShape(6.dp)
                                                                     ) {
                                                                         Text(
                                                                             text = "99",
                                                                             color = Color.Black,
-                                                                            fontSize = 9.sp,
-                                                                            fontWeight = FontWeight.Bold,
-                                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                                            fontWeight = FontWeight.Black,
+                                                                            fontSize = 11.sp,
+                                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                                         )
                                                                     }
                                                                     Spacer(modifier = Modifier.width(6.dp))
                                                                     Text(
-                                                                        text = "18 min - 5,2 km",
-                                                                        color = Color(0xFF9CA3AF),
-                                                                        fontSize = 11.5.sp
+                                                                        text = "22 min · 12,4 km",
+                                                                        color = primaryText,
+                                                                        fontSize = 14.sp,
+                                                                        fontWeight = FontWeight.Bold
                                                                     )
+                                                                }
+                                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                    Text("15s", color = secondaryText, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Text("✕", color = secondaryText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                                                 }
                                                             }
 
-                                                            // Bloco Direito: Bloco Sólido de Cor Integrado (SEM TEXTO, SÓ A COR)
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .width(44.dp)
-                                                                    .fillMaxHeight()
-                                                                    .background(
-                                                                        vColor,
-                                                                        RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
-                                                                    )
-                                                            )
-                                                        }
-                                                    }
-                                                }
+                                                            Spacer(modifier = Modifier.height(8.dp))
 
-                                                OverlayDisplayStyle.MINI_BALL -> {
-                                                    // FORMATO COMPACTO 3 PILARES (NÚMEROS GRANDES 22sp BOLD, BARRINHAS NÍTIDAS)
-                                                    Surface(
-                                                        color = Color(0xFF0C0D11),
-                                                        shape = RoundedCornerShape(16.dp),
-                                                        border = BorderStroke(2.dp, vColor),
-                                                        shadowElevation = 8.dp,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        Column(modifier = Modifier.padding(14.dp, 10.dp, 14.dp, 8.dp)) {
-                                                            // Os 3 Pilares
+                                                            // 3 Pilares
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                                 verticalAlignment = Alignment.CenterVertically
                                                             ) {
-                                                                // Pilar 1: R$/Km
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                                                                    Text("R$/Km", color = Color(0xFFCBD5E1), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                                                                        Box(modifier = Modifier.size(5.dp, 24.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                        Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("2,63", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                                                                    }
-                                                                }
-                                                                // Pilar 2: R$/Hora
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                                                                    Text("R$/Hora", color = Color(0xFFCBD5E1), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                                                                        Box(modifier = Modifier.size(5.dp, 24.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                        Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("48,43", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                                                                    }
-                                                                }
-                                                                // Pilar 3: Nota
-                                                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                                                                    Text("Nota", color = Color(0xFFCBD5E1), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                                                                        Box(modifier = Modifier.size(5.dp, 24.dp).background(vColor, RoundedCornerShape(2.dp)))
-                                                                        Spacer(modifier = Modifier.width(5.dp))
-                                                                        Text("4,83", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                                                                listOf(
+                                                                    Triple("R$/Km", Color(0xFF16A34A), "2,00"),
+                                                                    Triple("R$/Hora", Color(0xFFCA8A04), "68"),
+                                                                    Triple("Nota", Color(0xFF16A34A), "4,92")
+                                                                ).forEach { (lbl, barColor, valStr) ->
+                                                                    Column(
+                                                                        modifier = Modifier.weight(1f),
+                                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                                    ) {
+                                                                        Text(lbl, color = secondaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                                        Row(
+                                                                            verticalAlignment = Alignment.CenterVertically,
+                                                                            modifier = Modifier.padding(top = 2.dp)
+                                                                        ) {
+                                                                            Box(
+                                                                                modifier = Modifier
+                                                                                    .size(3.5.dp, 18.dp)
+                                                                                    .background(if (isColorido) Color.White else barColor, RoundedCornerShape(2.dp))
+                                                                            )
+                                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                                            Text(
+                                                                                valStr,
+                                                                                color = primaryText,
+                                                                                fontSize = 22.sp,
+                                                                                fontWeight = FontWeight.Black
+                                                                            )
+                                                                        }
                                                                     }
                                                                 }
                                                             }
 
                                                             Spacer(modifier = Modifier.height(6.dp))
 
-                                                            // Subline
-                                                            Row(
-                                                                modifier = Modifier.fillMaxWidth(),
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                Surface(color = Color(0xFFFACC15), shape = RoundedCornerShape(3.dp)) {
-                                                                    Text(
-                                                                        text = "99",
-                                                                        color = Color.Black,
-                                                                        fontSize = 9.sp,
-                                                                        fontWeight = FontWeight.Bold,
-                                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                                                    )
-                                                                }
-                                                                Spacer(modifier = Modifier.width(6.dp))
-                                                                Text(
-                                                                    text = "R$ 15,80 • 14 min • 4,3 km",
-                                                                    color = Color(0xFFCBD5E1),
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    fontSize = 11.5.sp,
-                                                                    modifier = Modifier.weight(1f)
-                                                                )
-                                                                Text("7s", color = Color(0xFF6B7280), fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
-                                                                Surface(
-                                                                    color = Color(0xFF262930),
-                                                                    shape = RoundedCornerShape(4.dp),
-                                                                    modifier = Modifier.padding(start = 5.dp)
-                                                                ) {
-                                                                    Text("✕", color = Color(0xFF9CA3AF), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
-                                                                }
-                                                            }
+                                                            Text(
+                                                                text = "⚠️ Embarque (15 min)",
+                                                                color = if (isColorido) Color.White else Color(0xFFDC2626),
+                                                                fontSize = 11.5.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                textAlign = TextAlign.Center,
+                                                                modifier = Modifier.fillMaxWidth()
+                                                            )
                                                         }
                                                     }
                                                 }
 
-                                                OverlayDisplayStyle.MINI_BALL -> {
-                                                    // FORMATO 3: BOLINHA SEMÁFORO ULTRA DISCRETO (DINÂMICO CLARO/ESCURO)
-                                                    val isDarkMini = overlayTheme != "LIGHT"
-                                                    val miniCardBg = if (isDarkMini) Color(0xFF0D1714) else Color.White
-                                                    val miniPrimaryText = if (isDarkMini) Color.White else Color(0xFF111827)
-                                                    val miniSecondaryText = if (isDarkMini) Color(0xFF94A3B8) else Color(0xFF6B7280)
-
-                                                    Surface(
-                                                        color = miniCardBg,
-                                                        shape = RoundedCornerShape(18.dp),
-                                                        border = BorderStroke(1.5.dp, vColor),
-                                                        shadowElevation = 8.dp,
-                                                        modifier = Modifier.fillMaxWidth()
+                                                OverlayDisplayStyle.SECUNDARIO -> {
+                                                    Column(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalAlignment = Alignment.End
                                                     ) {
-                                                        Row(
-                                                            modifier = Modifier.padding(12.dp, 8.dp, 10.dp, 8.dp),
-                                                            verticalAlignment = Alignment.CenterVertically
+                                                        Surface(
+                                                            color = vColor,
+                                                            shape = RoundedCornerShape(16.dp),
+                                                            shadowElevation = 6.dp
                                                         ) {
                                                             Text(
-                                                                text = "⠿",
-                                                                color = miniSecondaryText,
-                                                                fontSize = 13.sp,
-                                                                modifier = Modifier.padding(end = 4.dp)
+                                                                text = when (previewVerdictState) {
+                                                                    "GREEN" -> "✓ ACEITAR"
+                                                                    "YELLOW" -> "● ATENÇÃO"
+                                                                    else -> "✕ RECUSAR"
+                                                                },
+                                                                color = Color.White,
+                                                                fontWeight = FontWeight.Black,
+                                                                fontSize = 14.sp,
+                                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                                                             )
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(16.dp)
-                                                                    .background(vColor, CircleShape)
-                                                            )
-                                                            Spacer(modifier = Modifier.width(8.dp))
-                                                            Column(modifier = Modifier.weight(1f)) {
-                                                                Text(
-                                                                    text = "Uber · 6,3 km · 17 min",
-                                                                    color = miniPrimaryText,
-                                                                    fontSize = 12.sp,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    maxLines = 1
-                                                                )
-                                                                Text(
-                                                                    text = "R$ 2,22 | 49,00 · ★ 4.96",
-                                                                    color = vColor,
-                                                                    fontSize = 13.5.sp,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    maxLines = 1
-                                                                )
-                                                            }
-                                                            Spacer(modifier = Modifier.width(6.dp))
-                                                            Text(
-                                                                text = "7s",
-                                                                color = miniSecondaryText,
-                                                                fontSize = 11.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                modifier = Modifier.padding(end = 6.dp)
-                                                            )
+                                                        }
+                                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                                        listOf("2,00 /km", "68 /h", "4,92 nota").forEach { item ->
                                                             Surface(
-                                                                color = Color(0xFFDC2626),
-                                                                shape = RoundedCornerShape(6.dp)
+                                                                color = Color(0xFF1E2024),
+                                                                shape = RoundedCornerShape(14.dp),
+                                                                border = BorderStroke(1.dp, Color(0xFF334155)),
+                                                                modifier = Modifier.padding(vertical = 2.dp)
                                                             ) {
                                                                 Text(
-                                                                    text = "✕",
+                                                                    text = item,
                                                                     color = Color.White,
-                                                                    fontSize = 11.sp,
                                                                     fontWeight = FontWeight.Bold,
-                                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                    fontSize = 16.sp,
+                                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                                                 )
                                                             }
                                                         }
@@ -1807,7 +1651,7 @@ fun GoOrNoComposeApp(
                                     color = PetrolHeader
                                 )
 
-                                OverlayDisplayStyle.entries.filter { it != OverlayDisplayStyle.CLASSIC_LIGHT }.forEach { style ->
+                                OverlayDisplayStyle.entries.forEach { style ->
                                     val isChosen = selectedStyle == style
                                     Surface(
                                         color = if (isChosen) TrafficGreenSoft.copy(alpha = 0.65f) else SoftSurfaceVariant,
@@ -1863,15 +1707,15 @@ fun GoOrNoComposeApp(
 
                                 HorizontalDivider(color = CleanCardBorder)
 
-                                // Tema do Cartão (Fundo Claro ou Escuro)
+                                // Tema do Cartão
                                 Text(
-                                    text = "Tema do Cartão (Fundo)",
+                                    text = "Tema do Cartão",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 13.5.sp,
                                     color = PetrolHeader
                                 )
                                 Text(
-                                    text = "Escolha se o fundo do cartão deve ser claro (branco) ou escuro (preto):",
+                                    text = "Escolha o acabamento visual do seu cartão flutuante:",
                                     fontSize = 11.5.sp,
                                     color = MutedText
                                 )
@@ -1881,10 +1725,11 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(
-                                        Pair("LIGHT", "☀️ Claro (Branco)"),
-                                        Pair("DARK", "🌙 Escuro (Preto)")
+                                        Pair("COLORIDO", "🎨 Colorido"),
+                                        Pair("ESCURO", "🌙 Escuro"),
+                                        Pair("CLARO", "☀️ Claro")
                                     ).forEach { (themeKey, label) ->
-                                        val isSel = overlayTheme == themeKey
+                                        val isSel = overlayTheme == themeKey || (themeKey == "ESCURO" && overlayTheme == "DARK") || (themeKey == "CLARO" && overlayTheme == "LIGHT")
                                         Surface(
                                             color = if (isSel) PetrolHeader else SoftSurfaceVariant,
                                             shape = RoundedCornerShape(12.dp),
@@ -1894,10 +1739,7 @@ fun GoOrNoComposeApp(
                                                 .clickable {
                                                     overlayTheme = themeKey
                                                     savedFlag = false
-                                                    val updated = config.copy(
-                                                        overlayTheme = themeKey,
-                                                        overlayHorizontalPosition = "CENTER"
-                                                    )
+                                                    val updated = config.copy(overlayTheme = themeKey)
                                                     scope.launch {
                                                         app.preferencesRepository.saveConfig(updated)
                                                         app.overlayPanel.applyConfig(updated)
@@ -1906,19 +1748,72 @@ fun GoOrNoComposeApp(
                                                 }
                                         ) {
                                             Row(
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 11.dp),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.Center
                                             ) {
-                                                Icon(
-                                                    imageVector = if (isSel) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                                                    contentDescription = null,
-                                                    tint = if (isSel) LimeBright else MutedText,
-                                                    modifier = Modifier.size(15.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(6.dp))
                                                 Text(
                                                     text = label,
+                                                    color = if (isSel) Color.White else PetrolDarkText,
+                                                    fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
+                                                    fontSize = 11.5.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                // Posição na Tela
+                                Text(
+                                    text = "Posição na Tela",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 13.5.sp,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = "Onde o cartão aparece na tela durante chamadas:",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(
+                                        Pair("LEFT", "Esquerda"),
+                                        Pair("CENTER", "Centro"),
+                                        Pair("RIGHT", "Direita")
+                                    ).forEach { (posKey, posLabel) ->
+                                        val isSel = horizontalPosition == posKey
+                                        Surface(
+                                            color = if (isSel) PetrolHeader else SoftSurfaceVariant,
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.5.dp, if (isSel) PetrolHeader else CleanCardBorder),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable {
+                                                    horizontalPosition = posKey
+                                                    savedFlag = false
+                                                    val updated = config.copy(overlayHorizontalPosition = posKey)
+                                                    scope.launch {
+                                                        app.preferencesRepository.saveConfig(updated)
+                                                        app.overlayPanel.applyConfig(updated)
+                                                        notifyUser("Posição alterada: $posLabel")
+                                                    }
+                                                }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Text(
+                                                    text = posLabel,
                                                     color = if (isSel) Color.White else PetrolDarkText,
                                                     fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
                                                     fontSize = 12.sp,
@@ -1929,8 +1824,6 @@ fun GoOrNoComposeApp(
                                         }
                                     }
                                 }
-
-
 
                                 HorizontalDivider(color = CleanCardBorder)
 

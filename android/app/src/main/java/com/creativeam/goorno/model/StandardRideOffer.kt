@@ -161,31 +161,20 @@ enum class PassengerRatingVerdict(val label: String, val emoji: String, val hexC
  * Formato visual da janelinha flutuante quando toca corrida.
  */
 enum class OverlayDisplayStyle(val title: String, val subtitle: String) {
-    BANNER_PRO_STREETVIEW(
-        title = "Card Impacto Pro",
-        subtitle = "Design moderno com valor gigante, métricas em destaque e semáforo sólido de alto contraste"
+    COMPLETO(
+        title = "Completo",
+        subtitle = "Cartão único com os 3 pilares (R$/km, R$/h, Nota), tempo e km"
     ),
-    PIRULITO_SIDEBAR(
-        title = "Card 3 Pilares",
-        subtitle = "Resumo no topo com 3 colunas e barras verticais coloridas (Claro ou Escuro)"
-    ),
-    MINI_BALL(
-        title = "Card 3 Pilares Compacto (Recomendado)",
-        subtitle = "Super enxuto com 3 pilares, valor, tempo, km na linha inferior e borda neon"
-    ),
-    CLASSIC_LIGHT(
-        title = "Card Clássico (Legado)",
-        subtitle = "Formato legado mantido para compatibilidade"
+    SECUNDARIO(
+        title = "Secundário",
+        subtitle = "Peças soltas na borda da tela (pílula Aceitar + métricas empilhadas)"
     );
 
     companion object {
         fun fromName(name: String?): OverlayDisplayStyle {
             return when (name?.uppercase()) {
-                "BANNER_PRO_STREETVIEW", "BANNER_PRO", "BANNER", "FULL_CARD", "MODERN" -> BANNER_PRO_STREETVIEW
-                "PIRULITO_SIDEBAR", "PIRULITO", "SIDEBAR", "WIDGET_COMPACTO", "LATERAL_COMPACTO", "COMPACTO_SIDEBAR", "THREE_PILLARS", "CARD_3_PILARES" -> PIRULITO_SIDEBAR
-                "MINI_BALL", "SEMAFORO_COMPACT", "COMPACT" -> MINI_BALL
-                "CLASSIC_LIGHT", "CLASSIC_V334", "CLASSIC", "CLASSIC_DARK" -> MINI_BALL
-                else -> entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: MINI_BALL
+                "SECUNDARIO", "SECONDARY", "PILULAS", "SIDEBAR_PILLS", "PIRULITO", "PIRULITO_SIDEBAR" -> SECUNDARIO
+                else -> COMPLETO
             }
         }
     }
@@ -221,8 +210,8 @@ data class DriverFinancialConfig(
     val minConfidenceThreshold: Double = 0.65,
     val overlayOpacityPercent: Int = 92,
     val overlayAutoMinimizeSec: Int = 5,
-    val overlayDisplayStyle: String = OverlayDisplayStyle.BANNER_PRO_STREETVIEW.name,
-    val overlayTheme: String = "DARK", // "DARK" ou "LIGHT"
+    val overlayDisplayStyle: String = OverlayDisplayStyle.COMPLETO.name,
+    val overlayTheme: String = "COLORIDO", // "COLORIDO", "ESCURO" ou "CLARO"
     val overlayBubblePosition: String = "BELOW",
     val overlayHorizontalPosition: String = "RIGHT",
     val showFloatingShortcutBubble: Boolean = false,
