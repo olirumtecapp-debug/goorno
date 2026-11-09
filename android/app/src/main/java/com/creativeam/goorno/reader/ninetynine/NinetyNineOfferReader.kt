@@ -56,6 +56,60 @@ object NinetyNineOfferReader {
         else original
     }
 
+    /**
+     * Captura complementar da nota quando o overlay cobre o valor da oferta
+     * na imagem: o OCR lê a linha do passageiro, mas não consegue reconstruir
+     * uma oferta financeira completa. É seguro SOMENTE para um card visível.
+     * Em telas de duas ofertas ou múltiplas notas, não preenche nada.
+     */
+    fun recoverSingleOfferRatingFromOcr(
+        displayed: List<StandardRideOffer>,
+        ocrLines: List<String>
+    ): List<StandardRideOffer> {
+        if (displayed.size != 1 || ocrLines.isEmpty()) return displayed
+        val original = displayed.single()
+        if (original.sourceApp != SourceApp.NINETY_NINE_DRIVER ||
+            original.passengerRating != null || original.passengerIsNew) return displayed
+
+        // Dois botões "Escolher" ou dois cabeçalhos = múltiplos cards.
+        // Atribuir uma nota sem posição exata poderia misturar passageiros.
+        val actions = ocrLines.count { it.trim().equals("Escolher", ignoreCase = true) }
+        val headers = ocrLines.count {
+            val lower = it.trim().lowercase(Locale.ROOT)
+            lower == "pop" || lower.startsWith("pop nova") ||
+                lower.startsWith("pop expresso") || lower.startsWith("99pop") ||
+                lower.startsWith("99plus") || lower == "plus" ||
+                lower.startsWith("pgto. no app")
+        }
+        if (actions > 1 || headers > 1) return displayed
+
+        val normalized = BrazilianOfferParser.normalizeFragmentedNodes(ocrLines)
+        val ratingPattern = Regex(
+            """(?<![\\d.,/])([3-5][.,]\\d{2})(?!\\s*(?:/\\s*km|km|m\\b|min\\b|x\\b))"""
+        )
+        val candidateRatings = mutableSetOf<Double>()
+        for ((index, line) in normalized.withIndex()) {
+            // Só texto ligado ao passageiro; valores de R$/km e números de
+            // endereço jamais são aceitos como nota.
+            val context = listOfNotNull(
+                normalized.getOrNull(index - 1), line,
+                normalized.getOrNull(index + 1)
+            ).joinToString(" ").lowercase(Locale.ROOT)
+            val hasContext = context.contains("corrida") || context.contains("viagen") ||
+                context.contains("perfil") || context.contains("cartão") ||
+                context.contains("cartao") || context.contains("verif")
+            if (!hasContext) continue
+            if (line.contains("R$", ignoreCase = true) ||
+                line.contains("/km", ignoreCase = true)) continue
+            for (match in ratingPattern.findAll(line)) {
+                val value = BrazilianOfferParser.parseBrazilianDecimal(match.groupValues[1])
+                if (value != null && value in 3.0..5.0) candidateRatings.add(value)
+            }
+        }
+        if (candidateRatings.size != 1) return displayed
+        return listOf(original.copy(passengerRating = candidateRatings.single()))
+    }
+
     fun parseMultipleOffersFromScreen(
         rawNodes: List<String>,
         captureMethod: CaptureMethod = CaptureMethod.ACCESSIBILITY,
