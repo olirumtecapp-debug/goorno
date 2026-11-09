@@ -627,7 +627,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                 // Valida atualidade da captura: se o motorista mudou de app ou a tela mudou antes do OCR terminar, descarta
                                 val currentForeground = try { rootInActiveWindow?.packageName?.toString() } catch (_: Exception) { null }
                                     ?: lastKnownForegroundPkg
-                                if (currentForeground != targetPkg) {
+                                val ownOverlayFocused = ratingOnly &&
+                                    currentForeground == packageName &&
+                                    lastKnownForegroundPkg == targetPkg &&
+                                    (applicationContext as? GoOrNoApplication)?.overlayPanel?.isCardCurrentlyVisible() == true
+                                if (currentForeground != targetPkg && !ownOverlayFocused) {
                                     try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
                                     isTakingAutoScreenshot = false
                                     return@addOnSuccessListener
@@ -966,12 +970,19 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 lastRatingOcrOfferKey = ratingOfferKey
                 mainHandler.post {
                     val activePkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Throwable) { null }
-                    if (activePkg != null && SourceApp.fromPackageName(activePkg) == SourceApp.NINETY_NINE_DRIVER &&
+                    val driverStillActive = activePkg != null &&
+                        SourceApp.fromPackageName(activePkg) == SourceApp.NINETY_NINE_DRIVER
+                    val ownOverlayFocused = activePkg == packageName &&
+                        lastKnownForegroundPkg.let { SourceApp.fromPackageName(it) == SourceApp.NINETY_NINE_DRIVER } &&
+                        app.overlayPanel.isCardCurrentlyVisible()
+                    if ((driverStillActive || ownOverlayFocused) &&
                         recentlyDisplayedAtMillis >= requestAt - 2_500L &&
                         app.overlayPanel.isCardCurrentlyVisible()
                     ) {
                         triggerAutomaticAccessibilityOcrIfNeeded(
-                            SourceApp.NINETY_NINE_DRIVER, activePkg, requestAt, ratingOnly = true
+                            SourceApp.NINETY_NINE_DRIVER,
+                            if (driverStillActive) activePkg!! else lastKnownForegroundPkg,
+                            requestAt, ratingOnly = true
                         )
                     }
                 }
