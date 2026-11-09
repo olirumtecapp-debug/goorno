@@ -78,6 +78,63 @@ class NinetyNineRatingRecoveryTest {
     }
 
     @Test
+    fun partialOcrWithoutPriceRecoversOnlyOneVisiblePassengerRating() {
+        val base = NinetyNineOfferReader.parseScreenNodes(
+            card("R$12,80", null, "(7 min 2,2 km)", "(7 min 2,2 km)")
+        )
+        val lines = listOf(
+            "Solicitações", "Pop Nova", "Nota --",
+            "4,90 • 437 corridas • Cartão verif.",
+            "(7 min 2,2 km)", "Rua de embarque",
+            "(7 min 2,2 km)", "Rua de destino", "Escolher"
+        )
+        val recovered = NinetyNineOfferReader.recoverSingleOfferRatingFromOcr(
+            listOf(base), lines
+        ).single()
+        assertEquals(4.90, recovered.passengerRating!!, 0.001)
+        assertEquals(base.offeredPrice, recovered.offeredPrice)
+        assertEquals(base.totalDurationMinExplicit, recovered.totalDurationMinExplicit)
+    }
+
+    @Test
+    fun partialOcrCannotMixRatingsBetweenTwoCards() {
+        val a = NinetyNineOfferReader.parseScreenNodes(
+            card("R$22,40", null, "(7 min 1,9 km)", "(20 min 5,5 km)")
+        )
+        val b = NinetyNineOfferReader.parseScreenNodes(
+            card("R$31,40", null, "(3 min 918 m)", "(37 min 9,7 km)")
+        )
+        val screen = listOf(
+            "Pop Nova", "R$22,40", "5,00 • 55 corridas", "Escolher",
+            "Pop", "R$31,40", "4,89 • 259 corridas", "Escolher"
+        )
+        val unchanged = NinetyNineOfferReader.recoverSingleOfferRatingFromOcr(
+            listOf(a, b), screen
+        )
+        assertNull(unchanged[0].passengerRating)
+        assertNull(unchanged[1].passengerRating)
+        val ambiguous = NinetyNineOfferReader.recoverSingleOfferRatingFromOcr(
+            listOf(a), screen
+        )
+        assertNull(ambiguous[0].passengerRating)
+    }
+
+    @Test
+    fun partialOcrDoesNotMistakeRatesOrMultipliersForPassengerRatings() {
+        val base = NinetyNineOfferReader.parseScreenNodes(
+            card("R$12,80", null, "(7 min 2,2 km)", "(7 min 2,2 km)")
+        )
+        val screen = listOf(
+            "Pop Nova", "R$12,80", "R$3,68/km", "x1,9",
+            "55 corridas", "Rua 4,90", "Escolher"
+        )
+        val unchanged = NinetyNineOfferReader.recoverSingleOfferRatingFromOcr(
+            listOf(base), screen
+        )
+        assertNull(unchanged.single().passengerRating)
+    }
+
+    @Test
     fun multipleVisualCardsMustMatchOnlyTheirOwnRatings() {
         val first = NinetyNineOfferReader.parseScreenNodes(
             card("R$22,40", null, "(7 min 1,9 km)", "(20 min 5,5 km)")
