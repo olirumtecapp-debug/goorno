@@ -65,6 +65,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var lastCardClosedTimeMillis: Long = 0L
     private var lastOfferProcessedTimeMillis: Long = 0L
     private var lastRatingOcrAttemptMillis: Long = 0L
+    private var lastRatingOcrOfferKey: String = ""
     @Volatile private var recentlyDisplayedOffers: List<StandardRideOffer> = emptyList()
     @Volatile private var recentlyDisplayedAtMillis: Long = 0L
     private var isTakingAutoScreenshot: Boolean = false
@@ -908,13 +909,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
             // OCR da NOTA roda uma única vez por nova avaliação exibida.
             // Não compete com o scan atual nem precisa ler de novo preço/tempo/km.
+            val ratingOfferKey = evaluations.joinToString("|") { buildStableOfferKey(it.offer) }
             if (evaluations.any {
                     it.offer.sourceApp == SourceApp.NINETY_NINE_DRIVER &&
                     it.offer.passengerRating == null && !it.offer.passengerIsNew
-                } && System.currentTimeMillis() - lastRatingOcrAttemptMillis >= 1_500L
+                } && (ratingOfferKey != lastRatingOcrOfferKey ||
+                    System.currentTimeMillis() - lastRatingOcrAttemptMillis >= 1_500L)
             ) {
                 val requestAt = System.currentTimeMillis()
                 lastRatingOcrAttemptMillis = requestAt
+                lastRatingOcrOfferKey = ratingOfferKey
                 mainHandler.post {
                     val activePkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Throwable) { null }
                     if (activePkg != null && SourceApp.fromPackageName(activePkg) == SourceApp.NINETY_NINE_DRIVER &&
