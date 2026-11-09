@@ -1028,32 +1028,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     }
 
     private fun mergeSameRowNodes(nodes: List<PositionedText>): List<String> {
-        if (nodes.isEmpty()) return emptyList()
-        val sorted = nodes.sortedWith(compareBy<PositionedText>({ it.centerY }, { it.leftX }))
-
-        val rows = mutableListOf<MutableList<PositionedText>>()
-        for (item in sorted) {
-            val lastRow = rows.lastOrNull()
-            if (lastRow != null && kotlin.math.abs(lastRow.first().centerY - item.centerY) <= 38) {
-                if (lastRow.none { it.text == item.text }) {
-                    lastRow.add(item)
-                }
-            } else {
-                rows.add(mutableListOf(item))
-            }
-        }
-
-        val output = mutableListOf<String>()
-        for (row in rows) {
-            row.sortBy { it.leftX }
-            val joinedRow = row.joinToString(" ") { it.text }.trim()
-            if (joinedRow.isNotEmpty()) {
-                output.add(joinedRow)
-            }
-        }
-        return output.distinct()
+        return PositionedTextRowMerger.merge(nodes.map {
+            PositionedTextRowMerger.Fragment(it.text, it.centerY, it.leftX)
+        })
     }
-
 
     private fun collectPositionedTexts(
         node: AccessibilityNodeInfo?,
