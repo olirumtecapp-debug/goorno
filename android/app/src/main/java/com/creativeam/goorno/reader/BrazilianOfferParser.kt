@@ -507,57 +507,58 @@ object BrazilianOfferParser {
      * ignorando preços (R$), tarifas por km (ex: "3,66/km", "R$3,65/km"), distâncias (km) e multiplicadores de dinâmico (ex: 1,2x).
      */
     fun extractPassengerRating(lines: List<String>): Double? {
-        // Deteccao PRIORITARIA de Passageiro Novo antes de qualquer processamento.
-        // Quando a nota aparece como "--" (placeholder da 99/Uber) com contexto
-        // de passageiro novo -> retorna -1.0 como sinal especial para a UI exibir
-        // "Passageiro Novo". Se "--" sem contexto -> ignora (null, nao polui).
-        val joinedLow = lines.joinToString(" ").lowercase(java.util.Locale.getDefault())
-        val hasDoubleDash = lines.any { it.trim() == "--" || it.trim() == "- -" }
-        if (hasDoubleDash) {
-            val hasNewCtx =
-                joinedLow.contains("passageiro novo") ||
-                joinedLow.contains("novo passageiro") ||
-                joinedLow.contains("usuario novo") ||
-                // "--" isolado na posicao da nota com rotulo de nota ao redor
-                lines.any { line ->
-                    val l = line.trim()
-                    (l == "--" || l == "- -") &&
-                        lines.any { ctx ->
-                            val c = ctx.lowercase(java.util.Locale.getDefault())
-                            c.contains("nota") || c.contains("passageir") ||
-                                c.contains("usuari")
-                        }
-                }
-            if (hasNewCtx) return -1.0  // Sinal: Passageiro Novo
-            // "--" sem contexto identificavel: nao polui o historico
-            if (lines.all { it.trim() == "--" || it.trim() == "- -" || it.isBlank() }) return null
-        }
+        if (lines.isEmpty()) return null
 
         val normalized = normalizeFragmentedNodes(lines)
-        if (normalized.isEmpty()) return null
+        val allSources = listOf(lines, normalized)
 
-        val cleaned = normalized.map { stripNonOfferPriceNoise(it).trim() }.filter { it.isNotBlank() }
-        if (cleaned.isEmpty()) return null
+        // 1ª Prioridade: Linha com contexto explícito de passageiro
+        // (Ex: "★ 4,93 · 787 corridas", "5,00 · 22 corridas · Perfil Essencial", "4,87 · 747 corridas", "5,00 · 17 corridas · Cartão verif.")
+        for (sourceList in allSources) {
+            for (i in sourceList.indices) {
+                val line = sourceList[i]
+                val lower = line.lowercase(Locale.getDefault())
+                val hasPassengerContext =
+                    lower.contains("corrida") || lower.contains("viagen") ||
+                        lower.contains("perfil") || lower.contains("premium") ||
+                        lower.contains("essencial") || lower.contains("cartão") ||
+                        lower.contains("cartao") || lower.contains("verif") ||
+                        lower.contains("passageir") || lower.contains("usuari") ||
+                        lower.contains("usuári") ||
+                        line.contains("★") || line.contains("⭐") || line.contains("✪") ||
+                        line.contains("☆") || line.contains("*") || line.contains("👤")
 
-        // 0ª Passada de MÁXIMA PRIORIDADE: Linha contextual de passageiro (99 e Uber: "👤 4,85 · 54 corridas", "👤 4,93 · +999 corridas", "★ 4,91 (392)")
-        for (line in cleaned) {
-            val lower = line.lowercase(Locale.getDefault())
-            if (lower.contains("corrida") || lower.contains("viagen") || lower.contains("cartão") ||
-                lower.contains("cartao") || lower.contains("verif") || lower.contains("perfil") ||
-                lower.contains("premium") || lower.contains("essencial") || lower.contains("passageir") ||
-                lower.contains("usuári") || lower.contains("usuari") || lower.contains("novo")
-            ) {
-                val directMatch = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(line)
-                if (directMatch != null) {
-                    val r = parseBrazilianDecimal(directMatch.groupValues[1])
-                    if (r != null && r in 3.00..5.00) {
-                        return r
+                if (hasPassengerContext) {
+                    val directMatch = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(line)
+                    if (directMatch != null) {
+                        val r = parseBrazilianDecimal(directMatch.groupValues[1])
+                        if (r != null && r in 3.00..5.00) {
+                            return r
+                        }
+                    }
+                }
+
+                // Caso de nós fragmentados adjacentes: Linha i é o decimal puro e linha i+1 ou i-1 tem o contexto de corridas/perfil
+                val isPureDecimal = Regex("""^[3-5][.,]\d{1,2}$""").matches(line.trim())
+                if (isPureDecimal) {
+                    val prevContext = i > 0 && sourceList[i - 1].lowercase(Locale.getDefault()).let {
+                        it.contains("corrida") || it.contains("viagen") || it.contains("perfil") || it.contains("cartão") || it.contains("cartao") || it.contains("verif") || it.contains("novo") || it.contains("pax")
+                    }
+                    val nextContext = i + 1 < sourceList.size && sourceList[i + 1].lowercase(Locale.getDefault()).let {
+                        it.contains("corrida") || it.contains("viagen") || it.contains("perfil") || it.contains("cartão") || it.contains("cartao") || it.contains("verif") || it.contains("novo") || it.contains("pax")
+                    }
+                    if (prevContext || nextContext) {
+                        val r = parseBrazilianDecimal(line)
+                        if (r != null && r in 3.00..5.00) {
+                            return r
+                        }
                     }
                 }
             }
         }
 
-        // 1ª Passada: Padrão explícito com prefixo ou sufixo em linha individual
+        // 2ª Prioridade: Padrão explícito com prefixo ou sufixo em linha individual
+        val cleaned = normalized.map { stripNonOfferPriceNoise(it).trim() }.filter { it.isNotBlank() }
         for (line in cleaned) {
             val mPrefix = RATING_PREFIX_REGEX.find(line)
             if (mPrefix != null) {
@@ -575,7 +576,7 @@ object BrazilianOfferParser {
             }
         }
 
-        // 2ª Passada: Busca no texto completo agrupado
+        // 3ª Prioridade: Busca no texto unificado completo
         val fullJoined = cleaned.joinToString(" ")
         val mPrefixFull = RATING_PREFIX_REGEX.find(fullJoined)
         if (mPrefixFull != null) {
@@ -592,56 +593,22 @@ object BrazilianOfferParser {
             }
         }
 
-        // 1ª Passada: Linha por linha procurando padrão explícito com prefixo ou sufixo
-        for (line in cleaned) {
-            val mPrefix = RATING_PREFIX_REGEX.find(line)
-            if (mPrefix != null) {
-                val rating = parseBrazilianDecimal(mPrefix.groupValues[1])
-                if (rating != null && rating in 3.00..5.00) {
-                    return rating
-                }
-            }
-            val mSuffix = RATING_SUFFIX_REGEX.find(line)
-            if (mSuffix != null) {
-                val rating = parseBrazilianDecimal(mSuffix.groupValues[1])
-                if (rating != null && rating in 3.00..5.00) {
-                    return rating
-                }
-            }
+        // 4ª Prioridade: Placeholder de Passageiro Novo ("--")
+        val joinedLow = lines.joinToString(" ").lowercase(Locale.getDefault())
+        val hasDoubleDash = lines.any { it.trim() == "--" || it.trim() == "- -" }
+        if (hasDoubleDash && (joinedLow.contains("passageiro novo") || joinedLow.contains("novo passageiro") || joinedLow.contains("usuario novo"))) {
+            return -1.0
         }
 
-        // 2ª Passada: Linha contextual de passageiro se ainda não capturado
-        for (line in cleaned) {
-            val lower = line.lowercase(Locale.getDefault())
-            if (lower.contains("corrida") || lower.contains("viagen") || lower.contains("perfil") ||
-                lower.contains("passageir") || lower.contains("usuári") || lower.contains("usuari") ||
-                lower.contains("cartão") || lower.contains("cartao") || lower.contains("verif") ||
-                lower.contains("novo") || lower.contains("nota") || lower.contains("avalia") || lower.contains("classifica") || lower.contains("estrela")
-            ) {
-                val match = Regex("""(?<![R\$\d.,/])([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(line)
-                if (match != null) {
-                    val r = parseBrazilianDecimal(match.groupValues[1])
-                    if (r != null && r in 3.00..5.00) {
-                        return r
-                    }
-                }
-            }
-        }
-
-        // 3ª Passada: Número decimal típico isolado de avaliação (ex: "4,88", "4,95") quando não for preço ou km
+        // 5ª Prioridade: Linha com decimal puro que não é preço nem distância (3.00 a 5.00)
         for (line in cleaned) {
             val trimmed = line.trim()
-            val decMatch = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(trimmed)
-            if (decMatch != null && !trimmed.contains("R$", ignoreCase = true) && !trimmed.contains("/km") && !trimmed.contains("km") && !trimmed.contains("min")) {
-                val rating = parseBrazilianDecimal(decMatch.groupValues[1])
-                if (rating != null && rating in 3.50..5.00) {
-                    return rating
-                }
-            }
-            if (trimmed.length in 3..5 && Regex("""^[34][.,]\d{1,2}$|^5[.,]0{1,2}$""").matches(trimmed)) {
-                val rating = parseBrazilianDecimal(trimmed)
-                if (rating != null && rating in 3.00..5.00) {
-                    return rating
+            if (!trimmed.contains("R$", ignoreCase = true) && !trimmed.contains("/km") && !trimmed.contains("km") && !trimmed.contains("min")) {
+                if (Regex("""^[3-5][.,]\d{2}$""").matches(trimmed)) {
+                    val rating = parseBrazilianDecimal(trimmed)
+                    if (rating != null && rating in 3.00..5.00) {
+                        return rating
+                    }
                 }
             }
         }
@@ -649,9 +616,6 @@ object BrazilianOfferParser {
         return null
     }
 
-    /**
-     * Limpa candidato a endereço removendo botões de ação e descartando sujeira de UI/sistema.
-     */
     fun cleanAddressCandidate(rawText: String): String? {
         var clean = rawText.trim()
         if (clean.length < 3) return null

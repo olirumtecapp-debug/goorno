@@ -164,37 +164,49 @@ object NinetyNineOfferReader {
                     primaryPriceLineIdx = idx
                     break
                 }
-                // Preço na linha imediatamente seguinte à categoria (ex: ["Pop Expresso", "R$33,42"] ou ["Pop Nova", "R$44,80"])
-                if (idx + 1 < cleanedLines.size) {
-                    val nextLine = cleanedLines[idx + 1]
-                    val nextLower = nextLine.lowercase(Locale.getDefault())
-                    val isNextSubFare = nextLower.contains("inclus") || nextLower.contains("tarifa expresso") || nextLower.contains("tarifa base") || nextLower.contains("deslocamento")
-                    if (!isNextSubFare) {
-                        val pNextLine = BrazilianOfferParser.extractAllCurrencies(listOf(nextLine)).firstOrNull()
-                        if (pNextLine != null && pNextLine in 4.0..350.0) {
-                            primaryPrice = pNextLine
-                            primaryPriceLineIdx = idx + 1
-                            break
+                // Preço nas linhas seguintes adjacentes à categoria (busca até 3 linhas abaixo para pular badges como "BEM BARATO")
+                for (offset in 1..3) {
+                    if (idx + offset < cleanedLines.size) {
+                        val nextLine = cleanedLines[idx + offset]
+                        val nextLower = nextLine.lowercase(Locale.getDefault())
+                        val isNextSubFare = nextLower.contains("inclus") || nextLower.contains("tarifa expresso") || nextLower.contains("tarifa base") || nextLower.contains("deslocamento") || nextLower.contains("/km")
+                        if (!isNextSubFare) {
+                            val pNext = BrazilianOfferParser.extractAllCurrencies(listOf(nextLine)).firstOrNull()
+                            if (pNext != null && pNext in 4.0..350.0) {
+                                primaryPrice = pNext
+                                primaryPriceLineIdx = idx + offset
+                                break
+                            }
                         }
                     }
                 }
+                if (primaryPrice != null) break
             }
         }
 
         val validCandidates = candidatePrices.filter { it in 4.0..350.0 }
-        // Se houver mais de um preço candidato e o primaryPrice não foi cravado, desempata descartando bônus de dinâmica menores (ex: 10.01 vs 43.01)
-        val finalPriceVal = primaryPrice ?: if (validCandidates.size >= 2) {
-            val dists = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
-            val totKm = if (dists.size >= 2) dists[0] + dists[1] else dists.firstOrNull() ?: 1.0
-            val bestCandidate = validCandidates.maxOrNull() ?: validCandidates.first()
-            if (totKm > 4.0 && (validCandidates.minOrNull() ?: 0.0) / totKm < 1.0 && bestCandidate / totKm >= 1.20) {
-                bestCandidate
-            } else {
-                validCandidates.first()
-            }
-        } else {
-            validCandidates.firstOrNull() ?: candidatePrices.firstOrNull()
+        val dists = BrazilianOfferParser.extractAllDistancesKm(cleanedLines)
+        val totKm = if (dists.size >= 2) dists[0] + dists[1] else dists.firstOrNull() ?: 1.0
+
+        // Sanity Check Matemático: Extrai taxa por km anunciada (ex: "R$2,81/km" ou "R$ 3,95/km")
+        val announcedRatePerKm = cleanedLines.firstNotNullOfOrNull { line ->
+            val m = Regex("""R\$\s*(\d{1,2}[.,]\d{1,2})\s*/\s*km""", RegexOption.IGNORE_CASE).find(line)
+            m?.let { BrazilianOfferParser.parseBrazilianDecimal(it.groupValues[1]) }
         }
+
+        // Filtra anomalias absurdas (ex: R$ 133,00 para uma corrida de 5,6 km com taxa anunciada de R$ 2,81/km)
+        val saneCandidates = validCandidates.filter { candidate ->
+            if (announcedRatePerKm != null && totKm > 1.0) {
+                val expected = totKm * announcedRatePerKm
+                (candidate >= expected * 0.35 && candidate <= expected * 2.50) || (candidate in 4.0..45.0)
+            } else {
+                true
+            }
+        }
+
+        // Se houver primaryPrice legítimo ancorado ao card, usa SEMPRE ele.
+        // Caso contrário, usa os candidatos validados pelo sanity check, NUNCA maxOrNull cego!
+        val finalPriceVal = primaryPrice ?: saneCandidates.firstOrNull() ?: validCandidates.firstOrNull() ?: candidatePrices.firstOrNull()
         if (primaryPriceLineIdx == -1 && finalPriceVal != null) {
             primaryPriceLineIdx = cleanedLines.indexOfFirst { line ->
                 BrazilianOfferParser.extractAllCurrencies(listOf(line)).contains(finalPriceVal)

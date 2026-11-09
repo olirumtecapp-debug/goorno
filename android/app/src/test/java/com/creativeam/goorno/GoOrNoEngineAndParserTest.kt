@@ -2026,4 +2026,127 @@ class GoOrNoEngineAndParserTest {
         assertEquals(4.88, offer.passengerRating!!, 0.001)
         assertFalse(offer.passengerIsNew)
     }
+
+    // =========================================================================
+    // TESTES DE REGRESSÃO ESPECÍFICOS PARA OS 4 PRINTS DO USUÁRIO (v3.3.78)
+    // =========================================================================
+
+    @Test
+    fun testUserPrint1UberPassengerRating4_93WithStarAndCorridas() {
+        val print1Nodes = listOf(
+            "Pgto. no app",
+            "Prioritário",
+            "R$8,00",
+            "⚡1,1x",
+            "R$2,37/km",
+            "R$1,04 Tarifa base dinâmica incl.",
+            "★ 4,93 · 787 corridas",
+            "Perfil Premium",
+            "8 min (1,9 km)",
+            "Rua dos Amigos, 158 , Vila Sao Pedro",
+            "5 min (1,4 km)",
+            "Rua das Estrelas, 400, Montanhão",
+            "Aceitar"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(print1Nodes)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+
+        assertEquals(8.00, offer.offeredPrice!!, 0.001)
+        assertEquals(4.93, offer.passengerRating!!, 0.001)
+        assertEquals(1.9, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(1.4, offer.tripDistanceKm!!, 0.001)
+    }
+
+    @Test
+    fun testUserPrint299PassengerRating5_00WithPerfilEssencial() {
+        val print2Nodes = listOf(
+            "Solicitações",
+            "Escolha uma",
+            "Km até o embarque",
+            "Pop",
+            "R$34,60",
+            "x2.0",
+            "R$2,83/km",
+            "5,00 · 22 corridas · Perfil Essencial",
+            "(8 min 2,3 km) Rua São Geraldo, 49, Montanhão",
+            "(26 min 9,9 km) Rua Dom Marcos de Noronha, 407, Vila Nogueira",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(print2Nodes)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+
+        assertEquals(34.60, offer.offeredPrice!!, 0.001)
+        assertEquals(5.00, offer.passengerRating!!, 0.001)
+        assertEquals(2.3, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(9.9, offer.tripDistanceKm!!, 0.001)
+    }
+
+    @Test
+    fun testUserPrint399MultipleOffersPreservesCardsAndRatings() {
+        val print3Nodes = listOf(
+            "Solicitações",
+            "Escolha uma",
+            "Km até o embarque",
+            "Pop Nova",
+            "R$14,80",
+            "x1,6",
+            "R$3,95/km",
+            "CHAMADO REPETIDO",
+            "4,87 · 747 corridas · Perfil Essencial",
+            "(5 min 1,4 km) Rua Giacinto Tognato, 2344, Baeta Neves",
+            "(9 min 2,4 km) Rua Vinte e Seis de Março, 312, Jardim Nascimento",
+            "Escolher",
+            "Pop",
+            "R$12,10",
+            "x1,7",
+            "R$3,58/km",
+            "5,00 · 17 corridas · Cartão verif.",
+            "(4 min 1,2 km) D'avó - São Bernardo do Campo, Avenida Pery Ronchetti, 1800",
+            "(8 min 2,2 km) Rua Américo Vieira de Souza, 196, Baeta Neves",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(print3Nodes)
+        assertEquals(2, offers.size)
+
+        // Card 1
+        assertEquals(14.80, offers[0].offeredPrice!!, 0.001)
+        assertEquals(4.87, offers[0].passengerRating!!, 0.001)
+        assertEquals(1.4, offers[0].pickupDistanceKm!!, 0.001)
+        assertEquals(2.4, offers[0].tripDistanceKm!!, 0.001)
+
+        // Card 2
+        assertEquals(12.10, offers[1].offeredPrice!!, 0.001)
+        assertEquals(5.00, offers[1].passengerRating!!, 0.001)
+        assertEquals(1.2, offers[1].pickupDistanceKm!!, 0.001)
+        assertEquals(2.2, offers[1].tripDistanceKm!!, 0.001)
+    }
+
+    @Test
+    fun testUserPrint499RejectsSpurious133PriceAndSelectsSane15_80() {
+        val print4Nodes = listOf(
+            "18:56",
+            "Solicitações",
+            "Escolha uma",
+            "Km até o embarque",
+            "Pop",
+            "R$15,80",
+            "x1,4",
+            "R$2,81/km",
+            "BEM BARATO",
+            "4,70 · 642 corridas · Perfil Premium",
+            "(5 min 1,3 km) Fort Atacadista, Avenida Pery Ronchetti, 500 - Nova Petrópolis",
+            "(14 min 4,3 km) Rua Vasco da Gama, 506 , Vila Sao Pedro",
+            "Escolher"
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(print4Nodes)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+
+        assertEquals("Deve selecionar R$ 15,80 e rejeitar anomalias", 15.80, offer.offeredPrice!!, 0.001)
+        assertEquals(4.70, offer.passengerRating!!, 0.001)
+        assertEquals(1.3, offer.pickupDistanceKm!!, 0.001)
+        assertEquals(4.3, offer.tripDistanceKm!!, 0.001)
+    }
 }
