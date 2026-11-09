@@ -686,9 +686,7 @@ fun GoOrNoComposeApp(
                 GoOrNoScreen.HOME -> {
                     val isPermsReady = hasOverlayPermission && (hasAccessibilityPermission || ocrActive)
                     val isCopilotActive = isPermsReady && config.copilotMonitoringEnabled
-                    val riskCount = remember(config.customRiskZones) {
-                        config.customRiskZones.split("\n", ";").filter { it.isNotBlank() }.size
-                    }
+                    val riskCount = config.customRiskZones.split("\n", ";").count { it.isNotBlank() }
 
                     // 1. BANNER DE PERMISSÕES PENDENTES (Alerta limpo no topo apenas se faltar algo)
                     if (!isPermsReady) {
