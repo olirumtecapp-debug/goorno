@@ -85,7 +85,7 @@ object NinetyNineOfferReader {
 
         val normalized = BrazilianOfferParser.normalizeFragmentedNodes(ocrLines)
         val ratingPattern = Regex(
-            """(?<![\\d.,/])([3-5][.,]\\d{2})(?!\\s*(?:/\\s*km|km|m\\b|min\\b|x\\b))"""
+            """(?<![\d.,/])([3-5][.,]\d{2})(?!\s*(?:/\s*km|km|m\b|min\b|x\b))"""
         )
         val candidateRatings = mutableSetOf<Double>()
         for ((index, line) in normalized.withIndex()) {
