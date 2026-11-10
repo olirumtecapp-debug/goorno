@@ -1577,6 +1577,30 @@ fun GoOrNoComposeApp(
                                                         else -> Color(0xFF94A3B8)
                                                     }
 
+                                                    val previewFontFamily = remember(overlayFontFamily) {
+                                                        when (overlayFontFamily.uppercase(java.util.Locale.ROOT)) {
+                                                            "ROBOTO" -> FontFamily.SansSerif
+                                                            "CONDENSED", "ROBOTO_CONDENSED" -> FontFamily(Typeface.create("sans-serif-condensed", Typeface.BOLD))
+                                                            "MONTSERRAT" -> try {
+                                                                FontFamily(Font(R.font.montserrat, FontWeight.Bold))
+                                                            } catch (_: Exception) {
+                                                                FontFamily.SansSerif
+                                                            }
+                                                            "INTER" -> try {
+                                                                FontFamily(Font(R.font.inter, FontWeight.Bold))
+                                                            } catch (_: Exception) {
+                                                                FontFamily.SansSerif
+                                                            }
+                                                            "SISTEMA" -> FontFamily.Default
+                                                            else -> FontFamily.SansSerif
+                                                        }
+                                                    }
+                                                    val previewPillarFontSize = when (overlayFontSize) {
+                                                        "P" -> 19.sp
+                                                        "G" -> 25.sp
+                                                        else -> 22.sp
+                                                    }
+
                                                     // Card com borda externa e lip inferior mais espesso (6dp)
                                                     Box(
                                                         modifier = Modifier
@@ -1611,29 +1635,6 @@ fun GoOrNoComposeApp(
                                                                             )
                                                                         }
                                                                         Spacer(modifier = Modifier.width(6.dp))
-                                                                        val previewFontFamily = remember(overlayFontFamily) {
-                                                                            when (overlayFontFamily.uppercase(java.util.Locale.ROOT)) {
-                                                                                "ROBOTO" -> FontFamily.SansSerif
-                                                                                "CONDENSED", "ROBOTO_CONDENSED" -> FontFamily(Typeface.create("sans-serif-condensed", Typeface.BOLD))
-                                                                                "MONTSERRAT" -> try {
-                                                                                    FontFamily(Font(R.font.montserrat, FontWeight.Bold))
-                                                                                } catch (_: Exception) {
-                                                                                    FontFamily.SansSerif
-                                                                                }
-                                                                                "INTER" -> try {
-                                                                                    FontFamily(Font(R.font.inter, FontWeight.Bold))
-                                                                                } catch (_: Exception) {
-                                                                                    FontFamily.SansSerif
-                                                                                }
-                                                                                "SISTEMA" -> FontFamily.Default
-                                                                                else -> FontFamily.SansSerif
-                                                                            }
-                                                                        }
-                                                                        val previewPillarFontSize = when (overlayFontSize) {
-                                                                            "P" -> 19.sp
-                                                                            "G" -> 25.sp
-                                                                            else -> 22.sp
-                                                                        }
                                                                         Text(
                                                                             text = "22 min • 12,4 km",
                                                                             color = primaryText,
