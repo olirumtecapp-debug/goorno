@@ -87,10 +87,14 @@ object RideScreenContextClassifier {
         }
 
         val escolherCount = lines.count { it == "escolher" || it.startsWith("escolher") }
-        val priceCount = lines.count { it.contains("r$") }
+        
+        // Conta apenas valores principais de corrida (ex: "R$ 14,40", "R$9,70"), ignorando taxas unitárias ("R$1,99/km", "+R$ 2,00")
+        val mainPriceCount = lines.count { line ->
+            line.contains("r$") && !line.contains("/km") && !line.contains("incl") && !line.contains("dinâmica") && !line.contains("dinamica")
+        }
 
-        // Se tiver cabeçalho de lista OU 2+ botões escolher / 2+ preços empilhados, É LISTA!
-        if (hasListHeader || escolherCount >= 2 || (priceCount >= 2 && joined.contains("escolher"))) {
+        // Se tiver cabeçalho de lista OU 2+ botões escolher OU 2+ corridas principais com escolher, É LISTA!
+        if (hasListHeader || escolherCount >= 2 || (mainPriceCount >= 2 && escolherCount >= 1)) {
             return RideScreenContext.NINETYNINE_REQUEST_LIST
         }
 
