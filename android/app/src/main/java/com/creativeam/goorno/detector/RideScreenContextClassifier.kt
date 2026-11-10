@@ -17,10 +17,9 @@ enum class RideScreenContext {
     UNKNOWN;
 
     val shouldAnalyze: Boolean
-        get() = this == UBER_INCOMING_SINGLE_OFFER ||
-                this == UBER_RADAR_SELECTED_OFFER ||
-                this == NINETYNINE_INCOMING_SINGLE_OFFER ||
-                this == NINETYNINE_SELECTED_MAP_OFFER
+        get() = this != UBER_RADAR_LIST &&
+                this != NINETYNINE_REQUEST_LIST &&
+                this != NO_OFFER
 }
 
 /**
@@ -115,52 +114,41 @@ object RideScreenContextClassifier {
         val hasRideCategory = joined.contains("pop") || joined.contains("99pop") || joined.contains("plus") ||
                 joined.contains("comfort") || joined.contains("compartilhado")
 
-        if (hasRideData && (hasPaymentTag || hasRideCategory || joined.contains("embarque") || joined.contains("desembarque"))) {
+        if (hasRideData) {
             return RideScreenContext.NINETYNINE_INCOMING_SINGLE_OFFER
         }
 
-        return if (hasRideData) RideScreenContext.NINETYNINE_INCOMING_SINGLE_OFFER else RideScreenContext.NO_OFFER
+        return RideScreenContext.UNKNOWN
     }
 
     private fun classifyUber(
         lines: List<String>,
         joined: String
     ): RideScreenContext {
-        // TELA 5: RADAR DE VIAGENS - LISTA GERAL DA UBER
-        // Enquanto o botão "Tenho interesse" ou o título "Radar de viagens" estiver visível em lista, É LISTA!
+        // TELA DE RADAR DE VIAGENS DA UBER (LISTA GERAL / DISPUTA)
+        // A lista possui o título explícito "Radar de viagens" OU múltiplos cartões de interesse empilhados.
         val hasRadarHeader = lines.any {
             it.contains("radar de viagens") || it.contains("radar de viagem") ||
-            it.startsWith("< radar") || it.startsWith("radar")
+            it.startsWith("< radar") || it.startsWith("radar") || it.startsWith("← radar")
         }
-        val hasInterestBtn = lines.any {
+        val interestCount = lines.count {
             it == "tenho interesse" || it.contains("tenho interesse") || it.startsWith("tenho interesse")
         }
 
-        // Mesmo com apenas 1 cartão, se for a lista do Radar com "Tenho interesse", NÃO ANALISA!
-        if (hasRadarHeader || hasInterestBtn) {
+        // Se tiver cabeçalho explícito "Radar de viagens" OU 2+ botões de interesse empilhados, É A LISTA DE DISPUTA!
+        // NÃO DEVE TER LEITURA!
+        if (hasRadarHeader || interestCount >= 2) {
             return RideScreenContext.UBER_RADAR_LIST
         }
 
+        // Caso contrário, é oferta individual (seja com botão "Aceitar" ou com "Tenho interesse" diretamente no mapa!)
         val hasRideData = lines.any { it.contains("r$") } &&
                 lines.any { it.contains("min") || it.contains("km") }
 
-        if (!hasRideData) {
-            return RideScreenContext.NO_OFFER
+        if (hasRideData) {
+            return RideScreenContext.UBER_INCOMING_SINGLE_OFFER
         }
 
-        // TELA 4: UBER - CHAMADA INDIVIDUAL AUTOMÁTICA OU OFERTA SELECIONADA
-        val hasAcceptBtn = lines.any {
-            it == "aceitar" || it.contains("aceitar") || it.startsWith("aceitar") ||
-            it == "selecionar" || it.contains("selecionar") || it.startsWith("selecionar")
-        }
-
-        return if (hasAcceptBtn || joined.contains("uberx") || joined.contains("comfort") ||
-            joined.contains("black") || joined.contains("priority") || joined.contains("flash") ||
-            joined.contains("exclusivo") || joined.contains("vip")
-        ) {
-            RideScreenContext.UBER_INCOMING_SINGLE_OFFER
-        } else {
-            RideScreenContext.UNKNOWN
-        }
+        return RideScreenContext.UNKNOWN
     }
 }

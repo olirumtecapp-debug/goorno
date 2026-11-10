@@ -524,7 +524,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             val fastTexts = mutableListOf<String>()
             collectFastTexts(activeRootFast, fastTexts, maxNodes = 30)
             val fastContext = RideScreenContextClassifier.classify(targetApp, fastTexts)
-            if (!fastContext.shouldAnalyze && fastContext != RideScreenContext.UNKNOWN) {
+            if (fastContext == RideScreenContext.NINETYNINE_REQUEST_LIST || fastContext == RideScreenContext.UBER_RADAR_LIST) {
                 isTakingAutoScreenshot = false
                 return
             }
@@ -746,7 +746,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         val isSaneDuration = min in 1..240 // NUNCA aceita tempos absurdos como 1009 min!
                                         val isSaneKm = km in 0.2..300.0
                                         val ocrContext = RideScreenContextClassifier.classify(effectiveOcrApp, normalizedOcr)
-                                        val isAllowedContext = ocrContext.shouldAnalyze || ocrContext == RideScreenContext.UNKNOWN
+                                        val isAllowedContext = ocrContext != RideScreenContext.NINETYNINE_REQUEST_LIST && ocrContext != RideScreenContext.UBER_RADAR_LIST
 
                                         isSanePrice && isSaneKm && isSaneDuration && !offer.hasFieldConflict && isAllowedContext
                                     }
@@ -867,7 +867,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // Classifica o contexto da tela antes de abrir o card flutuante
         val firstApp = parsedOffers.firstOrNull()?.sourceApp ?: SourceApp.NINETY_NINE_DRIVER
         val dispatchContext = RideScreenContextClassifier.classify(firstApp, screenLines)
-        if (!dispatchContext.shouldAnalyze && dispatchContext != RideScreenContext.UNKNOWN) {
+        if (dispatchContext == RideScreenContext.NINETYNINE_REQUEST_LIST || dispatchContext == RideScreenContext.UBER_RADAR_LIST) {
             app.overlayPanel.hideOfferCardOnly()
             wasViewing99List = false
             last99ListSignature = ""

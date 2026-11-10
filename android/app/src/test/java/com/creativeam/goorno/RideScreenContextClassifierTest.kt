@@ -134,6 +134,50 @@ class RideScreenContextClassifierTest {
     }
 
     @Test
+    fun testUberIncomingOnMapWithTenhoInteresse_Photo3() {
+        // Foto 3 da Uber: Oferta individual tocando no mapa com botão "Tenho interesse" e barra regressiva
+        val lines = listOf(
+            "Priority",
+            "CORRIDA CURTA",
+            "R$ 9,28",
+            "Est. de R$2,38/km",
+            "4,95 (1929)",
+            "Verificado",
+            "+R$ 1,70 incluída para retirada",
+            "3 min (0.6 km)",
+            "Rua Itatiba, Baeta Neves, São Bernardo do Campo",
+            "9 minutos (3.3 km)",
+            "Rua Doutor Baeta Neves, 369, Baeta Neves, São Bernardo do Campo",
+            "Tenho interesse"
+        )
+        val context = RideScreenContextClassifier.classify(SourceApp.UBER_DRIVER, lines)
+        assertEquals(RideScreenContext.UBER_INCOMING_SINGLE_OFFER, context)
+        assertTrue("Oferta individual da Uber no mapa com Tenho interesse DEVE ser lida", context.shouldAnalyze)
+    }
+
+    @Test
+    fun testUberIncomingLongTripOnMapWithTenhoInteresse_Photo4() {
+        // Foto 4 da Uber: Oferta individual de viagem longa no mapa com botão "Tenho interesse"
+        val lines = listOf(
+            "UberX",
+            "R$ 72,58",
+            "Est. de R$1,82/km",
+            "4,88 (720)",
+            "Verificado",
+            "7 min (2.7 km)",
+            "R. Moema, Jardim Alvorada, Santo André",
+            "2 paradas",
+            "1 h e 42 min (37.1 km)",
+            "R. Padre Chico, 224, Perdizes, São Paulo",
+            "Viagem longa (mais de 45 min)",
+            "Tenho interesse"
+        )
+        val context = RideScreenContextClassifier.classify(SourceApp.UBER_DRIVER, lines)
+        assertEquals(RideScreenContext.UBER_INCOMING_SINGLE_OFFER, context)
+        assertTrue("Oferta individual longa da Uber no mapa com Tenho interesse DEVE ser lida", context.shouldAnalyze)
+    }
+
+    @Test
     fun testIdleScreenDoesNotAnalyze() {
         val lines = listOf(
             "Você está online",
