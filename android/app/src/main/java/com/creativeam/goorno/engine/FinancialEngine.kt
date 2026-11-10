@@ -291,7 +291,10 @@ object FinancialEngine {
         )
 
         if (riskAssessment.hasRisk) {
-            reasons.add(0, riskAssessment.shortBadge)
+            val zoneName = (riskAssessment.destinationMatchedZone ?: riskAssessment.originMatchedZone).orEmpty()
+            val zoneTag = if (zoneName.isNotBlank()) " ($zoneName)" else ""
+            reasons.add(0, "${riskAssessment.shortBadge}$zoneTag")
+            warnings.add(0, "${riskAssessment.shortBadge}$zoneTag")
         }
         val finalVerdict = verdictAfterRating
 
@@ -303,7 +306,9 @@ object FinancialEngine {
         )
 
         if (favoriteAssessment.isFavorite) {
-            reasons.add(0, favoriteAssessment.shortBadge)
+            val favZone = (favoriteAssessment.destinationMatchedZone ?: favoriteAssessment.originMatchedZone).orEmpty()
+            val favTag = if (favZone.isNotBlank()) " ($favZone)" else ""
+            reasons.add(0, "${favoriteAssessment.shortBadge}$favTag")
         }
 
         val yellowRatio = config.yellowToleranceRatio.coerceIn(0.50, 0.99)

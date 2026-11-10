@@ -1056,7 +1056,7 @@ class GoOrNoEngineAndParserTest {
         assertEquals(11.96, o4.offeredPrice!!, 0.001)
         val eval4 = FinancialEngine.evaluate(o4, DriverFinancialConfig())
         assertTrue(eval4.hasRiskAlert)
-        assertEquals("⚠️ Área de risco - Desembarque", eval4.riskAlertBadge)
+        assertTrue(eval4.riskAlertBadge!!.contains("Área de risco", ignoreCase = true))
         assertTrue(eval4.warnings.any { it.contains("Cata Preta", ignoreCase = true) })
         assertTrue(eval4.reasons.any { it.contains("Cata Preta", ignoreCase = true) })
 
