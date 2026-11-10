@@ -898,9 +898,13 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // Identifica ofertas novas e ofertas repetidas (re-oferta após término ou recusa)
         val validOffers = mutableListOf<StandardRideOffer>()
+        val alreadyShownBeforeList = mutableSetOf<String>()
         for (offer in parsedOffers) {
             val key = buildStableOfferKey(offer)
             val lastShown = shownOfferTimestamps[key]
+            if (lastShown != null) {
+                alreadyShownBeforeList.add(key)
+            }
             if (lastShown == null) {
                 // Primeira vez que esta oferta toca
                 validOffers.add(offer.copy(isRepeatedOffer = false))
