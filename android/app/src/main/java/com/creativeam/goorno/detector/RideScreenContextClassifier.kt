@@ -119,7 +119,9 @@ object RideScreenContextClassifier {
             return RideScreenContext.NINETYNINE_INCOMING_SINGLE_OFFER
         }
 
-        return if (hasRideData) RideScreenContext.NINETYNINE_INCOMING_SINGLE_OFFER else RideScreenContext.NO_OFFER
+        // Textos parciais da árvore/OCR não comprovam ausência de chamada.
+        // UNKNOWN deixa o leitor já existente tentar recuperar os dados sem inventar oferta.
+        return if (hasRideData) RideScreenContext.NINETYNINE_INCOMING_SINGLE_OFFER else RideScreenContext.UNKNOWN
     }
 
     private fun classifyUber(
@@ -136,8 +138,13 @@ object RideScreenContextClassifier {
             it == "tenho interesse" || it.contains("tenho interesse") || it.startsWith("tenho interesse")
         }
 
-        // Mesmo com apenas 1 cartão, se for a lista do Radar com "Tenho interesse", NÃO ANALISA!
-        if (hasRadarHeader || hasInterestBtn) {
+        // "Tenho interesse" na tela da lista identifica uma oferta ainda NÃO aberta.
+        // Um detalhe do Radar pode manter o cabeçalho, mas terá ação individual própria.
+        val hasIndividualAction = lines.any {
+            it == "aceitar" || it.startsWith("aceitar") ||
+            it == "selecionar" || it.startsWith("selecionar")
+        }
+        if (hasInterestBtn || (hasRadarHeader && !hasIndividualAction)) {
             return RideScreenContext.UBER_RADAR_LIST
         }
 
@@ -145,7 +152,11 @@ object RideScreenContextClassifier {
                 lines.any { it.contains("min") || it.contains("km") }
 
         if (!hasRideData) {
-            return RideScreenContext.NO_OFFER
+            // Não declarar NO_OFFER ao receber só fragmentos dos nós de acessibilidade.
+            return RideScreenContext.UNKNOWN
+        }
+        if (hasRadarHeader && hasIndividualAction) {
+            return RideScreenContext.UBER_RADAR_SELECTED_OFFER
         }
 
         // TELA 4: UBER - CHAMADA INDIVIDUAL AUTOMÁTICA OU OFERTA SELECIONADA
