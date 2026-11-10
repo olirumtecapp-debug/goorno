@@ -582,7 +582,7 @@ class FloatingOverlayPanel(private val context: Context) {
             val tvVal = TextView(context).apply {
                 text = value
                 setTextColor(Color.parseColor(primaryTextHex))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
                 setTypeface(typeface, Typeface.BOLD)
                 isSingleLine = true
                 maxLines = 1
@@ -1769,7 +1769,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val tvKmVal = TextView(context).apply {
             text = kmStr
             setTextColor(Color.parseColor(verdictColorHex))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
             setTypeface(typeface, Typeface.BOLD)
         }
         row1.addView(tvKmVal)
@@ -1837,7 +1837,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val tvHr = TextView(context).apply {
             text = hrStr
             setTextColor(Color.parseColor(verdictColorHex))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, summaryValSp)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
             setTypeface(typeface, Typeface.BOLD)
         }
         row2.addView(tvHr)
@@ -2136,7 +2136,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val tvSummary = TextView(context).apply {
             text = "$seqTag$minStr • $distStr"
             setTextColor(primaryTextColor)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, summaryValSp)
             setTypeface(typeface, Typeface.BOLD)
             setSingleLine(true)
             ellipsize = android.text.TextUtils.TruncateAt.END
