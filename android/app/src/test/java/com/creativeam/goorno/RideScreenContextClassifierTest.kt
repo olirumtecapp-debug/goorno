@@ -144,4 +144,51 @@ class RideScreenContextClassifierTest {
         assertEquals(RideScreenContext.NO_OFFER, context)
         assertFalse(context.shouldAnalyze)
     }
+
+    @Test
+    fun incompleteNinetyNineCallShouldNotBeHardBlocked() {
+        val context = RideScreenContextClassifier.classify(
+            SourceApp.NINETY_NINE_DRIVER,
+            listOf("Pgto. no app", "R$14,40")
+        )
+        assertEquals(RideScreenContext.UNKNOWN, context)
+    }
+
+    @Test
+    fun incompleteUberCallShouldNotBeHardBlocked() {
+        val context = RideScreenContextClassifier.classify(
+            SourceApp.UBER_DRIVER,
+            listOf("Priority", "R$20,58")
+        )
+        assertEquals(RideScreenContext.UNKNOWN, context)
+    }
+
+    @Test
+    fun singleCardInUberRadarIsStillAList() {
+        val context = RideScreenContextClassifier.classify(
+            SourceApp.UBER_DRIVER,
+            listOf("Radar de viagens", "UberX", "R$11,16", "4 min (1.4 km)", "Tenho interesse")
+        )
+        assertEquals(RideScreenContext.UBER_RADAR_LIST, context)
+    }
+
+    @Test
+    fun selectedUberRadarOfferWithExplicitAcceptActionIsReadable() {
+        val context = RideScreenContextClassifier.classify(
+            SourceApp.UBER_DRIVER,
+            listOf("Radar de viagens", "UberX", "R$11,16", "4 min (1.4 km)",
+                "12 min (3.7 km)", "Aceitar")
+        )
+        assertEquals(RideScreenContext.UBER_RADAR_SELECTED_OFFER, context)
+    }
+
+    @Test
+    fun singleCardInNinetyNineRequestsIsStillAList() {
+        val context = RideScreenContextClassifier.classify(
+            SourceApp.NINETY_NINE_DRIVER,
+            listOf("Solicitações", "Pop", "R$14,40", "6 min (1,2 km)", "Escolher")
+        )
+        assertEquals(RideScreenContext.NINETYNINE_REQUEST_LIST, context)
+    }
+
 }
