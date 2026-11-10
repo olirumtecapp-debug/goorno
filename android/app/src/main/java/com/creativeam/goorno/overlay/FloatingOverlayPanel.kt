@@ -1660,7 +1660,7 @@ class FloatingOverlayPanel(private val context: Context) {
         // Se houver destaque de Região Favorita:
         if (result.isFavoriteZone && !result.favoriteZoneBadge.isNullOrBlank()) {
             val tvFav = TextView(context).apply {
-                text = "⭐ REGIÃO FAVORITA: ${result.favoriteZoneBadge}"
+                text = if (result.favoriteZoneBadge.startsWith("⭐")) result.favoriteZoneBadge else "⭐ ${result.favoriteZoneBadge}"
                 setTextColor(Color.parseColor("#6EE7B7"))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 setTypeface(typeface, Typeface.BOLD)
@@ -2240,7 +2240,7 @@ class FloatingOverlayPanel(private val context: Context) {
         // ALERTAS DESTACADOS TOTALMENTE FORA DO CARD (PILULAS COLORIDAS DEDICADAS)
         if (result.hasRiskAlert && !result.riskAlertBadge.isNullOrBlank()) {
             val tvRisk = TextView(context).apply {
-                text = "⚠️ ÁREA DE RISCO: ${result.riskAlertBadge}"
+                text = if (result.riskAlertBadge.startsWith("⚠️")) result.riskAlertBadge else "⚠️ ${result.riskAlertBadge}"
                 setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 setTypeface(typeface, Typeface.BOLD)
@@ -2259,7 +2259,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         if (result.isDistantPickup) {
             val tvPickup = TextView(context).apply {
-                text = "⚠️ EMBARQUE DISTANTE"
+                text = "⚠️ Embarque Distante"
                 setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 setTypeface(typeface, Typeface.BOLD)
@@ -2278,7 +2278,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         if (result.isFavoriteZone && !result.favoriteZoneBadge.isNullOrBlank() && !result.hasRiskAlert) {
             val tvFav = TextView(context).apply {
-                text = "⭐ REGIÃO FAVORITA: ${result.favoriteZoneBadge}"
+                text = if (result.favoriteZoneBadge.startsWith("⭐")) result.favoriteZoneBadge else "⭐ ${result.favoriteZoneBadge}"
                 setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 setTypeface(typeface, Typeface.BOLD)

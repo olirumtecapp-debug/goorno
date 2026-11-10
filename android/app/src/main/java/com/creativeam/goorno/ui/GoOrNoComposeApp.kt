@@ -7123,7 +7123,7 @@ private fun EvaluationDetailCardContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = result.riskAlertBadge ?: "⚠️ Área de risco",
+                    text = result.riskAlertBadge?.let { if (it.startsWith("⚠️")) it else "⚠️ $it" } ?: "⚠️ Área de risco",
                     fontWeight = FontWeight.Black,
                     fontSize = 12.sp,
                     color = TrafficRed,
@@ -7427,7 +7427,7 @@ private fun HistoricalOfferCardContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "⚠️ " + riskCheck.shortBadge,
+                    text = if (riskCheck.shortBadge.startsWith("⚠️")) riskCheck.shortBadge else "⚠️ " + riskCheck.shortBadge,
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.5.sp,
                     color = Color(0xFFDC2626),
@@ -7445,7 +7445,7 @@ private fun HistoricalOfferCardContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "⭐ REGIÃO FAVORITA: " + favCheck.shortBadge,
+                    text = if (favCheck.shortBadge.startsWith("⭐")) favCheck.shortBadge else "⭐ " + favCheck.shortBadge,
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.5.sp,
                     color = Color(0xFF065F46),
