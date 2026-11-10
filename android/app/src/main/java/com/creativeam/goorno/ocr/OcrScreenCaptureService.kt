@@ -242,8 +242,9 @@ class OcrScreenCaptureService : Service() {
         // Proteção da rota alternativa MediaProjection: uma lista nunca pode
         // produzir card, notificação ou histórico. Usar o MESMO classificador.
         val screenContext = RideScreenContextClassifier.classify(inferredApp, lines)
+        // Radar Uber deve ser analisado ANTES de "Tenho interesse".
+        // A lista da 99 continua bloqueada até o mapinha.
         if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
-            screenContext == RideScreenContext.UBER_RADAR_LIST ||
             screenContext == RideScreenContext.NO_OFFER) {
             lastOcrOffer = null
             return
@@ -266,9 +267,13 @@ class OcrScreenCaptureService : Service() {
         // Nunca tentar leitor Uber como fallback para telas da 99:
         // isto misturava preços e notas de aplicativos diferentes.
 
-        // Um detalhe individual só pode gerar UMA avaliação.
-        // Leituras ambíguas com múltiplos clusters não vão para o histórico.
-        if (parsedOffers.size != 1) {
+        // Múltiplas ofertas só são permitidas quando forem cartões
+        // independentes do Radar da Uber. No restante, exigir oferta única.
+        val allowUberRadarCards = screenContext == RideScreenContext.UBER_RADAR_LIST &&
+            inferredApp == SourceApp.UBER_DRIVER
+        if (parsedOffers.isEmpty() ||
+            parsedOffers.size > 5 ||
+            (!allowUberRadarCards && parsedOffers.size != 1)) {
             lastOcrOffer = null
             return
         }
