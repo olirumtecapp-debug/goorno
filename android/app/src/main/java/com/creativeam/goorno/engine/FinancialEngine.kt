@@ -34,7 +34,7 @@ object FinancialEngine {
     ): String? {
         if (rating == null || verdict == PassengerRatingVerdict.UNKNOWN) return null
         val numStr = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", rating)
-        return "${verdict.emoji} ★ $numStr (${verdict.label})"
+        return numStr
     }
 
     fun evaluate(

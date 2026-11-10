@@ -6,7 +6,9 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -2013,7 +2015,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val verdictHex = when (result.verdict) {
             TrafficLightVerdict.GREEN -> "#16A34A"
-            TrafficLightVerdict.YELLOW -> "#CA8A04"
+            TrafficLightVerdict.YELLOW -> "#EAB308"
             TrafficLightVerdict.RED -> "#DC2626"
             TrafficLightVerdict.GRAY_NEUTRAL -> "#475569"
         }
@@ -2025,10 +2027,10 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         val cardBorder = when {
             isColorido -> when (result.verdict) {
-                TrafficLightVerdict.GREEN -> "#15803D"
-                TrafficLightVerdict.YELLOW -> "#A16207"
-                TrafficLightVerdict.RED -> "#B91C1C"
-                TrafficLightVerdict.GRAY_NEUTRAL -> "#334155"
+                TrafficLightVerdict.GREEN -> "#14532D" // Borda e borda inferior nitidamente mais escura
+                TrafficLightVerdict.YELLOW -> "#78350F" // Borda e borda inferior ambar escura
+                TrafficLightVerdict.RED -> "#7F1D1D"   // Borda e borda inferior vinho escura
+                TrafficLightVerdict.GRAY_NEUTRAL -> "#1E293B"
             }
             else -> verdictHex
         }
@@ -2051,10 +2053,13 @@ class FloatingOverlayPanel(private val context: Context) {
             else -> "#DC2626"
         }
         val ratingBadge = result.passengerRatingBadge.orEmpty()
+        val ratingClean = ratingBadge.replace(Regex("\\s*\\([^)]*\\)"), "").replace("★", "").replace("🟢", "").replace("🟡", "").replace("🔴", "").trim()
+        val ratingNum = offer.passengerRating ?: ratingClean.replace(",", ".").toDoubleOrNull()
         val ratingBarColor = when {
-            ratingBadge.startsWith("5") || ratingBadge.startsWith("4.9") || ratingBadge.startsWith("4,9") -> "#16A34A"
-            ratingBadge.startsWith("4.8") || ratingBadge.startsWith("4,8") || ratingBadge.startsWith("4.7") || ratingBadge.startsWith("4,7") -> "#CA8A04"
-            else -> "#DC2626"
+            ratingNum != null && ratingNum >= 4.90 -> "#16A34A"
+            ratingNum != null && ratingNum >= 4.75 -> "#CA8A04"
+            ratingNum != null -> "#DC2626"
+            else -> "#94A3B8"
         }
 
         val root = LinearLayout(context).apply {
@@ -2065,8 +2070,9 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(10), dp(14), dp(10))
-            background = roundedCardBg(cardBg, cardBorder, 18f, if (isColorido) 2 else 3)
+            setPadding(dp(14), dp(10), dp(14), dp(12))
+            // Borda com lip inferior mais grosso (6dp) e borda mais escura
+            background = roundedCardWithThickBottomBg(cardBg, cardBorder, 18f, strokeDp = 2, bottomLipDp = 6)
             layoutParams = LinearLayout.LayoutParams(dp(310), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
@@ -2112,7 +2118,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
 
         val tvSummary = TextView(context).apply {
-            text = "$seqTag$minStr · $distStr"
+            text = "$seqTag$minStr • $distStr"
             setTextColor(primaryTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
             setTypeface(typeface, Typeface.BOLD)
@@ -2133,7 +2139,7 @@ class FloatingOverlayPanel(private val context: Context) {
         topRow.addView(tvTimer)
 
         val btnClose = TextView(context).apply {
-            text = "✕"
+            text = "✕ "
             setTextColor(secondaryTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setTypeface(typeface, Typeface.BOLD)
@@ -2205,31 +2211,74 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val kmVal = if (grossKm > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm) else "--"
         val hrVal = if (grossHr > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f", grossHr) else "--"
-        val ratingVal = if (ratingBadge.isNotBlank()) ratingBadge else "--"
+        val ratingVal = if (ratingClean.isNotBlank()) ratingClean else if (ratingNum != null && ratingNum > 0.0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingNum) else "--"
 
         pillarsRow.addView(createPillarCol("R$/Km", kmBarColor, kmVal))
         pillarsRow.addView(createPillarCol("R$/Hora", hrBarColor, hrVal))
         pillarsRow.addView(createPillarCol("Nota", ratingBarColor, ratingVal))
         card.addView(pillarsRow)
 
-        val alertText = when {
-            result.hasRiskAlert && result.riskAlertBadge?.isNotBlank() == true -> "🚨 ${result.riskAlertBadge}"
-            result.isDistantPickup -> "⚠️ Embarque distante"
-            else -> null
-        }
-        if (alertText != null) {
-            val tvAlert = TextView(context).apply {
-                text = alertText
-                setTextColor(if (isColorido) Color.WHITE else Color.parseColor("#DC2626"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+        // Adiciona o card limpo (sem tags de alerta dentro)
+        root.addView(card)
+
+        // ALERTAS DESTACADOS TOTALMENTE FORA DO CARD (PILULAS COLORIDAS DEDICADAS)
+        if (result.hasRiskAlert && !result.riskAlertBadge.isNullOrBlank()) {
+            val tvRisk = TextView(context).apply {
+                text = "⚠️ ÁREA DE RISCO: ${result.riskAlertBadge}"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 setTypeface(typeface, Typeface.BOLD)
                 gravity = Gravity.CENTER
-                setPadding(0, dp(6), 0, 0)
+                setPadding(dp(14), dp(6), dp(14), dp(6))
+                background = roundedCardBg("#DC2626", "#7F1D1D", 10f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
             }
-            card.addView(tvAlert)
+            root.addView(tvRisk)
         }
 
-        root.addView(card)
+        if (result.isDistantPickup) {
+            val tvPickup = TextView(context).apply {
+                text = "⚠️ EMBARQUE DISTANTE"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(14), dp(6), dp(14), dp(6))
+                background = roundedCardBg("#B45309", "#78350F", 10f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
+            }
+            root.addView(tvPickup)
+        }
+
+        if (result.isFavoriteZone && !result.favoriteZoneBadge.isNullOrBlank() && !result.hasRiskAlert) {
+            val tvFav = TextView(context).apply {
+                text = "⭐ REGIÃO FAVORITA: ${result.favoriteZoneBadge}"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(14), dp(6), dp(14), dp(6))
+                background = roundedCardBg("#15803D", "#14532D", 10f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
+            }
+            root.addView(tvFav)
+        }
+
         return root
     }
 
@@ -3161,6 +3210,44 @@ class FloatingOverlayPanel(private val context: Context) {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = dp(radiusDp.toInt()).toFloat()
             setColor(Color.parseColor(hexColor))
+        }
+    }
+
+    private fun roundedCardWithThickBottomBg(
+        bgHex: String,
+        strokeHex: String,
+        radiusDp: Float = 18f,
+        strokeDp: Int = 2,
+        bottomLipDp: Int = 6
+    ): Drawable {
+        val outerRadius = dp(radiusDp.toInt()).toFloat()
+        val outer = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = outerRadius
+            setColor(Color.parseColor(strokeHex))
+        }
+
+        val innerRadius = Math.max(0f, outerRadius - dp(strokeDp))
+        val innerBottomRadius = Math.max(0f, outerRadius - dp(bottomLipDp))
+        val inner = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadii = floatArrayOf(
+                innerRadius, innerRadius,
+                innerRadius, innerRadius,
+                innerBottomRadius, innerBottomRadius,
+                innerBottomRadius, innerBottomRadius
+            )
+            setColor(Color.parseColor(bgHex))
+        }
+
+        return LayerDrawable(arrayOf(outer, inner)).apply {
+            setLayerInset(
+                1,
+                dp(strokeDp),
+                dp(strokeDp),
+                dp(strokeDp),
+                dp(bottomLipDp)
+            )
         }
     }
 

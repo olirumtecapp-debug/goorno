@@ -295,7 +295,9 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
 
                     val kmValFormatted = if (grossKm > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm) else "--"
                     val hrValFormatted = if (grossHr > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f", grossHr) else "--"
-                    val ratingValFormatted = if (ratingBadge.isNotBlank()) ratingBadge else "--"
+                    val ratingValFormatted = if (ratingBadge.isNotBlank()) {
+                        ratingBadge.replace(Regex("\\s*\\([^)]*\\)"), "").replace("★", "").replace("🟢", "").replace("🟡", "").replace("🔴", "").trim()
+                    } else "--"
 
                     val remoteViewsExpanded = RemoteViews(context.packageName, R.layout.notification_pro_offer)
                     val remoteViewsCollapsed = RemoteViews(context.packageName, R.layout.notification_pro_offer_collapsed)

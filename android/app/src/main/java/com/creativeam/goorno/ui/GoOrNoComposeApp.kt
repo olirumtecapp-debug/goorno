@@ -63,6 +63,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -1509,18 +1510,24 @@ fun GoOrNoComposeApp(
                                                     val isClaro = overlayTheme == "CLARO" || overlayTheme == "LIGHT"
                                                     val isEscuro = !isColorido && !isClaro
 
+                                                    val vColorVal = when (previewVerdictState) {
+                                                        "GREEN" -> Color(0xFF16A34A)
+                                                        "YELLOW" -> Color(0xFFEAB308)
+                                                        else -> Color(0xFFDC2626)
+                                                    }
+
                                                     val cardBg = when {
-                                                        isColorido -> vColor
+                                                        isColorido -> vColorVal
                                                         isClaro -> Color.White
                                                         else -> Color(0xFF1E2024)
                                                     }
                                                     val cardBorder = when {
                                                         isColorido -> when (previewVerdictState) {
-                                                            "GREEN" -> Color(0xFF15803D)
-                                                            "YELLOW" -> Color(0xFFA16207)
-                                                            else -> Color(0xFFB91C1C)
+                                                            "GREEN" -> Color(0xFF14532D) // Nitidamente mais escuro que a cor interna
+                                                            "YELLOW" -> Color(0xFF78350F) // Ambar escuro
+                                                            else -> Color(0xFF7F1D1D)   // Vinho escuro
                                                         }
-                                                        else -> vColor
+                                                        else -> vColorVal
                                                     }
                                                     val primaryText = if (isClaro) Color(0xFF0F172A) else Color.White
                                                     val secondaryText = when {
@@ -1529,98 +1536,142 @@ fun GoOrNoComposeApp(
                                                         else -> Color(0xFF94A3B8)
                                                     }
 
-                                                    Surface(
-                                                        color = cardBg,
-                                                        shape = RoundedCornerShape(18.dp),
-                                                        border = BorderStroke(if (isColorido) 2.dp else 3.dp, cardBorder),
-                                                        shadowElevation = 8.dp,
-                                                        modifier = Modifier.fillMaxWidth()
+                                                    // Card com borda externa e lip inferior mais espesso (6dp)
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .shadow(8.dp, RoundedCornerShape(18.dp))
+                                                            .background(cardBorder, RoundedCornerShape(18.dp))
+                                                            .padding(start = 2.dp, top = 2.dp, end = 2.dp, bottom = 6.dp)
                                                     ) {
-                                                        Column(modifier = Modifier.padding(14.dp, 10.dp, 14.dp, 10.dp)) {
-                                                            // Linha Superior
-                                                            Row(
-                                                                modifier = Modifier.fillMaxWidth(),
-                                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                    Surface(
-                                                                        color = Color(0xFFFACC15),
-                                                                        shape = RoundedCornerShape(6.dp)
-                                                                    ) {
+                                                        Surface(
+                                                            color = cardBg,
+                                                            shape = RoundedCornerShape(14.dp),
+                                                            modifier = Modifier.fillMaxWidth()
+                                                        ) {
+                                                            Column(modifier = Modifier.padding(14.dp, 10.dp, 14.dp, 10.dp)) {
+                                                                // Linha Superior
+                                                                Row(
+                                                                    modifier = Modifier.fillMaxWidth(),
+                                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                                    verticalAlignment = Alignment.CenterVertically
+                                                                ) {
+                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                        Surface(
+                                                                            color = Color(0xFFFACC15),
+                                                                            shape = RoundedCornerShape(6.dp)
+                                                                        ) {
+                                                                            Text(
+                                                                                text = "99",
+                                                                                color = Color.Black,
+                                                                                fontWeight = FontWeight.Black,
+                                                                                fontSize = 11.sp,
+                                                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                            )
+                                                                        }
+                                                                        Spacer(modifier = Modifier.width(6.dp))
                                                                         Text(
-                                                                            text = "99",
-                                                                            color = Color.Black,
-                                                                            fontWeight = FontWeight.Black,
-                                                                            fontSize = 11.sp,
-                                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                            text = "22 min • 12,4 km",
+                                                                            color = primaryText,
+                                                                            fontSize = 14.sp,
+                                                                            fontWeight = FontWeight.Bold
                                                                         )
                                                                     }
-                                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                                    Text(
-                                                                        text = "22 min · 12,4 km",
-                                                                        color = primaryText,
-                                                                        fontSize = 14.sp,
-                                                                        fontWeight = FontWeight.Bold
-                                                                    )
+                                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                        Text("15s", color = secondaryText, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                                        Text("✕", color = secondaryText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                                    }
                                                                 }
-                                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                    Text("15s", color = secondaryText, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                                    Text("✕", color = secondaryText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                                                }
-                                                            }
 
-                                                            Spacer(modifier = Modifier.height(8.dp))
+                                                                Spacer(modifier = Modifier.height(8.dp))
 
-                                                            // 3 Pilares
-                                                            Row(
-                                                                modifier = Modifier.fillMaxWidth(),
-                                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                listOf(
-                                                                    Triple("R$/Km", Color(0xFF16A34A), "2,00"),
-                                                                    Triple("R$/Hora", Color(0xFFCA8A04), "68"),
-                                                                    Triple("Nota", Color(0xFF16A34A), "4,92")
-                                                                ).forEach { (lbl, barColor, valStr) ->
-                                                                    Column(
-                                                                        modifier = Modifier.weight(1f),
-                                                                        horizontalAlignment = Alignment.CenterHorizontally
-                                                                    ) {
-                                                                        Text(lbl, color = secondaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                                        Row(
-                                                                            verticalAlignment = Alignment.CenterVertically,
-                                                                            modifier = Modifier.padding(top = 2.dp)
+                                                                // 3 Pilares
+                                                                Row(
+                                                                    modifier = Modifier.fillMaxWidth(),
+                                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                                    verticalAlignment = Alignment.CenterVertically
+                                                                ) {
+                                                                    val kmPreview = when (previewVerdictState) {
+                                                                        "GREEN" -> "2,00"
+                                                                        "YELLOW" -> "1,60"
+                                                                        else -> "1,05"
+                                                                    }
+                                                                    val hrPreview = when (previewVerdictState) {
+                                                                        "GREEN" -> "68"
+                                                                        "YELLOW" -> "45"
+                                                                        else -> "29"
+                                                                    }
+                                                                    val ratingPreview = when (previewVerdictState) {
+                                                                        "GREEN" -> "4,92"
+                                                                        "YELLOW" -> "4,75"
+                                                                        else -> "4,20"
+                                                                    }
+                                                                    val kmBar = when (previewVerdictState) {
+                                                                        "GREEN" -> Color(0xFF16A34A)
+                                                                        "YELLOW" -> Color(0xFFCA8A04)
+                                                                        else -> Color(0xFFDC2626)
+                                                                    }
+                                                                    val hrBar = when (previewVerdictState) {
+                                                                        "GREEN" -> Color(0xFF16A34A)
+                                                                        "YELLOW" -> Color(0xFFCA8A04)
+                                                                        else -> Color(0xFFDC2626)
+                                                                    }
+                                                                    val ratingBar = when (previewVerdictState) {
+                                                                        "GREEN" -> Color(0xFF16A34A)
+                                                                        "YELLOW" -> Color(0xFFCA8A04)
+                                                                        else -> Color(0xFFDC2626)
+                                                                    }
+
+                                                                    listOf(
+                                                                        Triple("R$/Km", kmBar, kmPreview),
+                                                                        Triple("R$/Hora", hrBar, hrPreview),
+                                                                        Triple("Nota", ratingBar, ratingPreview)
+                                                                    ).forEach { (lbl, barColor, valStr) ->
+                                                                        Column(
+                                                                            modifier = Modifier.weight(1f),
+                                                                            horizontalAlignment = Alignment.CenterHorizontally
                                                                         ) {
-                                                                            Box(
-                                                                                modifier = Modifier
-                                                                                    .size(3.5.dp, 18.dp)
-                                                                                    .background(if (isColorido) Color.White else barColor, RoundedCornerShape(2.dp))
-                                                                            )
-                                                                            Spacer(modifier = Modifier.width(4.dp))
-                                                                            Text(
-                                                                                valStr,
-                                                                                color = primaryText,
-                                                                                fontSize = 22.sp,
-                                                                                fontWeight = FontWeight.Black
-                                                                            )
+                                                                            Text(lbl, color = secondaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                                            Row(
+                                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                                modifier = Modifier.padding(top = 2.dp)
+                                                                            ) {
+                                                                                Box(
+                                                                                    modifier = Modifier
+                                                                                        .size(3.5.dp, 18.dp)
+                                                                                        .background(if (isColorido) Color.White else barColor, RoundedCornerShape(2.dp))
+                                                                                )
+                                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                                Text(
+                                                                                    valStr,
+                                                                                    color = primaryText,
+                                                                                    fontSize = 22.sp,
+                                                                                    fontWeight = FontWeight.Black
+                                                                                )
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
                                                             }
-
-                                                            Spacer(modifier = Modifier.height(6.dp))
-
-                                                            Text(
-                                                                text = "⚠️ Embarque (15 min)",
-                                                                color = if (isColorido) Color.White else Color(0xFFDC2626),
-                                                                fontSize = 11.5.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                textAlign = TextAlign.Center,
-                                                                modifier = Modifier.fillMaxWidth()
-                                                            )
                                                         }
+                                                    }
+
+                                                    // ALERTA TOTALMENTE FORA DO CARD
+                                                    Surface(
+                                                        color = Color(0xFF7F1D1D),
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        border = BorderStroke(1.dp, Color(0xFFEF4444)),
+                                                        modifier = Modifier.padding(top = 6.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = "⚠️ Embarque (15 min)",
+                                                            color = Color.White,
+                                                            fontSize = 11.5.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            textAlign = TextAlign.Center,
+                                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                                        )
                                                     }
                                                 }
 
@@ -3706,18 +3757,179 @@ fun GoOrNoComposeApp(
                 // TELA 7: HISTÓRICO DE ANÁLISES E CONFERÊNCIA DE VALOR
                 // =====================================================
                 GoOrNoScreen.HISTORY -> {
+                    // Estados locais de filtro e pesquisa executiva
+                    var histAppFilter by remember { mutableStateOf("TODOS") }
+                    var histStatusFilter by remember { mutableStateOf("TODAS") }
+                    var histSearchQuery by remember { mutableStateOf("") }
+                    var selectedDayIndex by remember { mutableIntStateOf(0) }
+
+                    val filteredHistory = remember(realHistory, histAppFilter, histStatusFilter, histSearchQuery) {
+                        realHistory.filter { item ->
+                            val matchesApp = when (histAppFilter) {
+                                "UBER" -> item.sourceApp.contains("Uber", ignoreCase = true)
+                                "99" -> item.sourceApp.contains("99", ignoreCase = true)
+                                else -> true
+                            }
+                            val isAccepted = item.actualReceivedPrice != null && item.actualReceivedPrice > 0.0
+                            val isGreen = item.verdict.contains("GREEN", ignoreCase = true) || item.verdict.contains("Excelente", ignoreCase = true)
+                            val matchesStatus = when (histStatusFilter) {
+                                "ACEITAS" -> isAccepted || isGreen
+                                "RECUSADAS" -> !isAccepted && !isGreen
+                                "CONFIRMAR" -> item.actualReceivedPrice == null
+                                else -> true
+                            }
+                            val matchesSearch = if (histSearchQuery.isBlank()) true else {
+                                val q = histSearchQuery.trim().replace(",", ".")
+                                val pStr = String.format(Locale.US, "%.2f", item.offeredPrice)
+                                pStr.contains(q) || item.originAddress.contains(q, ignoreCase = true) || item.destinationAddress.contains(q, ignoreCase = true)
+                            }
+                            matchesApp && matchesStatus && matchesSearch
+                        }
+                    }
+
+                    val totalAnalyzedSum = filteredHistory.sumOf { it.offeredPrice }
+                    val totalAnalyzedCount = filteredHistory.size
+                    val avgPerRide = if (totalAnalyzedCount > 0) totalAnalyzedSum / totalAnalyzedCount else 0.0
+                    val validHrOffers = filteredHistory.filter { (it.grossPerHour ?: 0.0) > 0.0 }
+                    val avgPerHour = if (validHrOffers.isNotEmpty()) validHrOffers.mapNotNull { it.grossPerHour }.average() else 0.0
+                    val validKmOffers = filteredHistory.filter { (it.grossPerKm ?: 0.0) > 0.0 }
+                    val avgPerKm = if (validKmOffers.isNotEmpty()) validKmOffers.mapNotNull { it.grossPerKm }.average() else 0.0
+
+                    val countTodas = realHistory.size
+                    val countAceitas = realHistory.count { (it.actualReceivedPrice ?: 0.0) > 0.0 || it.verdict.contains("GREEN", ignoreCase = true) }
+                    val countRecusadas = realHistory.count { (it.actualReceivedPrice == null || it.actualReceivedPrice == 0.0) && !it.verdict.contains("GREEN", ignoreCase = true) }
+                    val countConfirmar = realHistory.count { it.actualReceivedPrice == null }
+
+                    // 1. BARRA DE NAVEGAÇÃO SEMANAL (Estilo Referência Executiva)
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronLeft,
+                                        contentDescription = "Anterior",
+                                        tint = Color(0xFF059669),
+                                        modifier = Modifier.size(20.dp).clickable { }
+                                    )
+                                    val nowCal = Calendar.getInstance()
+                                    val weekLabel = SimpleDateFormat("d", Locale.forLanguageTag("pt-BR")).format(nowCal.time) + " — " +
+                                            SimpleDateFormat("d MMM", Locale.forLanguageTag("pt-BR")).format(Date(nowCal.timeInMillis + 6 * 86400000L))
+                                    Text(
+                                        text = weekLabel,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.5.sp,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = "Próximo",
+                                        tint = Color(0xFF059669),
+                                        modifier = Modifier.size(20.dp).clickable { }
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val nowCal = Calendar.getInstance()
+                                    for (dayIdx in 0..6) {
+                                        val dayNum = ((nowCal.get(Calendar.DAY_OF_MONTH) + dayIdx - 1) % 30) + 1
+                                        val isSelected = dayIdx == selectedDayIndex
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier
+                                                .clickable { selectedDayIndex = dayIdx }
+                                                .padding(horizontal = 4.dp)
+                                        ) {
+                                            if (isSelected) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(16.dp, 28.dp)
+                                                        .background(Color(0xFF059669), RoundedCornerShape(8.dp))
+                                                )
+                                            } else {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(14.dp, 3.dp)
+                                                        .background(Color(0xFFCBD5E1), RoundedCornerShape(2.dp))
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text(
+                                                text = "$dayNum",
+                                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
+                                                fontSize = 12.sp,
+                                                color = if (isSelected) Color(0xFF0F172A) else Color(0xFF64748B)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. FILTRO DE APLICATIVO [ Todos ] [ Uber ] [ 99 ]
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Total de ofertas reais gravadas: ${realHistory.size}",
-                                fontSize = 12.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PetrolDarkText
-                            )
+                            Surface(
+                                color = if (histAppFilter == "TODOS") Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                                shape = RoundedCornerShape(20.dp),
+                                modifier = Modifier.clickable { histAppFilter = "TODOS" }
+                            ) {
+                                Text(
+                                    text = "Todos",
+                                    color = if (histAppFilter == "TODOS") Color.White else Color(0xFF64748B),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                                )
+                            }
+                            Surface(
+                                color = if (histAppFilter == "UBER") Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                                shape = RoundedCornerShape(20.dp),
+                                modifier = Modifier.clickable { histAppFilter = "UBER" }
+                            ) {
+                                Text(
+                                    text = "Uber",
+                                    color = if (histAppFilter == "UBER") Color.White else Color(0xFF64748B),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                                )
+                            }
+                            Surface(
+                                color = if (histAppFilter == "99") Color(0xFFFACC15) else Color(0xFFF1F5F9),
+                                shape = RoundedCornerShape(20.dp),
+                                modifier = Modifier.clickable { histAppFilter = "99" }
+                            ) {
+                                Text(
+                                    text = "99",
+                                    color = if (histAppFilter == "99") Color.Black else Color(0xFF64748B),
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.weight(1f))
+
                             if (realHistory.isNotEmpty()) {
                                 TextButton(
                                     onClick = {
@@ -3727,33 +3939,233 @@ fun GoOrNoComposeApp(
                                         }
                                     }
                                 ) {
-                                    Text("Limpar Histórico", color = TrafficRed, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Text("Limpar", color = TrafficRed, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
                     }
 
-                    if (realHistory.isEmpty()) {
+                    // 3. SEGMENTO DE STATUS: [ Todas 94 ] [ Aceitas 4 ] [ Recusadas 90 ] [ Confirmar 0 ]
+                    item {
+                        Surface(
+                            color = Color(0xFFF1F5F9),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(3.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                listOf(
+                                    Triple("TODAS", "Todas", countTodas),
+                                    Triple("ACEITAS", "Aceitas", countAceitas),
+                                    Triple("RECUSADAS", "Recusadas", countRecusadas),
+                                    Triple("CONFIRMAR", "Confirmar", countConfirmar)
+                                ).forEach { (id, label, count) ->
+                                    val isSel = histStatusFilter == id
+                                    Surface(
+                                        color = if (isSel) PureWhiteSurface else Color.Transparent,
+                                        shape = RoundedCornerShape(9.dp),
+                                        shadowElevation = if (isSel) 1.5.dp else 0.dp,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { histStatusFilter = id }
+                                    ) {
+                                        Text(
+                                            text = "$label $count",
+                                            color = if (isSel) Color(0xFF0F172A) else Color(0xFF64748B),
+                                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
+                                            fontSize = 11.sp,
+                                            textAlign = TextAlign.Center,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            modifier = Modifier.padding(vertical = 7.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 4. CARD EXECUTIVO DE RESUMO (Total analisado)
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                            shape = RoundedCornerShape(18.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Total analisado",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF64748B)
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%,.2f", totalAnalyzedSum),
+                                    fontSize = 26.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Text(
+                                    text = "$totalAnalyzedCount Solicitações analisadas",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF64748B)
+                                )
+
+                                Spacer(modifier = Modifier.height(14.dp))
+                                HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%.2f", avgPerRide),
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFF0F172A)
+                                        )
+                                        Text(
+                                            text = "Média por corrida",
+                                            fontSize = 10.5.sp,
+                                            color = Color(0xFF64748B),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%.2f", avgPerHour),
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFF0F172A)
+                                        )
+                                        Text(
+                                            text = "Por hora em corrida",
+                                            fontSize = 10.5.sp,
+                                            color = Color(0xFF64748B),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%.2f", avgPerKm),
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFF0F172A)
+                                        )
+                                        Text(
+                                            text = "Por km em corrida",
+                                            fontSize = 10.5.sp,
+                                            color = Color(0xFF64748B),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 5. BARRA DE BUSCA PELO VALOR
+                    item {
+                        Surface(
+                            color = Color(0xFFF8FAFC),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Buscar",
+                                    tint = Color(0xFF94A3B8),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                BasicTextField(
+                                    value = histSearchQuery,
+                                    onValueChange = { histSearchQuery = it },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    decorationBox = { innerTextField ->
+                                        if (histSearchQuery.isEmpty()) {
+                                            Text(
+                                                text = "Buscar corrida pelo valor (ex.: 23,50)",
+                                                fontSize = 12.5.sp,
+                                                color = Color(0xFF94A3B8)
+                                            )
+                                        }
+                                        innerTextField()
+                                    }
+                                )
+                                if (histSearchQuery.isNotEmpty()) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Limpar",
+                                        tint = Color(0xFF94A3B8),
+                                        modifier = Modifier.size(16.dp).clickable { histSearchQuery = "" }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // 6. CABEÇALHO DO DIA
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp, bottom = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val todayStr = SimpleDateFormat("EEE, d MMM", Locale.forLanguageTag("pt-BR")).format(Date()).uppercase()
+                            Text(
+                                text = todayStr,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color(0xFF64748B)
+                            )
+                            Text(
+                                text = "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%,.2f", totalAnalyzedSum),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color(0xFF64748B)
+                            )
+                        }
+                    }
+
+                    // 7. LISTA DE OFERTAS
+                    if (filteredHistory.isEmpty()) {
                         item {
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
-                                border = BorderStroke(1.dp, CleanCardBorder),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
                                 Text(
-                                    text = "Nenhuma oferta real gravada ainda. Nota importante: Testes feitos no Simulador nunca são misturados neste histórico real.",
+                                    text = if (realHistory.isEmpty()) "Nenhuma oferta real gravada ainda. Quando tocar uma corrida na Uber ou 99, ela aparecerá aqui automaticamente." else "Nenhuma corrida corresponde ao filtro selecionado.",
                                     fontSize = 12.sp,
-                                    color = MutedText,
+                                    color = Color(0xFF64748B),
                                     modifier = Modifier.padding(16.dp)
                                 )
                             }
                         }
                     } else {
-                        items(realHistory, key = { it.id }) { item ->
+                        items(filteredHistory, key = { it.id }) { item ->
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                                border = BorderStroke(1.dp, CleanCardBorder),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
                                 Column(modifier = Modifier.padding(14.dp)) {
@@ -3776,1219 +4188,81 @@ fun GoOrNoComposeApp(
                     }
                 }
 
-                // =====================================================
-                // TELA 8: SEGURANÇA E ÁREAS DE RISCO (NOVA TAB DEDICADA)
-                // =====================================================
                 GoOrNoScreen.SECURITY -> {
                     item {
-                        // Seletor Superior de Abas (Áreas de Risco vs Regiões Favoritas)
-                        Row(
+                        // Seletor Superior de Abas (Áreas de Risco vs Regiões Favoritas - Estilo Executivo)
+                        Surface(
+                            color = Color(0xFFF1F5F9),
+                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                .padding(bottom = 12.dp)
                         ) {
-                            Surface(
-                                color = if (securitySelectedTab == 0) TrafficRed else SoftSurfaceVariant,
-                                shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.5.dp, if (securitySelectedTab == 0) TrafficRed else CleanCardBorder),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { securitySelectedTab = 0 }
+                            Row(
+                                modifier = Modifier.padding(3.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
+                                Surface(
+                                    color = if (securitySelectedTab == 0) PureWhiteSurface else Color.Transparent,
+                                    shape = RoundedCornerShape(9.dp),
+                                    shadowElevation = if (securitySelectedTab == 0) 1.5.dp else 0.dp,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { securitySelectedTab = 0 }
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Security,
-                                        contentDescription = null,
-                                        tint = if (securitySelectedTab == 0) Color.White else TrafficRed,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Áreas de Risco",
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 12.5.sp,
-                                        color = if (securitySelectedTab == 0) Color.White else PetrolDarkText
-                                    )
-                                }
-                            }
-
-                            Surface(
-                                color = if (securitySelectedTab == 1) Color(0xFF059669) else SoftSurfaceVariant,
-                                shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.5.dp, if (securitySelectedTab == 1) Color(0xFF059669) else CleanCardBorder),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { securitySelectedTab = 1 }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = null,
-                                        tint = if (securitySelectedTab == 1) Color.White else Color(0xFF059669),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Regiões Favoritas",
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 12.5.sp,
-                                        color = if (securitySelectedTab == 1) Color.White else PetrolDarkText
-                                    )
-                                }
-                            }
-                        }
-
-                        if (securitySelectedTab == 0) {
-                        var searchAddressQuery by remember { mutableStateOf("") }
-                        var isSearchingPlace by remember { mutableStateOf(false) }
-                        var searchResults by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
-                        var searchErrorMsg by remember { mutableStateOf<String?>(null) }
-
-                        val customZoneList = remember(config.customRiskZones) {
-                            RiskAreaEvaluator.parseCustomZonesList(config.customRiskZones)
-                        }
-
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                            border = BorderStroke(1.5.dp, TrafficRed.copy(alpha = 0.55f)),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Surface(
-                                        color = TrafficRed,
-                                        shape = RoundedCornerShape(8.dp)
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 9.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Security,
                                             contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier
-                                                .size(28.dp)
-                                                .padding(4.dp)
+                                            tint = if (securitySelectedTab == 0) Color(0xFFDC2626) else Color(0xFF64748B),
+                                            modifier = Modifier.size(16.dp)
                                         )
-                                    }
-                                    Column {
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "Central de Segurança & Áreas de Risco",
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 15.sp,
-                                            color = PetrolHeader
-                                        )
-                                        Text(
-                                            text = "Validação geográfica no mapa e bloqueio preventivo de locais perigosos",
-                                            fontSize = 11.sp,
-                                            color = MutedText
+                                            text = "Áreas de Risco",
+                                            fontWeight = if (securitySelectedTab == 0) FontWeight.Bold else FontWeight.Medium,
+                                            fontSize = 12.sp,
+                                            color = if (securitySelectedTab == 0) Color(0xFF0F172A) else Color(0xFF64748B)
                                         )
                                     }
                                 }
 
-                                HorizontalDivider(color = CleanCardBorder)
-
-                                // Switch 1: Ativar Alerta de Risco
                                 Surface(
-                                    color = SoftSurfaceVariant,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, CleanCardBorder)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Ativar Alerta de Área de Risco",
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 12.5.sp,
-                                                color = PetrolHeader
-                                            )
-                                            Text(
-                                                text = "Mostra '⚠️ ÁREA DE RISCO' na Janela Flutuante e na Notificação",
-                                                fontSize = 11.sp,
-                                                color = MutedText
-                                            )
-                                        }
-                                        Switch(
-                                            checked = config.riskAlertEnabled,
-                                            onCheckedChange = { enabled ->
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(config.copy(riskAlertEnabled = enabled))
-                                                    notifyUser(if (enabled) "Alerta de Área de Risco ativado!" else "Alerta de Área de Risco desativado.")
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-
-                                // Switch 2: Forçar Semáforo VERMELHO
-                                Surface(
-                                    color = SoftSurfaceVariant,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, CleanCardBorder)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Forçar Semáforo VERMELHO em Área de Risco",
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 12.5.sp,
-                                                color = TrafficRed
-                                            )
-                                            Text(
-                                                text = "Mesmo que pague bem por KM, avisa Recusar se for local perigoso",
-                                                fontSize = 11.sp,
-                                                color = MutedText
-                                            )
-                                        }
-                                        Switch(
-                                            checked = config.forceRedOnRiskArea,
-                                            onCheckedChange = { forceRed ->
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(config.copy(forceRedOnRiskArea = forceRed))
-                                                    notifyUser(if (forceRed) "Semáforo forçará VERMELHO em áreas de risco!" else "Semáforo mostrará alerta mantendo avaliação.")
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-
-                                // Switch 3: Base Nacional + Termos Críticos
-                                Surface(
-                                    color = SoftSurfaceVariant,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, CleanCardBorder)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Base Nacional de Zonas Críticas + Termos",
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 12.5.sp,
-                                                color = PetrolHeader
-                                            )
-                                            Text(
-                                                text = "Detecta automaticamente: viela, beco, favela, invasão, ocupação, comunidade + capitais",
-                                                fontSize = 11.sp,
-                                                color = MutedText
-                                            )
-                                        }
-                                        Switch(
-                                            checked = config.useDefaultRiskKeywords,
-                                            onCheckedChange = { useDef ->
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(config.copy(useDefaultRiskKeywords = useDef))
-                                                    notifyUser(if (useDef) "Base nacional de risco ativada!" else "Usando apenas sua lista personalizada.")
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-
-                                HorizontalDivider(color = CleanCardBorder)
-
-                                // BUSCADOR DE ENDEREÇO ESTILO GOOGLE MAPS
-                                Text(
-                                    text = "🔍 Pesquisar e Validar Endereço no Mapa (Oficial)",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 13.sp,
-                                    color = PetrolHeader
-                                )
-                                Text(
-                                    text = "Digite o nome da rua, comunidade ou bairro para validar a localização real no mapa antes de bloquear:",
-                                    fontSize = 11.5.sp,
-                                    color = MutedText
-                                )
-
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = searchAddressQuery,
-                                        onValueChange = {
-                                            searchAddressQuery = it
-                                            searchErrorMsg = null
-                                        },
-                                        placeholder = {
-                                            Text(
-                                                text = "Digite o nome da rua ou bairro...",
-                                                fontSize = 12.5.sp,
-                                                color = MutedText,
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(Icons.Default.Search, contentDescription = null, tint = PetrolHeader)
-                                        },
-                                        trailingIcon = {
-                                            if (searchAddressQuery.isNotBlank()) {
-                                                IconButton(onClick = {
-                                                    searchAddressQuery = ""
-                                                    searchResults = emptyList()
-                                                    searchErrorMsg = null
-                                                }) {
-                                                    Icon(Icons.Default.Clear, contentDescription = "Limpar")
-                                                }
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        keyboardOptions = KeyboardOptions(
-                                            keyboardType = KeyboardType.Text,
-                                            imeAction = ImeAction.Search
-                                        ),
-                                        keyboardActions = KeyboardActions(
-                                            onSearch = {
-                                                val q = searchAddressQuery.trim().replace(",", "")
-                                                if (q.length < 3) {
-                                                    notifyUser("Digite pelo menos 3 letras para pesquisar no mapa.")
-                                                } else {
-                                                    isSearchingPlace = true
-                                                    searchErrorMsg = null
-                                                    scope.launch {
-                                                        val places = PlaceSearchHelper.searchPlaces(context, q)
-                                                        isSearchingPlace = false
-                                                        if (places.isEmpty()) {
-                                                            searchErrorMsg = "Nenhum endereço oficial localizado no mapa para '$q'. Você pode bloquear diretamente pelo nome abaixo."
-                                                        } else {
-                                                            searchResults = places
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    )
-
-                                    Button(
-                                        onClick = {
-                                            val q = searchAddressQuery.trim().replace(",", "")
-                                            if (q.length < 3) {
-                                                notifyUser("Digite pelo menos 3 letras para pesquisar no mapa.")
-                                                return@Button
-                                            }
-                                            isSearchingPlace = true
-                                            searchErrorMsg = null
-                                            scope.launch {
-                                                val places = PlaceSearchHelper.searchPlaces(context, q)
-                                                isSearchingPlace = false
-                                                if (places.isEmpty()) {
-                                                    searchErrorMsg = "Nenhum endereço oficial localizado no mapa para '$q'. Você pode bloquear diretamente pelo nome abaixo."
-                                                } else {
-                                                    searchResults = places
-                                                }
-                                            }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = PetrolHeader,
-                                            contentColor = Color.White
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(46.dp),
-                                        enabled = !isSearchingPlace
-                                    ) {
-                                        if (isSearchingPlace) {
-                                            CircularProgressIndicator(
-                                                color = Color.White,
-                                                modifier = Modifier.size(18.dp),
-                                                strokeWidth = 2.dp
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "Localizando no Mapa...",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.5.sp,
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        } else {
-                                            Icon(Icons.Default.Search, contentDescription = null, tint = LimeBright, modifier = Modifier.size(18.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "Pesquisar Local no Mapa",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp,
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (searchErrorMsg != null) {
-                                    Surface(
-                                        color = Color(0xFFFEF2F2),
-                                        shape = RoundedCornerShape(10.dp),
-                                        border = BorderStroke(1.dp, TrafficRed.copy(alpha = 0.4f)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Column(modifier = Modifier.padding(10.dp)) {
-                                            Text(
-                                                text = searchErrorMsg!!,
-                                                color = TrafficRed,
-                                                fontSize = 11.5.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            Button(
-                                                onClick = {
-                                                    val raw = searchAddressQuery.trim()
-                                                    if (raw.length >= 3) {
-                                                        val updatedList = (customZoneList + raw).distinct()
-                                                        scope.launch {
-                                                            app.preferencesRepository.saveConfig(
-                                                                config.copy(customRiskZones = updatedList.joinToString(", "))
-                                                            )
-                                                            searchAddressQuery = ""
-                                                            searchErrorMsg = null
-                                                            searchResults = emptyList()
-                                                            notifyUser("'$raw' bloqueado diretamente!")
-                                                        }
-                                                    }
-                                                },
-                                                colors = ButtonDefaults.buttonColors(containerColor = TrafficRed),
-                                                shape = RoundedCornerShape(8.dp),
-                                                modifier = Modifier.height(36.dp)
-                                            ) {
-                                                Text("+ Bloquear com este nome mesmo assim", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // RESULTADOS DA BUSCA NO MAPA
-                                if (searchResults.isNotEmpty()) {
-                                    Text(
-                                        text = "📍 Locais encontrados no Mapa (Toque para confirmar o bloqueio):",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        color = PetrolHeader
-                                    )
-
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        searchResults.forEach { place ->
-                                            Surface(
-                                                color = SoftSurfaceVariant,
-                                                shape = RoundedCornerShape(12.dp),
-                                                border = BorderStroke(1.dp, CleanCardBorder),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Column(modifier = Modifier.padding(12.dp)) {
-                                                    Row(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        verticalAlignment = Alignment.Top
-                                                    ) {
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                            Text(
-                                                                text = "📍 ${place.title}",
-                                                                fontWeight = FontWeight.Black,
-                                                                fontSize = 13.sp,
-                                                                color = PetrolHeader
-                                                            )
-                                                            Text(
-                                                                text = place.subtitle,
-                                                                fontSize = 11.5.sp,
-                                                                fontWeight = FontWeight.SemiBold,
-                                                                color = PetrolDarkText
-                                                            )
-                                                            Text(
-                                                                text = place.fullFormattedAddress,
-                                                                fontSize = 10.5.sp,
-                                                                color = MutedText
-                                                            )
-                                                        }
-                                                    }
-
-                                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                                    Row(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                                    ) {
-                                                         Button(
-                                                            onClick = {
-                                                                val toBlock = place.termToBlock.trim().replace(",", "")
-                                                                if (toBlock.length >= 3) {
-                                                                    val updatedList = (customZoneList + toBlock).distinct()
-                                                                    scope.launch {
-                                                                        app.preferencesRepository.saveConfig(
-                                                                            config.copy(customRiskZones = updatedList.joinToString(", "))
-                                                                        )
-                                                                        searchResults = emptyList()
-                                                                        searchAddressQuery = ""
-                                                                        notifyUser("Local validado '$toBlock' bloqueado com sucesso!")
-                                                                    }
-                                                                }
-                                                            },
-                                                            colors = ButtonDefaults.buttonColors(containerColor = TrafficRed),
-                                                            shape = RoundedCornerShape(10.dp),
-                                                            modifier = Modifier.weight(1f).height(38.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.Warning, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                                            Spacer(modifier = Modifier.width(4.dp))
-                                                            Text(
-                                                                text = "Bloquear Este Local",
-                                                                fontSize = 11.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                maxLines = 1,
-                                                                softWrap = false
-                                                            )
-                                                        }
-
-                                                        FilledTonalButton(
-                                                            onClick = {
-                                                                try {
-                                                                    val mapIntent = Intent(
-                                                                        Intent.ACTION_VIEW,
-                                                                        Uri.parse("geo:0,0?q=" + Uri.encode(place.fullFormattedAddress))
-                                                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                                                                    context.startActivity(mapIntent)
-                                                                } catch (_: Exception) {
-                                                                    notifyUser("Não foi possível abrir o Google Maps.")
-                                                                }
-                                                            },
-                                                            colors = ButtonDefaults.filledTonalButtonColors(
-                                                                containerColor = PureWhiteSurface,
-                                                                contentColor = PetrolHeader
-                                                            ),
-                                                            border = BorderStroke(1.dp, CleanCardBorder),
-                                                            shape = RoundedCornerShape(10.dp),
-                                                            modifier = Modifier.height(38.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(14.dp))
-                                                            Spacer(modifier = Modifier.width(4.dp))
-                                                            Text("Ver no Maps", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                HorizontalDivider(color = CleanCardBorder)
-
-                                // LISTA DE LOCAIS BLOQUEADOS
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "🛡️ Seus Locais Bloqueados (${customZoneList.size}):",
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 13.sp,
-                                        color = PetrolHeader
-                                    )
-                                    if (customZoneList.isNotEmpty()) {
-                                        TextButton(onClick = {
-                                            scope.launch {
-                                                app.preferencesRepository.saveConfig(config.copy(customRiskZones = ""))
-                                                notifyUser("Lista de locais bloqueados esvaziada.")
-                                            }
-                                        }) {
-                                            Text("Limpar Todos", color = TrafficRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-
-                                if (customZoneList.isEmpty()) {
-                                    Surface(
-                                        color = SoftSurfaceVariant,
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = "Nenhum local bloqueado manualmente ainda. Pesquise ruas ou bairros acima no mapa para adicionar à sua lista de segurança.",
-                                            fontSize = 11.5.sp,
-                                            color = MutedText,
-                                            modifier = Modifier.padding(12.dp)
-                                        )
-                                    }
-                                } else {
-                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        customZoneList.forEach { zone ->
-                                            Surface(
-                                                color = Color(0xFFFEF2F2),
-                                                shape = RoundedCornerShape(12.dp),
-                                                border = BorderStroke(1.dp, TrafficRed.copy(alpha = 0.35f)),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                        modifier = Modifier.weight(1f)
-                                                    ) {
-                                                        Icon(Icons.Default.Warning, contentDescription = null, tint = TrafficRed, modifier = Modifier.size(16.dp))
-                                                        Text(
-                                                            text = zone,
-                                                            fontSize = 12.5.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = TrafficRed
-                                                        )
-                                                    }
-
-                                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                        IconButton(
-                                                            onClick = {
-                                                                try {
-                                                                    val mapIntent = Intent(
-                                                                        Intent.ACTION_VIEW,
-                                                                        Uri.parse("geo:0,0?q=" + Uri.encode(zone))
-                                                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                                                                    context.startActivity(mapIntent)
-                                                                } catch (_: Exception) {}
-                                                            },
-                                                            modifier = Modifier.size(32.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.Map, contentDescription = "Ver no mapa", tint = PetrolHeader, modifier = Modifier.size(16.dp))
-                                                        }
-
-                                                        IconButton(
-                                                            onClick = {
-                                                                val remaining = customZoneList.filterNot { it.equals(zone, ignoreCase = true) }
-                                                                scope.launch {
-                                                                    app.preferencesRepository.saveConfig(
-                                                                        config.copy(customRiskZones = remaining.joinToString(", "))
-                                                                    )
-                                                                    notifyUser("'$zone' removido da lista de segurança.")
-                                                                }
-                                                            },
-                                                            modifier = Modifier.size(32.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.Delete, contentDescription = "Remover", tint = TrafficRed, modifier = Modifier.size(16.dp))
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Botão de teste na tela flutuante
-                                Button(
-                                    onClick = {
-                                        val sampleRiskZone = customZoneList.firstOrNull() ?: "Capão Redondo"
-                                        val testOffer = NinetyNineOfferReader.parseScreenNodes(
-                                            rawNodes = listOf(
-                                                "99Pop",
-                                                "R$ 24,50",
-                                                "★ 4,88 (34 corridas)",
-                                                "4 min (1,2 km) Av. Paulista, 1000 - Bela Vista",
-                                                "14 min (6,8 km) Viela 4, 120 - $sampleRiskZone"
-                                            ),
-                                            captureMethod = CaptureMethod.SIMULATION,
-                                            isSimulated = true
-                                        )
-                                        val eval = FinancialEngine.evaluate(testOffer, config)
-                                        RuntimeDiagnosticsBus.publishEvaluation(eval)
-                                        if (hasOverlayPermission) {
-                                            app.overlayPanel.applyConfig(config)
-                                            app.overlayPanel.showEvaluation(eval)
-                                        }
-                                        CopilotNotificationReceiver.showActiveNotification(
-                                            context = context,
-                                            latestEvaluation = eval,
-                                            showProfit = config.showProfitOnOverlay,
-                                            showCost = config.showCostOnOverlay
-                                        )
-                                        notifyUser("Simulação de Área de Risco enviada para a Janela Flutuante e Notificação!")
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF7F1D1D),
-                                        contentColor = Color.White
-                                    ),
-                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (securitySelectedTab == 1) PureWhiteSurface else Color.Transparent,
+                                    shape = RoundedCornerShape(9.dp),
+                                    shadowElevation = if (securitySelectedTab == 1) 1.5.dp else 0.dp,
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(46.dp)
+                                        .weight(1f)
+                                        .clickable { securitySelectedTab = 1 }
                                 ) {
-                                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFEE2E2), modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "🚨 Testar Alerta de Risco na Janela",
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 12.sp,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
-                            }
-                        }
-                        } else {
-                        var searchFavQuery by remember { mutableStateOf("") }
-                        var isSearchingFavPlace by remember { mutableStateOf(false) }
-                        var searchFavResults by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
-                        var searchFavErrorMsg by remember { mutableStateOf<String?>(null) }
-                        val customFavList = remember(config.customFavoriteZones) {
-                            FavoriteAreaEvaluator.parseCustomZonesList(config.customFavoriteZones)
-                        }
-
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                            border = BorderStroke(1.5.dp, Color(0xFF059669).copy(alpha = 0.55f)),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Surface(
-                                        color = Color(0xFF059669),
-                                        shape = RoundedCornerShape(8.dp)
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 9.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Star,
                                             contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier
-                                                .size(28.dp)
-                                                .padding(4.dp)
+                                            tint = if (securitySelectedTab == 1) Color(0xFF059669) else Color(0xFF64748B),
+                                            modifier = Modifier.size(16.dp)
                                         )
-                                    }
-                                    Column {
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "Bairros Favoritos & Zona de Conforto",
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 15.sp,
-                                            color = PetrolHeader
-                                        )
-                                        Text(
-                                            text = "Destaque verde no card quando a corrida for para sua área preferida",
-                                            fontSize = 11.sp,
-                                            color = MutedText
+                                            text = "Regiões Favoritas",
+                                            fontWeight = if (securitySelectedTab == 1) FontWeight.Bold else FontWeight.Medium,
+                                            fontSize = 12.sp,
+                                            color = if (securitySelectedTab == 1) Color(0xFF0F172A) else Color(0xFF64748B)
                                         )
                                     }
-                                }
-
-                                HorizontalDivider(color = CleanCardBorder)
-
-                                // Switch: Ativar Destaque de Regiões Favoritas
-                                Surface(
-                                    color = SoftSurfaceVariant,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, CleanCardBorder)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Destacar Bairros Favoritos",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp,
-                                                color = PetrolHeader
-                                            )
-                                            Text(
-                                                text = "Exibe selo verde com estrela no card flutuante quando o destino ou embarque for na sua lista.",
-                                                fontSize = 11.sp,
-                                                color = MutedText
-                                            )
-                                        }
-                                        Switch(
-                                            checked = config.favoriteZonesEnabled,
-                                            onCheckedChange = { enabled ->
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(config.copy(favoriteZonesEnabled = enabled))
-                                                    notifyUser(if (enabled) "Destaque de Bairros Favoritos ativado!" else "Destaque de Bairros Favoritos pausado.")
-                                                }
-                                            },
-                                            colors = SwitchDefaults.colors(
-                                                checkedThumbColor = Color.White,
-                                                checkedTrackColor = Color(0xFF059669)
-                                            )
-                                        )
-                                    }
-                                }
-
-                                // Busca de Bairro/Região no Mapa
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text(
-                                        text = "🔍 Pesquisar Bairro, Região ou Cidade no Mapa:",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        color = PetrolHeader
-                                    )
-                                    Text(
-                                        text = "Digite o nome da região (Ex: Moema, Rudge Ramos, Centro, Jardins). Buscaremos no mapa com coordenadas exatas para destaque automático nas corridas.",
-                                        fontSize = 11.sp,
-                                        color = MutedText
-                                    )
-
-                                    OutlinedTextField(
-                                        value = searchFavQuery,
-                                        onValueChange = {
-                                            searchFavQuery = it
-                                            if (searchFavErrorMsg != null) searchFavErrorMsg = null
-                                        },
-                                        placeholder = {
-                                            Text("Ex: Moema, Rudge Ramos, Centro...", fontSize = 12.sp, color = MutedText)
-                                        },
-                                        leadingIcon = {
-                                            Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF059669))
-                                        },
-                                        trailingIcon = {
-                                            if (searchFavQuery.isNotBlank()) {
-                                                IconButton(onClick = {
-                                                    searchFavQuery = ""
-                                                    searchFavResults = emptyList()
-                                                    searchFavErrorMsg = null
-                                                }) {
-                                                    Icon(Icons.Default.Clear, contentDescription = "Limpar")
-                                                }
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        keyboardOptions = KeyboardOptions(
-                                            keyboardType = KeyboardType.Text,
-                                            imeAction = ImeAction.Search
-                                        ),
-                                        keyboardActions = KeyboardActions(
-                                            onSearch = {
-                                                val q = searchFavQuery.trim().replace(",", "")
-                                                if (q.length < 3) {
-                                                    notifyUser("Digite pelo menos 3 letras para pesquisar no mapa.")
-                                                } else {
-                                                    isSearchingFavPlace = true
-                                                    searchFavErrorMsg = null
-                                                    scope.launch {
-                                                        val places = PlaceSearchHelper.searchPlaces(context, q)
-                                                        isSearchingFavPlace = false
-                                                        if (places.isEmpty()) {
-                                                            searchFavErrorMsg = "Nenhum endereço oficial localizado no mapa para '$q'. Você pode favoritar diretamente pelo nome abaixo."
-                                                        } else {
-                                                            searchFavResults = places
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    )
-
-                                    Button(
-                                        onClick = {
-                                            val q = searchFavQuery.trim().replace(",", "")
-                                            if (q.length < 3) {
-                                                notifyUser("Digite pelo menos 3 letras para pesquisar no mapa.")
-                                                return@Button
-                                            }
-                                            isSearchingFavPlace = true
-                                            searchFavErrorMsg = null
-                                            scope.launch {
-                                                val places = PlaceSearchHelper.searchPlaces(context, q)
-                                                isSearchingFavPlace = false
-                                                if (places.isEmpty()) {
-                                                    searchFavErrorMsg = "Nenhum endereço oficial localizado no mapa para '$q'. Você pode favoritar diretamente pelo nome abaixo."
-                                                } else {
-                                                    searchFavResults = places
-                                                }
-                                            }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF059669),
-                                            contentColor = Color.White
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(46.dp),
-                                        enabled = !isSearchingFavPlace
-                                    ) {
-                                        if (isSearchingFavPlace) {
-                                            CircularProgressIndicator(
-                                                color = Color.White,
-                                                modifier = Modifier.size(18.dp),
-                                                strokeWidth = 2.dp
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "Localizando no Mapa...",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.5.sp,
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        } else {
-                                            Icon(Icons.Default.Search, contentDescription = null, tint = LimeBright, modifier = Modifier.size(18.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "Pesquisar Bairro no Mapa",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp,
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (searchFavErrorMsg != null) {
-                                    Surface(
-                                        color = Color(0xFFFEF2F2),
-                                        shape = RoundedCornerShape(10.dp),
-                                        border = BorderStroke(1.dp, TrafficRed.copy(alpha = 0.4f)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Column(modifier = Modifier.padding(10.dp)) {
-                                            Text(
-                                                text = searchFavErrorMsg!!,
-                                                color = TrafficRed,
-                                                fontSize = 11.5.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            Button(
-                                                onClick = {
-                                                    val raw = searchFavQuery.trim()
-                                                    if (raw.length >= 3) {
-                                                        val updatedList = (customFavList + raw).distinct()
-                                                        scope.launch {
-                                                            app.preferencesRepository.saveConfig(
-                                                                config.copy(customFavoriteZones = updatedList.joinToString(", "))
-                                                            )
-                                                            searchFavQuery = ""
-                                                            searchFavErrorMsg = null
-                                                            searchFavResults = emptyList()
-                                                            notifyUser("⭐ '$raw' adicionado aos Favoritos diretamente!")
-                                                        }
-                                                    }
-                                                },
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-                                                shape = RoundedCornerShape(8.dp),
-                                                modifier = Modifier.height(36.dp)
-                                            ) {
-                                                Text("+ Adicionar com este nome mesmo assim", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // RESULTADOS DA BUSCA NO MAPA
-                                if (searchFavResults.isNotEmpty()) {
-                                    Text(
-                                        text = "⭐ Bairros encontrados no Mapa (Toque para confirmar o favorito):",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        color = PetrolHeader
-                                    )
-
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        searchFavResults.forEach { place ->
-                                            Surface(
-                                                color = SoftSurfaceVariant,
-                                                shape = RoundedCornerShape(12.dp),
-                                                border = BorderStroke(1.dp, CleanCardBorder),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Column(modifier = Modifier.padding(12.dp)) {
-                                                    Row(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        verticalAlignment = Alignment.Top
-                                                    ) {
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                            Text(
-                                                                text = "⭐ ${place.title}",
-                                                                fontWeight = FontWeight.Black,
-                                                                fontSize = 13.sp,
-                                                                color = PetrolHeader
-                                                            )
-                                                            Text(
-                                                                text = place.subtitle,
-                                                                fontSize = 11.5.sp,
-                                                                fontWeight = FontWeight.SemiBold,
-                                                                color = PetrolDarkText
-                                                            )
-                                                            Text(
-                                                                text = place.fullFormattedAddress,
-                                                                fontSize = 10.5.sp,
-                                                                color = MutedText
-                                                            )
-                                                        }
-                                                    }
-
-                                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                                    Row(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                                    ) {
-                                                        Button(
-                                                            onClick = {
-                                                                val toFav = place.termToBlock.trim().replace(",", "")
-                                                                if (toFav.length >= 3) {
-                                                                    val updatedList = (customFavList + toFav).distinct()
-                                                                    scope.launch {
-                                                                        app.preferencesRepository.saveConfig(
-                                                                            config.copy(customFavoriteZones = updatedList.joinToString(", "))
-                                                                        )
-                                                                        searchFavResults = emptyList()
-                                                                        searchFavQuery = ""
-                                                                        notifyUser("⭐ Local validado '$toFav' adicionado aos Favoritos!")
-                                                                    }
-                                                                }
-                                                            },
-                                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-                                                            shape = RoundedCornerShape(10.dp),
-                                                            modifier = Modifier.weight(1f).height(38.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.Star, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                                            Spacer(modifier = Modifier.width(4.dp))
-                                                            Text(
-                                                                text = "Confirmar Bairro Favorito",
-                                                                fontSize = 11.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                maxLines = 1,
-                                                                softWrap = false
-                                                            )
-                                                        }
-
-                                                        FilledTonalButton(
-                                                            onClick = {
-                                                                try {
-                                                                    val mapIntent = Intent(
-                                                                        Intent.ACTION_VIEW,
-                                                                        Uri.parse("geo:0,0?q=" + Uri.encode(place.fullFormattedAddress))
-                                                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                                                                    context.startActivity(mapIntent)
-                                                                } catch (_: Exception) {
-                                                                    notifyUser("Não foi possível abrir o Google Maps.")
-                                                                }
-                                                            },
-                                                            colors = ButtonDefaults.filledTonalButtonColors(
-                                                                containerColor = PureWhiteSurface,
-                                                                contentColor = PetrolHeader
-                                                            ),
-                                                            border = BorderStroke(1.dp, CleanCardBorder),
-                                                            shape = RoundedCornerShape(10.dp),
-                                                            modifier = Modifier.height(38.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(14.dp))
-                                                            Spacer(modifier = Modifier.width(4.dp))
-                                                            Text("Ver no Maps", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Lista de Bairros Favoritos Cadastrados
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "⭐ Seus Bairros Favoritos (${customFavList.size}):",
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 13.sp,
-                                        color = PetrolHeader
-                                    )
-                                    if (customFavList.isNotEmpty()) {
-                                        TextButton(onClick = {
-                                            scope.launch {
-                                                app.preferencesRepository.saveConfig(config.copy(customFavoriteZones = ""))
-                                                notifyUser("Lista de bairros favoritos esvaziada.")
-                                            }
-                                        }) {
-                                            Text("Limpar Todos", color = TrafficRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-
-                                if (customFavList.isEmpty()) {
-                                    Surface(
-                                        color = SoftSurfaceVariant,
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = "Nenhum bairro favorito cadastrado ainda. Digite os nomes dos bairros onde você mais gosta de trabalhar acima.",
-                                            fontSize = 11.5.sp,
-                                            color = MutedText,
-                                            modifier = Modifier.padding(12.dp)
-                                        )
-                                    }
-                                } else {
-                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        customFavList.forEach { zone ->
-                                            Surface(
-                                                color = Color(0xFFECFDF5),
-                                                shape = RoundedCornerShape(12.dp),
-                                                border = BorderStroke(1.dp, Color(0xFF059669).copy(alpha = 0.35f)),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                        modifier = Modifier.weight(1f)
-                                                    ) {
-                                                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFF059669), modifier = Modifier.size(16.dp))
-                                                        Text(
-                                                            text = zone,
-                                                            fontSize = 12.5.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = Color(0xFF065F46)
-                                                        )
-                                                    }
-
-                                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                        IconButton(
-                                                            onClick = {
-                                                                try {
-                                                                    val mapIntent = Intent(
-                                                                        Intent.ACTION_VIEW,
-                                                                        Uri.parse("geo:0,0?q=" + Uri.encode(zone))
-                                                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                                                                    context.startActivity(mapIntent)
-                                                                } catch (_: Exception) {}
-                                                            },
-                                                            modifier = Modifier.size(32.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.Map, contentDescription = "Ver no mapa", tint = PetrolHeader, modifier = Modifier.size(16.dp))
-                                                        }
-
-                                                        IconButton(
-                                                            onClick = {
-                                                                val remaining = customFavList.filterNot { it.equals(zone, ignoreCase = true) }
-                                                                scope.launch {
-                                                                    app.preferencesRepository.saveConfig(
-                                                                        config.copy(customFavoriteZones = remaining.joinToString(", "))
-                                                                    )
-                                                                    notifyUser("'$zone' removido dos bairros favoritos.")
-                                                                }
-                                                            },
-                                                            modifier = Modifier.size(32.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.Delete, contentDescription = "Remover", tint = TrafficRed, modifier = Modifier.size(16.dp))
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Botão de teste na tela flutuante
-                                Button(
-                                    onClick = {
-                                        val sampleFavZone = customFavList.firstOrNull() ?: "Moema"
-                                        val testOffer = NinetyNineOfferReader.parseScreenNodes(
-                                            rawNodes = listOf(
-                                                "UberX",
-                                                "R$ 28,50",
-                                                "★ 4,96 (180 corridas)",
-                                                "3 min (0,9 km) Av. Paulista, 1500 - Bela Vista",
-                                                "16 min (8,2 km) R. Gaivota, 450 - $sampleFavZone"
-                                            ),
-                                            captureMethod = CaptureMethod.SIMULATION,
-                                            isSimulated = true
-                                        )
-                                        val eval = FinancialEngine.evaluate(testOffer, config)
-                                        RuntimeDiagnosticsBus.publishEvaluation(eval)
-                                        if (hasOverlayPermission) {
-                                            app.overlayPanel.applyConfig(config)
-                                            app.overlayPanel.showEvaluation(eval)
-                                        }
-                                        CopilotNotificationReceiver.showActiveNotification(
-                                            context = context,
-                                            latestEvaluation = eval,
-                                            showProfit = config.showProfitOnOverlay,
-                                            showCost = config.showCostOnOverlay
-                                        )
-                                        notifyUser("Simulação de Bairro Favorito enviada para a Janela Flutuante!")
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF065F46),
-                                        contentColor = Color.White
-                                    ),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(46.dp)
-                                ) {
-                                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFA7F3D0), modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "⭐ Testar Bairro Favorito na Janela",
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 12.sp,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
                                 }
                             }
                         }
-                        }
                     }
-                }
 
-                // =====================================================
-                // TELA 9: DIAGNÓSTICO, INSPETOR E SIMULAÇÃO ISOLADA
-                // =====================================================
-                GoOrNoScreen.DIAGNOSTICS_TESTS -> {
                     item {
                         Card(
                             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
@@ -6754,7 +6028,7 @@ private fun HistoricalOfferCardContent(
     var showAuditInput by remember { mutableStateOf(false) }
     var paidText by remember { mutableStateOf(entity.actualReceivedPrice?.toString() ?: entity.offeredPrice.toString()) }
     val dateStr = remember(entity.timestampMillis) {
-        SimpleDateFormat("dd/MM HH:mm", Locale.forLanguageTag("pt-BR")).format(Date(entity.timestampMillis))
+        SimpleDateFormat("HH:mm", Locale.forLanguageTag("pt-BR")).format(Date(entity.timestampMillis))
     }
 
     val riskCheck = remember(entity.originAddress, entity.destinationAddress, config) {
@@ -6765,11 +6039,20 @@ private fun HistoricalOfferCardContent(
         FavoriteAreaEvaluator.evaluate(entity.originAddress, entity.destinationAddress, config)
     }
 
-    val badgeColor = when (entity.verdict) {
-        TrafficLightVerdict.GREEN.name -> TrafficGreen
-        TrafficLightVerdict.YELLOW.name -> TrafficYellow
-        TrafficLightVerdict.RED.name -> TrafficRed
-        else -> TrafficGray
+    val is99 = entity.sourceApp.contains("99", ignoreCase = true)
+
+    val verdictColor = when {
+        entity.verdict.contains("GREEN", ignoreCase = true) || entity.verdict.contains("Excelente", ignoreCase = true) -> Color(0xFF16A34A)
+        entity.verdict.contains("YELLOW", ignoreCase = true) || entity.verdict.contains("Atenção", ignoreCase = true) -> Color(0xFFCA8A04)
+        entity.verdict.contains("RED", ignoreCase = true) || entity.verdict.contains("Recusar", ignoreCase = true) -> Color(0xFFDC2626)
+        else -> Color(0xFF64748B)
+    }
+
+    val verdictText = when {
+        entity.verdict.contains("GREEN", ignoreCase = true) || entity.verdict.contains("Excelente", ignoreCase = true) -> "● Ótima"
+        entity.verdict.contains("YELLOW", ignoreCase = true) || entity.verdict.contains("Atenção", ignoreCase = true) -> "● Atenção"
+        entity.verdict.contains("RED", ignoreCase = true) || entity.verdict.contains("Recusar", ignoreCase = true) -> "● Ruim"
+        else -> "● Neutro"
     }
 
     val totalKmStr = entity.totalDistanceKm?.let {
@@ -6778,7 +6061,7 @@ private fun HistoricalOfferCardContent(
     val totalMinStr = entity.totalDurationMin?.let { "$it min" } ?: "-- min"
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // LINHA 1: CABEÇALHO COM APP, VEREDITO E DATA/HORA SEM QUEBRA VERTICAL
+        // LINHA 1: [BADGE APP] R$ VALOR · HORÁRIO                     ● VEREDITO
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -6786,97 +6069,165 @@ private fun HistoricalOfferCardContent(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Surface(
-                    color = if (entity.sourceApp.contains("99", ignoreCase = true)) Color(0xFFFF9800) else Color(0xFF1E293B),
+                    color = if (is99) Color(0xFFFACC15) else Color(0xFF1E293B),
                     shape = RoundedCornerShape(6.dp)
                 ) {
                     Text(
-                        text = entity.sourceApp,
-                        fontWeight = FontWeight.Bold,
+                        text = if (is99) "99" else "Uber",
+                        fontWeight = FontWeight.Black,
                         fontSize = 11.sp,
-                        color = Color.White,
+                        color = if (is99) Color.Black else Color.White,
                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                     )
                 }
+
                 Text(
-                    text = when (entity.verdict) {
-                        TrafficLightVerdict.GREEN.name -> "🟢 Excelente"
-                        TrafficLightVerdict.YELLOW.name -> "🟡 Atenção"
-                        TrafficLightVerdict.RED.name -> "🔴 Não Compensa"
-                        else -> "⚪ Neutro"
-                    },
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PetrolDarkText
+                    text = "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%.2f", entity.offeredPrice),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.5.sp,
+                    color = Color(0xFF0F172A)
+                )
+                Text(
+                    text = "· $dateStr",
+                    fontSize = 12.5.sp,
+                    color = Color(0xFF64748B),
+                    fontWeight = FontWeight.Medium
                 )
             }
+
             Text(
-                text = dateStr,
-                fontSize = 11.sp,
-                color = MutedText,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                softWrap = false
+                text = verdictText,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = verdictColor
             )
         }
 
-        // LINHA 2: BANNER COLORIDO EM LARGURA TOTAL COM VALOR E DISTÂNCIA/TEMPO
+        // LINHA 2: DISTÂNCIA/TEMPO E BOTÃO "✓ ACEITEI"
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Total: $totalKmStr · $totalMinStr",
+                fontSize = 12.5.sp,
+                color = Color(0xFF64748B),
+                fontWeight = FontWeight.Medium
+            )
+
+            Surface(
+                color = if (entity.actualReceivedPrice != null) Color(0xFFECFDF5) else Color(0xFFF1F5F9),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, if (entity.actualReceivedPrice != null) Color(0xFF10B981) else Color(0xFFE2E8F0)),
+                modifier = Modifier.clickable { showAuditInput = !showAuditInput }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = if (entity.actualReceivedPrice != null) "✓ Aceitei" else "✓ Confirmar",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (entity.actualReceivedPrice != null) Color(0xFF059669) else Color(0xFF334155)
+                    )
+                }
+            }
+        }
+
+        // LINHA 3: 3 MÉTRICAS SÓBRIAS (R$/Km | R$/Hora | Nota limpa sem 'Boa')
         Surface(
-            color = badgeColor,
+            color = Color(0xFFF8FAFC),
             shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 7.dp),
+                    .padding(vertical = 8.dp, horizontal = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%.2f", entity.offeredPrice),
-                    fontWeight = FontWeight.Black,
-                    fontSize = 17.sp,
-                    color = Color.White
-                )
-                Text(
-                    text = "$totalKmStr  •  $totalMinStr",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.5.sp,
-                    color = Color.White
-                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("R$/Km", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF64748B))
+                    Text(
+                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", entity.grossPerKm ?: 0.0),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+                Box(modifier = Modifier.size(1.dp, 20.dp).background(Color(0xFFE2E8F0)))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("R$/Hora", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF64748B))
+                    Text(
+                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.0f", entity.grossPerHour ?: 0.0),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+                Box(modifier = Modifier.size(1.dp, 20.dp).background(Color(0xFFE2E8F0)))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Nota", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF64748B))
+                    val rLine = entity.reasonsSummary.split("|")
+                        .map { it.trim() }
+                        .firstOrNull { it.contains("Passageiro Nota", ignoreCase = true) }
+                    val rScore = rLine?.let { Regex("[\\d.,]+").find(it)?.value } ?: "5,00"
+                    Text(
+                        text = "★ $rScore",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A)
+                    )
+                }
             }
         }
 
+        // ALERTA DE ÁREA DE RISCO (se houver)
         if (riskCheck.hasRisk) {
             Surface(
                 color = Color(0xFFFEF2F2),
-                border = BorderStroke(1.dp, TrafficRed),
+                border = BorderStroke(1.dp, Color(0xFFEF4444)),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = riskCheck.shortBadge,
-                    fontWeight = FontWeight.Black,
+                    text = "⚠️ ${riskCheck.shortBadge}",
+                    fontWeight = FontWeight.Bold,
                     fontSize = 11.5.sp,
-                    color = TrafficRed,
+                    color = Color(0xFFDC2626),
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                 )
             }
         }
 
+        // REGIÃO FAVORITA (se houver)
         if (favCheck.isFavorite) {
             Surface(
                 color = Color(0xFFECFDF5),
-                border = BorderStroke(1.dp, Color(0xFF059669)),
+                border = BorderStroke(1.dp, Color(0xFF10B981)),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = "⭐ REGIÃO FAVORITA: ${favCheck.shortBadge}",
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 11.5.sp,
                     color = Color(0xFF065F46),
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
@@ -6884,433 +6235,147 @@ private fun HistoricalOfferCardContent(
             }
         }
 
-        // 3 BLOCOS DE MÉTRICAS ALINHADAS E ELEGANTES
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Surface(
-                color = SoftSurfaceVariant,
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("KM BRUTO", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MutedText)
-                    Text(
-                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", entity.grossPerKm ?: 0.0),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        color = PetrolHeader,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
-            }
-            Surface(
-                color = SoftSurfaceVariant,
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("HORA BRUTA", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MutedText)
-                    Text(
-                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", entity.grossPerHour ?: 0.0),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        color = PetrolHeader,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
-            }
-            Surface(
-                color = if ((entity.estimatedNetProfit ?: 0.0) >= 0.0) TrafficGreenSoft else Color(0xFFFEF2F2),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.weight(1.15f)
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "LUCRO ESTIM.",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if ((entity.estimatedNetProfit ?: 0.0) >= 0.0) TrafficGreen else TrafficRed
-                    )
-                    Text(
-                        text = String.format(Locale.forLanguageTag("pt-BR"), "R$ %.2f", entity.estimatedNetProfit ?: 0.0),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        color = if ((entity.estimatedNetProfit ?: 0.0) >= 0.0) TrafficGreen else TrafficRed,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
-            }
-        }
-
-        // Exibe o motivo financeiro ou alerta de segurança quando o veredito for Atenção ou Recusar
-        val finReasons = entity.reasonsSummary.split("|")
-            .map { it.trim() }
-            .filter { it.isNotBlank() && !it.contains("Passageiro Nota", ignoreCase = true) }
-        if (finReasons.isNotEmpty()) {
-            val isRedVerd = entity.verdict.contains("RED", ignoreCase = true) || entity.verdict.contains("Recusar", ignoreCase = true)
-            val isYellowVerd = entity.verdict.contains("YELLOW", ignoreCase = true) || entity.verdict.contains("Atenção", ignoreCase = true) || entity.verdict.contains("Avaliar", ignoreCase = true)
-            if (isRedVerd || isYellowVerd) {
-                val bColor = if (isRedVerd) TrafficRed else TrafficYellow
-                Surface(
-                    color = bColor.copy(alpha = 0.10f),
-                    border = BorderStroke(1.dp, bColor.copy(alpha = 0.40f)),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
-                        finReasons.take(2).forEach { rMsg ->
-                            val icn = if (rMsg.contains("risco", ignoreCase = true)) "⚠️" else if (isRedVerd) "🔴" else "🟡"
-                            Text(
-                                text = "$icn $rMsg",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = bColor,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        if (entity.reasonsSummary.contains("Passageiro Nota", ignoreCase = true)) {
-            val ratingLine = entity.reasonsSummary.split("|")
-                .map { it.trim() }
-                .firstOrNull { it.contains("Passageiro Nota", ignoreCase = true) }
-            if (ratingLine != null) {
-                val rColor = when {
-                    ratingLine.contains("🟢") || ratingLine.contains("Boa", ignoreCase = true) -> TrafficGreen
-                    ratingLine.contains("🟡") || ratingLine.contains("Média", ignoreCase = true) -> TrafficYellow
-                    else -> TrafficRed
-                }
-                val conciseRating = when {
-                    ratingLine.contains("Boa", ignoreCase = true) -> {
-                        val score = Regex("""[\d.,]+""").find(ratingLine)?.value ?: ""
-                        "🟢 Nota Passageiro: ★ $score (Boa)"
-                    }
-                    ratingLine.contains("Média", ignoreCase = true) -> {
-                        val score = Regex("""[\d.,]+""").find(ratingLine)?.value ?: ""
-                        "🟡 Nota Passageiro: ★ $score (Atenção)"
-                    }
-                    ratingLine.contains("Ruim", ignoreCase = true) -> {
-                        val score = Regex("""[\d.,]+""").find(ratingLine)?.value ?: ""
-                        "🔴 Nota Passageiro: ★ $score (Baixa)"
-                    }
-                    else -> ratingLine.take(45)
-                }
-                Surface(
-                    color = rColor.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, rColor.copy(alpha = 0.45f)),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = conciseRating,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = rColor,
-                        maxLines = 1,
-                        softWrap = false,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                    )
-                }
-            }
-        }
-
-        // EXIBIÇÃO DO ENDEREÇO DE ORIGEM (100% de largura para o texto e botões em linha dedicada)
+        // ORIGEM E DESTINO (PARADAS DA ROTA)
         Surface(
-            color = SoftSurfaceVariant,
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, CleanCardBorder),
+            color = Color(0xFFF8FAFC),
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    text = "📍 ORIGEM (EMBARQUE)",
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Black,
-                    color = PetrolHeader,
-                    maxLines = 1,
-                    softWrap = false
-                )
-                Text(
-                    text = entity.originAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na oferta",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = PetrolDarkText,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (!entity.originAddress.isNullOrBlank()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Surface(
-                            color = Color(0xFFECFDF5),
-                            border = BorderStroke(1.dp, Color(0xFF059669)),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onMarkAddressAsFavorite(entity.originAddress) }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "⭐ +Favorito",
-                                    color = Color(0xFF065F46),
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                        }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { entity.originAddress?.let(onOpenStreetView) },
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text("●", color = Color(0xFF10B981), fontSize = 12.sp, modifier = Modifier.padding(end = 6.dp, top = 1.dp))
+                    Text(
+                        text = entity.originAddress?.takeIf { it.isNotBlank() } ?: "Origem não informada",
+                        fontSize = 12.sp,
+                        color = Color(0xFF1E293B),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
-                        Surface(
-                            color = Color(0xFFFEF2F2),
-                            border = BorderStroke(1.dp, TrafficRed),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onMarkAddressAsRisk(entity.originAddress) }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "⚠️ +Risco",
-                                    color = TrafficRed,
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                        }
-
-                        Surface(
-                            color = PetrolHeader,
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onOpenStreetView(entity.originAddress) }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "🌐 360° Maps",
-                                    color = Color.White,
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                        }
-                    }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { entity.destinationAddress?.let(onOpenStreetView) },
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text("🏁", fontSize = 11.sp, modifier = Modifier.padding(end = 6.dp, top = 1.dp))
+                    Text(
+                        text = entity.destinationAddress?.takeIf { it.isNotBlank() } ?: "Destino não informado",
+                        fontSize = 12.sp,
+                        color = Color(0xFF1E293B),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
 
-        // EXIBIÇÃO DO ENDEREÇO DE DESTINO (100% de largura para o texto e botões em linha dedicada)
-        Surface(
-            color = TrafficGreenSoft.copy(alpha = 0.55f),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, TrafficGreen.copy(alpha = 0.5f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "🏁 DESTINO (DESEMBARQUE)",
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Black,
-                    color = PetrolHeader,
-                    maxLines = 1,
-                    softWrap = false
-                )
-                Text(
-                    text = entity.destinationAddress?.takeIf { it.isNotBlank() } ?: "Endereço não informado na oferta",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = PetrolDarkText,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (!entity.destinationAddress.isNullOrBlank()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Surface(
-                            color = Color(0xFFECFDF5),
-                            border = BorderStroke(1.dp, Color(0xFF059669)),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onMarkAddressAsFavorite(entity.destinationAddress) }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "⭐ +Favorito",
-                                    color = Color(0xFF065F46),
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                        }
-
-                        Surface(
-                            color = Color(0xFFFEF2F2),
-                            border = BorderStroke(1.dp, TrafficRed),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onMarkAddressAsRisk(entity.destinationAddress) }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "⚠️ +Risco",
-                                    color = TrafficRed,
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                        }
-
-                        Surface(
-                            color = PetrolHeader,
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onOpenStreetView(entity.destinationAddress) }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "🌐 360° Maps",
-                                    color = Color.White,
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Auditoria de Valor Pago pela Uber / 99
+        // AÇÕES RÁPIDAS (Street View 360°, +Risco, +Favorito, Editar)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            if (entity.actualReceivedPrice != null) {
-                val diff = entity.actualReceivedPrice - entity.offeredPrice
-                Text(
-                    text = String.format(
-                        Locale.forLanguageTag("pt-BR"),
-                        "✅ Pago: R$ %.2f (%s)",
-                        entity.actualReceivedPrice,
-                        if (diff < -0.05) "Menor!" else "Valor OK ✓"
-                    ),
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (diff < -0.05) TrafficRed else TrafficGreen,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-            } else {
-                Text(
-                    text = "Conferência do valor recebido:",
-                    fontSize = 11.sp,
-                    color = MutedText,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    modifier = Modifier.weight(1f)
-                )
+            if (!entity.originAddress.isNullOrBlank()) {
+                Surface(
+                    color = Color(0xFFF1F5F9),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onOpenStreetView(entity.originAddress) }
+                ) {
+                    Text(
+                        text = "🗺️ 360° Maps",
+                        color = Color(0xFF334155),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 6.dp)
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            FilledTonalButton(
-                onClick = { showAuditInput = !showAuditInput },
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = SoftSurfaceVariant,
-                    contentColor = PetrolHeader
-                ),
+
+            if (!entity.originAddress.isNullOrBlank()) {
+                Surface(
+                    color = Color(0xFFF1F5F9),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onMarkAddressAsRisk(entity.originAddress) }
+                ) {
+                    Text(
+                        text = "⚠️ +Risco",
+                        color = Color(0xFFDC2626),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 6.dp)
+                    )
+                }
+            }
+
+            if (!entity.originAddress.isNullOrBlank()) {
+                Surface(
+                    color = Color(0xFFF1F5F9),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onMarkAddressAsFavorite(entity.originAddress) }
+                ) {
+                    Text(
+                        text = "⭐ +Favorito",
+                        color = Color(0xFF059669),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 6.dp)
+                    )
+                }
+            }
+
+            Surface(
+                color = Color(0xFFF1F5F9),
                 shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                modifier = Modifier.height(30.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { showAuditInput = !showAuditInput }
             ) {
                 Text(
-                    text = if (entity.actualReceivedPrice != null) "Editar" else "Conferir",
+                    text = "✏️ Editar",
+                    color = Color(0xFF334155),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 1
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(vertical = 6.dp)
                 )
             }
         }
 
         if (showAuditInput) {
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedTextField(
                     value = paidText,
                     onValueChange = { paidText = it.replace(",", ".") },
-                    label = { Text("Valor Pago (R$)") },
+                    label = { Text("Valor Real Recebido (R$)", fontSize = 11.sp) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
@@ -7322,10 +6387,10 @@ private fun HistoricalOfferCardContent(
                             showAuditInput = false
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = PetrolHeader, contentColor = Color.White),
-                    shape = RoundedCornerShape(12.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B), contentColor = Color.White),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Salvar", fontWeight = FontWeight.Black)
+                    Text("Salvar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
         }
