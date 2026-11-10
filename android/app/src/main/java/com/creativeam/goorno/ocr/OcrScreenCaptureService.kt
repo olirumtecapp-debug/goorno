@@ -298,36 +298,58 @@ class OcrScreenCaptureService : Service() {
 
                     // Blindagem absoluta de persistência: NUNCA grava leituras parciais, saldos ou lixo de OCR
                     if (!parsed.isSimulated && isLegitOffer) {
-                        app.database.rideOfferDao().insertOffer(
-                            RideOfferEntity(
-                                id = parsed.offerId,
-                                timestampMillis = parsed.timestampMillis,
-                                sourceApp = parsed.sourceApp.displayName,
-                                captureMethod = parsed.captureMethod.label,
-                                rideCategory = parsed.rideCategory,
-                                offeredPrice = parsed.offeredPrice ?: 0.0,
-                                actualReceivedPrice = null,
-                                pickupDistanceKm = parsed.pickupDistanceKm,
-                                tripDistanceKm = parsed.tripDistanceKm,
-                                totalDistanceKm = evaluation.totalConsideredDistanceKm,
-                                pickupDurationMin = parsed.pickupDurationMin,
-                                tripDurationMin = parsed.tripDurationMin,
-                                totalDurationMin = evaluation.totalConsideredDurationMin,
-                                grossPerKm = evaluation.grossPerKm,
-                                grossPerHour = evaluation.grossPerHour,
-                                estimatedTotalCost = evaluation.estimatedTotalCost,
-                                estimatedNetProfit = evaluation.estimatedNetProfit,
-                                netProfitPerKm = evaluation.netProfitPerKm,
-                                netProfitPerHour = evaluation.netProfitPerHour,
-                                verdict = evaluation.verdict.name,
-                                reasonsSummary = (evaluation.reasons + evaluation.warnings).joinToString(" | "),
-                                originAddress = parsed.originAddress,
-                                destinationAddress = parsed.destinationAddress,
-                                confidenceScore = parsed.confidenceScore,
-                                isPartialReading = !evaluation.isAnalysisComplete,
-                                isSimulated = false
+                        val dao = app.database.rideOfferDao()
+                        val recentOffers = dao.findRecentOffers(parsed.sourceApp.displayName, System.currentTimeMillis() - 25_000L)
+                        val duplicate = recentOffers.firstOrNull { existing ->
+                            val priceDiff = kotlin.math.abs(existing.offeredPrice - (parsed.offeredPrice ?: 0.0))
+                            val kmDiff = kotlin.math.abs((existing.totalDistanceKm ?: 0.0) - totalKm)
+                            priceDiff < 0.20 && (kmDiff < 0.35 || existing.totalDistanceKm == null)
+                        }
+
+                        if (duplicate != null) {
+                            val needsEnrichment = duplicate.originAddress.isNullOrBlank() && !parsed.originAddress.isNullOrBlank() ||
+                                duplicate.destinationAddress.isNullOrBlank() && !parsed.destinationAddress.isNullOrBlank()
+                            if (needsEnrichment) {
+                                val enriched = duplicate.copy(
+                                    originAddress = if (!parsed.originAddress.isNullOrBlank()) parsed.originAddress else duplicate.originAddress,
+                                    destinationAddress = if (!parsed.destinationAddress.isNullOrBlank()) parsed.destinationAddress else duplicate.destinationAddress,
+                                    totalDistanceKm = if (duplicate.totalDistanceKm == null || duplicate.totalDistanceKm == 0.0) totalKm else duplicate.totalDistanceKm,
+                                    totalDurationMin = if (duplicate.totalDurationMin == null || duplicate.totalDurationMin == 0) totalMin else duplicate.totalDurationMin
+                                )
+                                dao.updateOffer(enriched)
+                            }
+                        } else {
+                            dao.insertOffer(
+                                RideOfferEntity(
+                                    id = parsed.offerId,
+                                    timestampMillis = parsed.timestampMillis,
+                                    sourceApp = parsed.sourceApp.displayName,
+                                    captureMethod = parsed.captureMethod.label,
+                                    rideCategory = parsed.rideCategory,
+                                    offeredPrice = parsed.offeredPrice ?: 0.0,
+                                    actualReceivedPrice = null,
+                                    pickupDistanceKm = parsed.pickupDistanceKm,
+                                    tripDistanceKm = parsed.tripDistanceKm,
+                                    totalDistanceKm = evaluation.totalConsideredDistanceKm,
+                                    pickupDurationMin = parsed.pickupDurationMin,
+                                    tripDurationMin = parsed.tripDurationMin,
+                                    totalDurationMin = evaluation.totalConsideredDurationMin,
+                                    grossPerKm = evaluation.grossPerKm,
+                                    grossPerHour = evaluation.grossPerHour,
+                                    estimatedTotalCost = evaluation.estimatedTotalCost,
+                                    estimatedNetProfit = evaluation.estimatedNetProfit,
+                                    netProfitPerKm = evaluation.netProfitPerKm,
+                                    netProfitPerHour = evaluation.netProfitPerHour,
+                                    verdict = evaluation.verdict.name,
+                                    reasonsSummary = (evaluation.reasons + evaluation.warnings).joinToString(" | "),
+                                    originAddress = parsed.originAddress,
+                                    destinationAddress = parsed.destinationAddress,
+                                    confidenceScore = parsed.confidenceScore,
+                                    isPartialReading = !evaluation.isAnalysisComplete,
+                                    isSimulated = false
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }

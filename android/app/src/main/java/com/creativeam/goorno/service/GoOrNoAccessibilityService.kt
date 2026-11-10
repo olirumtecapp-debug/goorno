@@ -1025,35 +1025,57 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
                     if (!offer.isSimulated && isLegitOffer &&
                         buildStableOfferKey(offer) !in alreadyShownBeforeList) {
-                        val entity = RideOfferEntity(
-                            id = offer.offerId,
-                            timestampMillis = offer.timestampMillis,
-                            sourceApp = offer.sourceApp.displayName,
-                            captureMethod = offer.captureMethod.label,
-                            rideCategory = offer.rideCategory,
-                            offeredPrice = offer.offeredPrice ?: 0.0,
-                            actualReceivedPrice = null,
-                            pickupDistanceKm = offer.pickupDistanceKm,
-                            tripDistanceKm = offer.tripDistanceKm,
-                            totalDistanceKm = evaluation.totalConsideredDistanceKm,
-                            pickupDurationMin = offer.pickupDurationMin,
-                            tripDurationMin = offer.tripDurationMin,
-                            totalDurationMin = evaluation.totalConsideredDurationMin,
-                            grossPerKm = evaluation.grossPerKm,
-                            grossPerHour = evaluation.grossPerHour,
-                            estimatedTotalCost = evaluation.estimatedTotalCost,
-                            estimatedNetProfit = evaluation.estimatedNetProfit,
-                            netProfitPerKm = evaluation.netProfitPerKm,
-                            netProfitPerHour = evaluation.netProfitPerHour,
-                            verdict = evaluation.verdict.name,
-                            reasonsSummary = (evaluation.reasons + evaluation.warnings).joinToString(" | "),
-                            originAddress = offer.originAddress,
-                            destinationAddress = offer.destinationAddress,
-                            confidenceScore = offer.confidenceScore,
-                            isPartialReading = !evaluation.isAnalysisComplete,
-                            isSimulated = false
-                        )
-                        app.database.rideOfferDao().insertOffer(entity)
+                        val dao = app.database.rideOfferDao()
+                        val recentOffers = dao.findRecentOffers(offer.sourceApp.displayName, now - 25_000L)
+                        val duplicate = recentOffers.firstOrNull { existing ->
+                            val priceDiff = kotlin.math.abs(existing.offeredPrice - (offer.offeredPrice ?: 0.0))
+                            val kmDiff = kotlin.math.abs((existing.totalDistanceKm ?: 0.0) - totalKm)
+                            priceDiff < 0.20 && (kmDiff < 0.35 || existing.totalDistanceKm == null)
+                        }
+
+                        if (duplicate != null) {
+                            val needsEnrichment = duplicate.originAddress.isNullOrBlank() && !offer.originAddress.isNullOrBlank() ||
+                                duplicate.destinationAddress.isNullOrBlank() && !offer.destinationAddress.isNullOrBlank()
+                            if (needsEnrichment) {
+                                val enriched = duplicate.copy(
+                                    originAddress = if (!offer.originAddress.isNullOrBlank()) offer.originAddress else duplicate.originAddress,
+                                    destinationAddress = if (!offer.destinationAddress.isNullOrBlank()) offer.destinationAddress else duplicate.destinationAddress,
+                                    totalDistanceKm = if (duplicate.totalDistanceKm == null || duplicate.totalDistanceKm == 0.0) totalKm else duplicate.totalDistanceKm,
+                                    totalDurationMin = if (duplicate.totalDurationMin == null || duplicate.totalDurationMin == 0) totalMin else duplicate.totalDurationMin
+                                )
+                                dao.updateOffer(enriched)
+                            }
+                        } else {
+                            val entity = RideOfferEntity(
+                                id = offer.offerId,
+                                timestampMillis = offer.timestampMillis,
+                                sourceApp = offer.sourceApp.displayName,
+                                captureMethod = offer.captureMethod.label,
+                                rideCategory = offer.rideCategory,
+                                offeredPrice = offer.offeredPrice ?: 0.0,
+                                actualReceivedPrice = null,
+                                pickupDistanceKm = offer.pickupDistanceKm,
+                                tripDistanceKm = offer.tripDistanceKm,
+                                totalDistanceKm = evaluation.totalConsideredDistanceKm,
+                                pickupDurationMin = offer.pickupDurationMin,
+                                tripDurationMin = offer.tripDurationMin,
+                                totalDurationMin = evaluation.totalConsideredDurationMin,
+                                grossPerKm = evaluation.grossPerKm,
+                                grossPerHour = evaluation.grossPerHour,
+                                estimatedTotalCost = evaluation.estimatedTotalCost,
+                                estimatedNetProfit = evaluation.estimatedNetProfit,
+                                netProfitPerKm = evaluation.netProfitPerKm,
+                                netProfitPerHour = evaluation.netProfitPerHour,
+                                verdict = evaluation.verdict.name,
+                                reasonsSummary = (evaluation.reasons + evaluation.warnings).joinToString(" | "),
+                                originAddress = offer.originAddress,
+                                destinationAddress = offer.destinationAddress,
+                                confidenceScore = offer.confidenceScore,
+                                isPartialReading = !evaluation.isAnalysisComplete,
+                                isSimulated = false
+                            )
+                            dao.insertOffer(entity)
+                        }
                     }
                 }
             }

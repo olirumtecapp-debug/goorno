@@ -212,6 +212,7 @@ data class DriverFinancialConfig(
     val overlayAutoMinimizeSec: Int = 5,
     val overlayDisplayStyle: String = OverlayDisplayStyle.COMPLETO.name,
     val overlayTheme: String = "COLORIDO", // "COLORIDO", "ESCURO" ou "CLARO"
+    val overlayFontSize: String = "M", // "P", "M", "G"
     val overlayBubblePosition: String = "BELOW",
     val overlayHorizontalPosition: String = "RIGHT",
     val showFloatingShortcutBubble: Boolean = false,

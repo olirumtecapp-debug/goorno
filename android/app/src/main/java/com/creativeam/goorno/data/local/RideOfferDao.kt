@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -15,6 +16,12 @@ interface RideOfferDao {
     @Query("SELECT * FROM ride_offers WHERE isSimulated = 0 ORDER BY timestampMillis DESC LIMIT 300")
     suspend fun getAllRealOffersOnce(): List<RideOfferEntity>
 
+    @Query("SELECT * FROM ride_offers WHERE isSimulated = 0 AND sourceApp = :sourceApp AND timestampMillis >= :minTimestamp ORDER BY timestampMillis DESC")
+    suspend fun findRecentOffers(sourceApp: String, minTimestamp: Long): List<RideOfferEntity>
+
+    @Update
+    suspend fun updateOffer(offer: RideOfferEntity)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOffer(offer: RideOfferEntity)
 
@@ -22,7 +29,7 @@ interface RideOfferDao {
     suspend fun insertAll(offers: List<RideOfferEntity>)
 
     @Query("UPDATE ride_offers SET actualReceivedPrice = :receivedPrice WHERE id = :offerId")
-    suspend fun updateActualReceivedPrice(offerId: String, receivedPrice: Double)
+    suspend fun updateActualReceivedPrice(offerId: String, receivedPrice: Double?)
 
     @Query("DELETE FROM ride_offers WHERE id = :offerId")
     suspend fun deleteOfferById(offerId: String)

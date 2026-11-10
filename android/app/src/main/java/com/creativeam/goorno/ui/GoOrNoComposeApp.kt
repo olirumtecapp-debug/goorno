@@ -1239,7 +1239,11 @@ fun GoOrNoComposeApp(
                                         onUpdateReceivedPrice = { newVal ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(latestDbOffer.id, newVal)
-                                                notifyUser("Valor conferido com sucesso!")
+                                                if (newVal != null) {
+                                                    notifyUser("Corrida marcada como Aceita!")
+                                                } else {
+                                                    notifyUser("Corrida desmarcada!")
+                                                }
                                             }
                                         }
                                     )
@@ -1415,6 +1419,9 @@ fun GoOrNoComposeApp(
                         }
                         var overlayTheme by remember(config.overlayTheme) {
                             mutableStateOf(config.overlayTheme)
+                        }
+                        var overlayFontSize by remember(config.overlayFontSize) {
+                            mutableStateOf(config.overlayFontSize)
                         }
                         var bubblePosition by remember(config.overlayBubblePosition) {
                             mutableStateOf(config.overlayBubblePosition)
@@ -1945,6 +1952,65 @@ fun GoOrNoComposeApp(
                                                     color = if (isSel) Color.White else PetrolDarkText,
                                                     fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
                                                     fontSize = 11.5.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                // Tamanho dos Números (P / M / G)
+                                Text(
+                                    text = "Tamanho dos Números (Fonte)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PetrolDarkText
+                                )
+                                Text(
+                                    text = "Ajuste a visibilidade das métricas para facilitar a leitura no trânsito",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(
+                                        Triple("P", "Pequeno (P)", "19sp"),
+                                        Triple("M", "Médio (M)", "22sp"),
+                                        Triple("G", "Grande (G)", "25sp")
+                                    ).forEach { (sizeKey, label, _) ->
+                                        val isSel = overlayFontSize == sizeKey
+                                        Surface(
+                                            color = if (isSel) PetrolHeader else SoftSurfaceVariant,
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.5.dp, if (isSel) PetrolHeader else CleanCardBorder),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable {
+                                                    overlayFontSize = sizeKey
+                                                    savedFlag = false
+                                                    val updated = config.copy(overlayFontSize = sizeKey)
+                                                    scope.launch {
+                                                        app.preferencesRepository.saveConfig(updated)
+                                                        app.overlayPanel.applyConfig(updated)
+                                                        notifyUser("Tamanho da fonte: $label")
+                                                    }
+                                                }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    color = if (isSel) Color.White else PetrolDarkText,
+                                                    fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
+                                                    fontSize = 11.sp,
                                                     maxLines = 1,
                                                     softWrap = false
                                                 )
@@ -4176,7 +4242,11 @@ fun GoOrNoComposeApp(
                                         onUpdateReceivedPrice = { valPaid ->
                                             scope.launch {
                                                 app.database.rideOfferDao().updateActualReceivedPrice(item.id, valPaid)
-                                                notifyUser("Valor recebido conferido com sucesso!")
+                                                if (valPaid != null) {
+                                                    notifyUser("Corrida marcada como Aceita!")
+                                                } else {
+                                                    notifyUser("Corrida desmarcada!")
+                                                }
                                             }
                                         }
                                     )
@@ -7162,9 +7232,13 @@ private fun HistoricalOfferCardContent(
     onOpenStreetView: (String) -> Unit,
     onMarkAddressAsRisk: (String) -> Unit,
     onMarkAddressAsFavorite: (String) -> Unit = {},
-    onUpdateReceivedPrice: (Double) -> Unit
+    onUpdateReceivedPrice: (Double?) -> Unit
 ) {
     var showAuditInput by remember { mutableStateOf(false) }
+    var showAcceptConfirmDialog by remember { mutableStateOf(false) }
+    var showUnmarkConfirmDialog by remember { mutableStateOf(false) }
+    var showRiskAddressChooser by remember { mutableStateOf(false) }
+    var showFavAddressChooser by remember { mutableStateOf(false) }
     var paidText by remember { mutableStateOf(entity.actualReceivedPrice?.toString() ?: entity.offeredPrice.toString()) }
     val dateStr = remember(entity.timestampMillis) {
         SimpleDateFormat("HH:mm", Locale.forLanguageTag("pt-BR")).format(Date(entity.timestampMillis))
@@ -7245,7 +7319,7 @@ private fun HistoricalOfferCardContent(
             )
         }
 
-        // LINHA 2: DISTÂNCIA/TEMPO E BOTÃO "✓ ACEITEI"
+        // LINHA 2: DISTÂNCIA/TEMPO E BOTÃO "✓ ACEITEI / CONFIRMAR" COM DIÁLOGO
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -7262,7 +7336,13 @@ private fun HistoricalOfferCardContent(
                 color = if (entity.actualReceivedPrice != null) Color(0xFFECFDF5) else Color(0xFFF1F5F9),
                 shape = RoundedCornerShape(20.dp),
                 border = BorderStroke(1.dp, if (entity.actualReceivedPrice != null) Color(0xFF10B981) else Color(0xFFE2E8F0)),
-                modifier = Modifier.clickable { showAuditInput = !showAuditInput }
+                modifier = Modifier.clickable {
+                    if (entity.actualReceivedPrice == null) {
+                        showAcceptConfirmDialog = true
+                    } else {
+                        showUnmarkConfirmDialog = true
+                    }
+                }
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -7347,7 +7427,7 @@ private fun HistoricalOfferCardContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "⚠️ ${riskCheck.shortBadge}",
+                    text = "⚠️ " + riskCheck.shortBadge,
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.5.sp,
                     color = Color(0xFFDC2626),
@@ -7365,7 +7445,7 @@ private fun HistoricalOfferCardContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "⭐ REGIÃO FAVORITA: ${favCheck.shortBadge}",
+                    text = "⭐ REGIÃO FAVORITA: " + favCheck.shortBadge,
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.5.sp,
                     color = Color(0xFF065F46),
@@ -7374,7 +7454,7 @@ private fun HistoricalOfferCardContent(
             }
         }
 
-        // ORIGEM E DESTINO (PARADAS DA ROTA)
+        // ORIGEM E DESTINO (PARADAS DA ROTA) - Tocar abre Street View 360° diretamente
         Surface(
             color = Color(0xFFF8FAFC),
             shape = RoundedCornerShape(10.dp),
@@ -7421,64 +7501,62 @@ private fun HistoricalOfferCardContent(
             }
         }
 
-        // AÇÕES RÁPIDAS (Street View 360°, +Risco, +Favorito, Editar)
+        // AÇÕES RÁPIDAS (+Risco, +Favorito, Editar) - Botão 360° Maps removido para alinhamento perfeito
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            if (!entity.originAddress.isNullOrBlank()) {
-                Surface(
-                    color = Color(0xFFF1F5F9),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onOpenStreetView(entity.originAddress) }
-                ) {
-                    Text(
-                        text = "🗺️ 360° Maps",
-                        color = Color(0xFF334155),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(vertical = 6.dp)
-                    )
-                }
-            }
+            val hasOrigin = !entity.originAddress.isNullOrBlank()
+            val hasDest = !entity.destinationAddress.isNullOrBlank()
 
-            if (!entity.originAddress.isNullOrBlank()) {
+            if (hasOrigin || hasDest) {
                 Surface(
                     color = Color(0xFFF1F5F9),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { onMarkAddressAsRisk(entity.originAddress) }
+                        .clickable {
+                            if (hasOrigin && hasDest) {
+                                showRiskAddressChooser = true
+                            } else if (hasOrigin) {
+                                onMarkAddressAsRisk(entity.originAddress!!)
+                            } else {
+                                onMarkAddressAsRisk(entity.destinationAddress!!)
+                            }
+                        }
                 ) {
                     Text(
                         text = "⚠️ +Risco",
                         color = Color(0xFFDC2626),
-                        fontSize = 11.sp,
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(vertical = 6.dp)
+                        modifier = Modifier.padding(vertical = 7.dp)
                     )
                 }
-            }
 
-            if (!entity.originAddress.isNullOrBlank()) {
                 Surface(
                     color = Color(0xFFF1F5F9),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { onMarkAddressAsFavorite(entity.originAddress) }
+                        .clickable {
+                            if (hasOrigin && hasDest) {
+                                showFavAddressChooser = true
+                            } else if (hasOrigin) {
+                                onMarkAddressAsFavorite(entity.originAddress!!)
+                            } else {
+                                onMarkAddressAsFavorite(entity.destinationAddress!!)
+                            }
+                        }
                 ) {
                     Text(
                         text = "⭐ +Favorito",
                         color = Color(0xFF059669),
-                        fontSize = 11.sp,
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(vertical = 6.dp)
+                        modifier = Modifier.padding(vertical = 7.dp)
                     )
                 }
             }
@@ -7493,14 +7571,15 @@ private fun HistoricalOfferCardContent(
                 Text(
                     text = "✏️ Editar",
                     color = Color(0xFF334155),
-                    fontSize = 11.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 6.dp)
+                    modifier = Modifier.padding(vertical = 7.dp)
                 )
             }
         }
 
+        // INPUT DE EDIÇÃO DE VALOR RECEBIDO
         if (showAuditInput) {
             Row(
                 modifier = Modifier
@@ -7531,8 +7610,222 @@ private fun HistoricalOfferCardContent(
                 ) {
                     Text("Salvar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
+                if (entity.actualReceivedPrice != null) {
+                    TextButton(
+                        onClick = {
+                            onUpdateReceivedPrice(null)
+                            showAuditInput = false
+                        }
+                    ) {
+                        Text("Limpar", color = Color(0xFFDC2626), fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
+    }
+
+    // DIÁLOGO DE CONFIRMAÇÃO: "Você realmente aceitou esta corrida?"
+    if (showAcceptConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showAcceptConfirmDialog = false },
+            title = {
+                Text(
+                    text = "Confirmar Viagem Aceita?",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Você realmente aceitou esta corrida no valor de R$ " +
+                            String.format(Locale.forLanguageTag("pt-BR"), "%.2f", entity.offeredPrice) + "?",
+                        fontSize = 13.5.sp,
+                        color = Color(0xFF334155)
+                    )
+                    Text(
+                        text = "Ela será registrada como Aceita no seu relatório de faturamento.",
+                        fontSize = 12.sp,
+                        color = Color(0xFF64748B)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showAcceptConfirmDialog = false
+                        onUpdateReceivedPrice(entity.offeredPrice)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
+                ) {
+                    Text("Sim, Aceitei", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAcceptConfirmDialog = false }) {
+                    Text("Cancelar", color = Color(0xFF64748B))
+                }
+            }
+        )
+    }
+
+    // DIÁLOGO PARA DESMARCAR CORRIDA ACEITA
+    if (showUnmarkConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnmarkConfirmDialog = false },
+            title = {
+                Text(
+                    text = "Desmarcar Corrida Aceita?",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Text(
+                    text = "Deseja remover o status de aceita desta corrida? Ela voltará para a lista geral sem valor conferido.",
+                    fontSize = 13.5.sp,
+                    color = Color(0xFF334155)
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showUnmarkConfirmDialog = false
+                        onUpdateReceivedPrice(null)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                ) {
+                    Text("Sim, Desmarcar", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnmarkConfirmDialog = false }) {
+                    Text("Cancelar", color = Color(0xFF64748B))
+                }
+            }
+        )
+    }
+
+    // SELETOR: ORIGEM OU DESTINO PARA +RISCO
+    if (showRiskAddressChooser) {
+        AlertDialog(
+            onDismissRequest = { showRiskAddressChooser = false },
+            title = {
+                Text("Cadastrar Área de Risco", fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Qual endereço desta corrida você deseja cadastrar como área de risco?",
+                        fontSize = 13.sp,
+                        color = Color(0xFF334155)
+                    )
+                    if (!entity.originAddress.isNullOrBlank()) {
+                        Surface(
+                            color = Color(0xFFFEF2F2),
+                            border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showRiskAddressChooser = false
+                                    onMarkAddressAsRisk(entity.originAddress!!)
+                                }
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("● Origem (Embarque)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF991B1B))
+                                Text(entity.originAddress!!, fontSize = 12.sp, color = Color(0xFF1E293B))
+                            }
+                        }
+                    }
+                    if (!entity.destinationAddress.isNullOrBlank()) {
+                        Surface(
+                            color = Color(0xFFFEF2F2),
+                            border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showRiskAddressChooser = false
+                                    onMarkAddressAsRisk(entity.destinationAddress!!)
+                                }
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("🏁 Destino (Desembarque)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF991B1B))
+                                Text(entity.destinationAddress!!, fontSize = 12.sp, color = Color(0xFF1E293B))
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showRiskAddressChooser = false }) {
+                    Text("Cancelar", color = Color(0xFF64748B))
+                }
+            }
+        )
+    }
+
+    // SELETOR: ORIGEM OU DESTINO PARA +FAVORITO
+    if (showFavAddressChooser) {
+        AlertDialog(
+            onDismissRequest = { showFavAddressChooser = false },
+            title = {
+                Text("Cadastrar Região Favorita", fontWeight = FontWeight.Bold, color = Color(0xFF059669))
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Qual endereço desta corrida você deseja cadastrar como favorito?",
+                        fontSize = 13.sp,
+                        color = Color(0xFF334155)
+                    )
+                    if (!entity.originAddress.isNullOrBlank()) {
+                        Surface(
+                            color = Color(0xFFECFDF5),
+                            border = BorderStroke(1.dp, Color(0xFF6EE7B7)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showFavAddressChooser = false
+                                    onMarkAddressAsFavorite(entity.originAddress!!)
+                                }
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("● Origem (Embarque)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF065F46))
+                                Text(entity.originAddress!!, fontSize = 12.sp, color = Color(0xFF1E293B))
+                            }
+                        }
+                    }
+                    if (!entity.destinationAddress.isNullOrBlank()) {
+                        Surface(
+                            color = Color(0xFFECFDF5),
+                            border = BorderStroke(1.dp, Color(0xFF6EE7B7)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showFavAddressChooser = false
+                                    onMarkAddressAsFavorite(entity.destinationAddress!!)
+                                }
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("🏁 Destino (Desembarque)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF065F46))
+                                Text(entity.destinationAddress!!, fontSize = 12.sp, color = Color(0xFF1E293B))
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showFavAddressChooser = false }) {
+                    Text("Cancelar", color = Color(0xFF64748B))
+                }
+            }
+        )
     }
 }
 

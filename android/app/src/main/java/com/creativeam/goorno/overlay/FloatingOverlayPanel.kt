@@ -582,7 +582,7 @@ class FloatingOverlayPanel(private val context: Context) {
             val tvVal = TextView(context).apply {
                 text = value
                 setTextColor(Color.parseColor(primaryTextHex))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
                 setTypeface(typeface, Typeface.BOLD)
                 isSingleLine = true
                 maxLines = 1
@@ -1769,7 +1769,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val tvKmVal = TextView(context).apply {
             text = kmStr
             setTextColor(Color.parseColor(verdictColorHex))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
             setTypeface(typeface, Typeface.BOLD)
         }
         row1.addView(tvKmVal)
@@ -1837,7 +1837,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val tvHr = TextView(context).apply {
             text = hrStr
             setTextColor(Color.parseColor(verdictColorHex))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, summaryValSp)
             setTypeface(typeface, Typeface.BOLD)
         }
         row2.addView(tvHr)
@@ -2012,6 +2012,22 @@ class FloatingOverlayPanel(private val context: Context) {
         val theme = lastKnownConfig?.overlayTheme?.uppercase() ?: "COLORIDO"
         val isColorido = theme == "COLORIDO"
         val isClaro = theme == "CLARO" || theme == "LIGHT"
+        val fontSizePref = lastKnownConfig?.overlayFontSize?.uppercase() ?: "M"
+        val pillarValSp = when (fontSizePref) {
+            "P" -> 19f
+            "G" -> 25f
+            else -> 22f
+        }
+        val pillarLblSp = when (fontSizePref) {
+            "P" -> 10f
+            "G" -> 12f
+            else -> 11f
+        }
+        val summaryValSp = when (fontSizePref) {
+            "P" -> 13.5f
+            "G" -> 15.5f
+            else -> 14.5f
+        }
 
         val verdictHex = when (result.verdict) {
             TrafficLightVerdict.GREEN -> "#16A34A"
@@ -2176,7 +2192,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 val tvL = TextView(context).apply {
                     text = label
                     setTextColor(secondaryTextColor)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarLblSp)
                     setTypeface(typeface, Typeface.BOLD)
                     gravity = Gravity.CENTER
                 }
@@ -2199,7 +2215,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 val tvV = TextView(context).apply {
                     text = valueText
                     setTextColor(primaryTextColor)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
                     setTypeface(typeface, Typeface.BOLD)
                     gravity = Gravity.CENTER
                 }
