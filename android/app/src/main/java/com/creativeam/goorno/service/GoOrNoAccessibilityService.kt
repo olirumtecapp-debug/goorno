@@ -251,7 +251,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             eventCombined.contains("R$") ||
             eventCombined.contains("Pop", ignoreCase = true) ||
             eventCombined.contains("Aceitar", ignoreCase = true) ||
-            eventCombined.contains("Escolher", ignoreCase = true) ||
             eventCombined.contains("Uber", ignoreCase = true) ||
             eventCombined.contains("min", ignoreCase = true)
 
@@ -329,13 +328,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         // BLOQUEIO TOTAL DA LISTA DE SOLICITAÇÕES DA 99:
-        // O GoOrNo só avalia e abre card para chamados que TOCAM (chamada ativa no mapa com contagem regressiva).
-        // Se a tela atual for a lista de solicitações ("< Solicitações" / "Escolha uma"), não abre card de corrida!
+        // O GoOrNo só avalia e abre card para chamados que TOCAM ou quando clica no mapinha (ambos têm botão "Aceitar").
+        // Se a tela atual for a lista de solicitações ("Solicitações", "Escolha uma", botão "Escolher"), não abre card!
         val isNinetyNineListScreen = targetApp == SourceApp.NINETY_NINE_DRIVER &&
             normalizedTexts.any { line ->
                 val l = line.trim().lowercase(Locale.ROOT)
-                l == "solicitações" || l == "solicitacoes" || l.startsWith("< solicita") ||
-                l.startsWith("solicitações") || l == "escolha uma" || l.contains("lista de solicita")
+                l.contains("solicita") || l == "escolha uma" ||
+                l == "escolher" || l.startsWith("escolher") ||
+                l.contains("km até o embarque") || l.contains("km ate o embarque")
             }
 
         if (isNinetyNineListScreen) {
@@ -350,8 +350,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // 3. DETECÇÃO DE OCIOSIDADE E FECHAMENTO DE CARDS RESIDUAIS (ALLOWED_NO_OFFER):
         val joinedScreenLower = normalizedTexts.joinToString(" ").lowercase(Locale.ROOT)
         // hasRideActionBtn — apenas tokens EXCLUSIVOS de telas de oferta real.
-        val hasRideActionBtn = joinedScreenLower.contains("escolher") ||
-            joinedScreenLower.contains("aceitar") ||
+        val hasRideActionBtn = joinedScreenLower.contains("aceitar") ||
             joinedScreenLower.contains("selecionar") ||
             joinedScreenLower.contains("deslize") ||
             joinedScreenLower.contains("nova corrida") ||
@@ -524,14 +523,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
 
-        // NUNCA tira screenshot se o motorista estiver na tela de descanso ("Buscando", "Conectar" ou "Abastece")
+        // NUNCA tira screenshot se o motorista estiver na tela de descanso ou na lista de solicitações da 99
         val activeRootFast = try { rootInActiveWindow } catch (_: Exception) { null }
         if (activeRootFast != null) {
             val fastTexts = mutableListOf<String>()
             collectFastTexts(activeRootFast, fastTexts, maxNodes = 30)
             val fastJoined = fastTexts.joinToString(" ").lowercase(Locale.ROOT)
-            val hasRealAction = fastJoined.contains("aceitar") || fastJoined.contains("escolher") || fastJoined.contains("exclusivo") || fastJoined.contains("radar")
-            if (!hasRealAction && (fastJoined.contains("buscando") || fastJoined.contains("conectar") || fastJoined.contains("abastece"))) {
+            val hasRealAction = fastJoined.contains("aceitar") || fastJoined.contains("selecionar") || fastJoined.contains("exclusivo") || fastJoined.contains("radar")
+            val is99List = targetApp == SourceApp.NINETY_NINE_DRIVER && (fastJoined.contains("solicita") || fastJoined.contains("escolher"))
+            val isIdle = !hasRealAction && (fastJoined.contains("buscando") || fastJoined.contains("conectar") || fastJoined.contains("abastece"))
+            if (is99List || isIdle) {
                 isTakingAutoScreenshot = false
                 return
             }
@@ -753,8 +754,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         val isSaneDuration = min in 1..240 // NUNCA aceita tempos absurdos como 1009 min!
                                         val isSaneKm = km in 0.2..300.0
                                         val ocrJoinedLow = normalizedOcr.joinToString(" ").lowercase(Locale.ROOT)
-                                        val hasRealAction = ocrJoinedLow.contains("aceitar") || ocrJoinedLow.contains("escolher") || ocrJoinedLow.contains("exclusivo") || ocrJoinedLow.contains("radar")
-                                        val isIdleScreen = (ocrJoinedLow.contains("buscando") || ocrJoinedLow.contains("conectar") || ocrJoinedLow.contains("abastece")) && !hasRealAction
+                                        val hasRealAction = ocrJoinedLow.contains("aceitar") || ocrJoinedLow.contains("selecionar") || ocrJoinedLow.contains("exclusivo") || ocrJoinedLow.contains("radar")
+                                        val is99ListOcr = effectiveOcrApp == SourceApp.NINETY_NINE_DRIVER && (ocrJoinedLow.contains("solicita") || ocrJoinedLow.contains("escolher"))
+                                        val isIdleScreen = ((ocrJoinedLow.contains("buscando") || ocrJoinedLow.contains("conectar") || ocrJoinedLow.contains("abastece")) && !hasRealAction) || is99ListOcr
 
                                         isSanePrice && isSaneKm && isSaneDuration && !offer.hasFieldConflict && !isIdleScreen
                                     }
@@ -872,28 +874,21 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (parsedOffers.isEmpty()) return
 
         val app = applicationContext as? GoOrNoApplication ?: return
-        // A lista da 99 é uma apresentação nova da tela; prioriza todos os
-        // cartões de cima para baixo, inclusive o que já tocou no mapa.
+        // BLOQUEIO TOTAL DA LISTA DA 99:
+        // Se a tela for lista de solicitações da 99, esconde qualquer card e não exibe nada.
         val is99RequestList = parsedOffers.any { it.sourceApp == SourceApp.NINETY_NINE_DRIVER } &&
             screenLines.any { line ->
-                line.contains("Solicitações", ignoreCase = true) ||
-                    line.contains("Solicitacoes", ignoreCase = true)
+                val l = line.trim().lowercase(Locale.ROOT)
+                l.contains("solicita") || l == "escolher" || l.startsWith("escolher")
             }
-        val listSignature = if (is99RequestList) parsedOffers.joinToString(";") {
-            buildStableOfferKey(it)
-        } else ""
-        val isNewListPresentation = is99RequestList &&
-            NinetyNineListDisplayPolicy.shouldRefresh(
-                wasViewing99List, last99ListSignature, listSignature
-            )
         if (is99RequestList) {
-            if (!isNewListPresentation) return
-            wasViewing99List = true
-            last99ListSignature = listSignature
-        } else {
+            app.overlayPanel.hideOfferCardOnly()
             wasViewing99List = false
             last99ListSignature = ""
+            return
         }
+        wasViewing99List = false
+        last99ListSignature = ""
 
         // Remove chaves que expiraram há mais de 120 segundos
         val expiredKeys = shownOfferTimestamps.entries
@@ -903,15 +898,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // Identifica ofertas novas e ofertas repetidas (re-oferta após término ou recusa)
         val validOffers = mutableListOf<StandardRideOffer>()
-        val alreadyShownBeforeList = mutableSetOf<String>()
         for (offer in parsedOffers) {
             val key = buildStableOfferKey(offer)
             val lastShown = shownOfferTimestamps[key]
-            if (isNewListPresentation) {
-                // Não eliminar o primeiro card só porque já foi lido no mapa.
-                if (lastShown != null) alreadyShownBeforeList.add(key)
-                validOffers.add(offer.copy(isRepeatedOffer = false))
-            } else if (lastShown == null) {
+            if (lastShown == null) {
                 // Primeira vez que esta oferta toca
                 validOffers.add(offer.copy(isRepeatedOffer = false))
             } else if (now - lastShown >= 15_000L && now - lastShown <= 120_000L) {
@@ -1193,7 +1183,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // significa que a oferta sumiu/expirou e o motorista está no mapa ocioso!
         val hasCurrency = screenJoined.contains("r$")
         val hasRideAction = screenJoined.contains("aceitar") ||
-            screenJoined.contains("escolher") ||
             screenJoined.contains("selecionar") ||
             screenJoined.contains("exclusivo") ||
             screenJoined.contains("radar") ||
