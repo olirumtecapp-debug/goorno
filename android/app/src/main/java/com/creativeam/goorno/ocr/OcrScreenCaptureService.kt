@@ -193,7 +193,9 @@ class OcrScreenCaptureService : Service() {
             fullBitmap.copyPixelsFromBuffer(buffer)
             image.close()
 
-            val roiTop = (fullBitmap.height * 0.10).toInt()
+            // Preserve os cabeçalhos "Solicitações" e "Radar de viagens":
+        // o corte antigo de 10% removia justamente o contexto da lista.
+        val roiTop = (fullBitmap.height * 0.02).toInt()
             val roiHeight = fullBitmap.height - roiTop
             val roiBitmap = Bitmap.createBitmap(fullBitmap, 0, roiTop, image.width, roiHeight)
             fullBitmap.recycle()
