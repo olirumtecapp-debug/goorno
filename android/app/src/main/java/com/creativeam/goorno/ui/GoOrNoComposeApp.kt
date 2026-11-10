@@ -202,7 +202,7 @@ fun GoOrNoComposeApp(
             val matchesSearch = if (histSearchQuery.isBlank()) true else {
                 val q = histSearchQuery.trim().replace(",", ".")
                 val pStr = String.format(Locale.US, "%.2f", item.offeredPrice)
-                pStr.contains(q) || item.originAddress.contains(q, ignoreCase = true) || item.destinationAddress.contains(q, ignoreCase = true)
+                pStr.contains(q) || item.originAddress?.contains(q, ignoreCase = true) == true || item.destinationAddress?.contains(q, ignoreCase = true) == true
             }
             matchesApp && matchesStatus && matchesSearch
         }
