@@ -30,15 +30,66 @@ object UberOfferReader {
         timestampMillis: Long = System.currentTimeMillis(),
         isSimulated: Boolean = false
     ): List<StandardRideOffer> {
-        val clusters = BrazilianOfferParser.splitIntoMultipleOfferClusters(rawNodes)
-        if (clusters.isEmpty()) return emptyList()
+        val normalized = BrazilianOfferParser.normalizeFragmentedNodes(rawNodes)
+        val isRadar = normalized.any { it.contains("radar de viagens", ignoreCase = true) }
+        val hasInterest = normalized.any { it.contains("tenho interesse", ignoreCase = true) }
 
+        // "Tenho interesse" é o botão para disputar a viagem imediatamente.
+        // Não aguardar uma página de detalhes que não existe na Uber.
+        if (hasInterest) {
+            return splitRadarCards(normalized).map { card ->
+                parseScreenNodes(card, captureMethod, timestampMillis, isSimulated)
+            }.filter {
+                it.screenClassification == ScreenClassification.NEW_OFFER ||
+                    it.screenClassification == ScreenClassification.UPDATED_OFFER
+            }
+        }
+        // O Radar ainda não tem cartões completos: evita interpretar preços
+        // e distâncias de vários cartões como se fossem uma oferta única.
+        if (isRadar && normalized.none {
+                it.contains("aceitar", ignoreCase = true) ||
+                    it.contains("selecionar", ignoreCase = true)
+            }) return emptyList()
+
+        val clusters = BrazilianOfferParser.splitIntoMultipleOfferClusters(normalized)
+        if (clusters.isEmpty()) return emptyList()
         return clusters.map { cluster ->
             parseScreenNodes(cluster, captureMethod, timestampMillis, isSimulated)
         }.filter {
             it.screenClassification == ScreenClassification.NEW_OFFER ||
                 it.screenClassification == ScreenClassification.UPDATED_OFFER
         }
+    }
+
+    /**
+     * Para cada cartão no Radar, o "Tenho interesse" é o delimitador final.
+     * Cada oferta deve manter seu preço, nota, tempo e distância separados.
+     */
+    private fun splitRadarCards(lines: List<String>): List<List<String>> {
+        val radarIndex = lines.indexOfFirst { it.contains("radar de viagens", ignoreCase = true) }
+        val start = if (radarIndex >= 0) radarIndex + 1 else 0
+        val result = mutableListOf<List<String>>()
+        var from = start
+        for (i in start until lines.size) {
+            if (!lines[i].contains("tenho interesse", ignoreCase = true)) continue
+            val candidate = lines.subList(from, i + 1).filter { it.isNotBlank() }
+            from = i + 1
+            // Só aceitar um preço principal por cartão. Valores R$/km
+            // ou adicionais incluídos não são o valor da corrida.
+            val priceLines = candidate.filter { line ->
+                val lower = line.lowercase(Locale.ROOT)
+                lower.contains("r$") &&
+                    !lower.contains("/km") && !lower.contains("/hora") &&
+                    !lower.contains("inclu") && !lower.contains("bônus") &&
+                    !lower.contains("bonus") && !lower.contains("tarifa") &&
+                    !lower.contains("deslocamento")
+            }
+            if (priceLines.size != 1) continue
+            if (BrazilianOfferParser.extractAllCurrencies(priceLines).size != 1) continue
+            if (BrazilianOfferParser.extractAllDistancesKm(candidate).isEmpty()) continue
+            result.add(candidate)
+        }
+        return result
     }
 
     fun parseScreenNodes(
