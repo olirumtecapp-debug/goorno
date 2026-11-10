@@ -36,6 +36,9 @@ versionCode 110
             signingConfig signingConfigs.fixedKey
         }
         release {
+            // Isolated APK, installs alongside the official app.
+            applicationIdSuffix ".readingtest"
+            versionNameSuffix "-leitura-teste"
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.fixedKey
