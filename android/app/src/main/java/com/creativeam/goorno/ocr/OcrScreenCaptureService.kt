@@ -23,6 +23,8 @@ import androidx.core.app.NotificationCompat
 import com.creativeam.goorno.GoOrNoApplication
 import com.creativeam.goorno.data.local.RideOfferEntity
 import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
+import com.creativeam.goorno.detector.RideScreenContext
+import com.creativeam.goorno.detector.RideScreenContextClassifier
 import com.creativeam.goorno.engine.FinancialEngine
 import com.creativeam.goorno.model.CaptureMethod
 import com.creativeam.goorno.model.ScreenClassification
@@ -235,6 +237,16 @@ class OcrScreenCaptureService : Service() {
             BrazilianOfferParser.inferSourceAppFromScreenContent(null, lines)
         }
 
+        // Proteção da rota alternativa MediaProjection: uma lista nunca pode
+        // produzir card, notificação ou histórico. Usar o MESMO classificador.
+        val screenContext = RideScreenContextClassifier.classify(inferredApp, lines)
+        if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
+            screenContext == RideScreenContext.UBER_RADAR_LIST ||
+            screenContext == RideScreenContext.NO_OFFER) {
+            lastOcrOffer = null
+            return
+        }
+
         var parsedOffers = when (inferredApp) {
             SourceApp.UBER_DRIVER -> UberOfferReader.parseMultipleOffersFromScreen(
                 rawNodes = lines,
@@ -249,16 +261,12 @@ class OcrScreenCaptureService : Service() {
                 isSimulated = false
             )
         }
-        if (parsedOffers.isEmpty()) {
-            parsedOffers = UberOfferReader.parseMultipleOffersFromScreen(
-                rawNodes = lines,
-                captureMethod = CaptureMethod.OCR,
-                timestampMillis = now,
-                isSimulated = false
-            )
-        }
+        // Nunca tentar leitor Uber como fallback para telas da 99:
+        // isto misturava preços e notas de aplicativos diferentes.
 
-        if (parsedOffers.isEmpty()) {
+        // Um detalhe individual só pode gerar UMA avaliação.
+        // Leituras ambíguas com múltiplos clusters não vão para o histórico.
+        if (parsedOffers.size != 1) {
             lastOcrOffer = null
             return
         }
