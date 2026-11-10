@@ -3,14 +3,14 @@ name: GoOrNo Reading Test APK
 on:
   push:
     branches:
-      - fix/reading-gate-test-20261110
+      - fix/uber-radar-offers-test-20261110
     paths:
       - 'android/**'
       - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
 concurrency:
-  group: isolated-reading-apk
+  group: isolated-radar-reading-apk
   cancel-in-progress: true
 
 jobs:
@@ -43,7 +43,7 @@ jobs:
       - name: Copy test APK
         run: |
           mkdir -p reading-test-apk
-          cp android/app/build/outputs/apk/release/app-release.apk reading-test-apk/GoOrNo-Leitura-TESTE.apk
+          cp android/app/build/outputs/apk/release/app-release.apk reading-test-apk/GoOrNo-Leitura-Radar-TESTE.apk
       - name: Upload test APK (never production)
         uses: actions/upload-artifact@v4
         with:
