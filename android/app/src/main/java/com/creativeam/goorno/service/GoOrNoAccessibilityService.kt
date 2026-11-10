@@ -523,9 +523,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             val fastTexts = mutableListOf<String>()
             collectFastTexts(activeRootFast, fastTexts, maxNodes = 30)
             val fastContext = RideScreenContextClassifier.classify(targetApp, fastTexts)
+            // A amostra rápida pode vir vazia durante a animação da oferta;
+            // NÃO bloquear OCR só por NO_OFFER em 30 nós parciais.
             if (fastContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
-                fastContext == RideScreenContext.UBER_RADAR_LIST ||
-                fastContext == RideScreenContext.NO_OFFER) {
+                fastContext == RideScreenContext.UBER_RADAR_LIST) {
                 isTakingAutoScreenshot = false
                 return
             }
