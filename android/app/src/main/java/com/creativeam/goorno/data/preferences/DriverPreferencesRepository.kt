@@ -71,6 +71,7 @@ class DriverPreferencesRepository(private val context: Context) {
         val OVERLAY_DISPLAY_STYLE = stringPreferencesKey("overlay_display_style")
         val OVERLAY_THEME = stringPreferencesKey("overlay_theme")
         val OVERLAY_FONT_SIZE = stringPreferencesKey("overlay_font_size")
+        val OVERLAY_FONT_FAMILY = stringPreferencesKey("overlay_font_family")
         val OVERLAY_BUBBLE_POSITION = stringPreferencesKey("overlay_bubble_position")
         val OVERLAY_HORIZONTAL_POSITION = stringPreferencesKey("overlay_horizontal_position")
         val MIN_GROSS_KM = doublePreferencesKey("min_gross_km")
@@ -140,6 +141,7 @@ class DriverPreferencesRepository(private val context: Context) {
                     overlayDisplayStyle = b.getString("overlay_display_style", null) ?: "BANNER_PRO_STREETVIEW",
                     overlayTheme = b.getString("overlay_theme", null) ?: "DARK",
                     overlayFontSize = b.getString("overlay_font_size", null) ?: "M",
+                    overlayFontFamily = b.getString("overlay_font_family", null) ?: "ROBOTO",
                     overlayBubblePosition = b.getString("overlay_bubble_position", null) ?: "BELOW",
                     overlayHorizontalPosition = b.getString("overlay_horizontal_position", null) ?: "RIGHT",
                     showFloatingShortcutBubble = b.getBoolean("show_floating_shortcut_bubble", false),
@@ -214,6 +216,7 @@ class DriverPreferencesRepository(private val context: Context) {
                 overlayDisplayStyle = prefs[Keys.OVERLAY_DISPLAY_STYLE] ?: b.getString("overlay_display_style", null) ?: "BANNER_PRO_STREETVIEW",
                 overlayTheme = prefs[Keys.OVERLAY_THEME] ?: b.getString("overlay_theme", null) ?: "DARK",
                 overlayFontSize = prefs[Keys.OVERLAY_FONT_SIZE] ?: b.getString("overlay_font_size", null) ?: "M",
+                overlayFontFamily = prefs[Keys.OVERLAY_FONT_FAMILY] ?: b.getString("overlay_font_family", null) ?: "ROBOTO",
                 overlayBubblePosition = prefs[Keys.OVERLAY_BUBBLE_POSITION] ?: b.getString("overlay_bubble_position", null) ?: "BELOW",
                 overlayHorizontalPosition = prefs[Keys.OVERLAY_HORIZONTAL_POSITION] ?: b.getString("overlay_horizontal_position", null) ?: "RIGHT",
                 showFloatingShortcutBubble = prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] ?: b.getBoolean("show_floating_shortcut_bubble", true),
@@ -272,6 +275,7 @@ class DriverPreferencesRepository(private val context: Context) {
                 prefs[Keys.OVERLAY_DISPLAY_STYLE] = config.overlayDisplayStyle
                 prefs[Keys.OVERLAY_THEME] = config.overlayTheme
                 prefs[Keys.OVERLAY_FONT_SIZE] = config.overlayFontSize
+                prefs[Keys.OVERLAY_FONT_FAMILY] = config.overlayFontFamily
                 prefs[Keys.OVERLAY_BUBBLE_POSITION] = config.overlayBubblePosition
                 prefs[Keys.OVERLAY_HORIZONTAL_POSITION] = config.overlayHorizontalPosition
                 prefs[Keys.SHOW_FLOATING_SHORTCUT_BUBBLE] = config.showFloatingShortcutBubble
@@ -326,6 +330,7 @@ class DriverPreferencesRepository(private val context: Context) {
                 putString("overlay_display_style", config.overlayDisplayStyle)
                 putString("overlay_theme", config.overlayTheme)
                 putString("overlay_font_size", config.overlayFontSize)
+                putString("overlay_font_family", config.overlayFontFamily)
                 putString("overlay_bubble_position", config.overlayBubblePosition)
                 putString("overlay_horizontal_position", config.overlayHorizontalPosition)
                 putBoolean("show_floating_shortcut_bubble", config.showFloatingShortcutBubble)

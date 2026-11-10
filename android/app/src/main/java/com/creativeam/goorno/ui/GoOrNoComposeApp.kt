@@ -34,6 +34,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.Font
+import android.graphics.Typeface
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -1423,6 +1426,9 @@ fun GoOrNoComposeApp(
                         var overlayFontSize by remember(config.overlayFontSize) {
                             mutableStateOf(config.overlayFontSize)
                         }
+                        var overlayFontFamily by remember(config.overlayFontFamily) {
+                            mutableStateOf(config.overlayFontFamily)
+                        }
                         var bubblePosition by remember(config.overlayBubblePosition) {
                             mutableStateOf(config.overlayBubblePosition)
                         }
@@ -1605,11 +1611,35 @@ fun GoOrNoComposeApp(
                                                                             )
                                                                         }
                                                                         Spacer(modifier = Modifier.width(6.dp))
+                                                                        val previewFontFamily = remember(overlayFontFamily) {
+                                                                            when (overlayFontFamily.uppercase(java.util.Locale.ROOT)) {
+                                                                                "ROBOTO" -> FontFamily.SansSerif
+                                                                                "CONDENSED", "ROBOTO_CONDENSED" -> FontFamily(Typeface.create("sans-serif-condensed", Typeface.BOLD))
+                                                                                "MONTSERRAT" -> try {
+                                                                                    FontFamily(Font(R.font.montserrat, FontWeight.Bold))
+                                                                                } catch (_: Exception) {
+                                                                                    FontFamily.SansSerif
+                                                                                }
+                                                                                "INTER" -> try {
+                                                                                    FontFamily(Font(R.font.inter, FontWeight.Bold))
+                                                                                } catch (_: Exception) {
+                                                                                    FontFamily.SansSerif
+                                                                                }
+                                                                                "SISTEMA" -> FontFamily.Default
+                                                                                else -> FontFamily.SansSerif
+                                                                            }
+                                                                        }
+                                                                        val previewPillarFontSize = when (overlayFontSize) {
+                                                                            "P" -> 19.sp
+                                                                            "G" -> 25.sp
+                                                                            else -> 22.sp
+                                                                        }
                                                                         Text(
                                                                             text = "22 min • 12,4 km",
                                                                             color = primaryText,
                                                                             fontSize = 14.sp,
-                                                                            fontWeight = FontWeight.Bold
+                                                                            fontWeight = FontWeight.Bold,
+                                                                            fontFamily = previewFontFamily
                                                                         )
                                                                     }
                                                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1667,7 +1697,7 @@ fun GoOrNoComposeApp(
                                                                             modifier = Modifier.weight(1f),
                                                                             horizontalAlignment = Alignment.CenterHorizontally
                                                                         ) {
-                                                                            Text(lbl, color = secondaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                                            Text(lbl, color = secondaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = previewFontFamily)
                                                                             Row(
                                                                                 verticalAlignment = Alignment.CenterVertically,
                                                                                 modifier = Modifier.padding(top = 2.dp)
@@ -1681,8 +1711,9 @@ fun GoOrNoComposeApp(
                                                                                 Text(
                                                                                     valStr,
                                                                                     color = primaryText,
-                                                                                    fontSize = 22.sp,
-                                                                                    fontWeight = FontWeight.Black
+                                                                                    fontSize = previewPillarFontSize,
+                                                                                    fontWeight = FontWeight.Black,
+                                                                                    fontFamily = previewFontFamily
                                                                                 )
                                                                             }
                                                                         }
@@ -2011,6 +2042,67 @@ fun GoOrNoComposeApp(
                                                     color = if (isSel) Color.White else PetrolDarkText,
                                                     fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
                                                     fontSize = 11.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                // Estilo da Fonte / Tipografia
+                                Text(
+                                    text = "Estilo da Fonte / Tipografia",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 13.5.sp,
+                                    color = PetrolDarkText
+                                )
+                                Text(
+                                    text = "Escolha a tipografia ideal para visualização rápida no painel",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(
+                                        Pair("ROBOTO", "Roboto (Padrão)"),
+                                        Pair("SISTEMA", "Sistema"),
+                                        Pair("CONDENSED", "Condensed"),
+                                        Pair("MONTSERRAT", "Montserrat"),
+                                        Pair("INTER", "Inter")
+                                    ).forEach { (fontKey, fontLabel) ->
+                                        val isSel = overlayFontFamily == fontKey
+                                        Surface(
+                                            color = if (isSel) PetrolHeader else SoftSurfaceVariant,
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.5.dp, if (isSel) PetrolHeader else CleanCardBorder),
+                                            modifier = Modifier.clickable {
+                                                overlayFontFamily = fontKey
+                                                savedFlag = false
+                                                val updated = config.copy(overlayFontFamily = fontKey)
+                                                scope.launch {
+                                                    app.preferencesRepository.saveConfig(updated)
+                                                    app.overlayPanel.applyConfig(updated)
+                                                    notifyUser("Fonte: $fontLabel")
+                                                }
+                                            }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Text(
+                                                    text = fontLabel,
+                                                    color = if (isSel) Color.White else PetrolDarkText,
+                                                    fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
+                                                    fontSize = 11.5.sp,
                                                     maxLines = 1,
                                                     softWrap = false
                                                 )

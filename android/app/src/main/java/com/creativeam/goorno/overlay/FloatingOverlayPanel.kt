@@ -2013,6 +2013,8 @@ class FloatingOverlayPanel(private val context: Context) {
         val isColorido = theme == "COLORIDO"
         val isClaro = theme == "CLARO" || theme == "LIGHT"
         val fontSizePref = lastKnownConfig?.overlayFontSize?.uppercase() ?: "M"
+        val fontFamilyPref = lastKnownConfig?.overlayFontFamily ?: "ROBOTO"
+        val cardTypeface = getOverlayTypeface(fontFamilyPref)
         val pillarValSp = when (fontSizePref) {
             "P" -> 19f
             "G" -> 25f
@@ -2137,7 +2139,7 @@ class FloatingOverlayPanel(private val context: Context) {
             text = "$seqTag$minStr • $distStr"
             setTextColor(primaryTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, summaryValSp)
-            setTypeface(typeface, Typeface.BOLD)
+            typeface = cardTypeface
             setSingleLine(true)
             ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -2193,7 +2195,7 @@ class FloatingOverlayPanel(private val context: Context) {
                     text = label
                     setTextColor(secondaryTextColor)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarLblSp)
-                    setTypeface(typeface, Typeface.BOLD)
+                    typeface = cardTypeface
                     gravity = Gravity.CENTER
                 }
                 addView(tvL)
@@ -2216,7 +2218,7 @@ class FloatingOverlayPanel(private val context: Context) {
                     text = valueText
                     setTextColor(primaryTextColor)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
-                    setTypeface(typeface, Typeface.BOLD)
+                    typeface = cardTypeface
                     gravity = Gravity.CENTER
                 }
                 valRow.addView(tvV)
@@ -2351,11 +2353,13 @@ class FloatingOverlayPanel(private val context: Context) {
         timerRow.addView(btnClose)
         root.addView(timerRow)
 
+        val cardTypeface = getOverlayTypeface(lastKnownConfig?.overlayFontFamily ?: "ROBOTO")
+
         val decisionPill = TextView(context).apply {
             text = verdictLabel
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-            setTypeface(typeface, Typeface.BOLD)
+            typeface = cardTypeface
             gravity = Gravity.CENTER
             setPadding(dp(14), dp(8), dp(14), dp(8))
             background = roundedBg(verdictHex, 16f)
@@ -2385,7 +2389,7 @@ class FloatingOverlayPanel(private val context: Context) {
                     text = valueStr
                     setTextColor(Color.WHITE)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
-                    setTypeface(typeface, Typeface.BOLD)
+                    typeface = cardTypeface
                 }
                 addView(tvVal)
 
@@ -3218,6 +3222,27 @@ class FloatingOverlayPanel(private val context: Context) {
             shape = GradientDrawable.OVAL
             setColor(Color.parseColor(fillHex))
             setStroke(dp(strokeDp), Color.parseColor(strokeHex))
+        }
+    }
+
+    private fun getOverlayTypeface(fontFamilyPref: String): Typeface {
+        return when (fontFamilyPref.uppercase(Locale.ROOT)) {
+            "ROBOTO" -> Typeface.create("sans-serif", Typeface.BOLD)
+            "CONDENSED", "ROBOTO_CONDENSED" -> Typeface.create("sans-serif-condensed", Typeface.BOLD)
+            "MONTSERRAT" -> try {
+                androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.montserrat)
+                    ?: Typeface.create("sans-serif", Typeface.BOLD)
+            } catch (_: Exception) {
+                Typeface.create("sans-serif", Typeface.BOLD)
+            }
+            "INTER" -> try {
+                androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.inter)
+                    ?: Typeface.create("sans-serif", Typeface.BOLD)
+            } catch (_: Exception) {
+                Typeface.create("sans-serif", Typeface.BOLD)
+            }
+            "SISTEMA" -> Typeface.defaultFromStyle(Typeface.BOLD)
+            else -> Typeface.create("sans-serif", Typeface.BOLD)
         }
     }
 
