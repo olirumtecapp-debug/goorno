@@ -15,6 +15,8 @@ import com.creativeam.goorno.data.local.RideOfferEntity
 import com.creativeam.goorno.diagnostics.AccessibilitySnapshot
 import com.creativeam.goorno.diagnostics.CopilotRuntimeState
 import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
+import com.creativeam.goorno.detector.RideScreenContext
+import com.creativeam.goorno.detector.RideScreenContextClassifier
 import com.creativeam.goorno.engine.FinancialEngine
 import com.creativeam.goorno.model.CaptureMethod
 import com.creativeam.goorno.model.SourceApp
@@ -327,24 +329,17 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             wasViewing99List = false
         }
 
-        // BLOQUEIO TOTAL DA LISTA DE SOLICITAÇÕES DA 99:
-        // O GoOrNo só avalia e abre card para chamados que TOCAM ou quando clica no mapinha (ambos têm botão "Aceitar").
-        // Se a tela atual for a lista de solicitações ("Solicitações", "Escolha uma", botão "Escolher"), não abre card!
-        val isNinetyNineListScreen = targetApp == SourceApp.NINETY_NINE_DRIVER &&
-            normalizedTexts.any { line ->
-                val l = line.trim().lowercase(Locale.ROOT)
-                l.contains("solicita") || l == "escolha uma" ||
-                l == "escolher" || l.startsWith("escolher") ||
-                l.contains("km até o embarque") || l.contains("km ate o embarque")
+        // 2. CLASSIFICADOR CENTRAL DE CONTEXTO DE TELA (Uber e 99):
+        val screenContext = RideScreenContextClassifier.classify(targetApp, normalizedTexts)
+        if (!screenContext.shouldAnalyze) {
+            if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST || screenContext == RideScreenContext.UBER_RADAR_LIST) {
+                currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
+                (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
+                shownOfferTimestamps.clear()
+                lastScreenContextMode = ""
+                consecutiveScansWithoutOffers++
+                return
             }
-
-        if (isNinetyNineListScreen) {
-            currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
-            (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
-            shownOfferTimestamps.clear()
-            lastScreenContextMode = ""
-            consecutiveScansWithoutOffers++
-            return
         }
 
         // 3. DETECÇÃO DE OCIOSIDADE E FECHAMENTO DE CARDS RESIDUAIS (ALLOWED_NO_OFFER):
@@ -523,16 +518,13 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
 
-        // NUNCA tira screenshot se o motorista estiver na tela de descanso ou na lista de solicitações da 99
+        // Classifica o contexto da tela antes de tirar screenshot/OCR
         val activeRootFast = try { rootInActiveWindow } catch (_: Exception) { null }
         if (activeRootFast != null) {
             val fastTexts = mutableListOf<String>()
             collectFastTexts(activeRootFast, fastTexts, maxNodes = 30)
-            val fastJoined = fastTexts.joinToString(" ").lowercase(Locale.ROOT)
-            val hasRealAction = fastJoined.contains("aceitar") || fastJoined.contains("selecionar") || fastJoined.contains("exclusivo") || fastJoined.contains("radar")
-            val is99List = targetApp == SourceApp.NINETY_NINE_DRIVER && (fastJoined.contains("solicita") || fastJoined.contains("escolher"))
-            val isIdle = !hasRealAction && (fastJoined.contains("buscando") || fastJoined.contains("conectar") || fastJoined.contains("abastece"))
-            if (is99List || isIdle) {
+            val fastContext = RideScreenContextClassifier.classify(targetApp, fastTexts)
+            if (!fastContext.shouldAnalyze && fastContext != RideScreenContext.UNKNOWN) {
                 isTakingAutoScreenshot = false
                 return
             }
@@ -753,12 +745,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         val isSanePrice = price in 4.50..350.0 || (km >= 60.0 && price <= 1500.0)
                                         val isSaneDuration = min in 1..240 // NUNCA aceita tempos absurdos como 1009 min!
                                         val isSaneKm = km in 0.2..300.0
-                                        val ocrJoinedLow = normalizedOcr.joinToString(" ").lowercase(Locale.ROOT)
-                                        val hasRealAction = ocrJoinedLow.contains("aceitar") || ocrJoinedLow.contains("selecionar") || ocrJoinedLow.contains("exclusivo") || ocrJoinedLow.contains("radar")
-                                        val is99ListOcr = effectiveOcrApp == SourceApp.NINETY_NINE_DRIVER && (ocrJoinedLow.contains("solicita") || ocrJoinedLow.contains("escolher"))
-                                        val isIdleScreen = ((ocrJoinedLow.contains("buscando") || ocrJoinedLow.contains("conectar") || ocrJoinedLow.contains("abastece")) && !hasRealAction) || is99ListOcr
+                                        val ocrContext = RideScreenContextClassifier.classify(effectiveOcrApp, normalizedOcr)
+                                        val isAllowedContext = ocrContext.shouldAnalyze || ocrContext == RideScreenContext.UNKNOWN
 
-                                        isSanePrice && isSaneKm && isSaneDuration && !offer.hasFieldConflict && !isIdleScreen
+                                        isSanePrice && isSaneKm && isSaneDuration && !offer.hasFieldConflict && isAllowedContext
                                     }
 
                                     if (ratingOnly) {
@@ -874,14 +864,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (parsedOffers.isEmpty()) return
 
         val app = applicationContext as? GoOrNoApplication ?: return
-        // BLOQUEIO TOTAL DA LISTA DA 99:
-        // Se a tela for lista de solicitações da 99, esconde qualquer card e não exibe nada.
-        val is99RequestList = parsedOffers.any { it.sourceApp == SourceApp.NINETY_NINE_DRIVER } &&
-            screenLines.any { line ->
-                val l = line.trim().lowercase(Locale.ROOT)
-                l.contains("solicita") || l == "escolher" || l.startsWith("escolher")
-            }
-        if (is99RequestList) {
+        // Classifica o contexto da tela antes de abrir o card flutuante
+        val firstApp = parsedOffers.firstOrNull()?.sourceApp ?: SourceApp.NINETY_NINE_DRIVER
+        val dispatchContext = RideScreenContextClassifier.classify(firstApp, screenLines)
+        if (!dispatchContext.shouldAnalyze && dispatchContext != RideScreenContext.UNKNOWN) {
             app.overlayPanel.hideOfferCardOnly()
             wasViewing99List = false
             last99ListSignature = ""
