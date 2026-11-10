@@ -18,6 +18,7 @@ enum class RideScreenContext {
 
     val shouldAnalyze: Boolean
         get() = this == UBER_INCOMING_SINGLE_OFFER ||
+                this == UBER_RADAR_LIST ||
                 this == UBER_RADAR_SELECTED_OFFER ||
                 this == NINETYNINE_INCOMING_SINGLE_OFFER ||
                 this == NINETYNINE_SELECTED_MAP_OFFER
@@ -128,8 +129,8 @@ object RideScreenContextClassifier {
         lines: List<String>,
         joined: String
     ): RideScreenContext {
-        // TELA 5: RADAR DE VIAGENS - LISTA GERAL DA UBER
-        // Enquanto o botão "Tenho interesse" ou o título "Radar de viagens" estiver visível em lista, É LISTA!
+        // RADAR DA UBER: "Tenho interesse" disputa a corrida. As ofertas do Radar
+        // SÃO elegíveis para leitura, mas devem ser separadas cartão a cartão.
         val hasRadarHeader = lines.any {
             it.contains("radar de viagens") || it.contains("radar de viagem") ||
             it.startsWith("< radar") || it.startsWith("radar")
@@ -138,8 +139,8 @@ object RideScreenContextClassifier {
             it == "tenho interesse" || it.contains("tenho interesse") || it.startsWith("tenho interesse")
         }
 
-        // "Tenho interesse" na tela da lista identifica uma oferta ainda NÃO aberta.
-        // Um detalhe do Radar pode manter o cabeçalho, mas terá ação individual própria.
+        // "Tenho interesse" identifica os cartões disputáveis do Radar.
+        // A categoria UBER_RADAR_LIST é analisável; o leitor isola cada cartão.
         val hasIndividualAction = lines.any {
             it == "aceitar" || it.startsWith("aceitar") ||
             it == "selecionar" || it.startsWith("selecionar")
