@@ -65,6 +65,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var lastKnownForegroundPkg: String = ""
     private var lastScanTimeMillis: Long = 0L
     private val isScanInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val pendingScanRunnable = Runnable { scanCurrentScreen(lastKnownForegroundPkg, forceThrottleBypass = true) }
     private var lastAutoScreenshotTimeMillis: Long = 0L
     private var lastCardClosedTimeMillis: Long = 0L
     private var lastOfferProcessedTimeMillis: Long = 0L
@@ -261,9 +262,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
     private fun scanCurrentScreen(eventPkg: String?, forceThrottleBypass: Boolean) {
         val now = System.currentTimeMillis()
-        if (!forceThrottleBypass && now - lastScanTimeMillis < 180L) return
-        if (!forceThrottleBypass && now - lastCardClosedTimeMillis < 220L) return
-        if (!isScanInProgress.compareAndSet(false, true)) return
+        if (!forceThrottleBypass && now - lastScanTimeMillis < 150L) return
+        if (!forceThrottleBypass && now - lastCardClosedTimeMillis < 180L) return
+        if (!isScanInProgress.compareAndSet(false, true)) {
+            if (forceThrottleBypass) {
+                mainHandler.removeCallbacks(pendingScanRunnable)
+                mainHandler.postDelayed(pendingScanRunnable, 50L)
+            }
+            return
+        }
         try {
             lastScanTimeMillis = now
 
@@ -289,23 +296,26 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 2. Coleta nós de TODAS as janelas pertencentes ao app motorista (janela principal, mapa, sub-janelas, diálogos e BottomSheets da Uber e 99)
+        // 2. Coleta nós da janela ativa primeiro (ultra-rápido, sem IPC de windows)
         val positionedNodes = mutableListOf<PositionedText>()
         val rootsToScan = mutableListOf<AccessibilityNodeInfo>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
             rootsToScan.add(activeRoot)
         }
-        try {
-            val allWindows = windows
-            if (!allWindows.isNullOrEmpty()) {
-                for (win in allWindows) {
-                    val root = win.root ?: continue
-                    if (root.packageName?.toString() == targetPkg && !rootsToScan.contains(root)) {
-                        rootsToScan.add(root)
+        // Só consulta todas as janelas se activeRoot for nulo para evitar sobrecarga de IPC
+        if (rootsToScan.isEmpty()) {
+            try {
+                val allWindows = windows
+                if (!allWindows.isNullOrEmpty()) {
+                    for (win in allWindows) {
+                        val root = win.root ?: continue
+                        if (root.packageName?.toString() == targetPkg && !rootsToScan.contains(root)) {
+                            rootsToScan.add(root)
+                        }
                     }
                 }
-            }
-        } catch (_: Exception) {}
+            } catch (_: Exception) {}
+        }
 
         for (root in rootsToScan) {
             collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
@@ -1169,14 +1179,20 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         val screenJoined = texts.joinToString(" ").lowercase(Locale.ROOT)
 
-        // Se não tem nenhum "R$" na tela E não tem nenhum botão de ação ("aceitar", "escolher", "selecionar", "exclusivo", "radar"),
+        val isRadarOrRequestList = screenJoined.contains("radar de viagens") ||
+            screenJoined.contains("radar de viagem") ||
+            screenJoined.contains("solicitações") ||
+            screenJoined.contains("solicitacoes") ||
+            screenJoined.contains("escolha uma")
+
+        // Se não tem nenhum "R$" na tela E não tem nenhum botão de ação ("aceitar", "escolher", "selecionar", "exclusivo"),
         // significa que a oferta sumiu/expirou e o motorista está no mapa ocioso!
         val hasCurrency = screenJoined.contains("r$")
         val hasRideAction = screenJoined.contains("aceitar") ||
             screenJoined.contains("selecionar") ||
             screenJoined.contains("exclusivo") ||
-            screenJoined.contains("radar") ||
-            screenJoined.contains("deslize")
+            screenJoined.contains("deslize") ||
+            (screenJoined.contains("tenho interesse") && !isRadarOrRequestList)
 
         val isIdleMap = screenJoined.contains("buscando solicitações") ||
             screenJoined.contains("buscando solicitacoes") ||
@@ -1185,7 +1201,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             screenJoined.contains("voce esta online") ||
             screenJoined.contains("mapa de chamadas")
 
-        if ((!hasCurrency && !hasRideAction) || isIdleMap) {
+        if (isRadarOrRequestList || (!hasCurrency && !hasRideAction) || isIdleMap) {
             app.overlayPanel.hideOfferCardOnly()
         }
     }

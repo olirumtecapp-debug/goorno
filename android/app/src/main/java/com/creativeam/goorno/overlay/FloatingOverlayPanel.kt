@@ -370,6 +370,10 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     fun dismissCurrentOfferCardByUser() {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            mainHandler.post { dismissCurrentOfferCardByUser() }
+            return
+        }
         val now = System.currentTimeMillis()
         if (activeCardFingerprint.isNotBlank()) {
             recentlyDismissedOfferTimestamps[activeCardFingerprint] = now
@@ -387,7 +391,7 @@ class FloatingOverlayPanel(private val context: Context) {
         mainHandler.removeCallbacks(countdownRunnable)
         mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
         removeWindowViewOnly()
-        hidePanel()
+        reconcileShortcutBubbleState()
         onOfferCardClosed?.invoke()
     }
 
@@ -396,10 +400,16 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     private fun removeWindowViewOnly() {
-        if (isAdded && rootContainer != null) {
+        val container = rootContainer
+        if (container != null) {
             try {
-                windowManager.removeView(rootContainer)
+                if (container.isAttachedToWindow || isAdded) {
+                    windowManager.removeViewImmediate(container)
+                }
             } catch (_: Throwable) {
+                try {
+                    windowManager.removeView(container)
+                } catch (_: Throwable) {}
             }
             isAdded = false
             RuntimeDiagnosticsBus.setOverlayVisible(false)
