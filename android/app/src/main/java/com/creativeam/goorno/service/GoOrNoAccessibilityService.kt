@@ -269,7 +269,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // 1. Identifica estritamente a janela ativa em primeiro plano
         val activeRoot = try { rootInActiveWindow } catch (_: Exception) { null }
+        // O atalho flutuante pode aparecer como janela ativa do GoOrNo.
+        // Nunca abandonar a leitura por causa do foco do próprio overlay.
         val activePkg = activeRoot?.packageName?.toString()
+            ?.takeIf { SourceApp.isAllowedDriverPackage(it) }
             ?: eventPkg?.takeIf { SourceApp.isAllowedDriverPackage(it) }
             ?: lastKnownForegroundPkg.takeIf { SourceApp.isAllowedDriverPackage(it) }
             ?: ""
@@ -330,8 +333,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // 2. CLASSIFICADOR CENTRAL DE CONTEXTO DE TELA (Uber e 99):
         val screenContext = RideScreenContextClassifier.classify(targetApp, normalizedTexts)
-        if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
-            screenContext == RideScreenContext.UBER_RADAR_LIST) {
+        // A 99 exige abrir o mapinha. No Radar Uber o motorista precisa
+        // avaliar ANTES de tocar em "Tenho interesse".
+        if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST) {
             currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
             (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
             shownOfferTimestamps.clear()
@@ -525,8 +529,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             val fastContext = RideScreenContextClassifier.classify(targetApp, fastTexts)
             // A amostra rápida pode vir vazia durante a animação da oferta;
             // NÃO bloquear OCR só por NO_OFFER em 30 nós parciais.
-            if (fastContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
-                fastContext == RideScreenContext.UBER_RADAR_LIST) {
+            if (fastContext == RideScreenContext.NINETYNINE_REQUEST_LIST) {
                 isTakingAutoScreenshot = false
                 return
             }
@@ -645,7 +648,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                     currentForeground == packageName &&
                                     lastKnownForegroundPkg == targetPkg &&
                                     (applicationContext as? GoOrNoApplication)?.overlayPanel?.isCardCurrentlyVisible() == true
-                                if (currentForeground != targetPkg && !ownOverlayFocused) {
+                                val ownShortcutFocused = currentForeground == packageName &&
+                                    lastKnownForegroundPkg == targetPkg
+                                if (currentForeground != targetPkg && !ownOverlayFocused && !ownShortcutFocused) {
                                     try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
                                     isTakingAutoScreenshot = false
                                     return@addOnSuccessListener
@@ -860,7 +865,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val firstApp = parsedOffers.firstOrNull()?.sourceApp ?: SourceApp.NINETY_NINE_DRIVER
         val dispatchContext = RideScreenContextClassifier.classify(firstApp, screenLines)
         if (dispatchContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
-            dispatchContext == RideScreenContext.UBER_RADAR_LIST ||
             dispatchContext == RideScreenContext.NO_OFFER) {
             app.overlayPanel.hideOfferCardOnly()
             wasViewing99List = false
