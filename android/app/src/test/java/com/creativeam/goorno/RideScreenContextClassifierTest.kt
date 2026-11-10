@@ -3,6 +3,7 @@ package com.creativeam.goorno
 import com.creativeam.goorno.detector.RideScreenContext
 import com.creativeam.goorno.detector.RideScreenContextClassifier
 import com.creativeam.goorno.model.SourceApp
+import com.creativeam.goorno.reader.uber.UberOfferReader
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -130,7 +131,7 @@ class RideScreenContextClassifierTest {
         )
         val context = RideScreenContextClassifier.classify(SourceApp.UBER_DRIVER, lines)
         assertEquals(RideScreenContext.UBER_RADAR_LIST, context)
-        assertFalse("Lista geral do Radar da Uber NUNCA deve ser analisada", context.shouldAnalyze)
+        assertTrue("Radar da Uber deve ser analisado ANTES de Tenho interesse", context.shouldAnalyze)
     }
 
     @Test
@@ -189,6 +190,51 @@ class RideScreenContextClassifierTest {
             listOf("Solicitações", "Pop", "R$14,40", "6 min (1,2 km)", "Escolher")
         )
         assertEquals(RideScreenContext.NINETYNINE_REQUEST_LIST, context)
+    }
+
+    @Test
+    fun uberRadarTwoInterestCardsMustRemainIsolated() {
+        val radar = listOf(
+            "Radar de viagens",
+            "UberX", "R$ 11,16", "Est. de R$2,19/km",
+            "4,94 (1830)", "+R$ 2,50 incluído",
+            "4 min (1.4 km) Rua Amálio Júlio Guazzelli",
+            "12 minutos (3.7 km) Av Nelson Mandela",
+            "Tenho interesse",
+            "UberX", "R$ 9,41", "Est. de R$2,14/km",
+            "4,96 (209)", "+R$ 2,50 incluído",
+            "5 min (1.5 km) Rua Giuseppe Lorenzini",
+            "8 minutos (2.9 km) Rua Centro",
+            "Tenho interesse"
+        )
+        val offers = UberOfferReader.parseMultipleOffersFromScreen(radar)
+        assertEquals("A Uber mostra duas disputas independentes", 2, offers.size)
+        assertEquals(11.16, offers[0].offeredPrice!!, 0.001)
+        assertEquals(9.41, offers[1].offeredPrice!!, 0.001)
+        assertEquals(5.1, offers[0].totalDistanceKmExplicit!!, 0.001)
+        assertEquals(4.4, offers[1].totalDistanceKmExplicit!!, 0.001)
+    }
+
+    @Test
+    fun uberRadarSingleInterestCardMustBeRead() {
+        val radar = listOf(
+            "Radar de viagens", "UberX", "R$ 11,16",
+            "4,94 (1830)", "4 min (1.4 km)",
+            "12 minutos (3.7 km)", "Tenho interesse"
+        )
+        val offers = UberOfferReader.parseMultipleOffersFromScreen(radar)
+        assertEquals(1, offers.size)
+        assertEquals(11.16, offers.single().offeredPrice!!, 0.001)
+    }
+
+    @Test
+    fun uberRadarWithTwoPricesAndNoInterestMustNotMixCards() {
+        val radar = listOf(
+            "Radar de viagens", "UberX", "R$ 11,16", "4 min (1.4 km)",
+            "UberX", "R$ 9,41", "8 min (2.9 km)"
+        )
+        val offers = UberOfferReader.parseMultipleOffersFromScreen(radar)
+        assertTrue(offers.isEmpty())
     }
 
 }
