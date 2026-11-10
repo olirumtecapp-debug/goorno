@@ -289,26 +289,25 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 2. Coleta nós de TODAS as janelas pertencentes ao app motorista (janela principal, mapa, sub-janelas, diálogos e BottomSheets da Uber e 99)
+        // 2. Prioriza a janela ativa. Agregar TODAS as janelas mistura a lista
+        // que ficou no fundo com a oferta individual aberta sobre ela.
         val positionedNodes = mutableListOf<PositionedText>()
-        val rootsToScan = mutableListOf<AccessibilityNodeInfo>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
-            rootsToScan.add(activeRoot)
+            collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
         }
-        try {
-            val allWindows = windows
-            if (!allWindows.isNullOrEmpty()) {
-                for (win in allWindows) {
-                    val root = win.root ?: continue
-                    if (root.packageName?.toString() == targetPkg && !rootsToScan.contains(root)) {
-                        rootsToScan.add(root)
+        // Fallback preservado para apps que ocultam a árvore da janela ativa.
+        if (positionedNodes.isEmpty()) {
+            try {
+                val allWindows = windows
+                if (!allWindows.isNullOrEmpty()) {
+                    for (win in allWindows) {
+                        val root = win.root ?: continue
+                        if (root.packageName?.toString() != targetPkg) continue
+                        collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
+                        if (positionedNodes.isNotEmpty()) break
                     }
                 }
-            }
-        } catch (_: Exception) {}
-
-        for (root in rootsToScan) {
-            collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
+            } catch (_: Exception) {}
         }
 
         if (positionedNodes.isEmpty()) {
@@ -331,15 +330,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // 2. CLASSIFICADOR CENTRAL DE CONTEXTO DE TELA (Uber e 99):
         val screenContext = RideScreenContextClassifier.classify(targetApp, normalizedTexts)
-        if (!screenContext.shouldAnalyze) {
-            if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST || screenContext == RideScreenContext.UBER_RADAR_LIST) {
-                currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
-                (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
-                shownOfferTimestamps.clear()
-                lastScreenContextMode = ""
-                consecutiveScansWithoutOffers++
-                return
-            }
+        if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
+            screenContext == RideScreenContext.UBER_RADAR_LIST) {
+            currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
+            (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
+            shownOfferTimestamps.clear()
+            lastScreenContextMode = ""
+            consecutiveScansWithoutOffers++
+            return
         }
 
         // 3. DETECÇÃO DE OCIOSIDADE E FECHAMENTO DE CARDS RESIDUAIS (ALLOWED_NO_OFFER):
@@ -518,13 +516,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
 
-        // Classifica o contexto da tela antes de tirar screenshot/OCR
+        // Uma amostra rápida de 30 nós pode estar incompleta. Bloquear só listas
+        // reconhecidas, nunca uma chamada individual ainda em renderização.
         val activeRootFast = try { rootInActiveWindow } catch (_: Exception) { null }
         if (activeRootFast != null) {
             val fastTexts = mutableListOf<String>()
             collectFastTexts(activeRootFast, fastTexts, maxNodes = 30)
             val fastContext = RideScreenContextClassifier.classify(targetApp, fastTexts)
-            if (!fastContext.shouldAnalyze && fastContext != RideScreenContext.UNKNOWN) {
+            if (fastContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
+                fastContext == RideScreenContext.UBER_RADAR_LIST ||
+                fastContext == RideScreenContext.NO_OFFER) {
                 isTakingAutoScreenshot = false
                 return
             }
@@ -723,19 +724,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         timestampMillis = System.currentTimeMillis()
                                     )
 
-                                    if (ocrOffers.isEmpty()) {
-                                        val altApp = if (effectiveOcrApp == SourceApp.NINETY_NINE_DRIVER) {
-                                            SourceApp.UBER_DRIVER
-                                        } else {
-                                            SourceApp.NINETY_NINE_DRIVER
-                                        }
-                                        ocrOffers = extractOffersForApp(
-                                            appType = altApp,
-                                            lines = normalizedOcr,
-                                            method = CaptureMethod.ACCESSIBILITY,
-                                            timestampMillis = System.currentTimeMillis()
-                                        )
-                                    }
+                                    // Nunca ler uma tela Uber como 99 ou vice-versa:
+                                    // o pacote proprietário é a fonte de verdade.
+                                    // Se a captura está incompleta, aguardar próximo scan.
 
                                     // FILTRO RIGOROSO DE SANIDADE NO OCR (elimina glitches como 1009 min ou preços inexistentes)
                                     val validOcrOffers = ocrOffers.filter { offer ->
@@ -867,7 +858,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // Classifica o contexto da tela antes de abrir o card flutuante
         val firstApp = parsedOffers.firstOrNull()?.sourceApp ?: SourceApp.NINETY_NINE_DRIVER
         val dispatchContext = RideScreenContextClassifier.classify(firstApp, screenLines)
-        if (!dispatchContext.shouldAnalyze && dispatchContext != RideScreenContext.UNKNOWN) {
+        if (dispatchContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
+            dispatchContext == RideScreenContext.UBER_RADAR_LIST ||
+            dispatchContext == RideScreenContext.NO_OFFER) {
             app.overlayPanel.hideOfferCardOnly()
             wasViewing99List = false
             last99ListSignature = ""
