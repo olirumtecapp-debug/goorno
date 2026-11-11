@@ -515,9 +515,9 @@ object BrazilianOfferParser {
         // 1ª Prioridade: Linha ou texto unido com contexto explícito de passageiro
         // (Ex: "4,90 · 529 corridas · Perfil Essencial", "4,93 · +999 corridas · Perfil Premium", "4,81 · 729 corridas · Cartão verif.")
         val joinedAll = normalized.joinToString(" ")
-        val directJoinedRegex = Regex("""(?:^|[\s★⭐👤·•*([-])([3-5][.,]\d{1,2})(?!\s*(?:/|km|m\b|min|h\b|x\b))\s*(?:[·•()★\s]|corridas?|viagens?|perfil|cart[ãa]o|verif)""", RegexOption.IGNORE_CASE)
-        directJoinedRegex.find(joinedAll)?.let { match ->
-            val r = parseBrazilianDecimal(match.groupValues[1])
+        val directMatchJoined = RATING_SUFFIX_REGEX.find(joinedAll) ?: RATING_PREFIX_REGEX.find(joinedAll)
+        if (directMatchJoined != null) {
+            val r = parseBrazilianDecimal(directMatchJoined.groupValues[1])
             if (r != null && r in 3.00..5.00) {
                 return r
             }
