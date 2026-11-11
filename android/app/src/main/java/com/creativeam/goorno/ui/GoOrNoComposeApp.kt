@@ -121,10 +121,12 @@ enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: St
 fun GoOrNoComposeApp(
     hasOverlayPermission: Boolean,
     hasAccessibilityPermission: Boolean,
+    hasBatteryExemption: Boolean = true,
     initialRequestedScreen: String? = null,
     onClearRequestedScreen: () -> Unit = {},
     onRequestOverlayPermission: () -> Unit,
     onRequestAccessibilityPermission: () -> Unit,
+    onRequestBatteryExemption: () -> Unit = {},
     onRequestOcrCapturePermission: () -> Unit,
     onStopAllBackgroundServices: () -> Unit,
     resumeTrigger: Int = 0
@@ -826,6 +828,61 @@ fun GoOrNoComposeApp(
                                         )
                                     }
                                     Text(">", fontWeight = FontWeight.Bold, color = Color(0xFF92400E))
+                                }
+                            }
+                        }
+                    }
+
+                    // 1.1. ALERTA DE BATERIA RESTRITA NA HOME (Fácil e Direto em 1 Toque)
+                    if (!hasBatteryExemption) {
+                        item {
+                            Surface(
+                                color = Color(0xFFEFF6FF),
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        color = Color(0xFFDBEAFE),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.size(34.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text("⚡", fontSize = 16.sp)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Otimização de Bateria Ativa",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.5.sp,
+                                            color = Color(0xFF1E40AF)
+                                        )
+                                        Text(
+                                            text = "Remova a restrição para o Android não fechar o app ao abrir Uber/99.",
+                                            fontSize = 11.sp,
+                                            color = Color(0xFF3B82F6),
+                                            lineHeight = 14.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    FilledTonalButton(
+                                        onClick = onRequestBatteryExemption,
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = Color(0xFF2563EB),
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(32.dp)
+                                    ) {
+                                        Text("Remover", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
@@ -4057,6 +4114,48 @@ fun GoOrNoComposeApp(
                                     Icon(Icons.Default.AccessibilityNew, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text("Configurar Acessibilidade", fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, softWrap = false)
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                Text(
+                                    text = "3. Blindagem de Bateria (Execução Contínua)",
+                                    fontWeight = FontWeight.Black,
+                                    color = PetrolHeader
+                                )
+                                Text(
+                                    text = if (hasBatteryExemption)
+                                        "Status: ATIVA (Sem restrições de bateria) ✓"
+                                    else
+                                        "Status: RESTRITA (O Android pode suspender o app em segundo plano) ⚠️",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (hasBatteryExemption) TrafficGreen else TrafficYellow
+                                )
+                                Text(
+                                    text = "Essencial para que fabricantes como Samsung, Motorola e Xiaomi não fechem o GoOrNo enquanto você estiver navegando na Uber ou 99.",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText,
+                                    lineHeight = 15.sp
+                                )
+                                Button(
+                                    onClick = onRequestBatteryExemption,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (hasBatteryExemption) PetrolHeader else Color(0xFF2563EB),
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.BatteryChargingFull, contentDescription = null, tint = LimeBright, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (hasBatteryExemption) "Otimização Desativada ✓" else "Remover Restrição de Bateria",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
                                 }
 
                                 HorizontalDivider(color = CleanCardBorder)

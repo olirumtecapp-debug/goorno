@@ -30,6 +30,7 @@ class MainActivity : ComponentActivity() {
 
     private var hasOverlayPerm by mutableStateOf(false)
     private var hasAccessibilityPerm by mutableStateOf(false)
+    private var hasBatteryExemption by mutableStateOf(false)
     private var requestedScreen by mutableStateOf<String?>(null)
     private var resumeTrigger by mutableStateOf(0)
 
@@ -69,10 +70,12 @@ class MainActivity : ComponentActivity() {
                 GoOrNoComposeApp(
                     hasOverlayPermission = hasOverlayPerm,
                     hasAccessibilityPermission = hasAccessibilityPerm,
+                    hasBatteryExemption = hasBatteryExemption,
                     initialRequestedScreen = requestedScreen,
                     onClearRequestedScreen = { requestedScreen = null },
                     onRequestOverlayPermission = { openOverlayPermissionSettings() },
                     onRequestAccessibilityPermission = { openAccessibilitySettings() },
+                    onRequestBatteryExemption = { requestBatteryOptimizationExemption() },
                     onRequestOcrCapturePermission = { requestOcrMediaProjection() },
                     onStopAllBackgroundServices = { stopAllBackgroundMonitoring() },
                     resumeTrigger = resumeTrigger
@@ -119,6 +122,10 @@ class MainActivity : ComponentActivity() {
         } else true
 
         hasAccessibilityPerm = isAccessibilityServiceEnabled()
+        hasBatteryExemption = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+            powerManager?.isIgnoringBatteryOptimizations(packageName) == true
+        } else true
         RuntimeDiagnosticsBus.setAccessibilityConnected(hasAccessibilityPerm)
 
         val app = applicationContext as? GoOrNoApplication
@@ -143,7 +150,6 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READING_IN_PROGRESS)
-            requestIgnoreBatteryOptimizationsIfNeeded()
         }
         } catch (t: Throwable) {
             android.util.Log.e("MainActivity", "Erro em refreshPermissionsState", t)
@@ -187,7 +193,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestIgnoreBatteryOptimizationsIfNeeded() {
+    private fun requestBatteryOptimizationExemption() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
@@ -196,8 +202,15 @@ class MainActivity : ComponentActivity() {
                         data = Uri.parse("package:$packageName")
                     }
                     startActivity(intent)
+                } else {
+                    val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                    startActivity(fallbackIntent)
                 }
             } catch (_: Exception) {
+                try {
+                    val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                    startActivity(fallbackIntent)
+                } catch (_: Exception) {}
             }
         }
     }
