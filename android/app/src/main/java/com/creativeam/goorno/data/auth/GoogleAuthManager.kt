@@ -77,7 +77,6 @@ object GoogleAuthManager {
             _currentUserState.value = cached
         }
     }
-    }
 
     fun getCachedUser(context: Context): DriverAuthUser {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
