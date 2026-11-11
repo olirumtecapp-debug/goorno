@@ -3359,7 +3359,7 @@ class FloatingOverlayPanel(private val context: Context) {
             "PLUS_JAKARTA_SANS", "PLUS_JAKARTA", "JAKARTA" -> try {
                 val tf = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.plus_jakarta_sans)
                 if (tf != null) Typeface.create(tf, Typeface.BOLD) else Typeface.create("sans-serif", Typeface.BOLD)
-            } catch (_: Exception) {
+            } catch (_: Throwable) {
                 Typeface.create("sans-serif", Typeface.BOLD)
             }
             "SISTEMA" -> Typeface.defaultFromStyle(Typeface.BOLD)

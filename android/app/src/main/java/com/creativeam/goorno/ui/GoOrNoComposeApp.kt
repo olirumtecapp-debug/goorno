@@ -1580,7 +1580,7 @@ fun GoOrNoComposeApp(
                                                         when (overlayFontFamily.uppercase(java.util.Locale.ROOT)) {
                                                             "PLUS_JAKARTA_SANS", "PLUS_JAKARTA", "JAKARTA" -> try {
                                                                 FontFamily(Font(R.font.plus_jakarta_sans, FontWeight.Bold))
-                                                            } catch (_: Exception) {
+                                                            } catch (_: Throwable) {
                                                                 FontFamily.SansSerif
                                                             }
                                                             "SISTEMA" -> FontFamily.Default
