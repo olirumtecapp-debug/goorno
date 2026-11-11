@@ -65,7 +65,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var lastKnownForegroundPkg: String = ""
     private var lastScanTimeMillis: Long = 0L
     private val isScanInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
-    private val pendingScanRunnable = Runnable { scanCurrentScreen(lastKnownForegroundPkg, forceThrottleBypass = true) }
     private var lastAutoScreenshotTimeMillis: Long = 0L
     private var lastCardClosedTimeMillis: Long = 0L
     private var lastOfferProcessedTimeMillis: Long = 0L
@@ -212,12 +211,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         // TRAVA RIGOROSA DE PACOTE:
-        // Se o evento não for de um app de motorista permitido (Uber Driver ou 99 Motorista):
         val isEventDriverPkg = SourceApp.isAllowedDriverPackage(evtPkg)
-        val activeRootPkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Exception) { null }
-        val isActiveDriverPkg = SourceApp.isAllowedDriverPackage(activeRootPkg)
+        val activeRootPkg = if (isEventDriverPkg) evtPkg else try { rootInActiveWindow?.packageName?.toString() } catch (_: Exception) { null }
+        val isActiveDriverPkg = isEventDriverPkg || SourceApp.isAllowedDriverPackage(activeRootPkg)
 
-        if (!isEventDriverPkg && !isActiveDriverPkg) {
+        if (!isActiveDriverPkg) {
             // O usuário está em outro app (WhatsApp, Navegador, etc.) ou na tela inicial:
             if (currentLifecycleState != OfferLifecycleState.OUTSIDE_ALLOWED_APP) {
                 currentLifecycleState = OfferLifecycleState.OUTSIDE_ALLOWED_APP
@@ -232,13 +230,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        val isAppTransitionToDriver = (evtPkg.isNotBlank() && evtPkg != lastKnownForegroundPkg && (isEventDriverPkg || isActiveDriverPkg))
-        if (evtPkg.isNotBlank() && evtPkg != lastKnownForegroundPkg) {
+        val effectivePkg = if (isEventDriverPkg) evtPkg else (activeRootPkg ?: evtPkg)
+        val isAppTransitionToDriver = (effectivePkg.isNotBlank() && effectivePkg != lastKnownForegroundPkg)
+        if (effectivePkg.isNotBlank() && effectivePkg != lastKnownForegroundPkg) {
             shownOfferTimestamps.clear()
             lastScreenContextMode = ""
             consecutiveScansWithoutOffers = 0
             app?.overlayPanel?.clearRecentlyDismissed()
-            lastKnownForegroundPkg = evtPkg
+            lastKnownForegroundPkg = effectivePkg
         }
 
         if (app?.overlayPanel?.isCardCurrentlyVisible() == true) {
@@ -248,27 +247,22 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val eventTexts = event?.text?.joinToString(" ") ?: ""
         val eventContentDesc = event?.contentDescription?.toString() ?: ""
         val eventCombined = "$eventTexts $eventContentDesc"
-        val isDriverPkgEvent = isEventDriverPkg || isActiveDriverPkg
         val isLikelyOfferEvent = isAppTransitionToDriver ||
-            isDriverPkgEvent || // Prioridade máxima: qualquer evento de UI/lista de app motorista (Uber ou 99) quebra o throttle imediatamente!
             eventCombined.contains("R$") ||
             eventCombined.contains("Pop", ignoreCase = true) ||
             eventCombined.contains("Aceitar", ignoreCase = true) ||
+            eventCombined.contains("Escolher", ignoreCase = true) ||
             eventCombined.contains("Uber", ignoreCase = true) ||
             eventCombined.contains("min", ignoreCase = true)
 
-        scanCurrentScreen(eventPkg = evtPkg, forceThrottleBypass = isLikelyOfferEvent)
+        scanCurrentScreen(eventPkg = effectivePkg, forceThrottleBypass = isLikelyOfferEvent)
     }
 
     private fun scanCurrentScreen(eventPkg: String?, forceThrottleBypass: Boolean) {
         val now = System.currentTimeMillis()
-        if (!forceThrottleBypass && now - lastScanTimeMillis < 150L) return
-        if (!forceThrottleBypass && now - lastCardClosedTimeMillis < 180L) return
+        if (!forceThrottleBypass && now - lastScanTimeMillis < 100L) return
+        if (!forceThrottleBypass && now - lastCardClosedTimeMillis < 120L) return
         if (!isScanInProgress.compareAndSet(false, true)) {
-            if (forceThrottleBypass) {
-                mainHandler.removeCallbacks(pendingScanRunnable)
-                mainHandler.postDelayed(pendingScanRunnable, 50L)
-            }
             return
         }
         try {
@@ -560,7 +554,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             }
         }
 
-        if (now - lastAutoScreenshotTimeMillis < 950L) return
+        if (!ratingOnly && now - lastAutoScreenshotTimeMillis < 950L) return
 
         isTakingAutoScreenshot = true
         lastAutoScreenshotTimeMillis = now
@@ -1100,22 +1094,28 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             val screenH = displayMetrics.heightPixels
             val isOffScreen = hasValidBounds && (rect.bottom < 0 || rect.top > screenH || rect.right < 0 || rect.left > screenW)
 
-            // Se o nó tem limites válidos na tela e está visível, extrai os textos
-            if (hasValidBounds && !isOffScreen && (!requireVisible || node.isVisibleToUser)) {
-                val centerY = (rect.top + rect.bottom) / 2
+            val txt = node.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }
+            val desc = node.contentDescription?.toString()?.trim()?.takeIf { it.isNotEmpty() }
+            val hasText = txt != null || desc != null
 
-                node.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { txt ->
-                    output.add(PositionedText(txt, rect.top, rect.left, centerY))
+            // Se o nó possui texto e está no campo de visão, extrai os textos
+            if (hasText && !isOffScreen && (!requireVisible || node.isVisibleToUser || !hasValidBounds)) {
+                val centerY = if (hasValidBounds) (rect.top + rect.bottom) / 2 else 0
+                val topY = if (hasValidBounds) rect.top else 0
+                val leftX = if (hasValidBounds) rect.left else 0
+
+                txt?.let {
+                    output.add(PositionedText(it, topY, leftX, centerY))
                 }
-                node.contentDescription?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { desc ->
-                    if (output.none { it.text == desc && kotlin.math.abs(it.centerY - centerY) <= 14 }) {
-                        output.add(PositionedText(desc, rect.top, rect.left, centerY))
+                desc?.let { d ->
+                    if (output.none { it.text == d && kotlin.math.abs(it.centerY - centerY) <= 14 }) {
+                        output.add(PositionedText(d, topY, leftX, centerY))
                     }
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     node.hintText?.toString()?.trim()?.takeIf { it.isNotEmpty() }?.let { hint ->
                         if (output.none { it.text == hint }) {
-                            output.add(PositionedText(hint, rect.top, rect.left, centerY))
+                            output.add(PositionedText(hint, topY, leftX, centerY))
                         }
                     }
                 }

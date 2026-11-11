@@ -390,6 +390,9 @@ class FloatingOverlayPanel(private val context: Context) {
         isTransitioningBetweenOffers = false
         mainHandler.removeCallbacks(countdownRunnable)
         mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
+        try {
+            rootContainer?.visibility = View.GONE
+        } catch (_: Throwable) {}
         removeWindowViewOnly()
         reconcileShortcutBubbleState()
         onOfferCardClosed?.invoke()
@@ -400,18 +403,16 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     private fun removeWindowViewOnly() {
-        val container = rootContainer
-        if (container != null) {
-            try {
-                if (container.isAttachedToWindow || isAdded) {
-                    windowManager.removeViewImmediate(container)
-                }
-            } catch (_: Throwable) {
-                try {
-                    windowManager.removeView(container)
-                } catch (_: Throwable) {}
+        val container = rootContainer ?: return
+        try {
+            container.visibility = View.GONE
+            if (container.isAttachedToWindow || isAdded) {
+                windowManager.removeView(container)
             }
+        } catch (_: Throwable) {
+        } finally {
             isAdded = false
+            rootContainer = null
             RuntimeDiagnosticsBus.setOverlayVisible(false)
         }
     }

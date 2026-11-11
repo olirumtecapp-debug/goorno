@@ -20,8 +20,8 @@ object NinetyNineVisualRatingMatcher {
     private data class RatingAnchor(val rating: Double, val y: Int)
 
     private val currencyRegex = Regex("""R\$\s*(\d{1,4}[.,]\d{2})""", RegexOption.IGNORE_CASE)
-    private val ratingRegex = Regex("""^\s*[^A-Za-z0-9R$]{0,4}\s*([3-5][.,]\d{2})(?!\s*(?:/\s*km|km\b|m\b|min\b|x\b))""")
-    private val passengerKeywords = listOf("corrida", "viagen", "perfil", "cartão", "cartao", "verif", "passageir")
+    private val ratingRegex = Regex("""^\s*[^A-Za-z0-9R$]{0,6}\s*([3-5][.,]\d{2})(?!\s*(?:/\s*km|km\b|m\b|min\b|x\b))""")
+    private val passengerKeywords = listOf("corrida", "viagen", "perfil", "cartão", "cartao", "verif", "passageir", "premium", "essencial", "estrel")
 
     fun enrich(
         displayed: List<StandardRideOffer>,
@@ -70,7 +70,7 @@ object NinetyNineVisualRatingMatcher {
 
             val candidates = mutableListOf<Pair<Int, Double>>()
             for (anchor in anchors) {
-                val nearest = ratings.filter { it.y - anchor.y in 8..170 }
+                val nearest = ratings.filter { it.y - anchor.y in 5..350 }
                     .minByOrNull { it.y - anchor.y } ?: continue
 
                 // Entre o preço e a avaliação não pode haver o preço de outra oferta.

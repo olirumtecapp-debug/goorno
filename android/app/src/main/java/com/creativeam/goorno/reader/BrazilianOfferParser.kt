@@ -512,8 +512,17 @@ object BrazilianOfferParser {
         val normalized = normalizeFragmentedNodes(lines)
         val allSources = listOf(lines, normalized)
 
-        // 1ª Prioridade: Linha com contexto explícito de passageiro
-        // (Ex: "★ 4,93 · 787 corridas", "5,00 · 22 corridas · Perfil Essencial", "4,87 · 747 corridas", "5,00 · 17 corridas · Cartão verif.")
+        // 1ª Prioridade: Linha ou texto unido com contexto explícito de passageiro
+        // (Ex: "4,90 · 529 corridas · Perfil Essencial", "4,93 · +999 corridas · Perfil Premium", "4,81 · 729 corridas · Cartão verif.")
+        val joinedAll = normalized.joinToString(" ")
+        val directJoinedRegex = Regex("""(?:^|[\s★⭐👤·•*([-])([3-5][.,]\d{1,2})(?!\s*(?:/|km|m\b|min|h\b|x\b))\s*(?:[·•()★\s]|corridas?|viagens?|perfil|cart[ãa]o|verif)""", RegexOption.IGNORE_CASE)
+        directJoinedRegex.find(joinedAll)?.let { match ->
+            val r = parseBrazilianDecimal(match.groupValues[1])
+            if (r != null && r in 3.00..5.00) {
+                return r
+            }
+        }
+
         for (sourceList in allSources) {
             for (i in sourceList.indices) {
                 val line = sourceList[i]
@@ -538,17 +547,20 @@ object BrazilianOfferParser {
                     }
                 }
 
-                // Caso de nós fragmentados adjacentes: Linha i é o decimal puro e linha i+1 ou i-1 tem o contexto de corridas/perfil
-                val isPureDecimal = Regex("""^[3-5][.,]\d{1,2}$""").matches(line.trim())
+                // Caso de nós fragmentados adjacentes (janela de até 2 nós vizinhos)
+                val isPureDecimal = Regex("""^[★⭐☆👤\s]*[3-5][.,]\d{1,2}[\s·•]*$""").matches(line.trim())
                 if (isPureDecimal) {
-                    val prevContext = i > 0 && sourceList[i - 1].lowercase(Locale.getDefault()).let {
-                        it.contains("corrida") || it.contains("viagen") || it.contains("perfil") || it.contains("cartão") || it.contains("cartao") || it.contains("verif") || it.contains("novo") || it.contains("pax")
-                    }
-                    val nextContext = i + 1 < sourceList.size && sourceList[i + 1].lowercase(Locale.getDefault()).let {
-                        it.contains("corrida") || it.contains("viagen") || it.contains("perfil") || it.contains("cartão") || it.contains("cartao") || it.contains("verif") || it.contains("novo") || it.contains("pax")
-                    }
-                    if (prevContext || nextContext) {
-                        val r = parseBrazilianDecimal(line)
+                    val surrounding = (-2..2).mapNotNull { offset ->
+                        if (offset != 0 && (i + offset) in sourceList.indices) sourceList[i + offset] else null
+                    }.joinToString(" ").lowercase(Locale.getDefault())
+
+                    val hasSurroundingContext = surrounding.contains("corrida") || surrounding.contains("viagen") ||
+                        surrounding.contains("perfil") || surrounding.contains("cartão") || surrounding.contains("cartao") ||
+                        surrounding.contains("verif") || surrounding.contains("premium") || surrounding.contains("essencial")
+
+                    if (hasSurroundingContext) {
+                        val decStr = Regex("""[3-5][.,]\d{1,2}""").find(line)?.value
+                        val r = decStr?.let { parseBrazilianDecimal(it) }
                         if (r != null && r in 3.00..5.00) {
                             return r
                         }
