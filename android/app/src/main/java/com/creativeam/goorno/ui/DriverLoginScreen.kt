@@ -159,7 +159,7 @@ fun DriverLoginScreen(
                                             val app = context.applicationContext as? com.creativeam.goorno.GoOrNoApplication
                                             if (app != null) {
                                                 val cfg = app.preferencesRepository.getConfigOnce()
-                                                val offers = app.database.rideOfferDao().getAllListSync()
+                                                val offers = app.database.rideOfferDao().getAllRealOffersOnce()
                                                 // Se já tiver dados locais, salva na nuvem Google
                                                 if (cfg.customRiskZones.isNotBlank() || cfg.customFavoriteZones.isNotBlank()) {
                                                     CloudSyncManager.autoSyncSettings(context, cfg, offers)
