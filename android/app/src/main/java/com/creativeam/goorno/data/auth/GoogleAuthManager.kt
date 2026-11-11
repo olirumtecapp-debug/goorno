@@ -47,11 +47,19 @@ object GoogleAuthManager {
     val currentUserState: StateFlow<DriverAuthUser> = _currentUserState.asStateFlow()
 
     fun init(context: Context) {
-        val cached = getCachedUser(context)
+        try {
+            if (com.google.firebase.FirebaseApp.getApps(context).isEmpty()) {
+                com.google.firebase.FirebaseApp.initializeApp(context)
+            }
+        } catch (t: Throwable) {
+            Log.w(TAG, "Firebase init safely bypassed: ${t.message}")
+        }
+
+        val cached = try { getCachedUser(context) } catch (t: Throwable) { DriverAuthUser() }
         val firebaseUser = try {
             FirebaseAuth.getInstance().currentUser
-        } catch (e: Exception) {
-            Log.w(TAG, "Firebase not yet initialized or offline: ${e.message}")
+        } catch (t: Throwable) {
+            Log.w(TAG, "Firebase not yet initialized or offline: ${t.message}")
             null
         }
 
@@ -68,6 +76,7 @@ object GoogleAuthManager {
         } else {
             _currentUserState.value = cached
         }
+    }
     }
 
     fun getCachedUser(context: Context): DriverAuthUser {

@@ -37,72 +37,94 @@ class GoOrNoApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        installGlobalCrashShield()
+
         try {
-            installGlobalCrashShield()
-            
             database = GoOrNoDatabase.getInstance(this)
+        } catch (t: Throwable) {
+            Log.e("GoOrNoApp", "Falha ao inicializar database", t)
+        }
+
+        try {
             preferencesRepository = DriverPreferencesRepository(this)
+        } catch (t: Throwable) {
+            Log.e("GoOrNoApp", "Falha ao inicializar preferencesRepository", t)
+        }
+
+        try {
             secretRecordingRepository = SecretRecordingRepository(this)
-            com.creativeam.goorno.data.auth.GoogleAuthManager.init(this)
+        } catch (t: Throwable) {
+            Log.e("GoOrNoApp", "Falha ao inicializar secretRecordingRepository", t)
+        }
+
+        try {
             overlayPanel = FloatingOverlayPanel(this).apply {
                 onUserRequestedDisableCopilot = {
                     appScope.launch {
-                        val current = preferencesRepository.getConfigOnce()
-                        preferencesRepository.saveConfig(current.copy(copilotMonitoringEnabled = false))
-                        RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.SERVICE_OFF)
                         try {
+                            val current = preferencesRepository.getConfigOnce()
+                            preferencesRepository.saveConfig(current.copy(copilotMonitoringEnabled = false))
+                            RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.SERVICE_OFF)
                             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                             nm.cancelAll()
-                        } catch (_: Exception) {
-                        }
+                        } catch (_: Throwable) {}
                     }
                 }
                 onUserRequestedHideShortcutBubble = {
                     appScope.launch {
-                        val current = preferencesRepository.getConfigOnce()
-                        preferencesRepository.saveConfig(current.copy(showFloatingShortcutBubble = false))
+                        try {
+                            val current = preferencesRepository.getConfigOnce()
+                            preferencesRepository.saveConfig(current.copy(showFloatingShortcutBubble = false))
+                        } catch (_: Throwable) {}
                     }
                 }
                 onUserUpdatedSemaforoQuickly = { minKm, minHr, minRating, maxPickupKm ->
                     appScope.launch {
-                        val current = preferencesRepository.getConfigOnce()
-                        preferencesRepository.saveConfig(current.copy(
-                            targetGrossPerKm = minKm,
-                            targetGrossPerHour = minHr,
-                            targetGoodPassengerRating = minRating,
-                            distantPickupKmThreshold = maxPickupKm
-                        ))
+                        try {
+                            val current = preferencesRepository.getConfigOnce()
+                            preferencesRepository.saveConfig(current.copy(
+                                targetGrossPerKm = minKm,
+                                targetGrossPerHour = minHr,
+                                targetGoodPassengerRating = minRating,
+                                distantPickupKmThreshold = maxPickupKm
+                            ))
+                        } catch (_: Throwable) {}
                     }
                 }
             }
         } catch (t: Throwable) {
-            Log.e("GoOrNoApp", "Falha segura em onCreate", t)
+            Log.e("GoOrNoApp", "Falha segura ao criar overlayPanel", t)
         }
 
-        // Mantém todas as configurações do motorista sincronizadas continuamente em memória
+        try {
+            com.creativeam.goorno.data.auth.GoogleAuthManager.init(this)
+        } catch (t: Throwable) {
+            Log.e("GoOrNoApp", "Falha segura ao inicializar GoogleAuthManager", t)
+        }
+
+        // Mantem todas as configuracoes do motorista sincronizadas continuamente em memoria
         appScope.launch {
             try {
-                preferencesRepository.configFlow.collectLatest { cfg ->
-                    try {
-                        overlayPanel.applyConfig(cfg)
-                        if (cfg.copilotMonitoringEnabled) {
-                            com.creativeam.goorno.service.CopilotNotificationReceiver.showActiveNotification(
-                                context = this@GoOrNoApplication,
-                                showProfit = cfg.showProfitOnOverlay,
-                                showCost = cfg.showCostOnOverlay,
-                                showShortcutBubble = cfg.showFloatingShortcutBubble
-                            )
-                        } else {
-                            com.creativeam.goorno.service.CopilotNotificationReceiver.cancelActiveNotification(this@GoOrNoApplication)
-                        }
-                    } catch (_: Throwable) {}
+                if (::preferencesRepository.isInitialized && ::overlayPanel.isInitialized) {
+                    preferencesRepository.configFlow.collectLatest { cfg ->
+                        try {
+                            overlayPanel.applyConfig(cfg)
+                            if (cfg.copilotMonitoringEnabled) {
+                                com.creativeam.goorno.service.CopilotNotificationReceiver.showActiveNotification(
+                                    context = this@GoOrNoApplication,
+                                    showProfit = cfg.showProfitOnOverlay,
+                                    showCost = cfg.showCostOnOverlay,
+                                    showShortcutBubble = cfg.showFloatingShortcutBubble
+                                )
+                            } else {
+                                com.creativeam.goorno.service.CopilotNotificationReceiver.cancelActiveNotification(this@GoOrNoApplication)
+                            }
+                        } catch (_: Throwable) {}
+                    }
                 }
             } catch (_: Throwable) {}
         }
     }
-
-    
-
 
     /**
      * Blindagem Global contra Falhas e Fechamento Inesperado (CrashShield).
@@ -110,7 +132,7 @@ class GoOrNoApplication : Application() {
     private fun installGlobalCrashShield() {
         val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            Log.e("GoOrNoCrashShield", "🛡️ Exceção interceptada na thread '${thread.name}': ${throwable.message}", throwable)
+            Log.e("GoOrNoCrashShield", "\uD83D\uDEE1\uFE0F Excecao interceptada na thread '${thread.name}': ${throwable.message}", throwable)
             if (throwable is OutOfMemoryError) {
                 try {
                     System.gc()
@@ -124,13 +146,16 @@ class GoOrNoApplication : Application() {
                 throwable is SecurityException ||
                 throwable is IllegalArgumentException ||
                 throwable is NullPointerException ||
+                throwable is UninitializedPropertyAccessException ||
                 throwable is java.util.ConcurrentModificationException ||
                 throwable.javaClass.name.contains("ForegroundService") ||
                 throwable.javaClass.name.contains("DeadSystem") ||
-                throwable.javaClass.name.contains("TransactionTooLarge")
+                throwable.javaClass.name.contains("TransactionTooLarge") ||
+                throwable.javaClass.name.contains("GoogleId") ||
+                throwable.javaClass.name.contains("Credential")
 
             if (isRecoverable) {
-                Log.w("GoOrNoCrashShield", "🛡️ Erro recuperável absorvido silenciosamente: ${throwable.javaClass.simpleName} - ${throwable.message}")
+                Log.w("GoOrNoCrashShield", "\uD83D\uDEE1\uFE0F Erro recuperavel absorvido silenciosamente: ${throwable.javaClass.simpleName} - ${throwable.message}")
                 return@setDefaultUncaughtExceptionHandler
             }
 
@@ -138,8 +163,7 @@ class GoOrNoApplication : Application() {
                 return@setDefaultUncaughtExceptionHandler
             }
 
-            originalHandler?.uncaughtException(thread, throwable)
+            Log.w("GoOrNoCrashShield", "\uD83D\uDEE1\uFE0F Erro na thread principal absorvido com seguranca: ${throwable.javaClass.simpleName} - ${throwable.message}")
         }
     }
-
 }

@@ -422,9 +422,7 @@ fun GoOrNoComposeApp(
             },
             onNotify = notifyUser
         )
-        return
-    }
-
+    } else {
     Scaffold(
         topBar = {
             Surface(
@@ -6669,6 +6667,7 @@ fun GoOrNoComposeApp(
             }
         }
     }
+    } // Fim else (!googleUser.isSignedIn)
 
     // DIÁLOGOS DA CÂMERA SECRETA
     if (showCameraPermissionDialog) {

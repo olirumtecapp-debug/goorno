@@ -114,19 +114,19 @@ fun DriverLoginScreen(
                             title = "Semáforo em Tempo Real",
                             desc = "Calcula R$/km e R$/hora antes de você aceitar a corrida."
                         )
-                        HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.1f)))
                         FeatureHighlightRow(
                             icon = "🛡️",
                             title = "Alerta de Áreas de Risco",
                             desc = "Avisos visuais na tela para você dirigir com segurança."
                         )
-                        HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.1f)))
                         FeatureHighlightRow(
                             icon = "📹",
                             title = "Câmera Secreta Integrada",
                             desc = "Grava em segundo plano sem travar o celular nem gastar internet."
                         )
-                        HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.1f)))
                         FeatureHighlightRow(
                             icon = "☁️",
                             title = "Backup na Nuvem Gratuito",
@@ -241,7 +241,27 @@ fun DriverLoginScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                TextButton(
+                    onClick = {
+                        val guestUser = DriverAuthUser(
+                            uid = "offline_driver",
+                            displayName = "Motorista",
+                            isSignedIn = true
+                        )
+                        onLoginCompleted(guestUser)
+                    }
+                ) {
+                    Text(
+                        text = "Continuar sem login por enquanto",
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFA7F3D0)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = "🔒 100% Gratuito e Seguro · Sem senhas ou códigos por SMS\nO GoOrNo nunca pede dados das suas contas de motorista.",
