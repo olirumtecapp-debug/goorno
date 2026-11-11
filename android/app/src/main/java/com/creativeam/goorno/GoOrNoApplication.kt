@@ -43,6 +43,7 @@ class GoOrNoApplication : Application() {
             database = GoOrNoDatabase.getInstance(this)
             preferencesRepository = DriverPreferencesRepository(this)
             secretRecordingRepository = SecretRecordingRepository(this)
+            com.creativeam.goorno.data.auth.GoogleAuthManager.init(this)
             overlayPanel = FloatingOverlayPanel(this).apply {
                 onUserRequestedDisableCopilot = {
                     appScope.launch {

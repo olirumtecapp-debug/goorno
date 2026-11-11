@@ -1,5 +1,6 @@
 package com.creativeam.goorno.ui
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -27,6 +28,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.creativeam.goorno.data.auth.GoogleAuthManager
+import com.creativeam.goorno.data.auth.DriverAuthUser
 import com.creativeam.goorno.data.license.LicenseManager
 import com.creativeam.goorno.data.license.LicenseState
 import com.creativeam.goorno.data.license.PixChargeData
@@ -58,6 +61,8 @@ fun SubscriptionScreenCard(
     var statusFeedback by remember { mutableStateOf<String?>(null) }
     var voucherInput by remember { mutableStateOf("") }
     var isRedeemingVoucher by remember { mutableStateOf(false) }
+
+    val googleUser by GoogleAuthManager.currentUserState.collectAsState()
 
     // Silently refresh status on open if whatsapp was previously saved
     LaunchedEffect(Unit) {
@@ -208,7 +213,162 @@ fun SubscriptionScreenCard(
             }
         }
 
-        // 2. WhatsApp Identification Card
+        // 2. Google Account Card (Principal & Recomendado)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            border = BorderStroke(1.5.dp, if (googleUser.isSignedIn) TrafficGreen else CleanCardBorder),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (googleUser.isSignedIn) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            color = PetrolHeader.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier.size(46.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = (if (googleUser.displayName.isNotBlank()) googleUser.displayName else googleUser.email).take(1).uppercase(),
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PetrolHeader
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (googleUser.displayName.isNotBlank()) googleUser.displayName else "Motorista GoOrNo",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = PetrolDarkText
+                            )
+                            Text(
+                                text = googleUser.email,
+                                fontSize = 12.sp,
+                                color = MutedText
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Surface(
+                                color = Color(0xFFDCFCE7),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = "✓ Conta Google Conectada",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TrafficGreen,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        TextButton(
+                            onClick = {
+                                scope.launch {
+                                    GoogleAuthManager.signOut(context)
+                                    onNotify("Desconectado da conta Google.")
+                                }
+                            }
+                        ) {
+                            Text("Sair", color = TrafficRed, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = Color(0xFFE8F0FE),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("🔑", fontSize = 18.sp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Identificação do Motorista",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = PetrolHeader
+                            )
+                            Text(
+                                text = "100% Gratuito · Sem senhas ou códigos por SMS",
+                                fontSize = 11.5.sp,
+                                color = MutedText
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Vincule sua conta Google com 1 toque para salvar sua licença, backup de custos e metas automaticamente sem complicação.",
+                        fontSize = 12.5.sp,
+                        color = PetrolDarkText,
+                        lineHeight = 17.sp
+                    )
+
+                    Surface(
+                        onClick = {
+                            val act = context as? Activity
+                            if (act != null) {
+                                isLoading = true
+                                scope.launch {
+                                    val res = GoogleAuthManager.signInWithGoogle(act)
+                                    isLoading = false
+                                    res.onSuccess { u ->
+                                        onNotify("Olá, ${u.displayName}! Conectado com sucesso.")
+                                    }.onFailure { err ->
+                                        if (err.message != "Login cancelado.") {
+                                            onNotify(err.message ?: "Falha ao entrar com Google.")
+                                        }
+                                    }
+                                }
+                            } else {
+                                onNotify("Não foi possível iniciar o login do Google.")
+                            }
+                        },
+                        color = Color.White,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFDADCE0)),
+                        shadowElevation = 2.dp,
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = Color.Transparent,
+                                modifier = Modifier.size(20.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("G", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color(0xFF4285F4))
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Continuar com o Google",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF3C4043)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. WhatsApp Identification Card (Opcional para Suporte VIP)
         Card(
             colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -219,14 +379,32 @@ fun SubscriptionScreenCard(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "WhatsApp de Notificações (Opcional)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                        color = PetrolHeader
+                    )
+                    Surface(
+                        color = Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = "Opcional",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MutedText,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
                 Text(
-                    text = "Identificação do Motorista",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = PetrolHeader
-                )
-                Text(
-                    text = "Sua licença, pagamentos e configurações (custos do veículo, metas e áreas de risco) ficam vinculados ao seu WhatsApp. Defina um PIN de 4 dígitos para proteger seu acesso ao trocar de celular.",
+                    text = "Informe seu WhatsApp se desejar receber comprovantes de pagamento Pix e suporte VIP aos motoristas.",
                     fontSize = 12.sp,
                     color = MutedText
                 )

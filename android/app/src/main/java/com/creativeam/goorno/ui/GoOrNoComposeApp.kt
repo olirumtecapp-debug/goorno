@@ -256,6 +256,8 @@ fun GoOrNoComposeApp(
         }
     }
 
+    val googleUser by com.creativeam.goorno.data.auth.GoogleAuthManager.currentUserState.collectAsState()
+
     val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
         val cleanTerm = rawAddr.trim()
         if (cleanTerm.length >= 3) {
@@ -800,6 +802,112 @@ fun GoOrNoComposeApp(
                                         )
                                     }
                                     Text(">", fontWeight = FontWeight.Bold, color = Color(0xFF92400E))
+                                }
+                            }
+                        }
+                    }
+
+                    // 1.5. CARD IDENTIFICAÇÃO GOOGLE
+                    item {
+                        if (googleUser.isSignedIn) {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                border = BorderStroke(1.dp, Color(0xFFDCFCE7)),
+                                shape = RoundedCornerShape(18.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { currentScreen = GoOrNoScreen.SUBSCRIPTION }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        color = PetrolHeader.copy(alpha = 0.12f),
+                                        shape = RoundedCornerShape(50),
+                                        modifier = Modifier.size(38.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = (if (googleUser.displayName.isNotBlank()) googleUser.displayName else googleUser.email).take(1).uppercase(),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 17.sp,
+                                                color = PetrolHeader
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (googleUser.displayName.isNotBlank()) googleUser.displayName else "Motorista GoOrNo",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = PetrolDarkText
+                                        )
+                                        Text(
+                                            text = googleUser.email,
+                                            fontSize = 11.5.sp,
+                                            color = MutedText
+                                        )
+                                    }
+                                    Surface(
+                                        color = Color(0xFFDCFCE7),
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "✓ Google",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TrafficGreen,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                border = BorderStroke(1.dp, CleanCardBorder),
+                                shape = RoundedCornerShape(18.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { currentScreen = GoOrNoScreen.SUBSCRIPTION }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        color = Color.White,
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        modifier = Modifier.size(38.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text("G", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color(0xFF4285F4))
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Continuar com o Google",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.5.sp,
+                                            color = PetrolDarkText
+                                        )
+                                        Text(
+                                            text = "Salvar licença e metas sem senhas ou SMS",
+                                            fontSize = 11.sp,
+                                            color = MutedText
+                                        )
+                                    }
+                                    Text("Entrar >", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = PetrolHeader)
                                 }
                             }
                         }
