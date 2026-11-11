@@ -2070,7 +2070,7 @@ fun GoOrNoComposeApp(
                                     listOf(
                                         Pair("ROBOTO", "Roboto (Padrão)"),
                                         Pair("SISTEMA", "Sistema"),
-                                        Pair("PLUS_JAKARTA_SANS", "Plus Jakarta Sans")
+                                        Pair("PLUS_JAKARTA_SANS", "Plus Jakarta Sans (Bold)")
                                     ).forEach { (fontKey, fontLabel) ->
                                         val isSel = overlayFontFamily == fontKey
                                         Surface(
