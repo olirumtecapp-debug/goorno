@@ -6,18 +6,19 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.96",
-    versionCode: 117,
+    versionName: "3.3.97",
+    versionCode: 118,
     releaseDate: "2026-11-11",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 55410000,
-    fileSizeFormatted: "52.8 MB",
+    fileSizeBytes: 56300000,
+    fileSizeFormatted: "53.7 MB",
     changelog: [
-      "🔥 Correção Crítica de Fonte: Substituído arquivo corrompido pela fonte binária autêntica Plus Jakarta Sans Bold.",
-      "✅ Histórico Preciso: Corridas só contam como Aceitas se você marcar explicitamente.",
-      "⚡ Ação Rápida 'Aceitou?': Confirme corridas aceitas com 1 toque no atalho flutuante ou na notificação.",
-      "🚦 Semáforo & Metas: Visual limpo com Plus Jakarta Sans Bold e sombras dinâmicas de alto contraste."
+      "📹 Câmera Secreta GoOrNo: Dashcam inteligente em segundo plano sem travar Uber e 99.",
+      "🔒 100% Gratuito e Local: Gravação circular em loop sem consumo de internet ou nuvem paga.",
+      "⚙️ Configuração Completa: Qualidade 360p/480p/720p, Lente Frontal/Traseira e corte de 1 a 15 min.",
+      "🎥 Galeria de Gravações: Miniaturas com duração, player nativo com marca d'água oficial e botão de compartilhamento.",
+      "🎛️ Atalho Flutuante: Controle ao vivo de gravação e troca instantânea de lente no botão flutuante."
     ],
     mandatory: true,
   });

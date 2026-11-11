@@ -1,9 +1,16 @@
 package com.creativeam.goorno.ui
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.creativeam.goorno.camera.SecretCameraRecordingService
+import com.creativeam.goorno.camera.SecretRecording
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -104,7 +111,9 @@ enum class GoOrNoScreen(val stepNumber: Int, val title: String, val shortTab: St
     DIAGNOSTICS_TESTS(10, "Diagnóstico e Simulador", "Testes"),
     PRIVACY_BACKUP(11, "Privacidade e Backup", "Backup"),
     SUBSCRIPTION(12, "Assinatura Pro e Licença", "Plano Pro"),
-    CONTACT_SUPPORT(13, "Fale Conosco", "Suporte")
+    CONTACT_SUPPORT(13, "Fale Conosco", "Suporte"),
+    SECRET_CAMERA(14, "Câmera Secreta", "Câmera"),
+    SECRET_RECORDINGS(15, "Gravações Salvas", "Gravações")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -213,6 +222,39 @@ fun GoOrNoComposeApp(
     var showDeleteAccountConfirmDialog by remember { mutableStateOf(false) }
     var isDeletingAccount by remember { mutableStateOf(false) }
     var showLegalNatureDialog by remember { mutableStateOf(false) }
+
+    // Câmera Secreta State & Permission Handlers
+    var showCameraPermissionDialog by remember { mutableStateOf(false) }
+    var showCutDurationPicker by remember { mutableStateOf(false) }
+    var selectedVideoToPlay by remember { mutableStateOf<SecretRecording?>(null) }
+
+    val isCameraRecording by SecretCameraRecordingService.isRecordingState.collectAsState()
+    val cameraRecordingSeconds by SecretCameraRecordingService.elapsedSecondsState.collectAsState()
+    val cameraCurrentLens by SecretCameraRecordingService.currentLensState.collectAsState()
+
+    var hasCameraPerm by remember {
+        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+    }
+    var hasAudioPerm by remember {
+        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+    }
+    val isCameraPermsGranted = hasCameraPerm && hasAudioPerm
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        hasCameraPerm = perms[Manifest.permission.CAMERA] == true ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        hasAudioPerm = perms[Manifest.permission.RECORD_AUDIO] == true ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+        if (hasCameraPerm && hasAudioPerm) {
+            Toast.makeText(context, "Permissões concedidas! Câmera Secreta pronta.", Toast.LENGTH_SHORT).show()
+            SecretCameraRecordingService.start(context)
+        } else {
+            Toast.makeText(context, "Permissões necessárias para gravar em segurança.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
         val cleanTerm = rawAddr.trim()
@@ -346,6 +388,8 @@ fun GoOrNoComposeApp(
                 "PRIVACY_BACKUP", "BACKUP" -> currentScreen = GoOrNoScreen.PRIVACY_BACKUP
                 "HOME", "INICIO" -> currentScreen = GoOrNoScreen.HOME
                 "CONTACT", "CONTACT_SUPPORT", "SUPORTE", "FALE_CONOSCO" -> currentScreen = GoOrNoScreen.CONTACT_SUPPORT
+                "SECRET_CAMERA", "CAMERA" -> currentScreen = GoOrNoScreen.SECRET_CAMERA
+                "SECRET_RECORDINGS", "GRAVACOES", "GRAVACAO", "GRAVAÇÃO" -> currentScreen = GoOrNoScreen.SECRET_RECORDINGS
                 else -> {}
             }
             onClearRequestedScreen()
@@ -700,6 +744,8 @@ fun GoOrNoComposeApp(
                             GoOrNoScreen.PRIVACY_BACKUP -> "Exportar ou restaurar suas configurações salvas"
                             GoOrNoScreen.SUBSCRIPTION -> "Licença de uso, ativação e plano GoOrNo Pro"
                             GoOrNoScreen.CONTACT_SUPPORT -> "Canal direto de Caixa Postal com o desenvolvedor"
+                            GoOrNoScreen.SECRET_CAMERA -> "Ajustes de qualidade, lente e tempo de corte dos vídeos"
+                            GoOrNoScreen.SECRET_RECORDINGS -> "Gerenciador local de vídeos gravados em segurança"
                             else -> ""
                         }
                         if (screenSubtitle.isNotBlank()) {
@@ -1001,6 +1047,28 @@ fun GoOrNoComposeApp(
                                 }
                             }
                         }
+                    }
+
+                    // 3.5. CARD CÂMERA SECRETA (DASHCAM / GRAVAÇÃO EM SEGUNDO PLANO - ESTILO ROTA PRO)
+                    item {
+                        SecretCameraHomeCard(
+                            config = config,
+                            isRecording = isCameraRecording,
+                            recordingSeconds = cameraRecordingSeconds,
+                            isPermsGranted = isCameraPermsGranted,
+                            onOpenSettings = { currentScreen = GoOrNoScreen.SECRET_CAMERA },
+                            onOpenRecordings = { currentScreen = GoOrNoScreen.SECRET_RECORDINGS },
+                            onToggleRecording = { startRec ->
+                                if (startRec) {
+                                    SecretCameraRecordingService.start(context)
+                                    notifyUser("Câmera Secreta iniciada!")
+                                } else {
+                                    SecretCameraRecordingService.stop(context)
+                                    notifyUser("Câmera Secreta desligada.")
+                                }
+                            },
+                            onRequestPermissions = { showCameraPermissionDialog = true }
+                        )
                     }
 
                     // 4. CARD 3: ÁREAS DE RISCO & SEGURANÇA
@@ -6197,8 +6265,79 @@ fun GoOrNoComposeApp(
                         )
                     }
                 }
+
+                // =====================================================
+                // TELA 14: CÂMERA SECRETA (AJUSTES, QUALIDADE, LENTE, CORTE)
+                // =====================================================
+                GoOrNoScreen.SECRET_CAMERA -> {
+                    item {
+                        SecretCameraSettingsScreenCard(
+                            config = config,
+                            isRecording = isCameraRecording,
+                            onBack = { currentScreen = GoOrNoScreen.HOME },
+                            onOpenRecordings = { currentScreen = GoOrNoScreen.SECRET_RECORDINGS },
+                            onSaveConfig = { updated ->
+                                scope.launch {
+                                    app.preferencesRepository.saveConfig(updated)
+                                }
+                            },
+                            onOpenCutDurationPicker = { showCutDurationPicker = true }
+                        )
+                    }
+                }
+
+                // =====================================================
+                // TELA 15: GRAVAÇÕES SALVAS (GALERIA LOCAL, REPRODUTOR)
+                // =====================================================
+                GoOrNoScreen.SECRET_RECORDINGS -> {
+                    item {
+                        SecretRecordingsScreenCard(
+                            config = config,
+                            repository = app.secretRecordingRepository,
+                            onBack = { currentScreen = GoOrNoScreen.HOME },
+                            onPlayVideo = { rec -> selectedVideoToPlay = rec },
+                            onNotify = notifyUser
+                        )
+                    }
+                }
             }
         }
+    }
+
+    // DIÁLOGOS DA CÂMERA SECRETA
+    if (showCameraPermissionDialog) {
+        CameraPermissionConsentDialog(
+            onDismiss = { showCameraPermissionDialog = false },
+            onConfirm = {
+                showCameraPermissionDialog = false
+                cameraPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.CAMERA,
+                        Manifest.permission.RECORD_AUDIO
+                    )
+                )
+            }
+        )
+    }
+
+    if (showCutDurationPicker) {
+        CutDurationPickerDialog(
+            currentMinutes = config.secretCameraCutMinutes,
+            onDismiss = { showCutDurationPicker = false },
+            onSelectMinutes = { min ->
+                scope.launch {
+                    app.preferencesRepository.saveConfig(config.copy(secretCameraCutMinutes = min))
+                }
+                showCutDurationPicker = false
+            }
+        )
+    }
+
+    if (selectedVideoToPlay != null) {
+        SecretVideoPlayerDialog(
+            recording = selectedVideoToPlay!!,
+            onDismiss = { selectedVideoToPlay = null }
+        )
     }
 
     if (showUpdateDialog && updateInfoState != null) {

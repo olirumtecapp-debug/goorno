@@ -230,7 +230,12 @@ data class DriverFinancialConfig(
     val copilotMonitoringEnabled: Boolean = true,
     val saveHistoryEnabled: Boolean = true,
     val cloudBackupConsent: Boolean = false,
-    val driverRecoveryCode: String = ""
+    val driverRecoveryCode: String = "",
+    val secretCameraEnabled: Boolean = false,
+    val secretCameraQuality: String = "BAIXA",
+    val secretCameraLens: String = "FRONTAL",
+    val secretCameraCutMinutes: Int = 5,
+    val secretCameraMaxStorageGb: Int = 64
 ) {
     val fuelCostPerKm: Double
         get() = if (fuelConsumptionKmPerLiter > 0.0) {

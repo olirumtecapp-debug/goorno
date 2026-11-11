@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import com.creativeam.goorno.data.local.GoOrNoDatabase
 import com.creativeam.goorno.data.preferences.DriverPreferencesRepository
+import com.creativeam.goorno.camera.SecretRecordingRepository
 import com.creativeam.goorno.diagnostics.CopilotRuntimeState
 import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.overlay.FloatingOverlayPanel
@@ -28,6 +29,9 @@ class GoOrNoApplication : Application() {
     lateinit var preferencesRepository: DriverPreferencesRepository
         private set
 
+    lateinit var secretRecordingRepository: SecretRecordingRepository
+        private set
+
     lateinit var overlayPanel: FloatingOverlayPanel
         private set
 
@@ -38,6 +42,7 @@ class GoOrNoApplication : Application() {
             
             database = GoOrNoDatabase.getInstance(this)
             preferencesRepository = DriverPreferencesRepository(this)
+            secretRecordingRepository = SecretRecordingRepository(this)
             overlayPanel = FloatingOverlayPanel(this).apply {
                 onUserRequestedDisableCopilot = {
                     appScope.launch {

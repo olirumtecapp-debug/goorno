@@ -2691,7 +2691,7 @@ class FloatingOverlayPanel(private val context: Context) {
         topRow.addView(btnClose)
         root.addView(topRow)
 
-        // Quick Toggles Row (Recursos Reais do GoOrNo: Semáforo, Áreas de Risco, Metas Financeiras)
+        // Quick Toggles Row: [ 📹 Câmera ] [ 🚦 Semáforo ] [ 🎯 Metas ]
         val togglesRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
@@ -2745,6 +2745,74 @@ class FloatingOverlayPanel(private val context: Context) {
             }
         }
 
+        // 1. CÂMERA SECRETA CARD (Rota Pro UX: Vermelho quando gravando, alterna câmera)
+        val isCamRecording = com.creativeam.goorno.camera.SecretCameraRecordingService.isRecordingState.value
+        val camCard = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(6), dp(10), dp(6), dp(10))
+            background = if (isCamRecording) {
+                roundedCardBg("#FEF2F2", "#EF4444", 14f, 1)
+            } else {
+                roundedCardBg("#F8FAFC", "#E2E8F0", 14f, 1)
+            }
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(dp(3), 0, dp(3), 0)
+            }
+
+            val tvI = TextView(context).apply {
+                text = "📹"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+                gravity = Gravity.CENTER
+            }
+            addView(tvI)
+
+            val tvT = TextView(context).apply {
+                text = "Câmera"
+                setTextColor(Color.parseColor("#0F2F28"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(0, dp(2), 0, 0)
+            }
+            addView(tvT)
+
+            val tvS = TextView(context).apply {
+                text = if (isCamRecording) "Gravando" else "Desligada"
+                setTextColor(if (isCamRecording) Color.parseColor("#DC2626") else Color.parseColor("#64748B"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+            }
+            addView(tvS)
+
+            setOnClickListener {
+                val hasCam = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val hasAudio = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                if (!hasCam || !hasAudio) {
+                    launchAppScreen("SECRET_CAMERA")
+                    dismissQuickSettingsModal()
+                    android.widget.Toast.makeText(context, "Conceda permissão de Câmera e Microfone no GoOrNo", android.widget.Toast.LENGTH_LONG).show()
+                } else {
+                    if (com.creativeam.goorno.camera.SecretCameraRecordingService.isRecordingState.value) {
+                        com.creativeam.goorno.camera.SecretCameraRecordingService.stop(context)
+                        tvS.text = "Desligada"
+                        tvS.setTextColor(Color.parseColor("#64748B"))
+                        background = roundedCardBg("#F8FAFC", "#E2E8F0", 14f, 1)
+                        android.widget.Toast.makeText(context, "Câmera Secreta DESLIGADA", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        com.creativeam.goorno.camera.SecretCameraRecordingService.start(context)
+                        tvS.text = "Gravando"
+                        tvS.setTextColor(Color.parseColor("#DC2626"))
+                        background = roundedCardBg("#FEF2F2", "#EF4444", 14f, 1)
+                        android.widget.Toast.makeText(context, "🔴 Câmera Secreta GRAVANDO!", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+        togglesRow.addView(camCard)
+
+        // 2. SEMÁFORO DE VALORES CARD
         lateinit var semaforoCard: View
         semaforoCard = createQuickCard(
             "🚦",
@@ -2772,17 +2840,74 @@ class FloatingOverlayPanel(private val context: Context) {
         }
         togglesRow.addView(semaforoCard)
 
-        togglesRow.addView(createQuickCard("🛡️", "Áreas Risco", "Segurança", false) {
-            launchAppScreen("SECURITY")
-            dismissQuickSettingsModal()
-        })
-
+        // 3. METAS FINANCEIRAS CARD
         togglesRow.addView(createQuickCard("🎯", "Metas", "Financeiro", false) {
             launchAppScreen("FINANCIAL_TARGETS")
             dismissQuickSettingsModal()
         })
 
         root.addView(togglesRow)
+
+        // Quando a câmera está gravando: exibe atalhos rápidos [ 🔄 Lente ] e [ 👁️ Ver imagem ]
+        if (isCamRecording) {
+            val camSubRow = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    bottomMargin = dp(12)
+                }
+            }
+            val curLens = com.creativeam.goorno.camera.SecretCameraRecordingService.currentLensState.value
+            val btnLens = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                setPadding(dp(12), dp(8), dp(12), dp(8))
+                background = roundedCardBg("#F8FAFC", "#CBD5E1", 12f, 1)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = dp(6)
+                }
+                val tvL = TextView(context).apply {
+                    text = "🔄 Lente ${curLens.lowercase().replaceFirstChar { it.uppercase() }}"
+                    setTextColor(Color.parseColor("#0F2F28"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                    setTypeface(typeface, Typeface.BOLD)
+                }
+                addView(tvL)
+                setOnClickListener {
+                    com.creativeam.goorno.camera.SecretCameraRecordingService.switchLens(context)
+                    val newL = if (com.creativeam.goorno.camera.SecretCameraRecordingService.currentLensState.value == "FRONTAL") "traseira" else "frontal"
+                    tvL.text = "🔄 Lente $newL"
+                    android.widget.Toast.makeText(context, "Trocando para lente $newL...", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+            camSubRow.addView(btnLens)
+
+            val btnView = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                setPadding(dp(12), dp(8), dp(12), dp(8))
+                background = roundedCardBg("#F8FAFC", "#CBD5E1", 12f, 1)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = dp(6)
+                }
+                val tvV = TextView(context).apply {
+                    text = "👁️ Gravações"
+                    setTextColor(Color.parseColor("#0F2F28"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                    setTypeface(typeface, Typeface.BOLD)
+                }
+                addView(tvV)
+                setOnClickListener {
+                    launchAppScreen("SECRET_RECORDINGS")
+                    dismissQuickSettingsModal()
+                }
+            }
+            camSubRow.addView(btnView)
+            root.addView(camSubRow)
+        }
 
         // "Última Oferta" Card
         val prefs = context.getSharedPreferences("goorno_persisted_notification", Context.MODE_PRIVATE)
@@ -3151,12 +3276,12 @@ class FloatingOverlayPanel(private val context: Context) {
             launchAppScreen("HISTORY")
             dismissQuickSettingsModal()
         })
-        actionsRow.addView(createCircularAction("🎯", "Metas") {
-            launchAppScreen("FINANCIAL_TARGETS")
+        actionsRow.addView(createCircularAction("▶️", "Gravações") {
+            launchAppScreen("SECRET_RECORDINGS")
             dismissQuickSettingsModal()
         })
-        actionsRow.addView(createCircularAction("🛡️", "Segurança") {
-            launchAppScreen("SECURITY")
+        actionsRow.addView(createCircularAction("🎯", "Metas") {
+            launchAppScreen("FINANCIAL_TARGETS")
             dismissQuickSettingsModal()
         })
         actionsRow.addView(createCircularAction("🏠", "Abrir app", isHome = true) {

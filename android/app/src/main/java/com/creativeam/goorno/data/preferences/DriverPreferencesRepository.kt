@@ -89,6 +89,11 @@ class DriverPreferencesRepository(private val context: Context) {
         val SAVE_HISTORY = booleanPreferencesKey("save_history")
         val CLOUD_BACKUP_CONSENT = booleanPreferencesKey("cloud_backup_consent")
         val DRIVER_RECOVERY_CODE = stringPreferencesKey("driver_recovery_code")
+        val SECRET_CAMERA_ENABLED = booleanPreferencesKey("secret_camera_enabled")
+        val SECRET_CAMERA_QUALITY = stringPreferencesKey("secret_camera_quality")
+        val SECRET_CAMERA_LENS = stringPreferencesKey("secret_camera_lens")
+        val SECRET_CAMERA_CUT_MINUTES = intPreferencesKey("secret_camera_cut_minutes")
+        val SECRET_CAMERA_MAX_STORAGE_GB = intPreferencesKey("secret_camera_max_storage_gb")
     }
 
     private val backupPrefs by lazy {
@@ -156,7 +161,12 @@ class DriverPreferencesRepository(private val context: Context) {
                     copilotMonitoringEnabled = b.getBoolean("copilot_monitoring_enabled", true),
                     saveHistoryEnabled = b.getBoolean("save_history", true),
                     cloudBackupConsent = b.getBoolean("cloud_backup_consent", false),
-                    driverRecoveryCode = b.getString("driver_recovery_code", null) ?: ""
+                    driverRecoveryCode = b.getString("driver_recovery_code", null) ?: "",
+                    secretCameraEnabled = b.getBoolean("secret_camera_enabled", false),
+                    secretCameraQuality = b.getString("secret_camera_quality", null) ?: "BAIXA",
+                    secretCameraLens = b.getString("secret_camera_lens", null) ?: "FRONTAL",
+                    secretCameraCutMinutes = b.getInt("secret_camera_cut_minutes", 5),
+                    secretCameraMaxStorageGb = b.getInt("secret_camera_max_storage_gb", 64)
                 )
                 _configStateFlow.value = inMemoryConfigSnapshot
             }
@@ -231,7 +241,12 @@ class DriverPreferencesRepository(private val context: Context) {
                 copilotMonitoringEnabled = prefs[Keys.COPILOT_MONITORING_ENABLED] ?: b.getBoolean("copilot_monitoring_enabled", true),
                 saveHistoryEnabled = prefs[Keys.SAVE_HISTORY] ?: b.getBoolean("save_history", true),
                 cloudBackupConsent = prefs[Keys.CLOUD_BACKUP_CONSENT] ?: b.getBoolean("cloud_backup_consent", false),
-                driverRecoveryCode = prefs[Keys.DRIVER_RECOVERY_CODE] ?: b.getString("driver_recovery_code", null) ?: ""
+                driverRecoveryCode = prefs[Keys.DRIVER_RECOVERY_CODE] ?: b.getString("driver_recovery_code", null) ?: "",
+                secretCameraEnabled = prefs[Keys.SECRET_CAMERA_ENABLED] ?: b.getBoolean("secret_camera_enabled", false),
+                secretCameraQuality = prefs[Keys.SECRET_CAMERA_QUALITY] ?: b.getString("secret_camera_quality", null) ?: "BAIXA",
+                secretCameraLens = prefs[Keys.SECRET_CAMERA_LENS] ?: b.getString("secret_camera_lens", null) ?: "FRONTAL",
+                secretCameraCutMinutes = prefs[Keys.SECRET_CAMERA_CUT_MINUTES] ?: b.getInt("secret_camera_cut_minutes", 5),
+                secretCameraMaxStorageGb = prefs[Keys.SECRET_CAMERA_MAX_STORAGE_GB] ?: b.getInt("secret_camera_max_storage_gb", 64)
             )
         }
 
@@ -291,6 +306,11 @@ class DriverPreferencesRepository(private val context: Context) {
                 prefs[Keys.SAVE_HISTORY] = config.saveHistoryEnabled
                 prefs[Keys.CLOUD_BACKUP_CONSENT] = config.cloudBackupConsent
                 prefs[Keys.DRIVER_RECOVERY_CODE] = config.driverRecoveryCode.trim()
+                prefs[Keys.SECRET_CAMERA_ENABLED] = config.secretCameraEnabled
+                prefs[Keys.SECRET_CAMERA_QUALITY] = config.secretCameraQuality
+                prefs[Keys.SECRET_CAMERA_LENS] = config.secretCameraLens
+                prefs[Keys.SECRET_CAMERA_CUT_MINUTES] = config.secretCameraCutMinutes
+                prefs[Keys.SECRET_CAMERA_MAX_STORAGE_GB] = config.secretCameraMaxStorageGb
             }
         } catch (_: Throwable) {
             // Se o DataStore estiver bloqueado, o espelho em SharedPreferences abaixo garante a persistência imediata
@@ -346,6 +366,11 @@ class DriverPreferencesRepository(private val context: Context) {
                 putBoolean("save_history", config.saveHistoryEnabled)
                 putBoolean("cloud_backup_consent", config.cloudBackupConsent)
                 putString("driver_recovery_code", config.driverRecoveryCode.trim())
+                putBoolean("secret_camera_enabled", config.secretCameraEnabled)
+                putString("secret_camera_quality", config.secretCameraQuality)
+                putString("secret_camera_lens", config.secretCameraLens)
+                putInt("secret_camera_cut_minutes", config.secretCameraCutMinutes)
+                putInt("secret_camera_max_storage_gb", config.secretCameraMaxStorageGb)
                 apply()
             }
         } catch (_: Throwable) {
