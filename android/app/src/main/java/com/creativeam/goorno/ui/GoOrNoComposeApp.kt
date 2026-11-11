@@ -1579,25 +1579,20 @@ fun GoOrNoComposeApp(
 
                                                     val previewFontFamily = remember(overlayFontFamily) {
                                                         when (overlayFontFamily.uppercase(java.util.Locale.ROOT)) {
-                                                            "ROBOTO" -> FontFamily.SansSerif
-                                                            "CONDENSED", "ROBOTO_CONDENSED" -> FontFamily(Typeface.create("sans-serif-condensed", Typeface.BOLD))
-                                                            "MONTSERRAT" -> try {
-                                                                FontFamily(Font(R.font.montserrat, FontWeight.Bold))
-                                                            } catch (_: Exception) {
-                                                                FontFamily.SansSerif
-                                                            }
-                                                            "INTER" -> try {
-                                                                FontFamily(Font(R.font.inter, FontWeight.Bold))
+                                                            "PLUS_JAKARTA_SANS", "PLUS_JAKARTA", "JAKARTA" -> try {
+                                                                FontFamily(Font(R.font.plus_jakarta_sans, FontWeight.Bold))
                                                             } catch (_: Exception) {
                                                                 FontFamily.SansSerif
                                                             }
                                                             "SISTEMA" -> FontFamily.Default
+                                                            "ROBOTO" -> FontFamily.SansSerif
                                                             else -> FontFamily.SansSerif
                                                         }
                                                     }
                                                     val previewPillarFontSize = when (overlayFontSize) {
                                                         "P" -> 19.sp
                                                         "G" -> 25.sp
+                                                        "GG" -> 29.sp
                                                         else -> 22.sp
                                                     }
 
@@ -2011,9 +2006,10 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(
-                                        Triple("P", "Pequeno (P)", "19sp"),
-                                        Triple("M", "Médio (M)", "22sp"),
-                                        Triple("G", "Grande (G)", "25sp")
+                                        Triple("P", "P (19sp)", "19sp"),
+                                        Triple("M", "M (22sp)", "22sp"),
+                                        Triple("G", "G (25sp)", "25sp"),
+                                        Triple("GG", "GG (29sp)", "29sp")
                                     ).forEach { (sizeKey, label, _) ->
                                         val isSel = overlayFontSize == sizeKey
                                         Surface(
@@ -2074,9 +2070,7 @@ fun GoOrNoComposeApp(
                                     listOf(
                                         Pair("ROBOTO", "Roboto (Padrão)"),
                                         Pair("SISTEMA", "Sistema"),
-                                        Pair("CONDENSED", "Condensed"),
-                                        Pair("MONTSERRAT", "Montserrat"),
-                                        Pair("INTER", "Inter")
+                                        Pair("PLUS_JAKARTA_SANS", "Plus Jakarta Sans")
                                     ).forEach { (fontKey, fontLabel) ->
                                         val isSel = overlayFontFamily == fontKey
                                         Surface(

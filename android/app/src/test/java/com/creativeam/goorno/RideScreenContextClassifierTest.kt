@@ -178,6 +178,27 @@ class RideScreenContextClassifierTest {
     }
 
     @Test
+    fun testUberIncomingStackedOnMapWithRadarPill_Photo1() {
+        // Foto 1 do usuário: Oferta no mapa da Uber com rota, pílula "Radar de Viagens 2" e cards empilhados por trás
+        val lines = listOf(
+            "Santo André",
+            "Radar de Viagens 2",
+            "UberX",
+            "R$ 20,03",
+            "Est. de R$2,13/km",
+            "4,95 (422)",
+            "4 min (1.0 km)",
+            "Rua Wladimir Herzog, Baeta Neves, São Bernardo do Campo",
+            "21 minutos (8.4 km)",
+            "Estação Prefeito Celso Daniel-Santo André, Centro, Santo André",
+            "Tenho interesse"
+        )
+        val context = RideScreenContextClassifier.classify(SourceApp.UBER_DRIVER, lines)
+        assertEquals(RideScreenContext.UBER_INCOMING_SINGLE_OFFER, context)
+        assertTrue("Chamada no mapa com Radar de Viagens 2 e cards empilhados por trás DEVE ser lida", context.shouldAnalyze)
+    }
+
+    @Test
     fun testIdleScreenDoesNotAnalyze() {
         val lines = listOf(
             "Você está online",

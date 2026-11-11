@@ -2029,16 +2029,19 @@ class FloatingOverlayPanel(private val context: Context) {
         val pillarValSp = when (fontSizePref) {
             "P" -> 19f
             "G" -> 25f
+            "GG" -> 29f
             else -> 22f
         }
         val pillarLblSp = when (fontSizePref) {
             "P" -> 10f
             "G" -> 12f
+            "GG" -> 13f
             else -> 11f
         }
         val summaryValSp = when (fontSizePref) {
             "P" -> 13.5f
             "G" -> 15.5f
+            "GG" -> 17f
             else -> 14.5f
         }
 
@@ -2146,11 +2149,21 @@ class FloatingOverlayPanel(private val context: Context) {
         val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
 
+        // Sombra Dinâmica Inteligente de Alto Contraste:
+        // - Colorido: Sombra escura profunda que faz números brancos saltarem
+        // - Claro: Sombra sutil elegante de contraste
+        // - Escuro: Contorno preto ultra-nítido de alta definição
+        val shadowRadius = if (isColorido) 5.5f else if (isClaro) 3.5f else 4.5f
+        val shadowDx = if (isColorido) 1.2f else if (isClaro) 1.0f else 0f
+        val shadowDy = if (isColorido) 2.0f else if (isClaro) 1.5f else 1.8f
+        val shadowColor = if (isColorido) Color.argb(190, 0, 0, 0) else if (isClaro) Color.argb(60, 0, 0, 0) else Color.argb(250, 0, 0, 0)
+
         val tvSummary = TextView(context).apply {
             text = "$seqTag$minStr • $distStr"
             setTextColor(primaryTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, summaryValSp)
             typeface = cardTypeface
+            setShadowLayer(shadowRadius * 0.8f, shadowDx, shadowDy, shadowColor)
             setSingleLine(true)
             ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -2162,6 +2175,7 @@ class FloatingOverlayPanel(private val context: Context) {
             setTextColor(secondaryTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTypeface(typeface, Typeface.BOLD)
+            setShadowLayer(shadowRadius * 0.7f, shadowDx, shadowDy, shadowColor)
             setPadding(dp(4), 0, dp(4), 0)
         }
         activeTimerLabel = tvTimer
@@ -2207,6 +2221,7 @@ class FloatingOverlayPanel(private val context: Context) {
                     setTextColor(secondaryTextColor)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarLblSp)
                     typeface = cardTypeface
+                    setShadowLayer(shadowRadius * 0.7f, shadowDx, shadowDy, shadowColor)
                     gravity = Gravity.CENTER
                 }
                 addView(tvL)
@@ -2230,6 +2245,7 @@ class FloatingOverlayPanel(private val context: Context) {
                     setTextColor(primaryTextColor)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
                     typeface = cardTypeface
+                    setShadowLayer(shadowRadius, shadowDx, shadowDy, shadowColor)
                     gravity = Gravity.CENTER
                 }
                 valRow.addView(tvV)
@@ -3238,21 +3254,14 @@ class FloatingOverlayPanel(private val context: Context) {
 
     private fun getOverlayTypeface(fontFamilyPref: String): Typeface {
         return when (fontFamilyPref.uppercase(Locale.ROOT)) {
-            "ROBOTO" -> Typeface.create("sans-serif", Typeface.BOLD)
-            "CONDENSED", "ROBOTO_CONDENSED" -> Typeface.create("sans-serif-condensed", Typeface.BOLD)
-            "MONTSERRAT" -> try {
-                androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.montserrat)
-                    ?: Typeface.create("sans-serif", Typeface.BOLD)
-            } catch (_: Exception) {
-                Typeface.create("sans-serif", Typeface.BOLD)
-            }
-            "INTER" -> try {
-                androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.inter)
+            "PLUS_JAKARTA_SANS", "PLUS_JAKARTA", "JAKARTA" -> try {
+                androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.plus_jakarta_sans)
                     ?: Typeface.create("sans-serif", Typeface.BOLD)
             } catch (_: Exception) {
                 Typeface.create("sans-serif", Typeface.BOLD)
             }
             "SISTEMA" -> Typeface.defaultFromStyle(Typeface.BOLD)
+            "ROBOTO" -> Typeface.create("sans-serif", Typeface.BOLD)
             else -> Typeface.create("sans-serif", Typeface.BOLD)
         }
     }

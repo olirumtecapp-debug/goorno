@@ -125,19 +125,29 @@ object RideScreenContextClassifier {
         lines: List<String>,
         joined: String
     ): RideScreenContext {
-        // TELA DE RADAR DE VIAGENS DA UBER (LISTA GERAL / DISPUTA)
-        // A lista possui o título explícito "Radar de viagens" OU múltiplos cartões de interesse empilhados.
-        val hasRadarHeader = lines.any {
-            it.contains("radar de viagens") || it.contains("radar de viagem") ||
-            it.startsWith("< radar") || it.startsWith("radar") || it.startsWith("← radar")
-        }
+        // TELA DE RADAR DE VIAGENS DA UBER (LISTA GERAL DE DISPUTA COM VIAGENS UMA ACIMA DA OUTRA)
+        // Só é classificado como lista de disputa se houver 2 ou mais corridas visíveis simultaneamente na vertical
+        // (ex: 2+ botões "Tenho interesse" ou 2+ categorias/preços em lista de rolagem com cabeçalho de radar).
+        // Se houver apenas 1 corrida ativa em exibição (mesmo com a pílula "Radar de Viagens 2" e cards empilhados por trás em profundidade),
+        // DEVE SER LIDA COMO OFERTA INDIVIDUAL!
         val interestCount = lines.count {
             it == "tenho interesse" || it.contains("tenho interesse") || it.startsWith("tenho interesse")
         }
 
-        // Se tiver cabeçalho explícito "Radar de viagens" OU 2+ botões de interesse empilhados, É A LISTA DE DISPUTA!
-        // NÃO DEVE TER LEITURA!
-        if (hasRadarHeader || interestCount >= 2) {
+        val hasDisputeListHeader = lines.any {
+            it.startsWith("← radar") || it.startsWith("< radar") ||
+            it == "radar de viagens" || it == "radar de viagem"
+        }
+
+        val priceCount = lines.count { line ->
+            line.contains("r$") && !line.contains("/km") && !line.contains("inclu")
+        }
+
+        // É a lista de disputa da Uber SOMENTE se houver 2+ botões de interesse OU
+        // se tiver o cabeçalho de lista com 2+ preços visíveis na mesma tela (uma corrida em cima e outra embaixo)
+        val isDisputeScrollList = interestCount >= 2 || (hasDisputeListHeader && priceCount >= 2)
+
+        if (isDisputeScrollList) {
             return RideScreenContext.UBER_RADAR_LIST
         }
 

@@ -1177,22 +1177,24 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         if (texts.isEmpty()) return
 
+        val targetApp = SourceApp.fromPackageName(targetPkg)
+        val screenContext = RideScreenContextClassifier.classify(targetApp, texts)
+        if (screenContext == RideScreenContext.UBER_RADAR_LIST || screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST) {
+            app.overlayPanel.hideOfferCardOnly()
+            return
+        }
+
         val screenJoined = texts.joinToString(" ").lowercase(Locale.ROOT)
 
-        val isRadarOrRequestList = screenJoined.contains("radar de viagens") ||
-            screenJoined.contains("radar de viagem") ||
-            screenJoined.contains("solicitações") ||
-            screenJoined.contains("solicitacoes") ||
-            screenJoined.contains("escolha uma")
-
-        // Se não tem nenhum "R$" na tela E não tem nenhum botão de ação ("aceitar", "escolher", "selecionar", "exclusivo"),
+        // Se não tem nenhum "R$" na tela E não tem nenhum botão de ação ("aceitar", "escolher", "selecionar", "exclusivo", "tenho interesse"),
         // significa que a oferta sumiu/expirou e o motorista está no mapa ocioso!
         val hasCurrency = screenJoined.contains("r$")
         val hasRideAction = screenJoined.contains("aceitar") ||
+            screenJoined.contains("escolher") ||
             screenJoined.contains("selecionar") ||
             screenJoined.contains("exclusivo") ||
             screenJoined.contains("deslize") ||
-            (screenJoined.contains("tenho interesse") && !isRadarOrRequestList)
+            screenJoined.contains("tenho interesse")
 
         val isIdleMap = screenJoined.contains("buscando solicitações") ||
             screenJoined.contains("buscando solicitacoes") ||
@@ -1201,7 +1203,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             screenJoined.contains("voce esta online") ||
             screenJoined.contains("mapa de chamadas")
 
-        if (isRadarOrRequestList || (!hasCurrency && !hasRideAction) || isIdleMap) {
+        if ((!hasCurrency && !hasRideAction) || isIdleMap) {
             app.overlayPanel.hideOfferCardOnly()
         }
     }
