@@ -26,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.math.abs
 
@@ -129,10 +130,73 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
+
+            ACTION_ACCEPT_LAST_OFFER -> {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val offerId = prefs.getString("offer_id", "") ?: ""
+                val price = prefs.getFloat("price", 0f).toDouble()
+                prefs.edit().putBoolean("last_ride_accepted", true).apply()
+
+                val pendingResult = goAsync()
+                CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                    try {
+                        val db = app?.database
+                        if (db != null) {
+                            if (offerId.isNotBlank()) {
+                                db.rideOfferDao().updateActualReceivedPrice(offerId, price)
+                            } else {
+                                val recent = db.rideOfferDao().getAllRealOffersOnce().firstOrNull()
+                                if (recent != null) {
+                                    db.rideOfferDao().updateActualReceivedPrice(recent.id, price)
+                                }
+                            }
+                        }
+                    } catch (_: Throwable) {
+                    } finally {
+                        withContext(Dispatchers.Main) {
+                            showActiveNotification(context)
+                            Toast.makeText(context, "✓ Corrida marcada como ACEITA!", Toast.LENGTH_SHORT).show()
+                            pendingResult.finish()
+                        }
+                    }
+                }
+            }
+
+            ACTION_UNACCEPT_LAST_OFFER -> {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val offerId = prefs.getString("offer_id", "") ?: ""
+                prefs.edit().putBoolean("last_ride_accepted", false).apply()
+
+                val pendingResult = goAsync()
+                CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                    try {
+                        val db = app?.database
+                        if (db != null) {
+                            if (offerId.isNotBlank()) {
+                                db.rideOfferDao().updateActualReceivedPrice(offerId, null)
+                            } else {
+                                val recent = db.rideOfferDao().getAllRealOffersOnce().firstOrNull()
+                                if (recent != null) {
+                                    db.rideOfferDao().updateActualReceivedPrice(recent.id, null)
+                                }
+                            }
+                        }
+                    } catch (_: Throwable) {
+                    } finally {
+                        withContext(Dispatchers.Main) {
+                            showActiveNotification(context)
+                            Toast.makeText(context, "Corrida desmarcada (voltará para Recusadas).", Toast.LENGTH_SHORT).show()
+                            pendingResult.finish()
+                        }
+                    }
+                }
+            }
         }
     }
 
     companion object {
+        const val ACTION_ACCEPT_LAST_OFFER = "com.creativeam.goorno.ACTION_ACCEPT_LAST_OFFER"
+        const val ACTION_UNACCEPT_LAST_OFFER = "com.creativeam.goorno.ACTION_UNACCEPT_LAST_OFFER"
         const val ACTION_DISABLE_COPILOT = "com.creativeam.goorno.ACTION_DISABLE_COPILOT"
         const val ACTION_SHOW_SHORTCUT_BUBBLE = "com.creativeam.goorno.ACTION_SHOW_SHORTCUT_BUBBLE"
         const val ACTION_OPEN_ORIGIN_STREET_VIEW = "com.creativeam.goorno.ACTION_OPEN_ORIGIN_STREET_VIEW"
@@ -213,6 +277,10 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val mergedRatingBadge = latestEvaluation.passengerRatingBadge?.takeIf { it.isNotBlank() }
                         ?: if (isSameRideOrQuickUpdate && prevRatingBadge.isNotBlank()) prevRatingBadge else ""
 
+                    if (!isSameRideOrQuickUpdate) {
+                        editor.putBoolean("last_ride_accepted", false)
+                    }
+                    editor.putString("offer_id", offer.offerId)
                     editor.putBoolean("has_ride", true)
                     editor.putLong("timestamp", now)
                     editor.putString("verdict_name", latestEvaluation.verdict.name)
@@ -283,10 +351,11 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     val destAddress = prefs.getString("dest_address", "") ?: ""
                     val ratingBadge = prefs.getString("passenger_rating_badge", "") ?: ""
 
+                    val isAccepted = prefs.getBoolean("last_ride_accepted", false)
                     val priceStr = formatCurr(price)
                     val distStr = if (totalKm > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.1f km", totalKm) else "-- km"
                     val minStr = if (totalMin > 0) "$totalMin min" else "-- min"
-                    val headerText = "$priceStr · $minStr · $distStr"
+                    val headerText = if (isAccepted) "✓ ACEITA · $priceStr · $minStr · $distStr" else "$priceStr · $minStr · $distStr"
 
                     val is99 = sourceApp.contains("99", ignoreCase = true)
                     val badgeText = if (is99) "99" else "Uber"
@@ -373,13 +442,32 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                         )
                     } else null
 
+                    // Ação 1: "✓ Aceitou?" / "✓ Aceita (Desfazer)"
+                    val acceptIntent = Intent(context, CopilotNotificationReceiver::class.java).apply {
+                        action = if (isAccepted) ACTION_UNACCEPT_LAST_OFFER else ACTION_ACCEPT_LAST_OFFER
+                    }
+                    val acceptPendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        203,
+                        acceptIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+
+                    if (!isAccepted) {
+                        builder.addAction(R.drawable.ic_stat_goorno, "✓ Aceitou?", acceptPendingIntent)
+                    } else {
+                        builder.addAction(android.R.drawable.ic_menu_revert, "✓ Aceita (Desfazer)", acceptPendingIntent)
+                    }
+
+                    // Ação 2: Destino Street View (ou Embarque se destino for nulo)
                     if (origPending != null) {
                         remoteViewsExpanded.setOnClickPendingIntent(R.id.btn_notif_origin, origPending)
-                        builder.addAction(android.R.drawable.ic_dialog_map, "Embarque", origPending)
                     }
                     if (destPending != null) {
                         remoteViewsExpanded.setOnClickPendingIntent(R.id.btn_notif_dest, destPending)
                         builder.addAction(android.R.drawable.ic_menu_directions, "Destino", destPending)
+                    } else if (origPending != null) {
+                        builder.addAction(android.R.drawable.ic_dialog_map, "Embarque", origPending)
                     }
 
                     builder
@@ -405,18 +493,14 @@ class CopilotNotificationReceiver : BroadcastReceiver() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
 
-                // Se o botão flutuante estiver oculto, exibe o atalho de restauração rápida "👁️ Mostrar Botão"
+                // Ação 3: Se o botão flutuante estiver oculto, exibe "👁️ Mostrar Botão", senão "⏹️ Desativar"
                 if (!isShortcutBubbleVisible) {
                     builder.addAction(
                         R.drawable.ic_stat_goorno,
                         "👁️ Mostrar Botão",
                         showBubblePendingIntent
                     )
-                }
-
-                // Exibe "⏹️ Desativar" caso o botão flutuante esteja visível OU haja espaço disponível (< 3 ações)
-                val hasBothStreetView = hasRide && (prefs.getString("origin_address", "") ?: "").isNotBlank() && (prefs.getString("dest_address", "") ?: "").isNotBlank()
-                if (isShortcutBubbleVisible || !hasBothStreetView) {
+                } else {
                     builder.addAction(
                         android.R.drawable.ic_menu_close_clear_cancel,
                         "⏹️ Desativar",

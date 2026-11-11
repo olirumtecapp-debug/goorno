@@ -22,6 +22,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.creativeam.goorno.GoOrNoApplication
 import com.creativeam.goorno.diagnostics.CopilotRuntimeState
 import com.creativeam.goorno.diagnostics.RuntimeDiagnosticsBus
 import com.creativeam.goorno.model.DriverFinancialConfig
@@ -30,7 +31,11 @@ import com.creativeam.goorno.model.OverlayDisplayStyle
 import com.creativeam.goorno.model.PassengerRatingVerdict
 import com.creativeam.goorno.model.SourceApp
 import com.creativeam.goorno.model.TrafficLightVerdict
+import com.creativeam.goorno.service.CopilotNotificationReceiver
 import com.creativeam.goorno.util.StreetViewLauncher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.util.Locale
 import kotlin.math.abs
@@ -3002,6 +3007,103 @@ class FloatingOverlayPanel(private val context: Context) {
 
         routeContainer.addView(addrCol)
         offerCard.addView(routeContainer)
+
+        // Botão de Confirmação Rápida: "Aceitou?"
+        if (hasRide && price > 0.0) {
+            var isAccepted = prefs.getBoolean("last_ride_accepted", false)
+            val offerId = prefs.getString("offer_id", "") ?: ""
+
+            val acceptContainer = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(10), dp(8), dp(10), dp(8))
+                background = if (isAccepted) roundedCardBg("#ECFDF5", "#10B981", 12f, 1) else roundedCardBg("#F1F5F9", "#CBD5E1", 12f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(8)
+                }
+            }
+
+            val tvStatus = TextView(context).apply {
+                text = if (isAccepted) "✓ Viagem Aceita!" else "Aceitou a corrida?"
+                setTextColor(if (isAccepted) Color.parseColor("#059669") else Color.parseColor("#334155"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                setTypeface(typeface, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            acceptContainer.addView(tvStatus)
+
+            lateinit var btnAction: TextView
+            btnAction = TextView(context).apply {
+                text = if (isAccepted) "Desfazer" else "✓ Sim, Aceitei"
+                setTextColor(if (isAccepted) Color.parseColor("#DC2626") else Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(12), dp(6), dp(12), dp(6))
+                background = if (isAccepted) roundedBg("#FEE2E2", 8f) else roundedBg("#16A34A", 8f)
+                setOnClickListener {
+                    val app = context.applicationContext as? GoOrNoApplication
+                    val db = app?.database
+                    if (!isAccepted) {
+                        isAccepted = true
+                        prefs.edit().putBoolean("last_ride_accepted", true).apply()
+                        if (db != null) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    if (offerId.isNotBlank()) {
+                                        db.rideOfferDao().updateActualReceivedPrice(offerId, price)
+                                    } else {
+                                        val recent = db.rideOfferDao().getAllRealOffersOnce().firstOrNull()
+                                        if (recent != null) {
+                                            db.rideOfferDao().updateActualReceivedPrice(recent.id, price)
+                                        }
+                                    }
+                                } catch (_: Throwable) {}
+                            }
+                        }
+                        CopilotNotificationReceiver.showActiveNotification(context)
+                        android.widget.Toast.makeText(context, "✓ Corrida de ${formatCurrency(price)} marcada como ACEITA!", android.widget.Toast.LENGTH_SHORT).show()
+                        tvStatus.text = "✓ Viagem Aceita!"
+                        tvStatus.setTextColor(Color.parseColor("#059669"))
+                        btnAction.text = "Desfazer"
+                        btnAction.setTextColor(Color.parseColor("#DC2626"))
+                        btnAction.background = roundedBg("#FEE2E2", 8f)
+                        acceptContainer.background = roundedCardBg("#ECFDF5", "#10B981", 12f, 1)
+                    } else {
+                        isAccepted = false
+                        prefs.edit().putBoolean("last_ride_accepted", false).apply()
+                        if (db != null) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    if (offerId.isNotBlank()) {
+                                        db.rideOfferDao().updateActualReceivedPrice(offerId, null)
+                                    } else {
+                                        val recent = db.rideOfferDao().getAllRealOffersOnce().firstOrNull()
+                                        if (recent != null) {
+                                            db.rideOfferDao().updateActualReceivedPrice(recent.id, null)
+                                        }
+                                    }
+                                } catch (_: Throwable) {}
+                            }
+                        }
+                        CopilotNotificationReceiver.showActiveNotification(context)
+                        android.widget.Toast.makeText(context, "Corrida desmarcada (voltará para Recusadas).", android.widget.Toast.LENGTH_SHORT).show()
+                        tvStatus.text = "Aceitou a corrida?"
+                        tvStatus.setTextColor(Color.parseColor("#334155"))
+                        btnAction.text = "✓ Sim, Aceitei"
+                        btnAction.setTextColor(Color.WHITE)
+                        btnAction.background = roundedBg("#16A34A", 8f)
+                        acceptContainer.background = roundedCardBg("#F1F5F9", "#CBD5E1", 12f, 1)
+                    }
+                }
+            }
+            acceptContainer.addView(btnAction)
+            offerCard.addView(acceptContainer)
+        }
+
         root.addView(offerCard)
 
         // Icon Actions Row: [🕒 Corridas] [▶️ Gravações] [⏱️ Jornadas] [🏠 Abrir app]

@@ -195,10 +195,9 @@ fun GoOrNoComposeApp(
                 else -> true
             }
             val isAccepted = item.actualReceivedPrice != null && item.actualReceivedPrice > 0.0
-            val isGreen = item.verdict.contains("GREEN", ignoreCase = true) || item.verdict.contains("Excelente", ignoreCase = true)
             val matchesStatus = when (histStatusFilter) {
-                "ACEITAS" -> isAccepted || isGreen
-                "RECUSADAS" -> !isAccepted && !isGreen
+                "ACEITAS" -> isAccepted
+                "RECUSADAS" -> !isAccepted
                 "CONFIRMAR" -> item.actualReceivedPrice == null
                 else -> true
             }
@@ -3947,8 +3946,8 @@ fun GoOrNoComposeApp(
                     val avgPerKm = if (validKmOffers.isNotEmpty()) validKmOffers.mapNotNull { it.grossPerKm }.average() else 0.0
 
                     val countTodas = realHistory.size
-                    val countAceitas = realHistory.count { (it.actualReceivedPrice ?: 0.0) > 0.0 || it.verdict.contains("GREEN", ignoreCase = true) }
-                    val countRecusadas = realHistory.count { (it.actualReceivedPrice == null || it.actualReceivedPrice == 0.0) && !it.verdict.contains("GREEN", ignoreCase = true) }
+                    val countAceitas = realHistory.count { (it.actualReceivedPrice ?: 0.0) > 0.0 }
+                    val countRecusadas = realHistory.count { (it.actualReceivedPrice ?: 0.0) == 0.0 || it.actualReceivedPrice == null }
                     val countConfirmar = realHistory.count { it.actualReceivedPrice == null }
 
                     // 1. BARRA DE NAVEGAÇÃO SEMANAL (Estilo Referência Executiva)
@@ -7437,7 +7436,7 @@ private fun HistoricalOfferCardContent(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = if (entity.actualReceivedPrice != null) "✓ Aceitei" else "✓ Confirmar",
+                        text = if (entity.actualReceivedPrice != null) "✓ Aceitei" else "Aceitou?",
                         fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (entity.actualReceivedPrice != null) Color(0xFF059669) else Color(0xFF334155)

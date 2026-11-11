@@ -79,6 +79,8 @@
             android:enabled="true"
             android:exported="false">
             <intent-filter>
+                <action android:name="com.creativeam.goorno.ACTION_ACCEPT_LAST_OFFER" />
+                <action android:name="com.creativeam.goorno.ACTION_UNACCEPT_LAST_OFFER" />
                 <action android:name="com.creativeam.goorno.ACTION_DISABLE_COPILOT" />
                 <action android:name="com.creativeam.goorno.ACTION_SHOW_SHORTCUT_BUBBLE" />
                 <action android:name="com.creativeam.goorno.ACTION_OPEN_ORIGIN_STREET_VIEW" />
