@@ -63,6 +63,7 @@ object LicenseManager {
     private const val KEY_TRIAL_DAYS = "cached_trial_days"
     private const val KEY_VALID_UNTIL = "cached_valid_until"
     private const val KEY_LAST_SYNC = "last_sync_timestamp"
+    private const val KEY_FIRST_INSTALL_TIME = "first_install_time"
 
     private const val API_BASE_URL = "https://goorno-app.vercel.app/api"
 
@@ -190,18 +191,34 @@ object LicenseManager {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val status = prefs.getString(KEY_STATUS, "trial") ?: "trial"
         val plano = prefs.getString(KEY_PLANO, "trial") ?: "trial"
-        val days = prefs.getInt(KEY_TRIAL_DAYS, 7)
+
+        var firstInstall = prefs.getLong(KEY_FIRST_INSTALL_TIME, 0L)
+        if (firstInstall == 0L) {
+            firstInstall = System.currentTimeMillis()
+            prefs.edit().putLong(KEY_FIRST_INSTALL_TIME, firstInstall).apply()
+        }
+
+        val elapsedMillis = System.currentTimeMillis() - firstInstall
+        val elapsedDays = (elapsedMillis / (1000L * 60L * 60L * 24L)).toInt()
+        val calculatedDays = maxOf(0, 7 - elapsedDays)
+
+        val cachedDays = prefs.getInt(KEY_TRIAL_DAYS, calculatedDays)
+        val days = if (status == "trial") minOf(cachedDays, calculatedDays) else cachedDays
         val validUntil = prefs.getString(KEY_VALID_UNTIL, "") ?: ""
         val whatsapp = prefs.getString(KEY_WHATSAPP, "") ?: ""
 
-        val allowed = status == "active" || (status == "trial" && days > 0)
+        val effectiveStatus = if (status == "trial" && days <= 0) "expired" else status
+        val allowed = effectiveStatus == "active" || (effectiveStatus == "trial" && days > 0)
+
         return LicenseState(
             allowed = allowed,
-            status = status,
+            status = effectiveStatus,
             plano = plano,
             trialDaysRemaining = days,
             validoAte = validUntil,
-            message = if (allowed) "Licença Ativa" else "Licença Expirada",
+            message = if (allowed) {
+                if (effectiveStatus == "trial") "Teste Grátis: $days dia(s) restante(s)" else "Licença Ativa"
+            } else "Período de Teste Expirado",
             whatsapp = whatsapp
         )
     }

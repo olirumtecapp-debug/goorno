@@ -6,19 +6,19 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.98",
-    versionCode: 119,
+    versionName: "3.3.99",
+    versionCode: 120,
     releaseDate: "2026-11-11",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 56500000,
-    fileSizeFormatted: "53.9 MB",
+    fileSizeBytes: 57300000,
+    fileSizeFormatted: "54.6 MB",
     changelog: [
-      "🔑 Continuar com o Google: Login 100% gratuito, sem senhas ou códigos por SMS.",
-      "☁️ Sincronização Automática: Licença, configurações e metas salvas na sua conta Google.",
-      "📹 Câmera Secreta GoOrNo: Dashcam discreta em segundo plano sem travar Uber ou 99.",
-      "🔒 100% Gratuito e Local: Gravação circular em loop sem consumo de internet.",
-      "🎥 Galeria de Gravações & Player com marca d'água oficial GoOrNo."
+      "🚪 Tela de Boas-Vindas & Login Obrigatório: Entrada rápida com 'Continuar com o Google'.",
+      "⏳ Contagem Regressiva de 7 Dias Grátis: Barra visual com dias restantes e status na tela inicial.",
+      "☁️ Sincronização Automática: Áreas de risco, metas e custos salvos na conta Google.",
+      "📹 Câmera Secreta GoOrNo: Dashcam discreta sem travar Uber ou 99.",
+      "🔒 100% Gratuito: Sem senhas ou códigos por SMS."
     ],
     mandatory: true,
   });

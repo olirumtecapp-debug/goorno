@@ -257,6 +257,11 @@ fun GoOrNoComposeApp(
     }
 
     val googleUser by com.creativeam.goorno.data.auth.GoogleAuthManager.currentUserState.collectAsState()
+    var licenseState by remember { mutableStateOf(com.creativeam.goorno.data.license.LicenseManager.getCachedLicenseState(context)) }
+
+    LaunchedEffect(currentScreen, resumeTrigger) {
+        licenseState = com.creativeam.goorno.data.license.LicenseManager.getCachedLicenseState(context)
+    }
 
     val promptMarkAddressAsRisk: (String) -> Unit = { rawAddr ->
         val cleanTerm = rawAddr.trim()
@@ -407,6 +412,17 @@ fun GoOrNoComposeApp(
         ForegroundAppDetector.checkInstalledRideApps(context)
     }
 
+    // Tela de Entrada Obrigatória com Google Sign-In
+    if (!googleUser.isSignedIn) {
+        DriverLoginScreen(
+            onLoginCompleted = {
+                notifyUser("Bem-vindo ao GoOrNo!")
+            },
+            onNotify = notifyUser
+        )
+        return
+    }
+
     Scaffold(
         topBar = {
             Surface(
@@ -449,12 +465,20 @@ fun GoOrNoComposeApp(
                                         color = Color.White
                                     )
                                     Surface(
-                                        color = Color.White.copy(alpha = 0.22f),
+                                        color = when (licenseState.status) {
+                                            "active" -> Color(0xFF10B981)
+                                            "trial" -> Color(0xFFF59E0B)
+                                            else -> TrafficRed
+                                        },
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.clickable { currentScreen = GoOrNoScreen.SUBSCRIPTION }
                                     ) {
                                         Text(
-                                            text = "⭐ PRO",
+                                            text = when (licenseState.status) {
+                                                "active" -> "⭐ PRO ATIVO"
+                                                "trial" -> "⏳ ${licenseState.trialDaysRemaining}d GRÁTIS"
+                                                else -> "⚠️ EXPIRADO"
+                                            },
                                             color = Color.White,
                                             fontWeight = FontWeight.ExtraBold,
                                             fontSize = 10.sp,
@@ -802,6 +826,141 @@ fun GoOrNoComposeApp(
                                         )
                                     }
                                     Text(">", fontWeight = FontWeight.Bold, color = Color(0xFF92400E))
+                                }
+                            }
+                        }
+                    }
+
+                    // 1.4. CARD DO TESTE GRÁTIS DE 7 DIAS COM CONTAGEM REGRESSIVA
+                    item {
+                        if (licenseState.status == "trial") {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                                shape = RoundedCornerShape(18.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { currentScreen = GoOrNoScreen.SUBSCRIPTION }
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Surface(
+                                                color = Color(0xFFFEF3C7),
+                                                shape = RoundedCornerShape(10.dp),
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Text("⏳", fontSize = 18.sp)
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Column {
+                                                Text(
+                                                    text = "Teste Grátis Ativo",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp,
+                                                    color = Color(0xFF92400E)
+                                                )
+                                                Text(
+                                                    text = "Todas as funções 100% liberadas",
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFFB45309)
+                                                )
+                                            }
+                                        }
+
+                                        Surface(
+                                            color = Color(0xFFF59E0B),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "${licenseState.trialDaysRemaining} dias restantes",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    // Barra de Progresso Visual dos 7 Dias
+                                    val progressFraction = (licenseState.trialDaysRemaining / 7f).coerceIn(0f, 1f)
+                                    LinearProgressIndicator(
+                                        progress = progressFraction,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(6.dp)
+                                            .clip(RoundedCornerShape(3.dp)),
+                                        color = Color(0xFFF59E0B),
+                                        trackColor = Color(0xFFFDE68A)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Dia ${8 - licenseState.trialDaysRemaining.coerceIn(1, 7)} de 7",
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFFB45309)
+                                        )
+                                        Text(
+                                            text = "Ver Planos Pro >",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF92400E)
+                                        )
+                                    }
+                                }
+                            }
+                        } else if (licenseState.status == "expired") {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                border = BorderStroke(1.dp, Color(0xFFFECACA)),
+                                shape = RoundedCornerShape(18.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { currentScreen = GoOrNoScreen.SUBSCRIPTION }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("⚠️", fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Período de Teste Expirado",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.5.sp,
+                                            color = TrafficRed
+                                        )
+                                        Text(
+                                            text = "Assine a partir de R$ 4,99/mês para continuar.",
+                                            fontSize = 11.sp,
+                                            color = TrafficRed.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                    Text("Assinar >", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TrafficRed)
                                 }
                             }
                         }

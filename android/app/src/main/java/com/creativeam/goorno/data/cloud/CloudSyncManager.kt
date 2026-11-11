@@ -21,7 +21,7 @@ import java.net.URL
 object CloudSyncManager {
 
     private const val FIRESTORE_BASE_URL =
-        "https://firestore.googleapis.com/v1/projects/expedicao-brasil/databases/(default)/documents/goorno_cloud_store"
+        "https://firestore.googleapis.com/v1/projects/goorno-oficial/databases/(default)/documents/goorno_cloud_store"
 
     fun exportToJsonString(
         config: DriverFinancialConfig,
@@ -296,7 +296,7 @@ object CloudSyncManager {
     }
 
     /**
-     * Sincronização Automática na Nuvem Vinculada ao WhatsApp do Motorista.
+     * Sincronização Automática na Nuvem Vinculada à Conta Google ou WhatsApp do Motorista.
      * Salva as configurações de veículo, metas de ganho e áreas de risco sem exigir senhas ou códigos manuais.
      */
     suspend fun autoSyncSettings(
@@ -304,29 +304,41 @@ object CloudSyncManager {
         config: DriverFinancialConfig,
         offers: List<RideOfferEntity> = emptyList()
     ): Result<String> = withContext(Dispatchers.IO) {
-        val phone = LicenseManager.getSavedWhatsApp(context).ifBlank {
-            LicenseManager.cleanPhone(config.driverRecoveryCode)
+        val googleUser = com.creativeam.goorno.data.auth.GoogleAuthManager.getCachedUser(context)
+        val syncKey = if (googleUser.isSignedIn && googleUser.uid.isNotBlank()) {
+            "google_${googleUser.uid}"
+        } else {
+            val phone = LicenseManager.getSavedWhatsApp(context).ifBlank {
+                LicenseManager.cleanPhone(config.driverRecoveryCode)
+            }
+            if (phone.length < 10) {
+                return@withContext Result.failure(IllegalArgumentException("Cadastre seu WhatsApp ou acesse com Google para sincronizar."))
+            }
+            phone
         }
-        if (phone.length < 10) {
-            return@withContext Result.failure(IllegalArgumentException("Cadastre seu WhatsApp para ativar a sincronização na nuvem."))
-        }
-        uploadBackupByDriverCode(phone, config, offers)
+        uploadBackupByDriverCode(syncKey, config, offers)
     }
 
     /**
-     * Restauração Automática da Nuvem Vinculada ao WhatsApp.
-     * Ao trocar de celular ou reinstalar o aplicativo, basta validar o WhatsApp que as configurações
+     * Restauração Automática da Nuvem Vinculada à Conta Google ou WhatsApp.
+     * Ao trocar de celular ou reinstalar o aplicativo, basta validar o WhatsApp ou logar com o Google que as configurações
      * (consumo do carro, combustível, metas R$/km e áreas de risco) são restauradas imediatamente.
      */
     suspend fun autoRestoreSettings(
         context: Context,
         whatsappInput: String? = null
     ): Result<Pair<DriverFinancialConfig, List<RideOfferEntity>>> = withContext(Dispatchers.IO) {
-        val phone = (whatsappInput ?: LicenseManager.getSavedWhatsApp(context)).let { LicenseManager.cleanPhone(it) }
-        if (phone.length < 10) {
-            return@withContext Result.failure(IllegalArgumentException("WhatsApp não cadastrado ou inválido."))
+        val googleUser = com.creativeam.goorno.data.auth.GoogleAuthManager.getCachedUser(context)
+        val syncKey = if (googleUser.isSignedIn && googleUser.uid.isNotBlank()) {
+            "google_${googleUser.uid}"
+        } else {
+            val phone = (whatsappInput ?: LicenseManager.getSavedWhatsApp(context)).let { LicenseManager.cleanPhone(it) }
+            if (phone.length < 10) {
+                return@withContext Result.failure(IllegalArgumentException("WhatsApp ou conta Google não localizada."))
+            }
+            phone
         }
-        restoreBackupByDriverCode(phone)
+        restoreBackupByDriverCode(syncKey)
     }
 }
 
