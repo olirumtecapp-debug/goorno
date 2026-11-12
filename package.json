@@ -1,6 +1,6 @@
 {
   "name": "goorno-app",
-  "version": "3.3.78",
+  "version": "3.3.104",
   "private": true,
   "type": "module",
   "scripts": {

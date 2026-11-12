@@ -11,14 +11,14 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
     releaseDate: "2026-11-12",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 57350000,
-    fileSizeFormatted: "54.7 MB",
+    fileSizeBytes: 57918309,
+    fileSizeFormatted: "55.2 MB",
     changelog: [
-      "⚡ Blindagem de Bateria Direta: Botão direto na tela inicial e configurações para remover restrições sem fechar o app.",
-      "🚪 Tela de Boas-Vindas & Login Obrigatório: Entrada rápida com 'Continuar com o Google'.",
-      "⏳ Contagem Regressiva de 7 Dias Grátis: Barra visual com dias restantes e status na tela inicial.",
-      "☁️ Sincronização Automática: Áreas de risco, metas e custos salvos na conta Google.",
-      "📹 Câmera Secreta GoOrNo: Dashcam discreta sem travar Uber ou 99."
+      "🎨 Novas fontes em negrito de alta legibilidade: Montserrat Bold, Nanum Gothic ExtraBold e Oswald Bold.",
+      "🔍 Novo tamanho de fonte GGG (34sp) com expansão automática e texto 100% nítido sem sombras embaçadas.",
+      "🚥 Semáforo visual com pílulas coloridas verticais antes de cada valor (KM, Hora e Nota).",
+      "🌓 Modos Claro, Escuro e Colorido 100% estabilizados em todas as telas.",
+      "⚡ Abertura instantânea (0ms), atalho de economia de bateria e persistência total com Uber, 99 e Waze."
     ],
     mandatory: true,
   });

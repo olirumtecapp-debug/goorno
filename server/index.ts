@@ -34,7 +34,8 @@ import {
 } from "./licenseStore.js";
 import { createPixCharge, verifyPaymentStatus, getPendingPixPhone } from "./asaas.js";
 import { sendFraudAlertEmail } from "./fraudAlert.js";
-import { saveMessage, listAllMessages, markMessageStatus, deleteMessage, listDriverMessages } from "./mailboxStore.js";
+import { saveMessage, listAllMessages, markMessageStatus, deleteMessage } from "./mailboxStore.js";
+import { notifyAdminByEmail, sendVisitorConfirmationEmail } from "./emailService.js";
 
 export const app = express();
 app.use(express.json({ limit: "5mb" }));
@@ -786,7 +787,7 @@ app.get("/api/admin/stats-and-licenses", async (req, res) => {
         const validMs = new Date(lic.validoAte || 0).getTime();
         if (validMs >= nowMs) {
           activePaid++;
-          const planCost = lic.plano === "mensal" ? 6.99 : lic.plano === "trimestral" ? 6.30 : lic.plano === "semestral" ? 5.81 : 4.99;
+          const planCost = lic.plano === "mensal" ? 7.99 : lic.plano === "trimestral" ? 7.30 : lic.plano === "semestral" ? 6.98 : 6.65;
           estimatedMonthlyRevenue += planCost;
         } else {
           expired++;
@@ -1030,6 +1031,33 @@ app.post("/api/contact", async (req, res) => {
       source: source === "app" ? "app" : "web"
     });
 
+    // Se a mensagem veio do site e tem e-mail, dispara as notificações por e-mail automaticamente
+    if (source === "web" && cleanEmail) {
+      notifyAdminByEmail({
+        id: saved.id,
+        ticketId: saved.id,
+        name: cleanName,
+        email: cleanEmail,
+        category: category as any,
+        categoryLabel: categoryLabels[category] || "Geral",
+        subject: cleanSubject,
+        message: cleanMessage,
+        source: "web"
+      }).catch(err => console.error("[Server] Falha ao notificar admin por email:", err));
+
+      sendVisitorConfirmationEmail({
+        id: saved.id,
+        ticketId: saved.id,
+        name: cleanName,
+        email: cleanEmail,
+        category: category as any,
+        categoryLabel: categoryLabels[category] || "Geral",
+        subject: cleanSubject,
+        message: cleanMessage,
+        source: "web"
+      }).catch(err => console.error("[Server] Falha ao enviar confirmacao ao visitante:", err));
+    }
+
     res.json({
       ok: true,
       message: "Mensagem recebida com sucesso na Caixa Postal! O desenvolvedor analisará sua mensagem.",
@@ -1066,59 +1094,78 @@ app.patch("/api/contact/:id", async (req, res) => {
   }
   try {
     const { id } = req.params;
-    const { status = "respondida", adminReply } = req.body || {};
-    const ok = await markMessageStatus(id, status, adminReply);
+    const { status } = req.body || {};
+    const ok = await markMessageStatus(id, status);
     res.json({ ok });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || "Erro ao atualizar status da mensagem." });
   }
 });
 
-// 15b. Route for Driver App: Get driver's own Caixa Postal messages & admin replies
-app.get("/api/contact/driver", async (req, res) => {
-  try {
-    const phone = String(req.query.phone || "").trim();
-    if (!phone) {
-      return res.json({ ok: true, messages: [] });
-    }
-    const messages = await listDriverMessages(phone);
-    res.json({ ok: true, messages });
-  } catch (err: any) {
-    res.status(500).json({ error: "Erro ao buscar mensagens do motorista." });
+// 16. Admin Route: Delete message
+app.delete("/api/contact/:id", async (req, res) => {
+  if (!checkAdminAuth(req) && process.env.NODE_ENV === "production") {
+    return res.status(401).json({ error: "Não autorizado" });
   }
+  try {
+    const { id } = req.params;
+    const ok = await deleteMessage(id);
+    res.json({ ok });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erro ao excluir mensagem." });
+  }
+});
+
+
+// App Version endpoint for in-app and landing page updates
+app.get("/api/app-version", (_req, res) => {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.status(200).json({
+    versionName: "3.3.104",
+    versionCode: 125,
+    releaseDate: "2026-11-12",
+    apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
+    directDownload: "/GoOrNo.apk",
+    fileSizeBytes: 57918309,
+    fileSizeFormatted: "55.2 MB",
+    changelog: [
+      "🎨 Novas fontes em negrito de alta legibilidade: Montserrat Bold, Nanum Gothic ExtraBold e Oswald Bold.",
+      "🔍 Novo tamanho de fonte GGG (34sp) com expansão automática e texto 100% nítido sem sombras embaçadas.",
+      "🚥 Semáforo visual com pílulas coloridas verticais antes de cada valor (KM, Hora e Nota).",
+      "🌓 Modos Claro, Escuro e Colorido 100% estabilizados em todas as telas.",
+      "⚡ Abertura instantânea (0ms), atalho de economia de bateria e persistência total com Uber, 99 e Waze."
+    ],
+    mandatory: true,
+  });
 });
 
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
-  "/GoOrNo-v3.3.73.apk",
-  "/GoOrNo-v3.3.72.apk",
+  "/GoOrNo-v3.3.104.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
-  "/download/GoOrNo-v3.3.73.apk",
-  "/download/GoOrNo-v3.3.73.apk",
-  "/download/GoOrNo-v3.3.73.apk"
+  "/download/GoOrNo-v3.3.104.apk"
 ], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.73.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.73.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.73.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.104.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.104.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.104.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.73.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.73.apk"),
-    path.resolve(process.cwd(), "GoOrNo-v3.3.73.apk"),
   ];
   for (const apkPath of candidatePaths) {
     if (fs.existsSync(apkPath)) {
-      return res.download(apkPath, "GoOrNo-v3.3.73.apk");
+      return res.download(apkPath, "GoOrNo-v3.3.104.apk");
     }
   }
-  return res.redirect("https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo-v3.3.73.apk");
+  return res.redirect("https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo.apk");
 });
 
 // Serve static build in production/local start

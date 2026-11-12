@@ -73,7 +73,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [heroMode, setHeroMode] = useState<'good' | 'bad'>('good');
-  const [activeCategory, setActiveCategory] = useState<string>('3.3.78');
+  const [activeCategory, setActiveCategory] = useState<string>('3.3.104');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [legalModalType, setLegalModalType] = useState<'terms' | 'privacy' | 'independence' | 'reading' | 'delete' | null>(null);
@@ -82,7 +82,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
   const [deleteSecret, setDeleteSecret] = useState('');
   const [deleteFeedback, setDeleteFeedback] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [appVersion, setAppVersion] = useState<string>('3.3.74');
+  const [appVersion, setAppVersion] = useState<string>('3.3.104');
 
   useEffect(() => {
     fetch('/api/app-version')
@@ -114,7 +114,7 @@ export function DownloadLandingPage({ onOpenSimulator, onSecretAdmin }: Download
   };
 
   const handleDownloadApk = () => {
-    // Redireciona diretamente para o link de download oficial do APK v3.3.78
+    // Redireciona diretamente para o link de download oficial do APK v3.3.104
     window.location.href = '/GoOrNo.apk';
   };
 

@@ -35,6 +35,8 @@ import {
   ToggleRight,
   ArrowUpRight,
   ShieldCheck,
+  BookOpen,
+  Bell,
   TrendingUp,
   Gift,
   Share2,
@@ -84,6 +86,7 @@ interface ContactMessage {
   name: string;
   whatsapp: string;
   email?: string;
+  source?: string;
   preferredReply?: 'whatsapp' | 'email';
   category: 'duvida' | 'sugestao' | 'problema' | 'financeiro' | 'outro';
   message: string;
@@ -118,7 +121,7 @@ export const AdminDashboard: React.FC<{ onBackToApp?: () => void }> = ({ onBackT
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'vip' | 'trial' | 'expired' | 'fraud'>('all');
-  const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers' | 'mailbox' | 'marketing' | 'juridico'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'vouchers' | 'mailbox' | 'marketing' | 'juridico' | 'manual'>('overview');
   const [deleteTargetDriver, setDeleteTargetDriver] = useState<{ phone: string; name?: string } | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState<string>('');
   const [replyingMessageId, setReplyingMessageId] = useState<string | null>(null);
@@ -1419,7 +1422,15 @@ ${window.location.origin}
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
-                          <span className="text-[10px] font-space font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-300">📬 Caixa Postal do App</span>
+                          {msg.source === 'web' || !msg.whatsapp ? (
+                            <span className="text-[10px] font-space font-bold px-2 py-0.5 rounded-full border bg-sky-50 text-sky-800 border-sky-300 flex items-center gap-1">
+                              🌐 Site Oficial (Suporte E-mail)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-space font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-300 flex items-center gap-1">
+                              📱 Caixa Postal do App (Motorista)
+                            </span>
+                          )}
                           <span
                             className={`text-[10px] font-space font-bold px-2 py-0.5 rounded-full border ${catInfo.color}`}
                           >
@@ -1693,7 +1704,7 @@ ${window.location.origin}
                       if (res.ok && data.success) {
                         setActionFeedback(`Sucesso: ${data.message}`);
                         phoneInput.value = '';
-                        fetchLicenses();
+                        loadData(adminPassword);
                       } else {
                         setActionFeedback(`Erro: ${data.message || 'Falha ao excluir'}`);
                       }
@@ -1740,6 +1751,121 @@ ${window.location.origin}
         )}
       </main>
     
+      
+        {/* ABA: MANUAL DO SISTEMA & PROCESSOS */}
+        {activeTab === 'manual' && (
+          <div className="space-y-6 animate-fade-in font-sans">
+            <div className="bg-white border border-[rgba(7,29,25,0.12)] rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
+                <div>
+                  <span className="bg-emerald-100 text-emerald-800 text-xs font-space font-bold px-3 py-1 rounded-full uppercase">
+                    📘 Documentação Viva do Sistema
+                  </span>
+                  <h2 className="font-space font-bold text-xl sm:text-2xl text-[#071d19] mt-2 mb-1">
+                    Manual de Arquitetura, Processos e Manutenção
+                  </h2>
+                  <p className="text-xs sm:text-sm text-[#7a8982] m-0">
+                    Guia oficial para consulta rápida de como cada engrenagem do GoOrNo funciona em produção.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-3 py-1 rounded-xl border border-slate-200">
+                    v3.3.104 • goorno-oficial
+                  </span>
+                </div>
+              </div>
+
+              {/* GRID COM OS PILARES DO SISTEMA */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* CARD 1: FALE CONOSCO E CAIXA POSTAL */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2.5 text-emerald-800 font-space font-bold text-base">
+                    <Mail className="w-5 h-5 text-emerald-600" />
+                    <span>1. Fale Conosco (Site vs App)</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    O suporte é 100% segregado para proteger sua privacidade e nunca expor seu WhatsApp pessoal:
+                  </p>
+                  <ul className="text-xs text-slate-700 space-y-2 list-disc list-inside">
+                    <li>
+                      <strong>Pelo Site Oficial:</strong> O visitante obrigatoriamente informa seu e-mail. A mensagem gera notificação instantânea para <code>contatocreativeam@gmail.com</code> com botão de <em>Reply-To</em>.
+                    </li>
+                    <li>
+                      <strong>Pelo Aplicativo Android:</strong> O motorista usa a Caixa Postal nativa. As respostas enviadas pelo painel chegam direto na tela do celular dele.
+                    </li>
+                  </ul>
+                </div>
+
+                {/* CARD 2: DISPARO DE E-MAILS (GMAIL OFICIAL) */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2.5 text-sky-800 font-space font-bold text-base">
+                    <Send className="w-5 h-5 text-sky-600" />
+                    <span>2. Motor de E-mail (Gmail SMTP)</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Utiliza o mesmo mecanismo estável e gratuito já consagrado no projeto Catecismo:
+                  </p>
+                  <ul className="text-xs text-slate-700 space-y-2 list-disc list-inside">
+                    <li>
+                      <strong>Conta Oficial:</strong> <code>contatocreativeam@gmail.com</code>
+                    </li>
+                    <li>
+                      <strong>Tecnologia:</strong> <code>nodemailer</code> via Gmail SMTP oficial (porta 465 SSL).
+                    </li>
+                    <li>
+                      <strong>Confirmação Automática:</strong> O usuário que mandou mensagem pelo site recebe um comprovante com número de protocolo instantâneo.
+                    </li>
+                  </ul>
+                </div>
+
+                {/* CARD 3: BANCO DE DADOS EXCLUSIVO FIRESTORE */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2.5 text-amber-800 font-space font-bold text-base">
+                    <ShieldCheck className="w-5 h-5 text-amber-600" />
+                    <span>3. Firestore Exclusivo (goorno-oficial)</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Banco de dados 100% dedicado, sem qualquer dependência de projetos externos:
+                  </p>
+                  <ul className="text-xs text-slate-700 space-y-2 list-disc list-inside">
+                    <li>
+                      <strong>Projeto:</strong> <code>goorno-oficial</code> (Nº 882187108549)
+                    </li>
+                    <li>
+                      <strong>Região:</strong> <code>southamerica-east1</code> (São Paulo - baixa latência).
+                    </li>
+                    <li>
+                      <strong>Coleção Cloud Store:</strong> Armazena preferências do motorista e áreas de risco.
+                    </li>
+                    <li>
+                      <strong>Coleção Snapshots:</strong> Licenças (<code>lic_tel_...</code>) e Mensagens (<code>msg_...</code>).
+                    </li>
+                  </ul>
+                </div>
+
+                {/* CARD 4: COMANDOS DE DEPLOY E MANUTENÇÃO */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2.5 text-purple-800 font-space font-bold text-base">
+                    <RefreshCw className="w-5 h-5 text-purple-600" />
+                    <span>4. Comandos de Manutenção & Deploy</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Comandos padronizados para compilação e publicação:
+                  </p>
+                  <div className="bg-slate-900 text-slate-100 p-3 rounded-xl font-mono text-[11px] space-y-1">
+                    <p className="text-emerald-400"># Compilar Web + Server:</p>
+                    <p>npm run build</p>
+                    <p className="text-emerald-400 pt-1"># Publicar na Vercel:</p>
+                    <p>npx vercel --prod</p>
+                    <p className="text-emerald-400 pt-1"># Arquivo de Referência Raiz:</p>
+                    <p>MANUAL_DE_PROCESSOS_E_ARQUITETURA.md</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       {/* MODAL DE EXCLUSÃO BIG-TECH (EXIGE DIGITAR EXCLUIR) */}
       {deleteTargetDriver && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">

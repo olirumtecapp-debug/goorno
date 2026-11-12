@@ -5,32 +5,22 @@
   "redirects": [
     {
       "source": "/GoOrNo.apk",
-      "destination": "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo-v3.3.77.apk",
-      "permanent": false
-    },
-    {
-      "source": "/GoOrNo-v3.3.77.apk",
-      "destination": "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo-v3.3.77.apk",
-      "permanent": false
-    },
-    {
-      "source": "/GoOrNo-v77.apk",
-      "destination": "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo-v3.3.77.apk",
+      "destination": "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo.apk",
       "permanent": false
     },
     {
       "source": "/download/apk",
-      "destination": "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo-v3.3.77.apk",
+      "destination": "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo.apk",
       "permanent": false
     },
     {
       "source": "/download/GoOrNo.apk",
-      "destination": "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo-v3.3.77.apk",
+      "destination": "https://github.com/olirumtecapp-debug/goorno/raw/main/GoOrNo.apk",
       "permanent": false
     },
     {
-      "source": "/download/GoOrNo-v3.3.77.apk",
-      "destination": "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo-v3.3.77.apk",
+      "source": "/(.*)\\.apk",
+      "destination": "https://github.com/olirumtecapp-debug/goorno/raw/main/$1.apk",
       "permanent": false
     }
   ],
