@@ -11,7 +11,7 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
     releaseDate: "2026-11-12",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 57350000,
+    fileSizeBytes: 57317245,
     fileSizeFormatted: "54.7 MB",
     changelog: [
       "🎨 Nova fonte Poppins ExtraBold: moderna, geométrica e com contraste perfeito.",
