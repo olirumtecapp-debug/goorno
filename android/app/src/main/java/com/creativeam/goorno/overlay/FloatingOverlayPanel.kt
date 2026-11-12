@@ -2029,27 +2029,24 @@ class FloatingOverlayPanel(private val context: Context) {
         val isColorido = theme == "COLORIDO"
         val isClaro = theme == "CLARO" || theme == "LIGHT"
         val fontSizePref = lastKnownConfig?.overlayFontSize?.uppercase() ?: "G"
-        val fontFamilyPref = lastKnownConfig?.overlayFontFamily ?: "MONTSERRAT"
+        val fontFamilyPref = lastKnownConfig?.overlayFontFamily ?: "POPPINS"
         val cardTypeface = getOverlayTypeface(fontFamilyPref)
         val pillarValSp = when (fontSizePref) {
             "M" -> 22f
             "G" -> 25f
-            "GG" -> 29f
-            "GGG" -> 34f
+            "GG", "GGG" -> 29f
             else -> 25f
         }
         val pillarLblSp = when (fontSizePref) {
             "M" -> 11f
             "G" -> 12f
-            "GG" -> 13f
-            "GGG" -> 14f
+            "GG", "GGG" -> 13f
             else -> 12f
         }
         val summaryValSp = when (fontSizePref) {
             "M" -> 14.5f
             "G" -> 15.5f
-            "GG" -> 17f
-            "GGG" -> 18.5f
+            "GG", "GGG" -> 17f
             else -> 15.5f
         }
 
@@ -2075,9 +2072,9 @@ class FloatingOverlayPanel(private val context: Context) {
             else -> verdictHex
         }
 
-        val primaryTextColor = if (isClaro) Color.parseColor("#0F172A") else Color.WHITE
+        val primaryTextColor = if (isClaro) Color.parseColor("#0F172A") else Color.parseColor("#F1F5F9")
         val secondaryTextColor = when {
-            isColorido -> Color.parseColor("#F1F5F9")
+            isColorido -> Color.parseColor("#E2E8F0")
             isClaro -> Color.parseColor("#64748B")
             else -> Color.parseColor("#94A3B8")
         }
@@ -2108,7 +2105,7 @@ class FloatingOverlayPanel(private val context: Context) {
             setOnTouchListener(createDragOrTapTouchListener())
         }
 
-        val cardWidthDp = if (fontSizePref == "GGG") 325 else 310
+        val cardWidthDp = 310
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(10), dp(14), dp(12))
@@ -3471,9 +3468,9 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
-    private val montserratTypeface: Typeface by lazy {
+    private val poppinsExtraBoldTypeface: Typeface by lazy {
         try {
-            val tf = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.montserrat_bold)
+            val tf = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.poppins_extrabold)
             if (tf != null) Typeface.create(tf, Typeface.BOLD) else Typeface.create("sans-serif", Typeface.BOLD)
         } catch (_: Throwable) {
             Typeface.create("sans-serif", Typeface.BOLD)
@@ -3482,10 +3479,9 @@ class FloatingOverlayPanel(private val context: Context) {
 
     private fun getOverlayTypeface(fontFamilyPref: String): Typeface {
         return when (fontFamilyPref.uppercase(Locale.ROOT)) {
-            "MONTSERRAT" -> montserratTypeface
-            "ROBOTO" -> Typeface.create("sans-serif", Typeface.BOLD)
+            "POPPINS", "POPPINS_EXTRABOLD" -> poppinsExtraBoldTypeface
             "SISTEMA", "SYSTEM", "DEFAULT" -> Typeface.DEFAULT_BOLD
-            else -> montserratTypeface
+            else -> poppinsExtraBoldTypeface
         }
     }
 

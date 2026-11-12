@@ -1960,24 +1960,23 @@ fun GoOrNoComposeApp(
                                                         }
                                                         else -> vColorVal
                                                     }
-                                                    val primaryText = if (isClaro) Color(0xFF0F172A) else Color.White
+                                                    val primaryText = if (isClaro) Color(0xFF0F172A) else Color(0xFFF1F5F9)
                                                     val secondaryText = when {
-                                                        isColorido -> Color(0xFFF1F5F9)
+                                                        isColorido -> Color(0xFFE2E8F0)
                                                         isClaro -> Color(0xFF64748B)
                                                         else -> Color(0xFF94A3B8)
                                                     }
 
                                                     val previewFontFamily = remember(overlayFontFamily) {
                                                         when (overlayFontFamily.uppercase(java.util.Locale.ROOT)) {
-                                                            "MONTSERRAT" -> try {
-                                                                FontFamily(Font(R.font.montserrat_bold, FontWeight.Bold))
+                                                            "POPPINS", "POPPINS_EXTRABOLD" -> try {
+                                                                FontFamily(Font(R.font.poppins_extrabold, FontWeight.ExtraBold))
                                                             } catch (_: Throwable) {
                                                                 FontFamily.SansSerif
                                                             }
-                                                            "ROBOTO" -> FontFamily.SansSerif
                                                             "SISTEMA", "SYSTEM", "DEFAULT" -> FontFamily.Default
                                                             else -> try {
-                                                                FontFamily(Font(R.font.montserrat_bold, FontWeight.Bold))
+                                                                FontFamily(Font(R.font.poppins_extrabold, FontWeight.ExtraBold))
                                                             } catch (_: Throwable) {
                                                                 FontFamily.SansSerif
                                                             }
@@ -1986,8 +1985,7 @@ fun GoOrNoComposeApp(
                                                     val previewPillarFontSize = when (overlayFontSize) {
                                                         "M" -> 22.sp
                                                         "G" -> 25.sp
-                                                        "GG" -> 29.sp
-                                                        "GGG" -> 34.sp
+                                                        "GG", "GGG" -> 29.sp
                                                         else -> 25.sp
                                                     }
 
@@ -2403,8 +2401,7 @@ fun GoOrNoComposeApp(
                                     listOf(
                                         Triple("M", "M (22sp)", "22sp"),
                                         Triple("G", "G (25sp)", "25sp"),
-                                        Triple("GG", "GG (29sp)", "29sp"),
-                                        Triple("GGG", "GGG (34sp)", "34sp")
+                                        Triple("GG", "GG (29sp)", "29sp")
                                     ).forEach { (sizeKey, label, _) ->
                                         val isSel = overlayFontSize == sizeKey
                                         Surface(
@@ -2463,8 +2460,7 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(
-                                        Pair("MONTSERRAT", "Montserrat (Bold)"),
-                                        Pair("ROBOTO", "Roboto (Bold)"),
+                                        Pair("POPPINS", "Poppins (Extra-Bold)"),
                                         Pair("SISTEMA", "Sistema (Padrão)")
                                     ).forEach { (fontKey, fontLabel) ->
                                         val isSel = overlayFontFamily == fontKey

@@ -287,26 +287,24 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 2. Coleta nós da janela ativa primeiro (ultra-rápido, sem IPC de windows)
+        // 2. Coleta nós da janela ativa e de janelas/diálogos em transição do mesmo app
         val positionedNodes = mutableListOf<PositionedText>()
         val rootsToScan = mutableListOf<AccessibilityNodeInfo>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
             rootsToScan.add(activeRoot)
         }
-        // Só consulta todas as janelas se activeRoot for nulo para evitar sobrecarga de IPC
-        if (rootsToScan.isEmpty()) {
-            try {
-                val allWindows = windows
-                if (!allWindows.isNullOrEmpty()) {
-                    for (win in allWindows) {
-                        val root = win.root ?: continue
-                        if (root.packageName?.toString() == targetPkg && !rootsToScan.contains(root)) {
-                            rootsToScan.add(root)
-                        }
+        // Consulta todas as janelas do aplicativo de motorista para capturar diálogos e gavetas em transição
+        try {
+            val allWindows = windows
+            if (!allWindows.isNullOrEmpty()) {
+                for (win in allWindows) {
+                    val root = win.root ?: continue
+                    if (root.packageName?.toString() == targetPkg && !rootsToScan.contains(root)) {
+                        rootsToScan.add(root)
                     }
                 }
-            } catch (_: Exception) {}
-        }
+            }
+        } catch (_: Exception) {}
 
         for (root in rootsToScan) {
             collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)

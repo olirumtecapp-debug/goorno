@@ -75,14 +75,12 @@ object RideScreenContextClassifier {
         joined: String
     ): RideScreenContext {
         // TELA 2: LISTA DE SOLICITAÇÕES DA 99
-        // A lista possui cabeçalho de lista ("Solicitações", "Escolha uma", "Km até o embarque")
-        // ou múltiplos botões "Escolher" / múltiplos cartões empilhados.
-        val hasListHeader = lines.any {
-            it == "solicitações" || it == "solicitacoes" ||
-            it.startsWith("< solicita") || it.startsWith("solicitações") || it.startsWith("solicitacoes") ||
+        // A lista possui múltiplos botões "Escolher", ou múltiplos cartões empilhados com cabeçalho de lista ("Escolha uma").
+        // ATENÇÃO: O rodapé/gaveta "Solicitações (1)" no mapa com apenas 1 chamada ativa NÃO é lista e DEVE ser lido!
+        val isExplicitListHeader = lines.any {
+            it.startsWith("< solicita") || it.startsWith("← solicita") ||
             it == "escolha uma" || it.contains("escolha uma") ||
-            it.contains("km até o embarque") || it.contains("km ate o embarque") ||
-            it.contains("lista de solicita")
+            (it.contains("km até o embarque") || it.contains("km ate o embarque"))
         }
 
         val escolherCount = lines.count { it == "escolher" || it.startsWith("escolher") }
@@ -92,8 +90,8 @@ object RideScreenContextClassifier {
             line.contains("r$") && !line.contains("/km") && !line.contains("incl") && !line.contains("dinâmica") && !line.contains("dinamica")
         }
 
-        // Se tiver cabeçalho de lista OU 2+ botões escolher OU 2+ corridas principais com escolher, É LISTA!
-        if (hasListHeader || escolherCount >= 2 || (mainPriceCount >= 2 && escolherCount >= 1)) {
+        // É LISTA somente se houver 2+ botões escolher OU se houver múltiplas corridas (2+ preços) com cabeçalho de lista
+        if (escolherCount >= 2 || (mainPriceCount >= 2 && (isExplicitListHeader || escolherCount >= 1))) {
             return RideScreenContext.NINETYNINE_REQUEST_LIST
         }
 
