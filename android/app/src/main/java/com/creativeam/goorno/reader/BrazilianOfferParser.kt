@@ -612,13 +612,16 @@ object BrazilianOfferParser {
             return -1.0
         }
 
-        // 5ª Prioridade: Linha com decimal puro que não é preço nem distância (3.00 a 5.00)
+        // 5ª Prioridade: Linha com decimal puro ou isolado que não é preço nem distância (3.50 a 5.00)
         for (line in cleaned) {
             val trimmed = line.trim()
-            if (!trimmed.contains("R$", ignoreCase = true) && !trimmed.contains("/km") && !trimmed.contains("km") && !trimmed.contains("min")) {
-                if (Regex("""^[3-5][.,]\d{2}$""").matches(trimmed)) {
-                    val rating = parseBrazilianDecimal(trimmed)
-                    if (rating != null && rating in 3.00..5.00) {
+            if (!trimmed.contains("R$", ignoreCase = true) && !trimmed.contains("/km") && !trimmed.contains("km") &&
+                !trimmed.contains("min") && !trimmed.contains(":") && !trimmed.contains("x") && !trimmed.contains("h")
+            ) {
+                val match = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(trimmed)
+                if (match != null) {
+                    val rating = parseBrazilianDecimal(match.groupValues[1])
+                    if (rating != null && rating in 3.50..5.00) {
                         return rating
                     }
                 }

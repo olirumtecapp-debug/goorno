@@ -26,7 +26,11 @@ class NinetyNineRatingRecoveryTest {
             Triple("4,87 • 329 corridas • Perfil Premium", 4.87, "R$18,30"),
             Triple("4,89 • +999 corridas • Perfil Premium", 4.89, "R$11,90"),
             Triple("4,94 • 728 corridas • Perfil Premium", 4.94, "R$9,65"),
-            Triple("4,92 • 308 corridas • Perfil Premium", 4.92, "R$13,60")
+            Triple("4,92 • 308 corridas • Perfil Premium", 4.92, "R$13,60"),
+            Triple("4,92", 4.92, "R$13,02"),
+            Triple("★ 4,85", 4.85, "R$15,50"),
+            Triple("5,00", 5.00, "R$25,00"),
+            Triple("4,9", 4.90, "R$10,20")
         )
         for ((ratingText, expected, price) in cases) {
             val nodes = card(price, ratingText, "(7 min 1,9 km)", "(20 min 5,5 km)")

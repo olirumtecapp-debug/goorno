@@ -351,6 +351,18 @@ class FloatingOverlayPanel(private val context: Context) {
 
         contentWrapper?.addView(builtView)
 
+        // Efeito Fluido de Entrada (Scale-in com Mola e Fade) - Padrão Concorrente Rota Pro
+        builtView.scaleX = 0.85f
+        builtView.scaleY = 0.85f
+        builtView.alpha = 0f
+        builtView.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .alpha(1f)
+            .setDuration(220L)
+            .setInterpolator(android.view.animation.OvershootInterpolator(1.15f))
+            .start()
+
         activeTimerLabel?.text = "${remainingSeconds}s"
         mainHandler.removeCallbacks(countdownRunnable)
         mainHandler.postDelayed(countdownRunnable, 1000L)
@@ -2025,78 +2037,36 @@ class FloatingOverlayPanel(private val context: Context) {
         val targetHr = lastKnownConfig?.targetGrossPerHour ?: 50.00
         val minHr = lastKnownConfig?.minGrossPerHour ?: 35.00
 
-        val theme = lastKnownConfig?.overlayTheme?.uppercase() ?: "COLORIDO"
-        val isColorido = theme == "COLORIDO"
-        val isClaro = theme == "CLARO" || theme == "LIGHT"
-        val fontSizePref = lastKnownConfig?.overlayFontSize?.uppercase() ?: "M"
-        val fontFamilyPref = lastKnownConfig?.overlayFontFamily ?: "ROBOTO"
-        val cardTypeface = getOverlayTypeface(fontFamilyPref)
-        val pillarValSp = when (fontSizePref) {
-            "P" -> 19f
-            "G" -> 25f
-            "GG" -> 29f
-            else -> 22f
-        }
-        val pillarLblSp = when (fontSizePref) {
-            "P" -> 10f
-            "G" -> 12f
-            "GG" -> 13f
-            else -> 11f
-        }
-        val summaryValSp = when (fontSizePref) {
-            "P" -> 13.5f
-            "G" -> 15.5f
-            "GG" -> 17f
-            else -> 14.5f
+        val cardTypeface = getOverlayTypeface("PLUS_JAKARTA_SANS")
+
+        // Cores vibrantes idênticas ao concorrente (Imagem 3) com relevo inferior 3D
+        val (cardBg, cardBorder) = when (result.verdict) {
+            TrafficLightVerdict.GREEN -> Pair("#0FA35B", "#0B733E") // Verde esmeralda brilhante + borda 3D escura
+            TrafficLightVerdict.YELLOW -> Pair("#D97706", "#92400E") // Âmbar aquecido + borda 3D âmbar
+            TrafficLightVerdict.RED -> Pair("#DC2626", "#991B1B") // Vermelho nítido + borda 3D rubi
+            TrafficLightVerdict.GRAY_NEUTRAL -> Pair("#334155", "#1E293B")
         }
 
-        val verdictHex = when (result.verdict) {
-            TrafficLightVerdict.GREEN -> "#16A34A"
-            TrafficLightVerdict.YELLOW -> "#EAB308"
-            TrafficLightVerdict.RED -> "#DC2626"
-            TrafficLightVerdict.GRAY_NEUTRAL -> "#475569"
-        }
-
-        val cardBg = when {
-            isColorido -> verdictHex
-            isClaro -> "#FFFFFF"
-            else -> "#1E2024"
-        }
-        val cardBorder = when {
-            isColorido -> when (result.verdict) {
-                TrafficLightVerdict.GREEN -> "#14532D" // Borda e borda inferior nitidamente mais escura
-                TrafficLightVerdict.YELLOW -> "#78350F" // Borda e borda inferior ambar escura
-                TrafficLightVerdict.RED -> "#7F1D1D"   // Borda e borda inferior vinho escura
-                TrafficLightVerdict.GRAY_NEUTRAL -> "#1E293B"
-            }
-            else -> verdictHex
-        }
-
-        val primaryTextColor = if (isClaro) Color.parseColor("#0F172A") else Color.WHITE
-        val secondaryTextColor = when {
-            isColorido -> Color.parseColor("#F1F5F9")
-            isClaro -> Color.parseColor("#64748B")
-            else -> Color.parseColor("#94A3B8")
-        }
-
+        // Semáforo individual de cada métrica (Pílula indicadora colada antes de cada valor)
         val kmBarColor = when {
-            grossKm >= targetKm -> "#16A34A"
-            grossKm >= minKm -> "#CA8A04"
-            else -> "#DC2626"
+            grossKm >= targetKm -> "#22C55E" // Verde
+            grossKm >= minKm -> "#EAB308" // Amarelo
+            else -> "#EF4444" // Vermelho
         }
         val hrBarColor = when {
-            grossHr >= targetHr -> "#16A34A"
-            grossHr >= minHr -> "#CA8A04"
-            else -> "#DC2626"
+            grossHr >= targetHr -> "#22C55E" // Verde
+            grossHr >= minHr -> "#EAB308" // Amarelo
+            else -> "#EF4444" // Vermelho
         }
+
         val ratingBadge = result.passengerRatingBadge.orEmpty()
         val ratingClean = ratingBadge.replace(Regex("\\s*\\([^)]*\\)"), "").replace("★", "").replace("🟢", "").replace("🟡", "").replace("🔴", "").trim()
         val ratingNum = offer.passengerRating ?: ratingClean.replace(",", ".").toDoubleOrNull()
         val ratingBarColor = when {
-            ratingNum != null && ratingNum >= 4.90 -> "#16A34A"
-            ratingNum != null && ratingNum >= 4.75 -> "#CA8A04"
-            ratingNum != null -> "#DC2626"
-            else -> "#94A3B8"
+            ratingNum != null && ratingNum >= 4.85 -> "#22C55E" // Verde
+            ratingNum != null && ratingNum >= 4.70 -> "#EAB308" // Amarelo
+            ratingNum != null && ratingNum > 0.0 -> "#EF4444" // Vermelho
+            else -> "#94A3B8" // Cinza neutro
         }
 
         val root = LinearLayout(context).apply {
@@ -2107,18 +2077,18 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(10), dp(14), dp(12))
-            // Borda com lip inferior mais grosso (6dp) e borda mais escura
-            background = roundedCardWithThickBottomBg(cardBg, cardBorder, 18f, strokeDp = 2, bottomLipDp = 6)
-            layoutParams = LinearLayout.LayoutParams(dp(310), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            setPadding(dp(16), dp(10), dp(16), dp(12))
+            // Relevo inferior de 5dp com cantos arredondados de 16dp (Formato exato do Rota Pro)
+            background = roundedCardWithThickBottomBg(cardBg, cardBorder, 16f, strokeDp = 2, bottomLipDp = 5)
+            layoutParams = LinearLayout.LayoutParams(dp(320), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                elevation = dp(10).toFloat()
+                elevation = dp(12).toFloat()
             }
         }
 
-        // Top Row: [Badge App] + Time/Distance + Timer + Close
+        // Linha Superior: [Badge App] + Tempo · Distância + Timer + Fechar
         val topRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -2135,15 +2105,15 @@ class FloatingOverlayPanel(private val context: Context) {
             text = if (is99) "99" else "Uber"
             setTextColor(if (is99) Color.BLACK else Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-            setTypeface(typeface, Typeface.BOLD)
+            setTypeface(cardTypeface, Typeface.BOLD)
             gravity = Gravity.CENTER
-            setPadding(dp(6), dp(2), dp(6), dp(2))
-            background = if (is99) roundedBg("#FACC15", 6f) else roundedBg("#000000", 6f)
+            setPadding(dp(7), dp(2), dp(7), dp(2))
+            background = if (is99) roundedBg("#F5A623", 10f) else roundedBg("#111111", 10f)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                marginEnd = dp(6)
+                marginEnd = dp(8)
             }
         }
         topRow.addView(tvAppBadge)
@@ -2154,21 +2124,11 @@ class FloatingOverlayPanel(private val context: Context) {
         val minStr = if (totalMin > 0) "${totalMin} min" else "-- min"
         val seqTag = if (totalCount > 1) "[$index/$totalCount] " else ""
 
-        // Sombra Dinâmica Inteligente de Alto Contraste:
-        // - Colorido: Sombra escura profunda que faz números brancos saltarem
-        // - Claro: Sombra sutil elegante de contraste
-        // - Escuro: Contorno preto ultra-nítido de alta definição
-        val shadowRadius = if (isColorido) 5.5f else if (isClaro) 3.5f else 4.5f
-        val shadowDx = if (isColorido) 1.2f else if (isClaro) 1.0f else 0f
-        val shadowDy = if (isColorido) 2.0f else if (isClaro) 1.5f else 1.8f
-        val shadowColor = if (isColorido) Color.argb(190, 0, 0, 0) else if (isClaro) Color.argb(60, 0, 0, 0) else Color.argb(250, 0, 0, 0)
-
         val tvSummary = TextView(context).apply {
-            text = "$seqTag$minStr • $distStr"
-            setTextColor(primaryTextColor)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, summaryValSp)
-            typeface = cardTypeface
-            setShadowLayer(shadowRadius * 0.8f, shadowDx, shadowDy, shadowColor)
+            text = "$seqTag$minStr · $distStr"
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+            setTypeface(cardTypeface, Typeface.BOLD)
             setSingleLine(true)
             ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -2177,22 +2137,21 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val tvTimer = TextView(context).apply {
             text = "${remainingSeconds}s"
-            setTextColor(secondaryTextColor)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
-            setTypeface(typeface, Typeface.BOLD)
-            setShadowLayer(shadowRadius * 0.7f, shadowDx, shadowDy, shadowColor)
+            setTextColor(Color.WHITE.copy(alpha = 0.85f))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(cardTypeface, Typeface.BOLD)
             setPadding(dp(4), 0, dp(4), 0)
         }
         activeTimerLabel = tvTimer
         topRow.addView(tvTimer)
 
         val btnClose = TextView(context).apply {
-            text = "✕ "
-            setTextColor(secondaryTextColor)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-            setTypeface(typeface, Typeface.BOLD)
+            text = "✕"
+            setTextColor(Color.WHITE.copy(alpha = 0.85f))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
+            setTypeface(cardTypeface, Typeface.BOLD)
             gravity = Gravity.CENTER
-            setPadding(dp(8), dp(4), dp(8), dp(4))
+            setPadding(dp(6), dp(2), dp(2), dp(2))
             setOnClickListener { dismissCurrentOfferCardByUser() }
             setOnTouchListener { v, ev ->
                 if (ev.action == MotionEvent.ACTION_UP) {
@@ -2205,7 +2164,7 @@ class FloatingOverlayPanel(private val context: Context) {
         topRow.addView(btnClose)
         card.addView(topRow)
 
-        // 3 Pillars Row: [R$/Km] | [R$/Hora] | [Nota]
+        // Linha dos 3 Pilares com barras coloridas individuais (Imagem 3)
         val pillarsRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -2223,10 +2182,9 @@ class FloatingOverlayPanel(private val context: Context) {
 
                 val tvL = TextView(context).apply {
                     text = label
-                    setTextColor(secondaryTextColor)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarLblSp)
-                    typeface = cardTypeface
-                    setShadowLayer(shadowRadius * 0.7f, shadowDx, shadowDy, shadowColor)
+                    setTextColor(Color.WHITE.copy(alpha = 0.82f))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                    setTypeface(cardTypeface, Typeface.BOLD)
                     gravity = Gravity.CENTER
                 }
                 addView(tvL)
@@ -2234,23 +2192,24 @@ class FloatingOverlayPanel(private val context: Context) {
                 val valRow = LinearLayout(context).apply {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = Gravity.CENTER
-                    setPadding(0, dp(2), 0, 0)
+                    setPadding(0, dp(3), 0, 0)
                 }
 
+                // Barra indicadora semafórica individual colada no número (ex: vermelho no R$/km, amarelo no R$/h, verde na Nota)
                 val bar = View(context).apply {
-                    background = roundedBg(if (isColorido) "#FFFFFF" else barColorHex, 2f)
-                    layoutParams = LinearLayout.LayoutParams(dp(3), dp(18)).apply {
-                        marginEnd = dp(4)
+                    background = roundedBg(barColorHex, 2f)
+                    layoutParams = LinearLayout.LayoutParams(dp(3.5f), dp(22)).apply {
+                        marginEnd = dp(6)
                     }
                 }
                 valRow.addView(bar)
 
                 val tvV = TextView(context).apply {
                     text = valueText
-                    setTextColor(primaryTextColor)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
-                    typeface = cardTypeface
-                    setShadowLayer(shadowRadius, shadowDx, shadowDy, shadowColor)
+                    setTextColor(Color.WHITE)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 25f)
+                    setTypeface(cardTypeface, Typeface.BOLD)
+                    letterSpacing = -0.015f
                     gravity = Gravity.CENTER
                 }
                 valRow.addView(tvV)
@@ -2268,65 +2227,26 @@ class FloatingOverlayPanel(private val context: Context) {
         pillarsRow.addView(createPillarCol("Nota", ratingBarColor, ratingVal))
         card.addView(pillarsRow)
 
-        // Adiciona o card limpo (sem tags de alerta dentro)
         root.addView(card)
 
-        // ALERTAS DESTACADOS TOTALMENTE FORA DO CARD (PILULAS COLORIDAS DEDICADAS)
+        // Alertas destacados (Área de risco / Dinâmico) fora do card
         if (result.hasRiskAlert && !result.riskAlertBadge.isNullOrBlank()) {
             val tvRisk = TextView(context).apply {
                 text = if (result.riskAlertBadge.startsWith("⚠️")) result.riskAlertBadge else "⚠️ " + result.riskAlertBadge
                 setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                setTypeface(typeface, Typeface.BOLD)
-                gravity = Gravity.CENTER
-                setPadding(dp(14), dp(6), dp(14), dp(6))
-                background = roundedCardBg("#DC2626", "#7F1D1D", 10f, 1)
+                setTypeface(cardTypeface, Typeface.BOLD)
+                setPadding(dp(12), dp(4), dp(12), dp(4))
+                background = roundedBg("#B91C1C", 12f)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
                     topMargin = dp(6)
+                    gravity = Gravity.CENTER_HORIZONTAL
                 }
             }
             root.addView(tvRisk)
-        }
-
-        if (result.isDistantPickup) {
-            val tvPickup = TextView(context).apply {
-                text = "⚠️ Embarque Distante"
-                setTextColor(Color.WHITE)
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                setTypeface(typeface, Typeface.BOLD)
-                gravity = Gravity.CENTER
-                setPadding(dp(14), dp(6), dp(14), dp(6))
-                background = roundedCardBg("#B45309", "#78350F", 10f, 1)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = dp(6)
-                }
-            }
-            root.addView(tvPickup)
-        }
-
-        if (result.isFavoriteZone && !result.favoriteZoneBadge.isNullOrBlank() && !result.hasRiskAlert) {
-            val tvFav = TextView(context).apply {
-                text = if (result.favoriteZoneBadge.startsWith("⭐")) result.favoriteZoneBadge else "⭐ ${result.favoriteZoneBadge}"
-                setTextColor(Color.WHITE)
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                setTypeface(typeface, Typeface.BOLD)
-                gravity = Gravity.CENTER
-                setPadding(dp(14), dp(6), dp(14), dp(6))
-                background = roundedCardBg("#15803D", "#14532D", 10f, 1)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = dp(6)
-                }
-            }
-            root.addView(tvFav)
         }
 
         return root
@@ -3480,16 +3400,11 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     private fun getOverlayTypeface(fontFamilyPref: String): Typeface {
-        return when (fontFamilyPref.uppercase(Locale.ROOT)) {
-            "PLUS_JAKARTA_SANS", "PLUS_JAKARTA", "JAKARTA" -> try {
-                val tf = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.plus_jakarta_sans)
-                if (tf != null) Typeface.create(tf, Typeface.BOLD) else Typeface.create("sans-serif", Typeface.BOLD)
-            } catch (_: Throwable) {
-                Typeface.create("sans-serif", Typeface.BOLD)
-            }
-            "SISTEMA" -> Typeface.defaultFromStyle(Typeface.BOLD)
-            "ROBOTO" -> Typeface.create("sans-serif", Typeface.BOLD)
-            else -> Typeface.create("sans-serif", Typeface.BOLD)
+        return try {
+            val tf = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.plus_jakarta_sans)
+            if (tf != null) Typeface.create(tf, Typeface.BOLD) else Typeface.create("sans-serif", Typeface.BOLD)
+        } catch (_: Throwable) {
+            Typeface.create("sans-serif", Typeface.BOLD)
         }
     }
 

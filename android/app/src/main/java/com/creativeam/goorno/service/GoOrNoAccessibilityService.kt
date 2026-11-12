@@ -101,7 +101,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         RuntimeDiagnosticsBus.setAccessibilityConnected(true)
-        // KeepAlive desnecessario no servico de acessibilidade nativo
+        try {
+            GoOrNoForegroundKeepAliveService.start(this)
+        } catch (_: Throwable) {}
         val app = applicationContext as? GoOrNoApplication
 
         app?.overlayPanel?.onOfferCardClosed = {
@@ -159,6 +161,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         pollingJob = serviceScope.launch {
             while (isActive) {
                 try {
+                    val currentRootPkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Throwable) { null }
+                    if (currentRootPkg != null && SourceApp.isAllowedDriverPackage(currentRootPkg)) {
+                        lastKnownForegroundPkg = currentRootPkg
+                    }
                     val app = applicationContext as? GoOrNoApplication
                     val isHeavyAppInFront = isHeavyMediaOrSocialApp(lastKnownForegroundPkg)
                     if (isHeavyAppInFront) {
@@ -871,7 +877,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // Classifica o contexto da tela antes de abrir o card flutuante
         val firstApp = parsedOffers.firstOrNull()?.sourceApp ?: SourceApp.NINETY_NINE_DRIVER
         val dispatchContext = RideScreenContextClassifier.classify(firstApp, screenLines)
-        if (dispatchContext == RideScreenContext.NINETYNINE_REQUEST_LIST || dispatchContext == RideScreenContext.UBER_RADAR_LIST) {
+        if (dispatchContext == RideScreenContext.NO_OFFER && parsedOffers.isEmpty()) {
             app.overlayPanel.hideOfferCardOnly()
             wasViewing99List = false
             last99ListSignature = ""
