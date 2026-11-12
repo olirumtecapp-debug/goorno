@@ -1974,16 +1974,8 @@ fun GoOrNoComposeApp(
                                                             } catch (_: Throwable) {
                                                                 FontFamily.SansSerif
                                                             }
-                                                            "NANUM_GOTHIC", "NANUM" -> try {
-                                                                FontFamily(Font(R.font.nanum_gothic_extrabold, FontWeight.ExtraBold))
-                                                            } catch (_: Throwable) {
-                                                                FontFamily.SansSerif
-                                                            }
-                                                            "OSWALD" -> try {
-                                                                FontFamily(Font(R.font.oswald_bold, FontWeight.Bold))
-                                                            } catch (_: Throwable) {
-                                                                FontFamily.SansSerif
-                                                            }
+                                                            "ROBOTO" -> FontFamily.SansSerif
+                                                            "SISTEMA", "SYSTEM", "DEFAULT" -> FontFamily.Default
                                                             else -> try {
                                                                 FontFamily(Font(R.font.montserrat_bold, FontWeight.Bold))
                                                             } catch (_: Throwable) {
@@ -2472,8 +2464,8 @@ fun GoOrNoComposeApp(
                                 ) {
                                     listOf(
                                         Pair("MONTSERRAT", "Montserrat (Bold)"),
-                                        Pair("NANUM_GOTHIC", "Nanum Gothic (Extra-Bold)"),
-                                        Pair("OSWALD", "Oswald (Bold)")
+                                        Pair("ROBOTO", "Roboto (Bold)"),
+                                        Pair("SISTEMA", "Sistema (Padrão)")
                                     ).forEach { (fontKey, fontLabel) ->
                                         val isSel = overlayFontFamily == fontKey
                                         Surface(

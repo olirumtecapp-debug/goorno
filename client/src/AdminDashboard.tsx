@@ -1770,7 +1770,7 @@ ${window.location.origin}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-3 py-1 rounded-xl border border-slate-200">
-                    v3.3.104 • goorno-oficial
+                    v3.3.105 • goorno-oficial
                   </span>
                 </div>
               </div>

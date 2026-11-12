@@ -3480,29 +3480,11 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
-    private val nanumGothicTypeface: Typeface by lazy {
-        try {
-            val tf = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.nanum_gothic_extrabold)
-            if (tf != null) Typeface.create(tf, Typeface.BOLD) else Typeface.create("sans-serif", Typeface.BOLD)
-        } catch (_: Throwable) {
-            Typeface.create("sans-serif", Typeface.BOLD)
-        }
-    }
-
-    private val oswaldTypeface: Typeface by lazy {
-        try {
-            val tf = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.oswald_bold)
-            if (tf != null) Typeface.create(tf, Typeface.BOLD) else Typeface.create("sans-serif", Typeface.BOLD)
-        } catch (_: Throwable) {
-            Typeface.create("sans-serif", Typeface.BOLD)
-        }
-    }
-
     private fun getOverlayTypeface(fontFamilyPref: String): Typeface {
         return when (fontFamilyPref.uppercase(Locale.ROOT)) {
             "MONTSERRAT" -> montserratTypeface
-            "NANUM_GOTHIC", "NANUM" -> nanumGothicTypeface
-            "OSWALD" -> oswaldTypeface
+            "ROBOTO" -> Typeface.create("sans-serif", Typeface.BOLD)
+            "SISTEMA", "SYSTEM", "DEFAULT" -> Typeface.DEFAULT_BOLD
             else -> montserratTypeface
         }
     }
