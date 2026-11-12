@@ -414,7 +414,7 @@ fun GoOrNoComposeApp(
         ForegroundAppDetector.checkInstalledRideApps(context)
     }
 
-    // Tela de Entrada com Google Sign-In (se não logado)
+    // Tela de Entrada com Google Sign-In (se não autenticado)
     if (!googleUser.isSignedIn) {
         DriverLoginScreen(
             onLoginCompleted = { user ->
@@ -1969,21 +1969,34 @@ fun GoOrNoComposeApp(
 
                                                     val previewFontFamily = remember(overlayFontFamily) {
                                                         when (overlayFontFamily.uppercase(java.util.Locale.ROOT)) {
-                                                            "PLUS_JAKARTA_SANS", "PLUS_JAKARTA", "JAKARTA" -> try {
-                                                                FontFamily(Font(R.font.plus_jakarta_sans, FontWeight.Bold))
+                                                            "MONTSERRAT" -> try {
+                                                                FontFamily(Font(R.font.montserrat_bold, FontWeight.Bold))
                                                             } catch (_: Throwable) {
                                                                 FontFamily.SansSerif
                                                             }
-                                                            "SISTEMA" -> FontFamily.Default
-                                                            "ROBOTO" -> FontFamily.SansSerif
-                                                            else -> FontFamily.SansSerif
+                                                            "NANUM_GOTHIC", "NANUM" -> try {
+                                                                FontFamily(Font(R.font.nanum_gothic_extrabold, FontWeight.ExtraBold))
+                                                            } catch (_: Throwable) {
+                                                                FontFamily.SansSerif
+                                                            }
+                                                            "OSWALD" -> try {
+                                                                FontFamily(Font(R.font.oswald_bold, FontWeight.Bold))
+                                                            } catch (_: Throwable) {
+                                                                FontFamily.SansSerif
+                                                            }
+                                                            else -> try {
+                                                                FontFamily(Font(R.font.montserrat_bold, FontWeight.Bold))
+                                                            } catch (_: Throwable) {
+                                                                FontFamily.SansSerif
+                                                            }
                                                         }
                                                     }
                                                     val previewPillarFontSize = when (overlayFontSize) {
-                                                        "P" -> 19.sp
+                                                        "M" -> 22.sp
                                                         "G" -> 25.sp
                                                         "GG" -> 29.sp
-                                                        else -> 22.sp
+                                                        "GGG" -> 34.sp
+                                                        else -> 25.sp
                                                     }
 
                                                     // Card com borda externa e lip inferior mais espesso (6dp)
@@ -2091,7 +2104,7 @@ fun GoOrNoComposeApp(
                                                                                 Box(
                                                                                     modifier = Modifier
                                                                                         .size(3.5.dp, 18.dp)
-                                                                                        .background(if (isColorido) Color.White else barColor, RoundedCornerShape(2.dp))
+                                                                                        .background(barColor, RoundedCornerShape(2.dp))
                                                                                 )
                                                                                 Spacer(modifier = Modifier.width(4.dp))
                                                                                 Text(
@@ -2396,10 +2409,10 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(
-                                        Triple("P", "P (19sp)", "19sp"),
                                         Triple("M", "M (22sp)", "22sp"),
                                         Triple("G", "G (25sp)", "25sp"),
-                                        Triple("GG", "GG (29sp)", "29sp")
+                                        Triple("GG", "GG (29sp)", "29sp"),
+                                        Triple("GGG", "GGG (34sp)", "34sp")
                                     ).forEach { (sizeKey, label, _) ->
                                         val isSel = overlayFontSize == sizeKey
                                         Surface(
@@ -2458,9 +2471,9 @@ fun GoOrNoComposeApp(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     listOf(
-                                        Pair("ROBOTO", "Roboto (Padrão)"),
-                                        Pair("SISTEMA", "Sistema"),
-                                        Pair("PLUS_JAKARTA_SANS", "Plus Jakarta Sans (Bold)")
+                                        Pair("MONTSERRAT", "Montserrat (Bold)"),
+                                        Pair("NANUM_GOTHIC", "Nanum Gothic (Extra-Bold)"),
+                                        Pair("OSWALD", "Oswald (Bold)")
                                     ).forEach { (fontKey, fontLabel) ->
                                         val isSel = overlayFontFamily == fontKey
                                         Surface(

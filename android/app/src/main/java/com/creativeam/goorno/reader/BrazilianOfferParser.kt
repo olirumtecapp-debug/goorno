@@ -612,16 +612,14 @@ object BrazilianOfferParser {
             return -1.0
         }
 
-        // 5ª Prioridade: Linha com decimal puro ou isolado que não é preço nem distância (3.50 a 5.00)
+        // 5ª Prioridade: Linha com decimal ou estrela que não é preço nem distância (3.00 a 5.00)
         for (line in cleaned) {
             val trimmed = line.trim()
-            if (!trimmed.contains("R$", ignoreCase = true) && !trimmed.contains("/km") && !trimmed.contains("km") &&
-                !trimmed.contains("min") && !trimmed.contains(":") && !trimmed.contains("x") && !trimmed.contains("h")
-            ) {
-                val match = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(trimmed)
-                if (match != null) {
-                    val rating = parseBrazilianDecimal(match.groupValues[1])
-                    if (rating != null && rating in 3.50..5.00) {
+            if (!trimmed.contains("R$", ignoreCase = true) && !trimmed.contains("/km") && !trimmed.contains("km") && !trimmed.contains("min") && !trimmed.contains("/h")) {
+                if (Regex("""^[★⭐👤\s]*[3-5][.,]\d{1,2}[\s·•]*$""").matches(trimmed)) {
+                    val decStr = Regex("""[3-5][.,]\d{1,2}""").find(trimmed)?.value
+                    val rating = decStr?.let { parseBrazilianDecimal(it) }
+                    if (rating != null && rating in 3.00..5.00) {
                         return rating
                     }
                 }

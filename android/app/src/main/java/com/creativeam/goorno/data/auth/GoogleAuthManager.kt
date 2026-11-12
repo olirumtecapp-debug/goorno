@@ -76,7 +76,7 @@ object GoogleAuthManager {
         } else if (cached.isSignedIn) {
             _currentUserState.value = cached
         } else {
-            // Garante acesso imediato ao app sem travar o motorista com telas de bloqueio
+            // Garante acesso direto e imediato para o motorista trabalhar sem tela de bloqueio
             val guestUser = DriverAuthUser(
                 uid = "offline_driver",
                 displayName = "Motorista GoOrNo",

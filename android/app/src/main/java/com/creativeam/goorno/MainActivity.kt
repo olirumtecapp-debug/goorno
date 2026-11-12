@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
             handleIntent(intent)
         } catch (_: Throwable) {}
 
-        // Renderiza a interface Compose imediatamente para abertura instantanea sem travamentos
+        // Renderiza a interface Compose imediatamente para abertura instantanea em 0ms
         setContent {
             GoOrNoTheme {
                 GoOrNoComposeApp(
@@ -141,9 +141,6 @@ class MainActivity : ComponentActivity() {
             app.overlayPanel.showOrUpdateTopStatusBar(accessibilityEnabled = hasAccessibilityPerm)
             if (hasAccessibilityPerm) {
                 CopilotNotificationReceiver.showActiveNotification(this)
-                try {
-                    GoOrNoForegroundKeepAliveService.start(this)
-                } catch (_: Throwable) {}
             }
         } else if (isOverlayReady && app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
             app.overlayPanel.hidePanel()

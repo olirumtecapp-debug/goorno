@@ -101,9 +101,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         }
 
         RuntimeDiagnosticsBus.setAccessibilityConnected(true)
-        try {
-            GoOrNoForegroundKeepAliveService.start(this)
-        } catch (_: Throwable) {}
+        // KeepAlive desnecessario no servico de acessibilidade nativo
         val app = applicationContext as? GoOrNoApplication
 
         app?.overlayPanel?.onOfferCardClosed = {
@@ -161,22 +159,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         pollingJob = serviceScope.launch {
             while (isActive) {
                 try {
+                    val app = applicationContext as? GoOrNoApplication
                     val currentRootPkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Throwable) { null }
                     if (currentRootPkg != null && SourceApp.isAllowedDriverPackage(currentRootPkg)) {
                         lastKnownForegroundPkg = currentRootPkg
                     }
-                    val app = applicationContext as? GoOrNoApplication
-                    val isHeavyAppInFront = isHeavyMediaOrSocialApp(lastKnownForegroundPkg)
-                    if (isHeavyAppInFront) {
-                        // Motorista está no Spotify ou Instagram: suspende escaneamento ativo para poupar RAM e CPU
-                        System.gc()
-                        delay(2000L)
-                        continue
-                    }
 
                     val isDriverAppActive = SourceApp.isAllowedDriverPackage(lastKnownForegroundPkg)
-                    val loopDelay = if (isDriverAppActive) 150L else 400L
-                    val minScanInterval = if (isDriverAppActive) 140L else 380L
+                    val loopDelay = if (isDriverAppActive) 150L else 350L
+                    val minScanInterval = if (isDriverAppActive) 140L else 320L
 
                     if (app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
                         val now = System.currentTimeMillis()
@@ -877,7 +868,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // Classifica o contexto da tela antes de abrir o card flutuante
         val firstApp = parsedOffers.firstOrNull()?.sourceApp ?: SourceApp.NINETY_NINE_DRIVER
         val dispatchContext = RideScreenContextClassifier.classify(firstApp, screenLines)
-        if (dispatchContext == RideScreenContext.NO_OFFER && parsedOffers.isEmpty()) {
+        if (parsedOffers.isEmpty() && (dispatchContext == RideScreenContext.NINETYNINE_REQUEST_LIST || dispatchContext == RideScreenContext.UBER_RADAR_LIST || dispatchContext == RideScreenContext.NO_OFFER)) {
             app.overlayPanel.hideOfferCardOnly()
             wasViewing99List = false
             last99ListSignature = ""
