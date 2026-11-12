@@ -2137,7 +2137,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val tvTimer = TextView(context).apply {
             text = "${remainingSeconds}s"
-            setTextColor(Color.WHITE.copy(alpha = 0.85f))
+            setTextColor(Color.parseColor("#D9FFFFFF"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTypeface(cardTypeface, Typeface.BOLD)
             setPadding(dp(4), 0, dp(4), 0)
@@ -2147,7 +2147,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val btnClose = TextView(context).apply {
             text = "✕"
-            setTextColor(Color.WHITE.copy(alpha = 0.85f))
+            setTextColor(Color.parseColor("#D9FFFFFF"))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
             setTypeface(cardTypeface, Typeface.BOLD)
             gravity = Gravity.CENTER
@@ -2182,7 +2182,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
                 val tvL = TextView(context).apply {
                     text = label
-                    setTextColor(Color.WHITE.copy(alpha = 0.82f))
+                    setTextColor(Color.parseColor("#D1FFFFFF"))
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                     setTypeface(cardTypeface, Typeface.BOLD)
                     gravity = Gravity.CENTER
@@ -2198,7 +2198,7 @@ class FloatingOverlayPanel(private val context: Context) {
                 // Barra indicadora semafórica individual colada no número (ex: vermelho no R$/km, amarelo no R$/h, verde na Nota)
                 val bar = View(context).apply {
                     background = roundedBg(barColorHex, 2f)
-                    layoutParams = LinearLayout.LayoutParams(dp(3.5f), dp(22)).apply {
+                    layoutParams = LinearLayout.LayoutParams(dp(4), dp(22)).apply {
                         marginEnd = dp(6)
                     }
                 }
