@@ -35,6 +35,8 @@ class GoOrNoApplication : Application() {
     lateinit var overlayPanel: FloatingOverlayPanel
         private set
 
+    fun isOverlayPanelInitialized(): Boolean = ::overlayPanel.isInitialized
+
     override fun onCreate() {
         super.onCreate()
         installGlobalCrashShield()
@@ -155,7 +157,12 @@ class GoOrNoApplication : Application() {
                 throwable.javaClass.name.contains("Credential")
 
             if (isRecoverable) {
-                Log.w("GoOrNoCrashShield", "\uD83D\uDEE1\uFE0F Erro recuperavel absorvido silenciosamente: ${throwable.javaClass.simpleName} - ${throwable.message}")
+                Log.w("GoOrNoCrashShield", "🛡️ Erro recuperavel absorvido silenciosamente: ${throwable.javaClass.simpleName} - ${throwable.message}")
+                if (thread.name == "main") {
+                    try {
+                        Looper.loop()
+                    } catch (_: Throwable) {}
+                }
                 return@setDefaultUncaughtExceptionHandler
             }
 
@@ -163,7 +170,9 @@ class GoOrNoApplication : Application() {
                 return@setDefaultUncaughtExceptionHandler
             }
 
-            Log.w("GoOrNoCrashShield", "\uD83D\uDEE1\uFE0F Erro na thread principal absorvido com seguranca: ${throwable.javaClass.simpleName} - ${throwable.message}")
+            try {
+                originalHandler?.uncaughtException(thread, throwable)
+            } catch (_: Throwable) {}
         }
     }
 }

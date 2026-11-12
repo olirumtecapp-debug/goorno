@@ -73,9 +73,32 @@ object GoogleAuthManager {
             )
             saveCachedUser(context, user)
             _currentUserState.value = user
-        } else {
+        } else if (cached.isSignedIn) {
             _currentUserState.value = cached
+        } else {
+            // Garante acesso imediato ao app sem travar o motorista com telas de bloqueio
+            val guestUser = DriverAuthUser(
+                uid = "offline_driver",
+                displayName = "Motorista GoOrNo",
+                isSignedIn = true
+            )
+            saveCachedUser(context, guestUser)
+            _currentUserState.value = guestUser
         }
+    }
+
+    fun saveUser(context: Context, user: DriverAuthUser) {
+        saveCachedUser(context, user)
+        _currentUserState.value = user
+    }
+
+    fun setGuestUser(context: Context) {
+        val guest = DriverAuthUser(
+            uid = "offline_driver",
+            displayName = "Motorista GoOrNo",
+            isSignedIn = true
+        )
+        saveUser(context, guest)
     }
 
     fun getCachedUser(context: Context): DriverAuthUser {

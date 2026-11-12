@@ -61,10 +61,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        handleIntent(intent)
-        requestNotificationPermissionIfNeeded()
-        refreshPermissionsState()
+        try {
+            handleIntent(intent)
+        } catch (_: Throwable) {}
 
+        // Renderiza a interface Compose imediatamente para abertura instantanea sem travamentos
         setContent {
             GoOrNoTheme {
                 GoOrNoComposeApp(
@@ -82,6 +83,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+
+        try {
+            requestNotificationPermissionIfNeeded()
+            refreshPermissionsState()
+        } catch (_: Throwable) {}
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -129,7 +135,9 @@ class MainActivity : ComponentActivity() {
         RuntimeDiagnosticsBus.setAccessibilityConnected(hasAccessibilityPerm)
 
         val app = applicationContext as? GoOrNoApplication
-        if (hasOverlayPerm && app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
+        val isOverlayReady = app != null && app.isOverlayPanelInitialized()
+
+        if (hasOverlayPerm && isOverlayReady && app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
             app.overlayPanel.showOrUpdateTopStatusBar(accessibilityEnabled = hasAccessibilityPerm)
             if (hasAccessibilityPerm) {
                 CopilotNotificationReceiver.showActiveNotification(this)
@@ -137,12 +145,12 @@ class MainActivity : ComponentActivity() {
                     GoOrNoForegroundKeepAliveService.start(this)
                 } catch (_: Throwable) {}
             }
-        } else if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
+        } else if (isOverlayReady && app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
             app.overlayPanel.hidePanel()
             CopilotNotificationReceiver.cancelActiveNotification(this)
         }
 
-        if (app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
+        if (isOverlayReady && app?.overlayPanel?.isCopilotMonitoringEnabled() == false) {
             RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.SERVICE_OFF)
         } else if (!hasOverlayPerm || !hasAccessibilityPerm) {
             if (!RuntimeDiagnosticsBus.ocrActive.value) {

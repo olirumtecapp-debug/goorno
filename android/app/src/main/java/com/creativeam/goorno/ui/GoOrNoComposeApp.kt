@@ -414,10 +414,11 @@ fun GoOrNoComposeApp(
         ForegroundAppDetector.checkInstalledRideApps(context)
     }
 
-    // Tela de Entrada Obrigatória com Google Sign-In
+    // Tela de Entrada com Google Sign-In (se não logado)
     if (!googleUser.isSignedIn) {
         DriverLoginScreen(
-            onLoginCompleted = {
+            onLoginCompleted = { user ->
+                com.creativeam.goorno.data.auth.GoogleAuthManager.saveUser(context, user)
                 notifyUser("Bem-vindo ao GoOrNo!")
             },
             onNotify = notifyUser

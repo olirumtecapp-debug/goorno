@@ -30,40 +30,40 @@ class GoOrNoForegroundKeepAliveService : Service() {
     override fun onCreate() {
         super.onCreate()
         acquireWakeLockSafely()
+        promoteToForegroundSafely()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         isRunning = true
         acquireWakeLockSafely()
+        promoteToForegroundSafely()
+        return START_STICKY
+    }
+
+    private fun promoteToForegroundSafely() {
         try {
             val notification = CopilotNotificationReceiver.buildActiveNotification(this)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    CopilotNotificationReceiver.STATUS_NOTIFICATION_ID,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                )
+                try {
+                    startForeground(
+                        CopilotNotificationReceiver.STATUS_NOTIFICATION_ID,
+                        notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    )
+                } catch (_: Throwable) {
+                    startForeground(CopilotNotificationReceiver.STATUS_NOTIFICATION_ID, notification)
+                }
             } else {
                 startForeground(CopilotNotificationReceiver.STATUS_NOTIFICATION_ID, notification)
             }
         } catch (_: Throwable) {
+            // Ignorado com seguranca se o sistema restringir foreground service temporariamente
         }
-
-        return START_STICKY
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        // Se o usuário fechar o aplicativo da lista de apps recentes (swipe),
-        // garante que o serviço continue rodando em primeiro plano sem ser finalizado pelo Android
-        try {
-            val restartIntent = Intent(applicationContext, GoOrNoForegroundKeepAliveService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                ContextCompat.startForegroundService(applicationContext, restartIntent)
-            } else {
-                applicationContext.startService(restartIntent)
-            }
-        } catch (_: Throwable) {}
+        // No Android 12+, evitamos chamar startForegroundService no onTaskRemoved para prevenir ForegroundServiceStartNotAllowedException
     }
 
     override fun onDestroy() {
@@ -96,7 +96,9 @@ class GoOrNoForegroundKeepAliveService : Service() {
         @Volatile
         private var isRunning = false
 
+        @Synchronized
         fun start(context: Context) {
+            if (isRunning) return
             try {
                 val intent = Intent(context, GoOrNoForegroundKeepAliveService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -106,9 +108,11 @@ class GoOrNoForegroundKeepAliveService : Service() {
                 }
                 isRunning = true
             } catch (_: Throwable) {
+                // Silenciosamente absorvido se o Android 12+ proibir inicio a partir de background
             }
         }
 
+        @Synchronized
         fun stop(context: Context) {
             try {
                 val intent = Intent(context, GoOrNoForegroundKeepAliveService::class.java)

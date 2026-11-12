@@ -3399,13 +3399,17 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
-    private fun getOverlayTypeface(fontFamilyPref: String): Typeface {
-        return try {
+    private val cachedPlusJakartaTypeface: Typeface by lazy {
+        try {
             val tf = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.plus_jakarta_sans)
             if (tf != null) Typeface.create(tf, Typeface.BOLD) else Typeface.create("sans-serif", Typeface.BOLD)
         } catch (_: Throwable) {
             Typeface.create("sans-serif", Typeface.BOLD)
         }
+    }
+
+    private fun getOverlayTypeface(fontFamilyPref: String): Typeface {
+        return cachedPlusJakartaTypeface
     }
 
     private fun roundedBg(hexColor: String, radiusDp: Float): GradientDrawable {
