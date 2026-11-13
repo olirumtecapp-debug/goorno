@@ -1,0 +1,51 @@
+name: GoOrNo Paralelo V01 - Isolated APK
+
+on:
+  push:
+    branches:
+      - experiment/goorno_paralelo_V01_20261113
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-paralelo-v01.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: goorno-paralelo-v01
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build independent parallel APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle 8.5
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+      - name: Run unit tests and compile parallel APK
+        run: |
+          cd android
+          gradle testDebugUnitTest --stacktrace
+          gradle assembleRelease --stacktrace
+      - name: Prepare strictly isolated artifact
+        run: |
+          mkdir -p paralelo-output
+          cp android/app/build/outputs/apk/release/app-release.apk paralelo-output/goorno_paralelo_V01.apk
+      - name: Upload only parallel APK (never publish official)
+        uses: actions/upload-artifact@v4
+        with:
+          name: goorno_paralelo_V01
+          path: paralelo-output/goorno_paralelo_V01.apk
+          if-no-files-found: error
+          retention-days: 30
