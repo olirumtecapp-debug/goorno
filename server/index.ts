@@ -1128,7 +1128,7 @@ app.get("/api/app-version", (_req, res) => {
     releaseDate: "2026-11-13",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 57317245,
+    fileSizeBytes: 57246485,
     fileSizeFormatted: "54.7 MB",
     changelog: [
       "⚡ Leitura ultrarrápida: remoção de sobrecarga de janelas com leitura imediata em todos os chamados.",
