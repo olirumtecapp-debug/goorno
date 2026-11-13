@@ -37,6 +37,9 @@ android {
             signingConfig signingConfigs.fixedKey
         }
         release {
+            // Side-by-side experimental build; never replace the official GoOrNo.
+            applicationIdSuffix ".paralelov01"
+            versionNameSuffix "-paralelo-V01"
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.fixedKey
