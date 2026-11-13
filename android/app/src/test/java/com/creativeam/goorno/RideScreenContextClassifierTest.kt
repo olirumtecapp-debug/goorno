@@ -3,6 +3,7 @@ package com.creativeam.goorno
 import com.creativeam.goorno.detector.RideScreenContext
 import com.creativeam.goorno.detector.RideScreenContextClassifier
 import com.creativeam.goorno.model.SourceApp
+import com.creativeam.goorno.reader.uber.UberOfferReader
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -253,4 +254,32 @@ class RideScreenContextClassifierTest {
         assertEquals(RideScreenContext.NO_OFFER, context)
         assertFalse(context.shouldAnalyze)
     }
+    @Test
+    fun radarDisputeCardsAreIndependentBeforeClick() {
+        val lines = listOf(
+            "Radar de viagens",
+            "UberX", "R$ 11,16", "Est. de R$2,19/km",
+            "4,94 (1830)", "+R$ 2,50 incluído",
+            "4 min (1.4 km) Rua A", "12 minutos (3.7 km) Rua B",
+            "Tenho interesse",
+            "UberX", "R$ 9,41", "Est. de R$2,14/km",
+            "4,96 (209)", "+R$ 2,50 incluído",
+            "5 min (1.5 km) Rua C", "8 minutos (2.9 km) Rua D",
+            "Tenho interesse"
+        )
+        val parsed = UberOfferReader.parseMultipleOffersFromScreen(lines)
+        assertEquals(2, parsed.size)
+        assertEquals(11.16, parsed[0].offeredPrice!!, 0.001)
+        assertEquals(9.41, parsed[1].offeredPrice!!, 0.001)
+    }
+
+    @Test
+    fun oneRadarInterestCardIsReadImmediately() {
+        val parsed = UberOfferReader.parseMultipleOffersFromScreen(listOf(
+            "Radar de viagens", "UberX", "R$11,16",
+            "4 min (1.4 km)", "12 min (3.7 km)", "Tenho interesse"
+        ))
+        assertEquals(1, parsed.size)
+    }
+
 }
