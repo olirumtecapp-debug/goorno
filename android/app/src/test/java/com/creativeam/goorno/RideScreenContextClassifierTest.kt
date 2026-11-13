@@ -174,7 +174,7 @@ class RideScreenContextClassifierTest {
         )
         val context = RideScreenContextClassifier.classify(SourceApp.UBER_DRIVER, lines)
         assertEquals(RideScreenContext.UBER_RADAR_LIST, context)
-        assertFalse("Lista geral do Radar da Uber NUNCA deve ser analisada", context.shouldAnalyze)
+        assertTrue("O motorista precisa analisar o Radar antes de disputar com Tenho interesse", context.shouldAnalyze)
     }
 
     @Test
