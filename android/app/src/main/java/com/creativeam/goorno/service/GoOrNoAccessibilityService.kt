@@ -62,8 +62,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private val shownOfferTimestamps = LinkedHashMap<String, Long>()
     private var currentLifecycleState: OfferLifecycleState = OfferLifecycleState.OUTSIDE_ALLOWED_APP
     private var lastScreenContextMode: String = ""
-    private var lastKnownForegroundPkg: String = ""
-    private var lastScanTimeMillis: Long = 0L
+    @Volatile private var lastKnownForegroundPkg: String = ""
+    @Volatile private var lastScanTimeMillis: Long = 0L
     private val isScanInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var lastAutoScreenshotTimeMillis: Long = 0L
     private var lastCardClosedTimeMillis: Long = 0L
@@ -74,8 +74,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     private var wasViewing99List: Boolean = false
     @Volatile private var recentlyDisplayedOffers: List<StandardRideOffer> = emptyList()
     @Volatile private var recentlyDisplayedAtMillis: Long = 0L
-    private var isTakingAutoScreenshot: Boolean = false
+    @Volatile private var isTakingAutoScreenshot: Boolean = false
     private var consecutiveScansWithoutOffers: Int = 0
+    @Volatile private var captureEpoch: Long = 0L
 
     private val mlKitRecognizer by lazy {
         TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -134,9 +135,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         if (level >= TRIM_MEMORY_BACKGROUND || level >= TRIM_MEMORY_RUNNING_CRITICAL) {
-            shownOfferTimestamps.clear()
-            isTakingAutoScreenshot = false
-            System.gc()
+            // Avoid System.gc() and clearing active async screenshot flags.
+            // Android manages GC; forced collection during a ride adds pauses.
+            android.util.Log.w("GoOrNoParalelo", "memory_pressure level=" + level)
         }
     }
 
@@ -166,22 +167,27 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     }
 
                     val isDriverAppActive = SourceApp.isAllowedDriverPackage(lastKnownForegroundPkg)
-                    val loopDelay = if (isDriverAppActive) 150L else 350L
-                    val minScanInterval = if (isDriverAppActive) 140L else 320L
+                    val minScanInterval = if (isDriverAppActive) 260L else 700L
 
                     if (app?.overlayPanel?.isCopilotMonitoringEnabled() == true) {
                         val now = System.currentTimeMillis()
                         if (app.overlayPanel.isCardCurrentlyVisible()) {
-                            checkIfOfferDismissedAndCloseCard(activeRootPkg = null, eventPkg = null)
+                            mainHandler.post {
+                                checkIfOfferDismissedAndCloseCard(activeRootPkg = null, eventPkg = null)
+                            }
                         }
                         if (now - lastScanTimeMillis >= minScanInterval) {
-                            scanCurrentScreen(eventPkg = null, forceThrottleBypass = false)
+                            // Accessibility APIs and window state remain on main thread.
+                            mainHandler.post {
+                                scanCurrentScreen(eventPkg = null, forceThrottleBypass = false)
+                            }
                         }
                     }
-                } catch (_: Throwable) {
+                } catch (t: Exception) {
+                    android.util.Log.w("GoOrNoParalelo", "poll_failed", t)
                 }
                 val isDriverAppActive = SourceApp.isAllowedDriverPackage(lastKnownForegroundPkg)
-                val loopDelay = if (isDriverAppActive) 150L else 400L
+                val loopDelay = if (isDriverAppActive) 300L else 750L
                 delay(loopDelay)
             }
         }
@@ -223,6 +229,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 app?.overlayPanel?.clearRecentlyDismissed()
                 app?.overlayPanel?.hideOfferCardOnly()
             }
+            if (lastKnownForegroundPkg != evtPkg) captureEpoch++
             lastKnownForegroundPkg = evtPkg
             return
         }
@@ -234,6 +241,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             lastScreenContextMode = ""
             consecutiveScansWithoutOffers = 0
             app?.overlayPanel?.clearRecentlyDismissed()
+            captureEpoch++
             lastKnownForegroundPkg = effectivePkg
         }
 
@@ -257,8 +265,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
     private fun scanCurrentScreen(eventPkg: String?, forceThrottleBypass: Boolean) {
         val now = System.currentTimeMillis()
-        if (!forceThrottleBypass && now - lastScanTimeMillis < 100L) return
-        if (!forceThrottleBypass && now - lastCardClosedTimeMillis < 120L) return
+        if (!forceThrottleBypass && now - lastScanTimeMillis < 240L) return
+        if (!forceThrottleBypass && now - lastCardClosedTimeMillis < 180L) return
         if (!isScanInProgress.compareAndSet(false, true)) {
             return
         }
@@ -267,10 +275,17 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // 1. Identifica estritamente a janela ativa em primeiro plano
         val activeRoot = try { rootInActiveWindow } catch (_: Exception) { null }
-        val activePkg = activeRoot?.packageName?.toString()
-            ?: eventPkg?.takeIf { SourceApp.isAllowedDriverPackage(it) }
-            ?: lastKnownForegroundPkg.takeIf { SourceApp.isAllowedDriverPackage(it) }
-            ?: ""
+        // Our non-focusable overlay may momentarily own the active root.
+        // Never trust stale driver packages over a *different* foreground app.
+        val rootPkg = activeRoot?.packageName?.toString()
+        val activePkg = when {
+            SourceApp.isAllowedDriverPackage(rootPkg) -> rootPkg!!
+            rootPkg == packageName || rootPkg == null ->
+                eventPkg?.takeIf { SourceApp.isAllowedDriverPackage(it) }
+                    ?: lastKnownForegroundPkg.takeIf { SourceApp.isAllowedDriverPackage(it) }
+                    ?: ""
+            else -> ""
+        }
 
         // Se a tela ativa não pertence a um aplicativo de motorista permitido, aborta imediatamente
         if (!SourceApp.isAllowedDriverPackage(activePkg)) {
@@ -291,6 +306,22 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val positionedNodes = mutableListOf<PositionedText>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
             collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
+        }
+
+        // If the app's overlay takes focus, use a driver-owned window
+        // strictly from the same known app rather than scanning our UI.
+        if (positionedNodes.isEmpty() && activeRoot?.packageName?.toString() == packageName) {
+            try {
+                for (window in windows.orEmpty()) {
+                    val root = window.root ?: continue
+                    if (root.packageName?.toString() == targetPkg) {
+                        collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
+                        if (positionedNodes.isNotEmpty()) break
+                    }
+                }
+            } catch (t: Exception) {
+                android.util.Log.w("GoOrNoParalelo", "driver_window_fallback_failed", t)
+            }
         }
 
         if (positionedNodes.isEmpty()) {
@@ -530,7 +561,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // Watchdog anti-travamento: se o Android descartou um callback durante a troca de app (ex: abrir WhatsApp),
         // libera o semáforo após 2.4 segundos para nunca parar de ler!
         if (isTakingAutoScreenshot) {
-            if (now - lastAutoScreenshotTimeMillis > 2400L) {
+            if (now - lastAutoScreenshotTimeMillis > 4000L) {
                 isTakingAutoScreenshot = false
             } else {
                 return
@@ -541,6 +572,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         isTakingAutoScreenshot = true
         lastAutoScreenshotTimeMillis = now
+        val screenshotEpoch = captureEpoch
 
         try {
             takeScreenshot(
@@ -630,7 +662,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                     currentForeground == packageName &&
                                     lastKnownForegroundPkg == targetPkg &&
                                     (applicationContext as? GoOrNoApplication)?.overlayPanel?.isCardCurrentlyVisible() == true
-                                if (currentForeground != targetPkg && !ownOverlayFocused) {
+                                val ownAppFocused = currentForeground == packageName &&
+                                    lastKnownForegroundPkg == targetPkg
+                                if (screenshotEpoch != captureEpoch ||
+                                    (currentForeground != targetPkg && !ownOverlayFocused && !ownAppFocused)) {
                                     try { finalOcrBitmap.recycle() } catch (_: Throwable) {}
                                     isTakingAutoScreenshot = false
                                     return@addOnSuccessListener
@@ -854,7 +889,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // Classifica o contexto da tela antes de abrir o card flutuante
         val firstApp = parsedOffers.firstOrNull()?.sourceApp ?: SourceApp.NINETY_NINE_DRIVER
         val dispatchContext = RideScreenContextClassifier.classify(firstApp, screenLines)
-        if (parsedOffers.isEmpty() && (dispatchContext == RideScreenContext.NINETYNINE_REQUEST_LIST || dispatchContext == RideScreenContext.UBER_RADAR_LIST || dispatchContext == RideScreenContext.NO_OFFER)) {
+        // The old condition could never execute because empty offers returned
+        // above. Never display 99 request-list items as individual map offers.
+        if (dispatchContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
+            dispatchContext == RideScreenContext.NO_OFFER) {
             app.overlayPanel.hideOfferCardOnly()
             wasViewing99List = false
             last99ListSignature = ""
