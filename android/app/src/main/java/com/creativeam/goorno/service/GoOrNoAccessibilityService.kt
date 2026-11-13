@@ -484,6 +484,11 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // Se a árvore de acessibilidade contém oferta mas ocultou valores ou distâncias (ex: canvas 99):
         triggerAutomaticAccessibilityOcrIfNeeded(targetApp, targetPkg, now)
+        } catch (t: Exception) {
+            // A localized read failure must not bring the whole process down.
+            // Do not swallow fatal VM errors; distinguish a read exception.
+            android.util.Log.w("GoOrNoParalelo", "scan_failed " + t.javaClass.simpleName, t)
+            RuntimeDiagnosticsBus.updateRuntimeState(CopilotRuntimeState.READ_ERROR)
         } finally {
             isScanInProgress.set(false)
         }
