@@ -41,6 +41,43 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:882187108549:android:e248d80d1d6f8e9610f0ac",
+        "android_client_info": {
+          "package_name": "com.creativeam.goorno.paralelov01"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "882187108549-u2um668f25u959ta6jduq98g0f8hj1vk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.creativeam.goorno",
+            "certificate_hash": "f4e28964fa28d8d8d5486051b87e09fd1ce0228a"
+          }
+        },
+        {
+          "client_id": "882187108549-gimrtr2p10gs08rko62nh66pejgnm407.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGUIFkv2Nz60QdHEj_JLYmJbLwSthoX8U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "882187108549-gimrtr2p10gs08rko62nh66pejgnm407.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
