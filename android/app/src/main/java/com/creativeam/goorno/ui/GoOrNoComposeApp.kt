@@ -1967,21 +1967,7 @@ fun GoOrNoComposeApp(
                                                         else -> Color(0xFF94A3B8)
                                                     }
 
-                                                    val previewFontFamily = remember(overlayFontFamily) {
-                                                        when (overlayFontFamily.uppercase(java.util.Locale.ROOT)) {
-                                                            "POPPINS", "POPPINS_EXTRABOLD" -> try {
-                                                                FontFamily(Font(R.font.poppins_extrabold, FontWeight.ExtraBold))
-                                                            } catch (_: Throwable) {
-                                                                FontFamily.SansSerif
-                                                            }
-                                                            "SISTEMA", "SYSTEM", "DEFAULT" -> FontFamily.Default
-                                                            else -> try {
-                                                                FontFamily(Font(R.font.poppins_extrabold, FontWeight.ExtraBold))
-                                                            } catch (_: Throwable) {
-                                                                FontFamily.SansSerif
-                                                            }
-                                                        }
-                                                    }
+                                                    val previewFontFamily = FontFamily.Default
                                                     val previewPillarFontSize = when (overlayFontSize) {
                                                         "M" -> 22.sp
                                                         "G" -> 25.sp
@@ -2431,64 +2417,6 @@ fun GoOrNoComposeApp(
                                                     color = if (isSel) Color.White else PetrolDarkText,
                                                     fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
                                                     fontSize = 11.sp,
-                                                    maxLines = 1,
-                                                    softWrap = false
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                HorizontalDivider(color = CleanCardBorder)
-
-                                // Estilo da Fonte / Tipografia
-                                Text(
-                                    text = "Estilo da Fonte / Tipografia",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 13.5.sp,
-                                    color = PetrolDarkText
-                                )
-                                Text(
-                                    text = "Escolha a tipografia ideal para visualização rápida no painel",
-                                    fontSize = 11.5.sp,
-                                    color = MutedText
-                                )
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    listOf(
-                                        Pair("POPPINS", "Poppins (Extra-Bold)"),
-                                        Pair("SISTEMA", "Sistema (Padrão)")
-                                    ).forEach { (fontKey, fontLabel) ->
-                                        val isSel = overlayFontFamily == fontKey
-                                        Surface(
-                                            color = if (isSel) PetrolHeader else SoftSurfaceVariant,
-                                            shape = RoundedCornerShape(12.dp),
-                                            border = BorderStroke(1.5.dp, if (isSel) PetrolHeader else CleanCardBorder),
-                                            modifier = Modifier.clickable {
-                                                overlayFontFamily = fontKey
-                                                savedFlag = false
-                                                val updated = config.copy(overlayFontFamily = fontKey)
-                                                scope.launch {
-                                                    app.preferencesRepository.saveConfig(updated)
-                                                    app.overlayPanel.applyConfig(updated)
-                                                    notifyUser("Fonte: $fontLabel")
-                                                }
-                                            }
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.Center
-                                            ) {
-                                                Text(
-                                                    text = fontLabel,
-                                                    color = if (isSel) Color.White else PetrolDarkText,
-                                                    fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
-                                                    fontSize = 11.5.sp,
                                                     maxLines = 1,
                                                     softWrap = false
                                                 )

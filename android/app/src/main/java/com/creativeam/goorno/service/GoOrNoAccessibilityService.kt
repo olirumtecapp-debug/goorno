@@ -287,27 +287,10 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 2. Coleta nós da janela ativa e de janelas/diálogos em transição do mesmo app
+        // 2. Coleta nós da janela ativa em primeiro plano (sem sobrecarga de IPC em janelas secundárias)
         val positionedNodes = mutableListOf<PositionedText>()
-        val rootsToScan = mutableListOf<AccessibilityNodeInfo>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
-            rootsToScan.add(activeRoot)
-        }
-        // Consulta todas as janelas do aplicativo de motorista para capturar diálogos e gavetas em transição
-        try {
-            val allWindows = windows
-            if (!allWindows.isNullOrEmpty()) {
-                for (win in allWindows) {
-                    val root = win.root ?: continue
-                    if (root.packageName?.toString() == targetPkg && !rootsToScan.contains(root)) {
-                        rootsToScan.add(root)
-                    }
-                }
-            }
-        } catch (_: Exception) {}
-
-        for (root in rootsToScan) {
-            collectPositionedTexts(root, positionedNodes, depth = 0, requireVisible = false)
+            collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
         }
 
         if (positionedNodes.isEmpty()) {
@@ -345,6 +328,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val joinedScreenLower = normalizedTexts.joinToString(" ").lowercase(Locale.ROOT)
         // hasRideActionBtn — apenas tokens EXCLUSIVOS de telas de oferta real.
         val hasRideActionBtn = joinedScreenLower.contains("aceitar") ||
+            joinedScreenLower.contains("escolher") ||
             joinedScreenLower.contains("selecionar") ||
             joinedScreenLower.contains("deslize") ||
             joinedScreenLower.contains("nova corrida") ||
@@ -361,6 +345,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             joinedScreenLower.contains("pgto. no app") ||
             joinedScreenLower.contains("pagamento no app") ||
             joinedScreenLower.contains("embarque") ||
+            joinedScreenLower.contains("pop") ||
             joinedScreenLower.contains("99pop") ||
             joinedScreenLower.contains("99moto") ||
             joinedScreenLower.contains("99negocia") ||
@@ -368,12 +353,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         // ============================================================
         // OFFER GUARD v3 — BLINDAGEM TOTAL DE TELA OCIOSA:
-        // Se a tela do motorista está no modo "Buscando", "Conectar",
-        // ou mostrando "99 Abastece" / gaveta "Solicitações (X)"
-        // e NÃO HÁ botão explícito de chamada ("Aceitar" ou "Escolher"):
-        // É 100% TELA OCIOSA DO MAPA! ZERO OFERTAS! NÃO ABRE CARD!
+        // Se a tela tem dados financeiros autênticos (Preço R$ E distância/tempo),
+        // NÃO é tela ociosa, mesmo se o mapa ao fundo estiver "Buscando".
         // ============================================================
-        val isPainelOrIdleScreen =
+        val hasCurrency = normalizedTexts.any { it.contains("R$") }
+        val hasDistanceOrTime = normalizedTexts.any {
+            it.contains("min", ignoreCase = true) || it.contains("km", ignoreCase = true) || it.contains(" m", ignoreCase = true)
+        }
+        val hasRealOfferData = hasCurrency && hasDistanceOrTime
+
+        val isPainelOrIdleScreen = !hasRealOfferData && (
             // Modo "Buscando" (motorista online esperando corrida no mapa da 99)
             (joinedScreenLower.contains("buscando") && !hasRideActionBtn) ||
             // Modo "Conectar" (motorista offline ou painel inicial)
@@ -384,6 +373,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             ((joinedScreenLower.contains("solicitações (") || joinedScreenLower.contains("solicitacoes (")) && !hasRideActionBtn) ||
             // Recompensas / Ganhos
             ((joinedScreenLower.contains("recompensas") || joinedScreenLower.contains("central de ganhos")) && !hasRideActionBtn)
+        )
 
         if (isPainelOrIdleScreen) {
             currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
@@ -898,6 +888,53 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 validOffers.add(offer.copy(isRepeatedOffer = true))
             } else {
                 // Ainda está dentro dos 15 segundos do toque original; ignora para não repicar o card
+            }
+        }
+
+        // 1. Enriquecimento Instantâneo de Nota (0ms):
+        // Se o card já está visível para a MESMA corrida mas estava com nota nula/tracinho,
+        // e o scan atual da acessibilidade encontrou a nota do passageiro (ex: animação do mapinha terminou),
+        // atualiza o card imediatamente sem recriar, sem flicker e sem depender de OCR!
+        if (app.overlayPanel.isCardCurrentlyVisible() && recentlyDisplayedOffers.isNotEmpty()) {
+            val currentOffers = recentlyDisplayedOffers
+            var enrichedAny = false
+            val enrichedOffers = currentOffers.map { current ->
+                if (current.passengerRating == null && !current.passengerIsNew) {
+                    val matching = parsedOffers.firstOrNull { candidate ->
+                        candidate.sourceApp == current.sourceApp &&
+                        candidate.passengerRating != null &&
+                        Math.abs((candidate.offeredPrice ?: 0.0) - (current.offeredPrice ?: 0.0)) < 0.20
+                    }
+                    if (matching != null && matching.passengerRating != null) {
+                        enrichedAny = true
+                        current.copy(
+                            passengerRating = matching.passengerRating,
+                            passengerRatingRaw = matching.passengerRatingRaw,
+                            passengerRideCount = matching.passengerRideCount,
+                            passengerBadge = matching.passengerBadge
+                        )
+                    } else {
+                        current
+                    }
+                } else {
+                    current
+                }
+            }
+
+            if (enrichedAny) {
+                recentlyDisplayedOffers = enrichedOffers
+                serviceScope.launch {
+                    val config = app.preferencesRepository.getInMemoryConfig()
+                    val evaluations = enrichedOffers.map { FinancialEngine.evaluate(it, config) }
+                        .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
+                    if (evaluations.isNotEmpty()) {
+                        mainHandler.post {
+                            if (app.overlayPanel.isCardCurrentlyVisible()) {
+                                app.overlayPanel.updateRatingsWithoutReset(evaluations)
+                            }
+                        }
+                    }
+                }
             }
         }
 

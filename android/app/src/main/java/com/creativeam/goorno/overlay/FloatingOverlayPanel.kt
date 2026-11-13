@@ -2029,7 +2029,7 @@ class FloatingOverlayPanel(private val context: Context) {
         val isColorido = theme == "COLORIDO"
         val isClaro = theme == "CLARO" || theme == "LIGHT"
         val fontSizePref = lastKnownConfig?.overlayFontSize?.uppercase() ?: "G"
-        val fontFamilyPref = lastKnownConfig?.overlayFontFamily ?: "POPPINS"
+        val fontFamilyPref = lastKnownConfig?.overlayFontFamily ?: "SISTEMA"
         val cardTypeface = getOverlayTypeface(fontFamilyPref)
         val pillarValSp = when (fontSizePref) {
             "M" -> 22f
@@ -3468,21 +3468,8 @@ class FloatingOverlayPanel(private val context: Context) {
         }
     }
 
-    private val poppinsExtraBoldTypeface: Typeface by lazy {
-        try {
-            val tf = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.poppins_extrabold)
-            if (tf != null) Typeface.create(tf, Typeface.BOLD) else Typeface.create("sans-serif", Typeface.BOLD)
-        } catch (_: Throwable) {
-            Typeface.create("sans-serif", Typeface.BOLD)
-        }
-    }
-
     private fun getOverlayTypeface(fontFamilyPref: String): Typeface {
-        return when (fontFamilyPref.uppercase(Locale.ROOT)) {
-            "POPPINS", "POPPINS_EXTRABOLD" -> poppinsExtraBoldTypeface
-            "SISTEMA", "SYSTEM", "DEFAULT" -> Typeface.DEFAULT_BOLD
-            else -> poppinsExtraBoldTypeface
-        }
+        return Typeface.DEFAULT_BOLD
     }
 
     private fun roundedBg(hexColor: String, radiusDp: Float): GradientDrawable {

@@ -1123,19 +1123,19 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.106",
-    versionCode: 127,
-    releaseDate: "2026-11-12",
+    versionName: "3.3.107",
+    versionCode: 128,
+    releaseDate: "2026-11-13",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
     fileSizeBytes: 57317245,
     fileSizeFormatted: "54.7 MB",
     changelog: [
-      "🎨 Nova fonte Poppins ExtraBold: moderna, geométrica e com contraste perfeito.",
-      "👁️ Ergonomia visual: números em tom suave antirreflexo sem ofuscar a visão noturna.",
-      "🚀 Leitura instantânea contínua: eliminação de travamentos em transições de tela e gavetas na 99 e Uber.",
-      "📏 Escala de fontes refinada (M, G, GG) sem estouro de layout.",
-      "⚡ Abertura instantânea (0ms), atalho de economia de bateria e persistência total com Uber, 99 e Waze."
+      "⚡ Leitura ultrarrápida: remoção de sobrecarga de janelas com leitura imediata em todos os chamados.",
+      "🛡️ Blindagem da Tela de Solicitações: nunca mais abre cards sobre a lista de chamadas da 99.",
+      "⭐ Recuperação instantânea da nota no mapinha: nota do passageiro atualizada na hora sem tracinhos.",
+      "📱 Tipografia padrão do sistema (Bold): visual nativo limpo sem necessidade de seleção manual.",
+      "🎯 Blindagem de tela ociosa: chamadas no mapa lidas com 100% de precisão mesmo com modo Buscando ativo."
     ],
     mandatory: true,
   });
@@ -1144,19 +1144,21 @@ app.get("/api/app-version", (_req, res) => {
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
+  "/GoOrNo-v3.3.107.apk",
   "/GoOrNo-v3.3.106.apk",
   "/GoOrNo-v3.3.105.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
+  "/download/GoOrNo-v3.3.107.apk",
   "/download/GoOrNo-v3.3.106.apk"
 ], (_req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
-    path.resolve(process.cwd(), "GoOrNo-v3.3.106.apk"),
-    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.106.apk"),
-    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.106.apk"),
+    path.resolve(process.cwd(), "GoOrNo-v3.3.107.apk"),
+    path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.107.apk"),
+    path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.107.apk"),
     path.resolve(process.cwd(), "GoOrNo.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo.apk"),

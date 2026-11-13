@@ -60,6 +60,50 @@ class RideScreenContextClassifierTest {
     }
 
     @Test
+    fun test99RequestsListWithSingleOffer_MustBeRequestList() {
+        // Tela de solicitações da 99 com apenas 1 chamada disponível na lista
+        val lines = listOf(
+            "< Solicitações",
+            "Escolha uma",
+            "Km até o embarque",
+            "Pop",
+            "R$14,40",
+            "R$1,99/km",
+            "4,84 • 202 corridas",
+            "Perfil Premium",
+            "(6 min 1,2 km) Rua Fiorentino Felipe, 630, Baeta Neves",
+            "(16 min 6,1 km) Rua Araldo Armani, 356, Vila Sao Silverio",
+            "Escolher"
+        )
+        val context = RideScreenContextClassifier.classify(SourceApp.NINETY_NINE_DRIVER, lines)
+        assertEquals(RideScreenContext.NINETYNINE_REQUEST_LIST, context)
+        assertFalse("Mesmo com 1 corrida na lista de solicitações, NUNCA deve ser analisada como oferta", context.shouldAnalyze)
+    }
+
+    @Test
+    fun test99IncomingCallOnMapWithDrawerSolicitacoes1_ShouldAnalyze() {
+        // Chamada direta tocando no mapa da 99 com gaveta inferior "Solicitações (1)"
+        val lines = listOf(
+            "99",
+            "22 min • 6,8 km",
+            "3s",
+            "X",
+            "R$ 13,40",
+            "Pop",
+            "4,93 • 420 corridas",
+            "Rua das Palmeiras, 100",
+            "Av. Pereira Barreto, 500",
+            "Solicitações (1)",
+            "Mais >",
+            "99 Abastece",
+            "Buscando"
+        )
+        val context = RideScreenContextClassifier.classify(SourceApp.NINETY_NINE_DRIVER, lines)
+        assertEquals(RideScreenContext.NINETYNINE_INCOMING_SINGLE_OFFER, context)
+        assertTrue("Chamada direta no mapa da 99 com gaveta no rodapé DEVE ser analisada", context.shouldAnalyze)
+    }
+
+    @Test
     fun test99MapDetailViaMapinha_Photo3() {
         // Foto 3: Detalhe aberto no mapa após clicar no mapinha da lista da 99
         val lines = listOf(
