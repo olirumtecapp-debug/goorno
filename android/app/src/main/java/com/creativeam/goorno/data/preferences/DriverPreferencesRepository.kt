@@ -386,7 +386,9 @@ class DriverPreferencesRepository(private val context: Context) {
         }
 
         // Sincronização na nuvem estritamente condicionada ao consentimento explícito do motorista (LGPD)
-        if (config.cloudBackupConsent) {
+        // Never write test APK settings to the production user's cloud backup.
+        // Parallel app has separate local DataStore/Room and cloud sync stays OFF.
+        if (false && config.cloudBackupConsent) {
             repositoryScope.launch(Dispatchers.IO) {
                 try {
                     val phone = com.creativeam.goorno.data.license.LicenseManager.getSavedWhatsApp(context)
