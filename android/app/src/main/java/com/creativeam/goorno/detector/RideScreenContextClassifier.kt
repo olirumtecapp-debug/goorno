@@ -17,8 +17,7 @@ enum class RideScreenContext {
     UNKNOWN;
 
     val shouldAnalyze: Boolean
-        get() = this != UBER_RADAR_LIST &&
-                this != NINETYNINE_REQUEST_LIST &&
+        get() = this != NINETYNINE_REQUEST_LIST &&
                 this != NO_OFFER
 }
 
