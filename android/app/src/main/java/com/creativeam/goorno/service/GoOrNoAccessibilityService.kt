@@ -384,8 +384,6 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-
-        val hasCurrency = normalizedTexts.any { it.contains("R$") }
         val isIdleSearchingScreen = !hasCurrency && !hasRideActionBtn && (
             joinedScreenLower.contains("buscando solicitações") ||
             joinedScreenLower.contains("buscando solicitacoes") ||
@@ -909,9 +907,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                         enrichedAny = true
                         current.copy(
                             passengerRating = matching.passengerRating,
-                            passengerRatingRaw = matching.passengerRatingRaw,
-                            passengerRideCount = matching.passengerRideCount,
-                            passengerBadge = matching.passengerBadge
+                            passengerIsNew = matching.passengerIsNew
                         )
                     } else {
                         current
