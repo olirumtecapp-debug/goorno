@@ -251,7 +251,16 @@ class DriverPreferencesRepository(private val context: Context) {
         }
 
     suspend fun getConfigOnce(): DriverFinancialConfig {
-        return inMemoryConfigSnapshot
+        // Wait for persistent settings, not the default RAM snapshot after
+        // a process restart. The mirrored SharedPreferences remain fallback.
+        return try {
+            configFlow.first().also { persisted ->
+                inMemoryConfigSnapshot = persisted
+                _configStateFlow.value = persisted
+            }
+        } catch (_: IOException) {
+            inMemoryConfigSnapshot
+        }
     }
 
     suspend fun saveConfig(config: DriverFinancialConfig) {
