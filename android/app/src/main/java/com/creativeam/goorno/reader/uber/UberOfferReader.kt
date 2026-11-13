@@ -30,7 +30,27 @@ object UberOfferReader {
         timestampMillis: Long = System.currentTimeMillis(),
         isSimulated: Boolean = false
     ): List<StandardRideOffer> {
-        val clusters = BrazilianOfferParser.splitIntoMultipleOfferClusters(rawNodes)
+        val normalized = BrazilianOfferParser.normalizeFragmentedNodes(rawNodes)
+        val interestCount = normalized.count { it.contains("tenho interesse", ignoreCase = true) }
+
+        // The interest button is the final action of each disputable Radar card.
+        // Keep each price, duration, distance and passenger rating within its
+        // own card. All other Uber screens retain the original parser.
+        if (interestCount > 0) {
+            val segments = splitInterestCards(normalized)
+            if (segments.isNotEmpty()) {
+                return segments.map { parseScreenNodes(it, captureMethod, timestampMillis, isSimulated) }
+                    .filter {
+                        it.screenClassification == ScreenClassification.NEW_OFFER ||
+                            it.screenClassification == ScreenClassification.UPDATED_OFFER
+                    }
+            }
+            // Ambiguous cards are not joined: mixing passengers is worse than
+            // temporarily withholding an unverified Radar estimate.
+            if (interestCount > 1) return emptyList()
+        }
+
+        val clusters = BrazilianOfferParser.splitIntoMultipleOfferClusters(normalized)
         if (clusters.isEmpty()) return emptyList()
 
         return clusters.map { cluster ->
@@ -39,6 +59,29 @@ object UberOfferReader {
             it.screenClassification == ScreenClassification.NEW_OFFER ||
                 it.screenClassification == ScreenClassification.UPDATED_OFFER
         }
+    }
+
+    private fun splitInterestCards(lines: List<String>): List<List<String>> {
+        val radarHeading = lines.indexOfFirst { it.contains("radar de viagens", ignoreCase = true) }
+        var start = if (radarHeading >= 0) radarHeading + 1 else 0
+        val cards = mutableListOf<List<String>>()
+        for (i in start until lines.size) {
+            if (!lines[i].contains("tenho interesse", ignoreCase = true)) continue
+            val candidate = lines.subList(start, i + 1)
+            start = i + 1
+            val prices = candidate.filter {
+                val l = it.lowercase(Locale.ROOT)
+                l.contains("r$") && !l.contains("/km") && !l.contains("/h") &&
+                    !l.contains("inclu") && !l.contains("tarifa") &&
+                    !l.contains("bônus") && !l.contains("bonus")
+            }
+            if (prices.size != 1 ||
+                BrazilianOfferParser.extractAllCurrencies(prices).size != 1 ||
+                BrazilianOfferParser.extractAllDistancesKm(candidate).isEmpty()
+            ) continue
+            cards.add(candidate)
+        }
+        return cards
     }
 
     fun parseScreenNodes(
