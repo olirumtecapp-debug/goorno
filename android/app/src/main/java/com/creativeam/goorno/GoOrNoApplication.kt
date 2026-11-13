@@ -132,47 +132,16 @@ class GoOrNoApplication : Application() {
      * Blindagem Global contra Falhas e Fechamento Inesperado (CrashShield).
      */
     private fun installGlobalCrashShield() {
-        val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            Log.e("GoOrNoCrashShield", "\uD83D\uDEE1\uFE0F Excecao interceptada na thread '${thread.name}': ${throwable.message}", throwable)
-            if (throwable is OutOfMemoryError) {
-                try {
-                    System.gc()
-                } catch (_: Throwable) {}
-                return@setDefaultUncaughtExceptionHandler
+        // Never swallow fatal errors or restart Looper.loop after a crash.
+        // Allow the Android process to restart cleanly.
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, error ->
+            Log.e("GoOrNoCrash", "Uncaught failure on " + thread.name, error)
+            if (previous != null) {
+                previous.uncaughtException(thread, error)
+            } else {
+                kotlin.system.exitProcess(10)
             }
-
-            val isRecoverable = throwable is android.view.WindowManager.BadTokenException ||
-                throwable is android.view.WindowManager.InvalidDisplayException ||
-                throwable is IllegalStateException ||
-                throwable is SecurityException ||
-                throwable is IllegalArgumentException ||
-                throwable is NullPointerException ||
-                throwable is UninitializedPropertyAccessException ||
-                throwable is java.util.ConcurrentModificationException ||
-                throwable.javaClass.name.contains("ForegroundService") ||
-                throwable.javaClass.name.contains("DeadSystem") ||
-                throwable.javaClass.name.contains("TransactionTooLarge") ||
-                throwable.javaClass.name.contains("GoogleId") ||
-                throwable.javaClass.name.contains("Credential")
-
-            if (isRecoverable) {
-                Log.w("GoOrNoCrashShield", "🛡️ Erro recuperavel absorvido silenciosamente: ${throwable.javaClass.simpleName} - ${throwable.message}")
-                if (thread.name == "main") {
-                    try {
-                        Looper.loop()
-                    } catch (_: Throwable) {}
-                }
-                return@setDefaultUncaughtExceptionHandler
-            }
-
-            if (thread.name != "main") {
-                return@setDefaultUncaughtExceptionHandler
-            }
-
-            try {
-                originalHandler?.uncaughtException(thread, throwable)
-            } catch (_: Throwable) {}
         }
     }
 }
