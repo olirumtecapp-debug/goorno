@@ -369,6 +369,8 @@ class FloatingOverlayPanel(private val context: Context) {
             mainHandler.removeCallbacks(showNextOfferAfterPauseRunnable)
             mainHandler.postDelayed(showNextOfferAfterPauseRunnable, 350L)
         } else {
+            offerQueue = emptyList()
+            currentQueueIndex = 0
             hidePanel()
             onOfferCardClosed?.invoke()
         }
@@ -2250,7 +2252,7 @@ class FloatingOverlayPanel(private val context: Context) {
 
         val kmVal = if (grossKm > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", grossKm) else "--"
         val hrVal = if (grossHr > 0) String.format(Locale.forLanguageTag("pt-BR"), "%.0f", grossHr) else "--"
-        val ratingVal = if (ratingClean.isNotBlank()) ratingClean else if (ratingNum != null && ratingNum > 0.0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingNum) else "--"
+        val ratingVal = if (isNewPassenger) "Novo" else if (ratingClean.isNotBlank() && ratingClean != "--") ratingClean else if (ratingNum != null && ratingNum > 0.0) String.format(Locale.forLanguageTag("pt-BR"), "%.2f", ratingNum) else "--"
 
         pillarsRow.addView(createPillarCol("R$/Km", kmBarColor, kmVal))
         pillarsRow.addView(createPillarCol("R$/Hora", hrBarColor, hrVal))

@@ -605,10 +605,13 @@ object BrazilianOfferParser {
             }
         }
 
-        // 4ª Prioridade: Placeholder de Passageiro Novo ("--")
+        // 4ª Prioridade: Detecção de Passageiro Novo ("★ Passageiro novo • CPF verif.", "Passageiro novo", etc.)
         val joinedLow = lines.joinToString(" ").lowercase(Locale.getDefault())
-        val hasDoubleDash = lines.any { it.trim() == "--" || it.trim() == "- -" }
-        if (hasDoubleDash && (joinedLow.contains("passageiro novo") || joinedLow.contains("novo passageiro") || joinedLow.contains("usuario novo"))) {
+        val hasNewPassengerKeyword = joinedLow.contains("passageiro novo") ||
+                joinedLow.contains("novo passageiro") ||
+                joinedLow.contains("usuario novo") ||
+                joinedLow.contains("usuário novo")
+        if (hasNewPassengerKeyword) {
             return -1.0
         }
 

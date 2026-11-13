@@ -50,9 +50,11 @@ enum class SourceApp(val displayName: String, val knownPackages: List<String>) {
                 UBER_DRIVER.knownPackages.any { it.lowercase() == normalized } ||
                     normalized.startsWith("com.ubercab.driver") -> UBER_DRIVER
                 NINETY_NINE_DRIVER.knownPackages.any { it.lowercase() == normalized } ||
-                    normalized.startsWith("com.taxis99.driver") ||
-                    normalized.startsWith("com.app99.driver") ||
-                    normalized.startsWith("com.didiglobal.driver") -> NINETY_NINE_DRIVER
+                    normalized.startsWith("com.taxis99") ||
+                    normalized.startsWith("com.app99") ||
+                    normalized.startsWith("com.didiglobal.driver") ||
+                    normalized.startsWith("com.didi.brazil") ||
+                    normalized.startsWith("com.xiaojukeji") -> NINETY_NINE_DRIVER
                 else -> UNKNOWN
             }
         }

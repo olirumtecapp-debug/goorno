@@ -6,8 +6,8 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.107",
-    versionCode: 128,
+    versionName: "3.3.108",
+    versionCode: 129,
     releaseDate: "2026-11-13",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",

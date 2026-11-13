@@ -521,7 +521,10 @@ object NinetyNineOfferReader {
             destinationAddress = destination,
             passengerRating = if (passengerRating != null && passengerRating > 0.0) passengerRating else null,
             passengerIsNew = (passengerRating != null && passengerRating < 0.0) || cleanedLines.any { 
-                it.contains("passageiro novo", ignoreCase = true) || it.contains("novo passageiro", ignoreCase = true) 
+                it.contains("passageiro novo", ignoreCase = true) ||
+                it.contains("novo passageiro", ignoreCase = true) ||
+                it.contains("usuario novo", ignoreCase = true) ||
+                it.contains("usuário novo", ignoreCase = true)
             },
             confidenceScore = confidence.coerceIn(0.0, 1.0),
             hasFieldConflict = conflictNotes.isNotEmpty(),

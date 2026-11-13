@@ -2004,6 +2004,37 @@ class GoOrNoEngineAndParserTest {
         assertEquals(22.50, offer.offeredPrice!!, 0.001)
         assertTrue("Deve identificar como Passageiro Novo", offer.passengerIsNew)
         assertNull("Nota numérica deve ser nula para não sujar com --", offer.passengerRating)
+
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+        assertEquals("Novo", eval.passengerRatingBadge)
+        assertEquals(PassengerRatingVerdict.MEDIUM, eval.passengerRatingVerdict)
+    }
+
+    @Test
+    fun test99UserPhoto_PassageiroNovoWithStarAndCPF_ParsedCorrectlyAndEvaluatesToNovoBadge() {
+        // Foto real do usuário media_1794598815021_e4ed1ba0.jpg:
+        val lines = listOf(
+            "Pgto. no app",
+            "R$8,22",
+            "R$2,15/km",
+            "R$1,38 Tarifa base dinâmica incl.",
+            "★ Passageiro novo • CPF verif.",
+            "7 min (1,7 km)",
+            "Rua Flor de Maio, 3, Vila Sao Pedro",
+            "7 min (2,1 km)",
+            "Centro Estético Silvia Helena's - Unidade Center Castilho, Avenida..."
+        )
+        val offers = NinetyNineOfferReader.parseMultipleOffersFromScreen(lines)
+        assertEquals(1, offers.size)
+        val offer = offers.first()
+        assertEquals(8.22, offer.offeredPrice!!, 0.001)
+        assertTrue("Deve identificar como Passageiro Novo", offer.passengerIsNew)
+        assertNull("Nota numérica deve ser nula para não sujar com --", offer.passengerRating)
+
+        val eval = FinancialEngine.evaluate(offer, DriverFinancialConfig())
+        assertEquals("Novo", eval.passengerRatingBadge)
+        assertEquals(PassengerRatingVerdict.MEDIUM, eval.passengerRatingVerdict)
+        assertTrue(eval.reasons.any { it.contains("Passageiro Novo") })
     }
 
     @Test

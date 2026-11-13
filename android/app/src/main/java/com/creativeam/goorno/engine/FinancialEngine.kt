@@ -16,8 +16,10 @@ object FinancialEngine {
 
     fun classifyPassengerRating(
         rating: Double?,
-        config: DriverFinancialConfig
+        config: DriverFinancialConfig,
+        isNew: Boolean = false
     ): PassengerRatingVerdict {
+        if (isNew || (rating != null && rating < 0.0)) return PassengerRatingVerdict.MEDIUM
         if (rating == null || rating <= 0.0 || rating.isNaN()) return PassengerRatingVerdict.UNKNOWN
         val goodThreshold = config.targetGoodPassengerRating.coerceIn(3.0, 5.0)
         val minAcceptable = config.minAcceptablePassengerRating.coerceIn(3.0, goodThreshold)
@@ -30,8 +32,10 @@ object FinancialEngine {
 
     fun formatPassengerRatingBadge(
         rating: Double?,
-        verdict: PassengerRatingVerdict
+        verdict: PassengerRatingVerdict,
+        isNew: Boolean = false
     ): String? {
+        if (isNew || (rating != null && rating < 0.0)) return "Novo"
         if (rating == null || verdict == PassengerRatingVerdict.UNKNOWN) return null
         val numStr = String.format(Locale.forLanguageTag("pt-BR"), "%.2f", rating)
         return numStr
@@ -217,8 +221,9 @@ object FinancialEngine {
 
         // 5. Avaliação da Nota do Passageiro (Verde = Boa, Amarela = Média, Vermelha = Ruim)
         val rating = offer.passengerRating
-        val ratingVerdict = classifyPassengerRating(rating, config)
-        val ratingBadge = formatPassengerRatingBadge(rating, ratingVerdict)
+        val isNewPassenger = offer.passengerIsNew || (rating != null && rating < 0.0)
+        val ratingVerdict = classifyPassengerRating(rating, config, isNew = isNewPassenger)
+        val ratingBadge = formatPassengerRatingBadge(rating, ratingVerdict, isNew = isNewPassenger)
         val ptBr = Locale.forLanguageTag("pt-BR")
 
         // Lucro compensatório: Se o R$/km e R$/hora atingem com folga a meta do motorista
@@ -226,8 +231,12 @@ object FinancialEngine {
                 (grossPerKm != null && grossPerKm >= config.targetGrossPerKm) &&
                 (grossPerHour == null || grossPerHour >= config.targetGrossPerHour)
 
-        val verdictAfterRating = when (ratingVerdict) {
-            PassengerRatingVerdict.GOOD -> {
+        val verdictAfterRating = when {
+            isNewPassenger -> {
+                reasons.add("⭐ Passageiro Novo (sem histórico de nota)")
+                baseVerdict
+            }
+            ratingVerdict == PassengerRatingVerdict.GOOD -> {
                 reasons.add(
                     String.format(
                         ptBr,

@@ -1123,8 +1123,8 @@ app.get("/api/app-version", (_req, res) => {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.107",
-    versionCode: 128,
+    versionName: "3.3.108",
+    versionCode: 129,
     releaseDate: "2026-11-13",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
@@ -1144,11 +1144,13 @@ app.get("/api/app-version", (_req, res) => {
 // Direct APK download routes
 app.get([
   "/GoOrNo.apk",
+  "/GoOrNo-v3.3.108.apk",
   "/GoOrNo-v3.3.107.apk",
   "/GoOrNo-v3.3.106.apk",
   "/GoOrNo-v3.3.105.apk",
   "/download/apk",
   "/download/GoOrNo.apk",
+  "/download/GoOrNo-v3.3.108.apk",
   "/download/GoOrNo-v3.3.107.apk",
   "/download/GoOrNo-v3.3.106.apk"
 ], (_req, res) => {
@@ -1156,6 +1158,7 @@ app.get([
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   const candidatePaths = [
+    path.resolve(process.cwd(), "GoOrNo-v3.3.108.apk"),
     path.resolve(process.cwd(), "GoOrNo-v3.3.107.apk"),
     path.resolve(process.cwd(), "dist/public/GoOrNo-v3.3.107.apk"),
     path.resolve(process.cwd(), "client/public/GoOrNo-v3.3.107.apk"),

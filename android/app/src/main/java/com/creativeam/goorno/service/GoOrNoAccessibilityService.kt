@@ -234,6 +234,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             lastScreenContextMode = ""
             consecutiveScansWithoutOffers = 0
             app?.overlayPanel?.clearRecentlyDismissed()
+            app?.overlayPanel?.hideOfferCardOnly()
             lastKnownForegroundPkg = effectivePkg
         }
 
@@ -314,14 +315,12 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // 2. CLASSIFICADOR CENTRAL DE CONTEXTO DE TELA (Uber e 99):
         val screenContext = RideScreenContextClassifier.classify(targetApp, normalizedTexts)
         if (!screenContext.shouldAnalyze) {
-            if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST || screenContext == RideScreenContext.UBER_RADAR_LIST) {
-                currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
-                (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
-                shownOfferTimestamps.clear()
-                lastScreenContextMode = ""
-                consecutiveScansWithoutOffers++
-                return
-            }
+            currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
+            (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
+            shownOfferTimestamps.clear()
+            lastScreenContextMode = ""
+            consecutiveScansWithoutOffers++
+            return
         }
 
         // 3. DETECÇÃO DE OCIOSIDADE E FECHAMENTO DE CARDS RESIDUAIS (ALLOWED_NO_OFFER):
@@ -1206,8 +1205,16 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         if (texts.isEmpty()) return
 
         val targetApp = SourceApp.fromPackageName(targetPkg)
+        val visibleOfferApp = app.overlayPanel.getVisibleOfferSourceApp()
+        if (visibleOfferApp != null && targetApp != SourceApp.UNKNOWN && visibleOfferApp != targetApp) {
+            app.overlayPanel.hideOfferCardOnly()
+            return
+        }
         val screenContext = RideScreenContextClassifier.classify(targetApp, texts)
-        if (screenContext == RideScreenContext.UBER_RADAR_LIST || screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST) {
+        if (screenContext == RideScreenContext.UBER_RADAR_LIST ||
+            screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST ||
+            screenContext == RideScreenContext.NO_OFFER
+        ) {
             app.overlayPanel.hideOfferCardOnly()
             return
         }

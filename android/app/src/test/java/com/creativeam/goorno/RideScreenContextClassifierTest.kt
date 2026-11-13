@@ -253,4 +253,24 @@ class RideScreenContextClassifierTest {
         assertEquals(RideScreenContext.NO_OFFER, context)
         assertFalse(context.shouldAnalyze)
     }
+
+    @Test
+    fun test99SettingsScreen_ConfigurarSolicitacoes_MustBeNoOffer() {
+        // Foto do usuário: Tela de configurações da 99 com Desconectar
+        val lines = listOf(
+            "<",
+            "Configurar solicitações",
+            "Tipo de solicitação",
+            "Preferências de serviços",
+            "Ferramentas de aceitação",
+            "Definir meu destino",
+            "Status da solicitação",
+            "Teste de status",
+            "Eventos futuros",
+            "Desconectar"
+        )
+        val context = RideScreenContextClassifier.classify(SourceApp.NINETY_NINE_DRIVER, lines)
+        assertEquals(RideScreenContext.NO_OFFER, context)
+        assertFalse("Tela de configurações/ajustes da 99 NUNCA deve ser analisada como oferta", context.shouldAnalyze)
+    }
 }

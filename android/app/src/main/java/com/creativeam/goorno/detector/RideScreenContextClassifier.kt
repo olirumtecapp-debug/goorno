@@ -42,6 +42,35 @@ object RideScreenContextClassifier {
 
         // 1. Checagem de tela ociosa (sem corrida)
         val hasPrice = lowerLines.any { it.contains("r$") || it.startsWith("r$") }
+
+        // Blindagem estrita: Telas de menu, ajustes, configurações e preferências sem preço
+        val isSettingsOrMenuScreen = !hasPrice && (
+            joined.contains("configurar solicitações") ||
+            joined.contains("configurar solicitacoes") ||
+            joined.contains("tipo de solicitação") ||
+            joined.contains("tipo de solicitacao") ||
+            joined.contains("preferências de serviços") ||
+            joined.contains("preferencias de servicos") ||
+            joined.contains("ferramentas de aceitação") ||
+            joined.contains("ferramentas de aceitacao") ||
+            joined.contains("definir meu destino") ||
+            joined.contains("status da solicitação") ||
+            joined.contains("status da solicitacao") ||
+            joined.contains("teste de status") ||
+            joined.contains("eventos futuros") ||
+            joined.contains("desconectar") ||
+            joined.contains("central de ganhos") ||
+            joined.contains("central de ajuda") ||
+            joined.contains("recompensas") ||
+            joined.contains("mensagens") ||
+            joined.contains("notificações") ||
+            joined.contains("notificacoes")
+        )
+
+        if (isSettingsOrMenuScreen) {
+            return RideScreenContext.NO_OFFER
+        }
+
         val isIdleScreen = (joined.contains("buscando solicitações") ||
                 joined.contains("buscando solicitacoes") ||
                 joined.contains("procurando viagens") ||
@@ -114,7 +143,7 @@ object RideScreenContextClassifier {
             return RideScreenContext.NINETYNINE_INCOMING_SINGLE_OFFER
         }
 
-        return RideScreenContext.UNKNOWN
+        return RideScreenContext.NO_OFFER
     }
 
     private fun classifyUber(
@@ -155,6 +184,6 @@ object RideScreenContextClassifier {
             return RideScreenContext.UBER_INCOMING_SINGLE_OFFER
         }
 
-        return RideScreenContext.UNKNOWN
+        return RideScreenContext.NO_OFFER
     }
 }
