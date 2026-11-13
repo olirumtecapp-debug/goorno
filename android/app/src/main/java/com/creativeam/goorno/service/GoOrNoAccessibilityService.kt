@@ -345,7 +345,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         // 2. CLASSIFICADOR CENTRAL DE CONTEXTO DE TELA (Uber e 99):
         val screenContext = RideScreenContextClassifier.classify(targetApp, normalizedTexts)
         if (!screenContext.shouldAnalyze) {
-            if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST || screenContext == RideScreenContext.UBER_RADAR_LIST) {
+            if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST) {
                 currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
                 (applicationContext as? GoOrNoApplication)?.overlayPanel?.hideOfferCardOnly()
                 shownOfferTimestamps.clear()
@@ -542,7 +542,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             val fastTexts = mutableListOf<String>()
             collectFastTexts(activeRootFast, fastTexts, maxNodes = 30)
             val fastContext = RideScreenContextClassifier.classify(targetApp, fastTexts)
-            if (fastContext == RideScreenContext.NINETYNINE_REQUEST_LIST || fastContext == RideScreenContext.UBER_RADAR_LIST) {
+            if (fastContext == RideScreenContext.NINETYNINE_REQUEST_LIST) {
                 isTakingAutoScreenshot = false
                 return
             }
@@ -768,7 +768,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         val isSaneDuration = min in 1..240 // NUNCA aceita tempos absurdos como 1009 min!
                                         val isSaneKm = km in 0.2..300.0
                                         val ocrContext = RideScreenContextClassifier.classify(effectiveOcrApp, normalizedOcr)
-                                        val isAllowedContext = ocrContext != RideScreenContext.NINETYNINE_REQUEST_LIST && ocrContext != RideScreenContext.UBER_RADAR_LIST
+                                        val isAllowedContext = ocrContext != RideScreenContext.NINETYNINE_REQUEST_LIST && ocrContext != RideScreenContext.NO_OFFER
 
                                         isSanePrice && isSaneKm && isSaneDuration && !offer.hasFieldConflict && isAllowedContext
                                     }
@@ -1245,7 +1245,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
         val targetApp = SourceApp.fromPackageName(targetPkg)
         val screenContext = RideScreenContextClassifier.classify(targetApp, texts)
-        if (screenContext == RideScreenContext.UBER_RADAR_LIST || screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST) {
+        if (screenContext == RideScreenContext.NINETYNINE_REQUEST_LIST) {
             app.overlayPanel.hideOfferCardOnly()
             return
         }
