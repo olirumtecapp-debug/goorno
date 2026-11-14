@@ -52,8 +52,15 @@ object NinetyNineOfferReader {
                 kotlin.math.abs(originalKm - candidateKm) < 0.16 &&
                 candidate.sourceApp == original.sourceApp
         }
-        if (matches.size == 1) original.copy(passengerRating = matches.first().passengerRating)
-        else original
+        if (matches.size == 1) {
+            val candidate = matches.first()
+            original.copy(
+                passengerRating = candidate.passengerRating,
+                stopsDescription = original.stopsDescription ?: candidate.stopsDescription,
+                isSupermarket = original.isSupermarket || candidate.isSupermarket,
+                supermarketName = original.supermarketName ?: candidate.supermarketName
+            )
+        } else original
     }
 
     /**
@@ -260,7 +267,10 @@ object NinetyNineOfferReader {
             if (isSubFare) {
                 continue
             }
-            val isCategoryLine = l.contains("pop") || l.contains("99pop") || l.contains("plus") || l.contains("negocia") || (l.contains("express") && !l.contains("inclus"))
+            val isCategoryLine = l.contains("pop") || l.contains("99pop") || l.contains("plus") ||
+                l.contains("negocia") || (l.contains("express") && !l.contains("inclus")) ||
+                l.contains("pgto") || l.contains("pagamento") || l.contains("solicita") ||
+                l.contains("corrida no app")
             if (isCategoryLine) {
                 val pSameLine = BrazilianOfferParser.extractAllCurrencies(listOf(line)).firstOrNull()
                 if (pSameLine != null && pSameLine in 4.0..350.0) {
@@ -285,6 +295,21 @@ object NinetyNineOfferReader {
                     }
                 }
                 if (primaryPrice != null) break
+            }
+        }
+
+        // Se ainda não encontrou primaryPrice ancorado, busca preço válido nas primeiras 6 linhas da oferta
+        if (primaryPrice == null) {
+            for ((idx, line) in cleanedLines.take(6).withIndex()) {
+                val l = line.lowercase(Locale.getDefault())
+                val isSubFare = l.contains("inclus") || l.contains("tarifa expresso") || l.contains("tarifa base") || l.contains("deslocamento") || l.contains("/km")
+                if (isSubFare) continue
+                val p = BrazilianOfferParser.extractAllCurrencies(listOf(line)).firstOrNull()
+                if (p != null && p in 4.0..350.0) {
+                    primaryPrice = p
+                    primaryPriceLineIdx = idx
+                    break
+                }
             }
         }
 
@@ -421,7 +446,13 @@ object NinetyNineOfferReader {
         } else {
             cleanedLines
         }
-        val (parsedOrigin, parsedDestination) = BrazilianOfferParser.extractOriginAndDestination(linesForRatingAndAddr)
+        val (parsedOrigin, parsedDestination) = BrazilianOfferParser.extractOriginAndDestination(linesForRatingAndAddr).let { (o, d) ->
+            if (o.isNullOrBlank() && d.isNullOrBlank()) {
+                BrazilianOfferParser.extractOriginAndDestination(cleanedLines)
+            } else {
+                Pair(o, d)
+            }
+        }
         val origin = legOrigin ?: parsedOrigin
         val destination = legDestination ?: parsedDestination
         val passengerRating = BrazilianOfferParser.extractPassengerRating(cleanedLines)

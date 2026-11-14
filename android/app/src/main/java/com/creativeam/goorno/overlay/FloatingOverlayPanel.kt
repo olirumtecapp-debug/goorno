@@ -261,19 +261,28 @@ class FloatingOverlayPanel(private val context: Context) {
             }
 
             // Proteção Anti-Flicker: se o card flutuante já está visível para a mesma corrida,
-            // NÃO destrói nem recria as views e NÃO reinicia o timer da contagem regressiva!
+            // atualiza os dados preservando a contagem regressiva se campos novos forem identificados
             if (isCardCurrentlyVisible() && offerQueue.isNotEmpty()) {
                 val currentActive = offerQueue.getOrNull(currentQueueIndex)
                 if (currentActive != null && currentActive.offer.sourceApp == firstEval.offer.sourceApp) {
                     val currentPrice = currentActive.offer.offeredPrice ?: 0.0
                     if (kotlin.math.abs(currentPrice - newPrice) < 0.25) {
-                        // É a mesma corrida recebendo dados complementares (ex: endereços ou rating)
+                        // É a mesma corrida recebendo dados complementares (ex: endereços, paradas, supermercado ou rating)
                         val prevRating = currentActive.passengerRating
                         val newRating = firstEval.passengerRating
+                        val hasNewData = (prevRating == null && newRating != null) ||
+                            (currentActive.offer.originAddress.isNullOrBlank() && !firstEval.offer.originAddress.isNullOrBlank()) ||
+                            (currentActive.offer.destinationAddress.isNullOrBlank() && !firstEval.offer.destinationAddress.isNullOrBlank()) ||
+                            (currentActive.offer.stopsDescription.isNullOrBlank() && !firstEval.offer.stopsDescription.isNullOrBlank()) ||
+                            (!currentActive.offer.isSupermarket && firstEval.offer.isSupermarket) ||
+                            (currentActive.totalConsideredDistanceKm == null && firstEval.totalConsideredDistanceKm != null)
+
                         offerQueue = results.take(5)
                         activeCardFingerprint = newFingerprint
-                        if (prevRating == null && newRating != null) {
+                        if (hasNewData) {
+                            val savedSeconds = remainingSeconds
                             showCurrentQueuedOffer()
+                            remainingSeconds = savedSeconds
                         }
                         return@post
                     }
@@ -311,10 +320,17 @@ class FloatingOverlayPanel(private val context: Context) {
             }
             if (!sameOffers) return@post
             val current = currentQueueIndex
-            val oldRating = offerQueue.getOrNull(current)?.passengerRating
+            val oldItem = offerQueue.getOrNull(current)
+            val newItem = results.getOrNull(current)
+            val hasEnrichedData = oldItem != null && newItem != null && (
+                oldItem.passengerRating != newItem.passengerRating ||
+                (oldItem.offer.stopsDescription.isNullOrBlank() && !newItem.offer.stopsDescription.isNullOrBlank()) ||
+                (oldItem.offer.originAddress.isNullOrBlank() && !newItem.offer.originAddress.isNullOrBlank()) ||
+                (oldItem.offer.destinationAddress.isNullOrBlank() && !newItem.offer.destinationAddress.isNullOrBlank()) ||
+                (!oldItem.offer.isSupermarket && newItem.offer.isSupermarket)
+            )
             offerQueue = results.take(5)
-            val newRating = offerQueue.getOrNull(current)?.passengerRating
-            if (oldRating != newRating && current in offerQueue.indices) {
+            if (hasEnrichedData && current in offerQueue.indices) {
                 val secondsLeft = remainingSeconds
                 showCurrentQueuedOffer()
                 remainingSeconds = secondsLeft
@@ -2518,6 +2534,93 @@ class FloatingOverlayPanel(private val context: Context) {
         root.addView(createDarkMetricPill(kmStr, " /km"))
         root.addView(createDarkMetricPill(hrStr, " /h"))
         root.addView(createDarkMetricPill(ratingStr, " nota"))
+
+        if (result.isRiskZone) {
+            val tvRisk = TextView(context).apply {
+                text = "⚠️ Área de Risco"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(10), dp(4), dp(10), dp(4))
+                background = roundedCardBg("#DC2626", "#7F1D1D", 8f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(4) }
+            }
+            root.addView(tvRisk)
+        }
+
+        if (!result.stopsDescription.isNullOrBlank()) {
+            val tvStops = TextView(context).apply {
+                val desc = result.stopsDescription
+                text = if (desc.startsWith("🛑")) desc else "🛑 $desc"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(10), dp(4), dp(10), dp(4))
+                background = roundedCardBg("#C2410C", "#7C2D12", 8f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(4) }
+            }
+            root.addView(tvStops)
+        }
+
+        if (result.isLongTrip) {
+            val tvLong = TextView(context).apply {
+                text = "⏱️ Viagem Longa"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(10), dp(4), dp(10), dp(4))
+                background = roundedCardBg("#4F46E5", "#312E81", 8f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(4) }
+            }
+            root.addView(tvLong)
+        }
+
+        if (result.isSupermarket) {
+            val tvMarket = TextView(context).apply {
+                val sName = result.supermarketName ?: "Supermercado"
+                text = if (sName.startsWith("🛒")) sName else "🛒 $sName"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(10), dp(4), dp(10), dp(4))
+                background = roundedCardBg("#0D9488", "#115E59", 8f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(4) }
+            }
+            root.addView(tvMarket)
+        }
+
+        if (result.isDistantPickup) {
+            val tvPickup = TextView(context).apply {
+                text = "⚠️ Embarque Distante"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(10), dp(4), dp(10), dp(4))
+                background = roundedCardBg("#B45309", "#78350F", 8f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(4) }
+            }
+            root.addView(tvPickup)
+        }
 
         return root
     }

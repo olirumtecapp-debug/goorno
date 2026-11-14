@@ -1441,9 +1441,9 @@ object BrazilianOfferParser {
     }
 
     // Detecção inteligente de paradas no trajeto (99 e Uber)
-    // Exemplos reais dos prints: "1 parada(s)", "2 paradas", "Várias paradas"
+    // Exemplos reais dos prints: "1 parada(s)", "• 1 parada(s)", "2 paradas", "Várias paradas"
     private val STOPS_REGEX = Regex(
-        pattern = """(\d+)\s*paradas?(?:\(s\))?|v[áa]rias\s+paradas""",
+        pattern = """(?:[•·\-\*]\s*)?(?:(\d+)\s*paradas?(?:\(s\))?|v[áa]rias\s+paradas|(?:com|inclui)\s+(\d+)?\s*paradas?|\b(\d+)\s*parada\b)""",
         option = RegexOption.IGNORE_CASE
     )
 
@@ -1451,9 +1451,9 @@ object BrazilianOfferParser {
         for (line in lines) {
             val match = STOPS_REGEX.find(line)
             if (match != null) {
-                val group1 = match.groups[1]?.value
+                val group = match.groups[1]?.value ?: match.groups[2]?.value ?: match.groups[3]?.value
                 return when {
-                    group1 != null -> if (group1 == "1") "1 Parada" else "$group1 Paradas"
+                    group != null -> if (group == "1") "1 Parada" else "$group Paradas"
                     line.contains("várias", ignoreCase = true) || line.contains("varias", ignoreCase = true) -> "Várias Paradas"
                     else -> "Com Parada"
                 }
@@ -1462,8 +1462,28 @@ object BrazilianOfferParser {
         return null
     }
 
+    // Tabela POI de Supermercados conhecidos por endereço (Logradouro + Número)
+    // Permite identificar comércios mesmo quando o app de corrida não exibe o nome do mercado no título
+    private data class SupermarketAddressPoi(
+        val streetKeyword: String,
+        val numbers: List<Int>,
+        val displayName: String
+    )
+
+    private val KNOWN_SUPERMARKET_POIS = listOf(
+        SupermarketAddressPoi("vianas", listOf(1631, 1637), "Coop"),
+        SupermarketAddressPoi("pereira barreto", listOf(1500), "Sonda"),
+        SupermarketAddressPoi("pereira barreto", listOf(2900), "Bem Barato"),
+        SupermarketAddressPoi("rotary", listOf(624), "Sonda"),
+        SupermarketAddressPoi("marechal deodoro", listOf(2785), "Bem Barato"),
+        SupermarketAddressPoi("tiradentes", listOf(1825), "Bem Barato"),
+        SupermarketAddressPoi("lions", listOf(2151), "Carrefour"),
+        SupermarketAddressPoi("senador vergueiro", listOf(2100), "Carrefour"),
+        SupermarketAddressPoi("kennedy", listOf(700), "Carrefour Bairro")
+    )
+
     // Detecção inteligente de supermercados, atacadistas e hipermercados
-    // Marcas específicas devem ter precedência sobre termos genéricos ("supermercado", "mercado")
+    // Restrita ESTRITAMENTE aos endereços de Origem e Destino (NUNCA varre linhas aleatórias da tela!)
     private val SPECIFIC_SUPERMARKET_BRANDS = listOf(
         "assai", "assaí", "atacadão", "atacadao", "carrefour", "sonda",
         "pão de açúcar", "pao de acucar", "coop", "bem barato", "roldão", "roldao",
@@ -1472,32 +1492,67 @@ object BrazilianOfferParser {
     )
 
     private val GENERIC_SUPERMARKET_TERMS = listOf(
-        "supermercado", "hipermercado", "mercado municipal", "atacadista", "mercado"
+        "supermercado", "hipermercado", "mercado municipal", "atacadista"
     )
 
     fun extractSupermarketInfo(lines: List<String>, origin: String?, dest: String?): Pair<Boolean, String?> {
         val candidates = mutableListOf<String>()
         if (!origin.isNullOrBlank()) candidates.add(origin)
         if (!dest.isNullOrBlank()) candidates.add(dest)
-        candidates.addAll(lines)
 
-        // 1. Prioridade: Marcas específicas (ex: Coop, Carrefour, Assaí, Atacadão)
+        if (candidates.isEmpty()) return Pair(false, null)
+
+        // 1. Prioridade: Cruzamento com POIs conhecidos por endereço (Logradouro + Número)
+        for (text in candidates) {
+            val tLower = text.lowercase(Locale.ROOT)
+            for (poi in KNOWN_SUPERMARKET_POIS) {
+                if (tLower.contains(poi.streetKeyword)) {
+                    val hasNumber = poi.numbers.any { num ->
+                        Regex("""\b$num\b""").containsMatchIn(tLower)
+                    }
+                    if (hasNumber) {
+                        return Pair(true, poi.displayName)
+                    }
+                }
+            }
+        }
+
+        // 2. Prioridade: Marcas específicas estritamente no endereço de embarque/desembarque
         for (text in candidates) {
             val tLower = text.lowercase(Locale.ROOT)
             for (brand in SPECIFIC_SUPERMARKET_BRANDS) {
-                // Exige correspondência exata de palavra inteira (\b) para evitar falsos positivos
-                // Exemplo clássico: o bairro "Cooperativa" em SBC NÃO pode virar "Coop"
                 val brandRegex = Regex("""\b${Regex.escape(brand)}\b""", RegexOption.IGNORE_CASE)
                 if (brandRegex.containsMatchIn(tLower)) {
                     if (brand.equals("coop", ignoreCase = true)) {
-                        // Limpa ocorrências de "cooperativa", "cooperado", etc. e verifica se ainda sobra "coop" isolado
+                        // Limpa ocorrências de "cooperativa", "cooperado", etc.
                         val cleanedOfCooperativa = tLower
                             .replace(Regex("""\bcooperativ\w*""", RegexOption.IGNORE_CASE), "")
                             .replace(Regex("""\bcooperad\w*""", RegexOption.IGNORE_CASE), "")
-                        if (!brandRegex.containsMatchIn(cleanedOfCooperativa)) {
+                        // Exige contexto explícito de mercado, rua dos vianas ou início de nome de estabelecimento para "Coop"
+                        val hasCoopContext = cleanedOfCooperativa.contains("supermercado") ||
+                            cleanedOfCooperativa.contains("mercado") ||
+                            cleanedOfCooperativa.contains("loja") ||
+                            cleanedOfCooperativa.contains("hiper") ||
+                            cleanedOfCooperativa.contains("vianas") ||
+                            Regex("""^\s*coop\b""", RegexOption.IGNORE_CASE).containsMatchIn(cleanedOfCooperativa) ||
+                            Regex("""\bcoop\s*[-–—]""", RegexOption.IGNORE_CASE).containsMatchIn(cleanedOfCooperativa)
+                        if (!hasCoopContext) {
                             continue
                         }
                     }
+
+                    if (brand.equals("extra", ignoreCase = true)) {
+                        // Exige contexto explícito de supermercado/hipermercado para "Extra" (evita "taxa extra", "ganho extra")
+                        val hasExtraContext = tLower.contains("supermercado extra") ||
+                            tLower.contains("hipermercado extra") ||
+                            tLower.contains("extra supermercado") ||
+                            tLower.contains("extra hipermercado") ||
+                            Regex("""^\s*extra\b""", RegexOption.IGNORE_CASE).containsMatchIn(tLower)
+                        if (!hasExtraContext) {
+                            continue
+                        }
+                    }
+
                     val displayName = when (brand) {
                         "assai", "assaí" -> "Assaí"
                         "atacadao", "atacadão" -> "Atacadão"
@@ -1513,7 +1568,7 @@ object BrazilianOfferParser {
                         "nagumo" -> "Nagumo"
                         "giga atacado" -> "Giga"
                         "sam's club", "sams club" -> "Sam's Club"
-                        "vencedor", "vencedor atacadista", "vencedor atacado" -> "Vencedor Atacadista"
+                        "vencedor atacadista", "vencedor atacado", "vencedor" -> "Vencedor Atacadista"
                         else -> "Supermercado"
                     }
                     return Pair(true, displayName)
@@ -1521,15 +1576,11 @@ object BrazilianOfferParser {
             }
         }
 
-        // 2. Fallback: Termos genéricos de supermercado
+        // 3. Fallback: Termos genéricos de supermercado no endereço
         for (text in candidates) {
             val tLower = text.lowercase(Locale.ROOT)
             for (term in GENERIC_SUPERMARKET_TERMS) {
-                if (term == "mercado") {
-                    if (Regex("""\bmercado\b""", RegexOption.IGNORE_CASE).containsMatchIn(tLower)) {
-                        return Pair(true, "Supermercado")
-                    }
-                } else if (tLower.contains(term)) {
+                if (tLower.contains(term)) {
                     return Pair(true, "Supermercado")
                 }
             }
