@@ -18,7 +18,7 @@ jobs:
     name: Test and build independent parallel APK
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
     steps:
@@ -49,3 +49,12 @@ jobs:
           path: paralelo-output/goorno_paralelo_V01.apk
           if-no-files-found: error
           retention-days: 30
+      - name: Publish downloadable APK ONLY on isolated experimental branch
+        run: |
+          mkdir -p paralelo-download
+          cp paralelo-output/goorno_paralelo_V01.apk paralelo-download/goorno_paralelo_V01.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f paralelo-download/goorno_paralelo_V01.apk
+          git commit -m "test(paralelo): publish direct APK download [skip ci]" || exit 0
+          git push origin HEAD:experiment/goorno_paralelo_V01_20261113
