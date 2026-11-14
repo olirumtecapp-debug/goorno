@@ -1,16 +1,17 @@
 {
-  "versionName": "3.3.50",
-  "versionCode": 71,
-  "releaseDate": "2026-10-24",
-  "apkUrl": "https://goorno-app.vercel.app/GoOrNo-v3.3.50.apk",
-  "directDownload": "/GoOrNo-v3.3.50.apk",
-  "fileSizeBytes": 55336412,
-  "fileSizeFormatted": "55.3 MB",
+  "versionName": "3.3.108",
+  "versionCode": 129,
+  "releaseDate": "2026-11-13",
+  "apkUrl": "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
+  "directDownload": "/GoOrNo.apk",
+  "fileSizeBytes": 57246485,
+  "fileSizeFormatted": "54.7 MB",
   "changelog": [
-    "⭐ Correção da Nota do Passageiro na 99: Suporte completo a formato de avaliação com ponto e corridas (ex: 4,95 · 736 corridas, 5,00 · 105 corridas), eliminando o 'Nota: --'.",
-    "⚡ Correção do Fatiamento de Lista da 99: Fim do resíduo de chamadas anteriores, do falso split [1/2] e de taxas distorcidas (R$ 0,22/km).",
-    "🌐 Landing Page Oficial Atualizada: Novos cards comparativos reais e vitrine dos Recursos Inteligentes (Supermercado, Paradas, Bairros Favoritos, Risco).",
-    "🛡️ Estabilidade Total Preservada: Motor consolidado mantendo toda a robustez e segurança."
+    "⚡ Leitura ultrarrápida: remoção de sobrecarga de janelas com leitura imediata em todos os chamados.",
+    "🛡️ Blindagem da Tela de Solicitações: nunca mais abre cards sobre a lista de chamadas da 99.",
+    "⭐ Recuperação instantânea da nota no mapinha: nota do passageiro atualizada na hora sem tracinhos.",
+    "📱 Tipografia padrão do sistema (Bold): visual nativo limpo sem necessidade de seleção manual.",
+    "🎯 Blindagem de tela ociosa: chamadas no mapa lidas com 100% de precisão mesmo com modo Buscando ativo."
   ],
-  "mandatory": false
+  "mandatory": true
 }
