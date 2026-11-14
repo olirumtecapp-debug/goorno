@@ -2535,9 +2535,9 @@ class FloatingOverlayPanel(private val context: Context) {
         root.addView(createDarkMetricPill(hrStr, " /h"))
         root.addView(createDarkMetricPill(ratingStr, " nota"))
 
-        if (result.isRiskZone) {
+        if (result.hasRiskAlert && !result.riskAlertBadge.isNullOrBlank()) {
             val tvRisk = TextView(context).apply {
-                text = "⚠️ Área de Risco"
+                text = if (result.riskAlertBadge.startsWith("⚠️")) result.riskAlertBadge else "⚠️ " + result.riskAlertBadge
                 setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
                 setTypeface(typeface, Typeface.BOLD)
