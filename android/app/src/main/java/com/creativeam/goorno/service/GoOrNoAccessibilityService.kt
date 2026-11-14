@@ -288,10 +288,23 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 2. Coleta nós da janela ativa em primeiro plano (sem sobrecarga de IPC em janelas secundárias)
+        // 2. Coleta nós da janela ativa em primeiro plano
         val positionedNodes = mutableListOf<PositionedText>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
             collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
+        }
+        // Se a janela principal não retornou nós (ex: bottom sheet em janela secundária da 99),
+        // coleta estritamente das janelas pertencentes ao mesmo aplicativo alvo (targetPkg)
+        if (positionedNodes.isEmpty()) {
+            try {
+                val windowList = windows
+                for (w in windowList) {
+                    val wRoot = w.root ?: continue
+                    if (wRoot.packageName?.toString() == targetPkg) {
+                        collectPositionedTexts(wRoot, positionedNodes, depth = 0, requireVisible = false)
+                    }
+                }
+            } catch (_: Throwable) {}
         }
 
         if (positionedNodes.isEmpty()) {
@@ -695,33 +708,22 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                 val normalizedOcr = BrazilianOfferParser.normalizeFragmentedNodes(mergedOcrLines)
 
                                 if (normalizedOcr.isNotEmpty()) {
-                                    val inferredApp = BrazilianOfferParser.inferSourceAppFromScreenContent(targetPkg, normalizedOcr)
-                                    val effectiveOcrApp = when {
-                                        inferredApp != SourceApp.UNKNOWN -> inferredApp
-                                        targetApp != SourceApp.UNKNOWN -> targetApp
-                                        else -> SourceApp.NINETY_NINE_DRIVER
+                                    // ISOLAMENTO RIGOROSO DE APLICATIVO:
+                                    // Se estamos na 99, NUNCA executa parser da Uber.
+                                    // Se estamos na Uber, NUNCA executa parser da 99.
+                                    val effectiveOcrApp = if (targetApp != SourceApp.UNKNOWN) {
+                                        targetApp
+                                    } else {
+                                        val inferred = BrazilianOfferParser.inferSourceAppFromScreenContent(targetPkg, normalizedOcr)
+                                        if (inferred != SourceApp.UNKNOWN) inferred else SourceApp.NINETY_NINE_DRIVER
                                     }
 
-                                    var ocrOffers = extractOffersForApp(
+                                    val ocrOffers = extractOffersForApp(
                                         appType = effectiveOcrApp,
                                         lines = normalizedOcr,
                                         method = CaptureMethod.OCR,
                                         timestampMillis = System.currentTimeMillis()
                                     )
-
-                                    if (ocrOffers.isEmpty()) {
-                                        val altApp = if (effectiveOcrApp == SourceApp.NINETY_NINE_DRIVER) {
-                                            SourceApp.UBER_DRIVER
-                                        } else {
-                                            SourceApp.NINETY_NINE_DRIVER
-                                        }
-                                        ocrOffers = extractOffersForApp(
-                                            appType = altApp,
-                                            lines = normalizedOcr,
-                                            method = CaptureMethod.ACCESSIBILITY,
-                                            timestampMillis = System.currentTimeMillis()
-                                        )
-                                    }
 
                                     // FILTRO RIGOROSO DE SANIDADE NO OCR (elimina glitches como 1009 min ou preços inexistentes)
                                     val validOcrOffers = ocrOffers.filter { offer ->

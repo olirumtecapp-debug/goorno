@@ -629,6 +629,20 @@ object BrazilianOfferParser {
             }
         }
 
+        // 6ª Prioridade: Qualquer decimal limpo entre 3.80 e 5.00 isolado que não seja preço, km, min ou multiplicador
+        for (line in normalized) {
+            val trimmed = line.trim()
+            if (!trimmed.contains("R$", ignoreCase = true) && !trimmed.contains("/km") && !trimmed.contains("km") && !trimmed.contains("min") && !trimmed.contains("/h") && !trimmed.endsWith("x", ignoreCase = true)) {
+                val match = Regex("""(?<![R\$\d.,/])\b([4-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").find(trimmed)
+                if (match != null) {
+                    val r = parseBrazilianDecimal(match.groupValues[1])
+                    if (r != null && r in 3.80..5.00) {
+                        return r
+                    }
+                }
+            }
+        }
+
         return null
     }
 

@@ -457,18 +457,37 @@ object NinetyNineOfferReader {
         if (conflictNotes.isNotEmpty()) confidence *= 0.50
 
         val has99RideTrigger = isMultiOfferCard || cleanedLines.any { line ->
-            NINETY_NINE_CATEGORIES.any { cat -> line.contains(cat, ignoreCase = true) } ||
-                line.contains("Aceitar", ignoreCase = true) ||
-                line.contains("Recusar", ignoreCase = true) ||
-                line.contains("Escolher", ignoreCase = true) ||
-                line.contains("corridas", ignoreCase = true) ||
-                line.contains("Perfil Premium", ignoreCase = true) ||
-                line.contains("Prioritário", ignoreCase = true) ||
-                line.contains("Prioritario", ignoreCase = true) ||
-                line.contains("Pgto. no app", ignoreCase = true) ||
-                line.contains("Pagamento no app", ignoreCase = true) ||
-                line.contains("Embarque", ignoreCase = true) ||
-                line.contains("Desembarque", ignoreCase = true)
+            val l = line.lowercase(Locale.getDefault())
+            NINETY_NINE_CATEGORIES.any { cat -> l.contains(cat.lowercase(Locale.getDefault())) } ||
+                l.contains("aceitar") ||
+                l.contains("recusar") ||
+                l.contains("escolher") ||
+                l.contains("selecionar") ||
+                l.contains("corridas") ||
+                l.contains("perfil") ||
+                l.contains("prioritário") ||
+                l.contains("prioritario") ||
+                l.contains("pgto") ||
+                l.contains("pagamento") ||
+                l.contains("embarque") ||
+                l.contains("desembarque") ||
+                l.contains("passageiro") ||
+                l.contains("usuário") ||
+                l.contains("usuario") ||
+                l.contains("cpf verif") ||
+                l.contains("cartão verif") ||
+                l.contains("cartao verif") ||
+                l.contains("dinheiro") ||
+                l.contains("no carro") ||
+                l.contains("deslocamento") ||
+                l.contains("tarifa base") ||
+                l.contains("dinâmica") ||
+                l.contains("dinamica") ||
+                l.contains("/km") ||
+                l.contains("solicitações") ||
+                l.contains("solicitacoes") ||
+                l.contains("99") ||
+                (l.contains("min") && l.contains("km"))
         }
 
         val isSelfReadingGoOrNo = cleanedLines.any { line ->
