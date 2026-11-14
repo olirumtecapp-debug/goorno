@@ -250,8 +250,23 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             eventCombined.contains("Pop", ignoreCase = true) ||
             eventCombined.contains("Aceitar", ignoreCase = true) ||
             eventCombined.contains("Escolher", ignoreCase = true) ||
+            eventCombined.contains("Exclusivo", ignoreCase = true) ||
+            eventCombined.contains("Tenho interesse", ignoreCase = true) ||
+            eventCombined.contains("Radar", ignoreCase = true) ||
+            eventCombined.contains("UberX", ignoreCase = true) ||
+            eventCombined.contains("Comfort", ignoreCase = true) ||
+            eventCombined.contains("Black", ignoreCase = true) ||
+            eventCombined.contains("VIP", ignoreCase = true) ||
+            eventCombined.contains("Flash", ignoreCase = true) ||
+            eventCombined.contains("Moto", ignoreCase = true) ||
+            eventCombined.contains("Envio", ignoreCase = true) ||
+            eventCombined.contains("Entregar", ignoreCase = true) ||
+            eventCombined.contains("Viagem", ignoreCase = true) ||
+            eventCombined.contains("Corrida", ignoreCase = true) ||
             eventCombined.contains("Uber", ignoreCase = true) ||
-            eventCombined.contains("min", ignoreCase = true)
+            eventCombined.contains("min", ignoreCase = true) ||
+            eventCombined.contains("km", ignoreCase = true) ||
+            eventCombined.contains("deslize", ignoreCase = true)
 
         scanCurrentScreen(eventPkg = effectivePkg, forceThrottleBypass = isLikelyOfferEvent)
     }
@@ -674,6 +689,15 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                                         val txt = line.text.trim()
                                         if (txt.isNotEmpty() &&
                                             !txt.contains("GoOrNo", ignoreCase = true) &&
+                                            !txt.equals("R$/Km", ignoreCase = true) &&
+                                            !txt.equals("R$/km", ignoreCase = true) &&
+                                            !txt.equals("R$/Hora", ignoreCase = true) &&
+                                            !txt.equals("R$/hora", ignoreCase = true) &&
+                                            !txt.equals("R$/h", ignoreCase = true) &&
+                                            !txt.equals("Nota", ignoreCase = true) &&
+                                            !txt.contains("|--") &&
+                                            !txt.contains("Embarque Distante", ignoreCase = true) &&
+                                            !txt.contains("Viagem Longa", ignoreCase = true) &&
                                             !txt.contains("Aceitar", ignoreCase = true) &&
                                             !txt.contains("Avaliar", ignoreCase = true) &&
                                             !txt.contains("Recusar", ignoreCase = true) &&
@@ -1108,6 +1132,8 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         requireVisible: Boolean = true
     ) {
         if (node == null || depth > 50 || output.size >= 600) return
+        val nodePkg = node.packageName?.toString() ?: ""
+        if (nodePkg == packageName || nodePkg.contains("com.creativeam.goorno")) return
         try {
             // Verifica apenas limites na tela física
 

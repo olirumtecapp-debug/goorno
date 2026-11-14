@@ -2288,6 +2288,45 @@ class FloatingOverlayPanel(private val context: Context) {
             root.addView(tvRisk)
         }
 
+        if (!result.stopsDescription.isNullOrBlank()) {
+            val tvStops = TextView(context).apply {
+                val desc = result.stopsDescription
+                text = if (desc.startsWith("🛑")) desc else "🛑 $desc"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(14), dp(6), dp(14), dp(6))
+                background = roundedCardBg("#C2410C", "#7C2D12", 10f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
+            }
+            root.addView(tvStops)
+        }
+
+        if (result.isLongTrip) {
+            val tvLong = TextView(context).apply {
+                text = "⏱️ Viagem Longa (> 45 min)"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(14), dp(6), dp(14), dp(6))
+                background = roundedCardBg("#4F46E5", "#312E81", 10f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
+            }
+            root.addView(tvLong)
+        }
+
         if (result.isDistantPickup) {
             val tvPickup = TextView(context).apply {
                 text = "⚠️ Embarque Distante"
@@ -2305,6 +2344,45 @@ class FloatingOverlayPanel(private val context: Context) {
                 }
             }
             root.addView(tvPickup)
+        }
+
+        if (result.isSupermarket && !result.supermarketName.isNullOrBlank()) {
+            val tvMarket = TextView(context).apply {
+                text = "🛒 ${result.supermarketName}"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(14), dp(6), dp(14), dp(6))
+                background = roundedCardBg("#1D4ED8", "#1E3A8A", 10f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
+            }
+            root.addView(tvMarket)
+        }
+
+        if (result.isRodizioAlert && !result.rodizioAlertBadge.isNullOrBlank()) {
+            val tvRodizio = TextView(context).apply {
+                val b = result.rodizioAlertBadge
+                text = if (b.startsWith("🚗")) b else "🚗 $b"
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(dp(14), dp(6), dp(14), dp(6))
+                background = roundedCardBg("#B45309", "#78350F", 10f, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(6)
+                }
+            }
+            root.addView(tvRodizio)
         }
 
         if (result.isFavoriteZone && !result.favoriteZoneBadge.isNullOrBlank() && !result.hasRiskAlert) {

@@ -147,12 +147,23 @@ object NinetyNineOfferReader {
         isSimulated: Boolean = false,
         isMultiOfferCard: Boolean = false
     ): StandardRideOffer {
-        val cleanedLines = rawNodes.map { it.trim() }.filter { it.isNotEmpty() }
+        val cleanedLines = rawNodes.map { it.trim() }.filter { line ->
+            line.isNotEmpty() &&
+                !line.contains("GoOrNo", ignoreCase = true) &&
+                !line.equals("R$/Km", ignoreCase = true) &&
+                !line.equals("R$/km", ignoreCase = true) &&
+                !line.equals("R$/Hora", ignoreCase = true) &&
+                !line.equals("R$/hora", ignoreCase = true) &&
+                !line.equals("R$/h", ignoreCase = true) &&
+                !line.equals("Nota", ignoreCase = true) &&
+                !line.contains("|--") &&
+                !line.contains("Embarque Distante", ignoreCase = true) &&
+                !line.contains("Viagem Longa", ignoreCase = true)
+        }
         val joinedLower = cleanedLines.joinToString(" | ").lowercase(Locale.getDefault())
 
         // 0. Rejeição total de telas do próprio GoOrNo (Histórico, Ganhos, Janela, Ajustes)
-        if (joinedLower.contains("goorno") ||
-            joinedLower.contains("histórico") ||
+        if (joinedLower.contains("histórico") ||
             joinedLower.contains("lucro estim") ||
             joinedLower.contains("km bruto") ||
             joinedLower.contains("hora bruta") ||
@@ -490,12 +501,10 @@ object NinetyNineOfferReader {
                 (l.contains("min") && l.contains("km"))
         }
 
-        val isSelfReadingGoOrNo = cleanedLines.any { line ->
+        val isSelfReadingGoOrNo = !priceField.isPresent && cleanedLines.any { line ->
             line.contains("GoOrNo", ignoreCase = true) ||
-                line.contains("R$/km", ignoreCase = true) ||
-                line.contains("R$/hora", ignoreCase = true) ||
                 line.contains("Suas Faixas", ignoreCase = true)
-        } && !cleanedLines.any { it.contains("Aceitar", ignoreCase = true) || it.contains("Escolher", ignoreCase = true) }
+        }
 
         // Trava de Sanidade Rigorosa (rejeita saldos do motorista como R$ 254 em corridas curtas ou durações absurdas como 974 min)
         val isSanePrice = (rawPrice in 4.50..350.0) || (totalKmVal != null && totalKmVal >= 60.0 && rawPrice <= 1500.0)

@@ -47,12 +47,23 @@ object UberOfferReader {
         timestampMillis: Long = System.currentTimeMillis(),
         isSimulated: Boolean = false
     ): StandardRideOffer {
-        val cleanedLines = rawNodes.map { it.trim() }.filter { it.isNotEmpty() }
+        val cleanedLines = rawNodes.map { it.trim() }.filter { line ->
+            line.isNotEmpty() &&
+                !line.contains("GoOrNo", ignoreCase = true) &&
+                !line.equals("R$/Km", ignoreCase = true) &&
+                !line.equals("R$/km", ignoreCase = true) &&
+                !line.equals("R$/Hora", ignoreCase = true) &&
+                !line.equals("R$/hora", ignoreCase = true) &&
+                !line.equals("R$/h", ignoreCase = true) &&
+                !line.equals("Nota", ignoreCase = true) &&
+                !line.contains("|--") &&
+                !line.contains("Embarque Distante", ignoreCase = true) &&
+                !line.contains("Viagem Longa", ignoreCase = true)
+        }
         val joinedLower = cleanedLines.joinToString(" | ").lowercase(Locale.getDefault())
 
         // 0. Rejeição total de telas do próprio GoOrNo (Histórico, Ganhos, Janela, Ajustes)
-        if (joinedLower.contains("goorno") ||
-            joinedLower.contains("histórico") ||
+        if (joinedLower.contains("histórico") ||
             joinedLower.contains("lucro estim") ||
             joinedLower.contains("km bruto") ||
             joinedLower.contains("hora bruta") ||

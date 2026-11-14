@@ -512,6 +512,27 @@ object BrazilianOfferParser {
         val normalized = normalizeFragmentedNodes(lines)
         val allSources = listOf(lines, normalized)
 
+        // 0ª Prioridade: Extração direta infalível em linhas com contexto de passageiro (ex: "👤 4,95 • +999 corridas • Perfil Premium" ou "★ 4,96 • 339 corridas")
+        for (sourceList in allSources) {
+            for (line in sourceList) {
+                val lower = line.lowercase(Locale.getDefault())
+                val hasCtx = lower.contains("corrida") || lower.contains("viagen") ||
+                    lower.contains("perfil") || lower.contains("premium") ||
+                    lower.contains("essencial") || lower.contains("cartão") ||
+                    lower.contains("cartao") || lower.contains("verif") ||
+                    line.contains("★") || line.contains("⭐") || line.contains("👤") || line.contains("✪")
+                if (hasCtx) {
+                    val decMatches = Regex("""(?<![R\$\d.,/])\b([3-5][.,]\d{1,2})\b(?!\s*(?:/|km|m\b|min|h\b|x\b))""").findAll(line)
+                    for (m in decMatches) {
+                        val parsed = parseBrazilianDecimal(m.groupValues[1])
+                        if (parsed != null && parsed in 3.00..5.00) {
+                            return parsed
+                        }
+                    }
+                }
+            }
+        }
+
         // 1ª Prioridade: Linha ou texto unido com contexto explícito de passageiro
         // (Ex: "4,90 · 529 corridas · Perfil Essencial", "4,93 · +999 corridas · Perfil Premium", "4,81 · 729 corridas · Cartão verif.")
         val joinedAll = normalized.joinToString(" ")
