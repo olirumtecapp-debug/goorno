@@ -247,7 +247,7 @@ object FinancialEngine {
                 )
                 baseVerdict
             }
-            PassengerRatingVerdict.MEDIUM -> {
+            ratingVerdict == PassengerRatingVerdict.MEDIUM -> {
                 val msg = String.format(
                     ptBr,
                     "🟡 Passageiro Nota ★ %.2f (Média — entre %.2f e %.2f)",
@@ -269,7 +269,7 @@ object FinancialEngine {
                     baseVerdict
                 }
             }
-            PassengerRatingVerdict.BAD -> {
+            ratingVerdict == PassengerRatingVerdict.BAD -> {
                 val msg = String.format(
                     ptBr,
                     "🔴 Passageiro Nota ★ %.2f (Ruim — abaixo de %.2f)",
@@ -289,7 +289,7 @@ object FinancialEngine {
                     baseVerdict
                 }
             }
-            PassengerRatingVerdict.UNKNOWN -> baseVerdict
+            else -> baseVerdict
         }
 
         // 6. Avaliação de Área de Risco (Origem / Destino)

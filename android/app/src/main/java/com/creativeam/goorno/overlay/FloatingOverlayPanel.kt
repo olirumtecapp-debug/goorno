@@ -139,6 +139,10 @@ class FloatingOverlayPanel(private val context: Context) {
 
     fun getActiveCardFingerprint(): String = activeCardFingerprint
 
+    fun getVisibleOfferSourceApp(): com.creativeam.goorno.model.SourceApp? {
+        return offerQueue.getOrNull(currentQueueIndex)?.offer?.sourceApp
+    }
+
     fun applyConfig(config: DriverFinancialConfig) {
         mainHandler.post {
             val previousHorizontalPos = overlayHorizontalPosition
@@ -2094,7 +2098,9 @@ class FloatingOverlayPanel(private val context: Context) {
         val ratingBadge = result.passengerRatingBadge.orEmpty()
         val ratingClean = ratingBadge.replace(Regex("\\s*\\([^)]*\\)"), "").replace("★", "").replace("🟢", "").replace("🟡", "").replace("🔴", "").trim()
         val ratingNum = offer.passengerRating ?: ratingClean.replace(",", ".").toDoubleOrNull()
+        val isNewPassenger = offer.passengerIsNew || (ratingNum != null && ratingNum < 0.0) || ratingClean.equals("novo", ignoreCase = true)
         val ratingBarColor = when {
+            isNewPassenger -> "#38BDF8"
             ratingNum != null && ratingNum >= 4.85 -> "#22C55E"
             ratingNum != null && ratingNum >= 4.70 -> "#EAB308"
             ratingNum != null && ratingNum > 0.0 -> "#EF4444"
