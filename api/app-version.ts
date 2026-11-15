@@ -6,19 +6,19 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.111",
-    versionCode: 132,
-    releaseDate: "2026-11-14",
+    versionName: "3.3.113",
+    versionCode: 134,
+    releaseDate: "2026-11-15",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 57246485,
+    fileSizeBytes: 57250581,
     fileSizeFormatted: "54.7 MB",
     changelog: [
-      "⚡ Leitura ultrarrápida: remoção de sobrecarga de janelas com leitura imediata em todos os chamados.",
-      "🛡️ Blindagem da Tela de Solicitações: nunca mais abre cards sobre a lista de chamadas da 99.",
-      "⭐ Recuperação instantânea da nota no mapinha: nota do passageiro atualizada na hora sem tracinhos.",
-      "📱 Tipografia padrão do sistema (Bold): visual nativo limpo sem necessidade de seleção manual.",
-      "🎯 Blindagem de tela ociosa: chamadas no mapa lidas com 100% de precisão mesmo com modo Buscando ativo."
+      "⚡ Immediate Burst Hook: disparo instantâneo da captura de nota assim que o card de oferta abre.",
+      "🪟 Multi-Window Scan: varredura em janelas secundárias se o overlay roubar o foco da 99.",
+      "🎯 Fallback Visual em 200ms: OCR prioritário de nota caso a árvore de nós atrase.",
+      "🛡️ Zero Latency: notificationTimeout ajustado para 0ms eliminando o freio do Android.",
+      "⭐ Fusão Incremental de Campos: nota confirmada nunca mais é apagada ou substituída por tracinhos."
     ],
     mandatory: true,
   });

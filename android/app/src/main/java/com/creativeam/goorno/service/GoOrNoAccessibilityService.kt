@@ -1015,6 +1015,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             app.overlayPanel.applyConfig(config)
             app.overlayPanel.showEvaluations(evaluations)
 
+            // Dispara imediatamente o Active Burst Polling se qualquer oferta da 99 exibida estiver sem nota!
+            if (evaluations.any { it.offer.sourceApp == SourceApp.NINETY_NINE_DRIVER && it.offer.passengerRating == null && !it.offer.passengerIsNew }) {
+                startActiveRatingBurst(
+                    targetPkg = lastKnownForegroundPkg.takeIf { SourceApp.fromPackageName(it) == SourceApp.NINETY_NINE_DRIVER } ?: "com.taxis99",
+                    requestAtMillis = now
+                )
+            }
+
             // OCR da NOTA roda uma única vez por nova avaliação exibida.
             // Não compete com o scan atual nem precisa ler de novo preço/tempo/km.
             val ratingOfferKey = evaluations.joinToString("|") { buildStableOfferKey(it.offer) }
@@ -1210,48 +1218,75 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         activeBurstJob = serviceScope.launch {
             val app = applicationContext as? GoOrNoApplication ?: return@launch
             var attempts = 0
-            while (isActive && attempts < 6) {
-                delay(55L)
+            while (isActive && attempts < 10) {
+                delay(50L)
                 attempts++
                 if (!app.overlayPanel.isCardCurrentlyVisible()) break
                 val current = recentlyDisplayedOffers
                 if (current.isEmpty() || current.all { it.passengerRating != null || it.passengerIsNew }) {
                     break
                 }
-                val activeRoot = try { rootInActiveWindow } catch (_: Throwable) { null }
-                if (activeRoot == null || activeRoot.packageName?.toString() != targetPkg) continue
 
                 val burstNodes = mutableListOf<PositionedText>()
-                collectPositionedTexts(activeRoot, burstNodes, depth = 0, requireVisible = false)
-                if (burstNodes.isEmpty()) continue
-
-                val mergedLines = mergeSameRowNodes(burstNodes)
-                val normalizedTexts = BrazilianOfferParser.normalizeFragmentedNodes(mergedLines)
-                val candidateRating = BrazilianOfferParser.extractPassengerRating(normalizedTexts)
-
-                if (candidateRating != null && candidateRating in 3.00..5.00) {
-                    var enrichedAny = false
-                    val enrichedOffers = current.map { off ->
-                        if (off.passengerRating == null && !off.passengerIsNew && off.sourceApp == SourceApp.NINETY_NINE_DRIVER) {
-                            enrichedAny = true
-                            off.copy(passengerRating = candidateRating)
-                        } else {
-                            off
-                        }
-                    }
-                    if (enrichedAny) {
-                        recentlyDisplayedOffers = enrichedOffers
-                        val config = app.preferencesRepository.getInMemoryConfig()
-                        val evaluations = enrichedOffers.map { FinancialEngine.evaluate(it, config) }
-                            .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
-                        if (evaluations.isNotEmpty()) {
-                            mainHandler.post {
-                                if (app.overlayPanel.isCardCurrentlyVisible()) {
-                                    app.overlayPanel.updateRatingsWithoutReset(evaluations)
-                                }
+                val activeRoot = try { rootInActiveWindow } catch (_: Throwable) { null }
+                if (activeRoot != null && (activeRoot.packageName?.toString() == targetPkg || SourceApp.isAllowedDriverPackage(activeRoot.packageName?.toString()))) {
+                    collectPositionedTexts(activeRoot, burstNodes, depth = 0, requireVisible = false)
+                }
+                if (burstNodes.isEmpty()) {
+                    try {
+                        val windowList = windows
+                        for (w in windowList) {
+                            val wRoot = w.root ?: continue
+                            if (wRoot.packageName?.toString() == targetPkg || SourceApp.isAllowedDriverPackage(wRoot.packageName?.toString())) {
+                                collectPositionedTexts(wRoot, burstNodes, depth = 0, requireVisible = false)
                             }
                         }
-                        break
+                    } catch (_: Throwable) {}
+                }
+
+                if (burstNodes.isNotEmpty()) {
+                    val mergedLines = mergeSameRowNodes(burstNodes)
+                    val normalizedTexts = BrazilianOfferParser.normalizeFragmentedNodes(mergedLines)
+                    val candidateRating = BrazilianOfferParser.extractPassengerRating(normalizedTexts)
+
+                    if (candidateRating != null && candidateRating in 3.00..5.00) {
+                        var enrichedAny = false
+                        val enrichedOffers = current.map { off ->
+                            if (off.passengerRating == null && !off.passengerIsNew && off.sourceApp == SourceApp.NINETY_NINE_DRIVER) {
+                                enrichedAny = true
+                                off.copy(passengerRating = candidateRating)
+                            } else {
+                                off
+                            }
+                        }
+                        if (enrichedAny) {
+                            recentlyDisplayedOffers = enrichedOffers
+                            val config = app.preferencesRepository.getInMemoryConfig()
+                            val evaluations = enrichedOffers.map { FinancialEngine.evaluate(it, config) }
+                                .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
+                            if (evaluations.isNotEmpty()) {
+                                mainHandler.post {
+                                    if (app.overlayPanel.isCardCurrentlyVisible()) {
+                                        app.overlayPanel.updateRatingsWithoutReset(evaluations)
+                                    }
+                                }
+                            }
+                            break
+                        }
+                    }
+                }
+
+                // Se passou da 4ª tentativa (~200ms) e ainda não leu a nota por nós, dispara OCR silencioso de backup!
+                if (attempts == 4) {
+                    mainHandler.post {
+                        if (app.overlayPanel.isCardCurrentlyVisible()) {
+                            triggerAutomaticAccessibilityOcrIfNeeded(
+                                SourceApp.NINETY_NINE_DRIVER,
+                                targetPkg,
+                                System.currentTimeMillis(),
+                                ratingOnly = true
+                            )
+                        }
                     }
                 }
             }
