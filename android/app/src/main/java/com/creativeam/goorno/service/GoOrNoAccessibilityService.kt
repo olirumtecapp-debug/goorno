@@ -76,6 +76,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
     @Volatile private var recentlyDisplayedAtMillis: Long = 0L
     private var isTakingAutoScreenshot: Boolean = false
     private var consecutiveScansWithoutOffers: Int = 0
+    private var activeBurstJob: Job? = null
 
     private val mlKitRecognizer by lazy {
         TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -273,7 +274,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
 
     private fun scanCurrentScreen(eventPkg: String?, forceThrottleBypass: Boolean) {
         val now = System.currentTimeMillis()
-        if (!forceThrottleBypass && now - lastScanTimeMillis < 100L) return
+        val cardMissingRating = (applicationContext as? GoOrNoApplication)?.overlayPanel?.isCardCurrentlyVisible() == true && recentlyDisplayedOffers.any { it.passengerRating == null && !it.passengerIsNew }
+        val minInterval = if (cardMissingRating) 40L else 100L
+        if (!forceThrottleBypass && now - lastScanTimeMillis < minInterval) return
         if (!forceThrottleBypass && now - lastCardClosedTimeMillis < 120L) return
         if (!isScanInProgress.compareAndSet(false, true)) {
             return
@@ -926,7 +929,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     val matching = parsedOffers.firstOrNull { candidate ->
                         candidate.sourceApp == current.sourceApp &&
                         candidate.passengerRating != null &&
-                        Math.abs((candidate.offeredPrice ?: 0.0) - (current.offeredPrice ?: 0.0)) < 0.20
+                        Math.abs((candidate.offeredPrice ?: 0.0) - (current.offeredPrice ?: 0.0)) < 0.25
                     }
                     if (matching != null && matching.passengerRating != null) {
                         enrichedAny = true
@@ -1192,6 +1195,66 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 }
             }
         } catch (_: Throwable) {
+        }
+    }
+
+        /**
+     * Active Polling de Curto Prazo (Gemini / DeepSeek / ChatGPT):
+     * Quando um card da 99 e exibido com nota ausente/tracinho,
+     * executa uma Coroutine rapida com 6 iteracoes a cada 55ms (~330ms total).
+     * Varre a arvore de acessibilidade no exato milissegundo em que a animacao termina de renderizar
+     * a nota do passageiro (★ 4.96 • 339 corridas), enriquecendo o card instantaneamente sem OCR!
+     */
+    private fun startActiveRatingBurst(targetPkg: String, requestAtMillis: Long) {
+        activeBurstJob?.cancel()
+        activeBurstJob = serviceScope.launch {
+            val app = applicationContext as? GoOrNoApplication ?: return@launch
+            var attempts = 0
+            while (isActive && attempts < 6) {
+                delay(55L)
+                attempts++
+                if (!app.overlayPanel.isCardCurrentlyVisible()) break
+                val current = recentlyDisplayedOffers
+                if (current.isEmpty() || current.all { it.passengerRating != null || it.passengerIsNew }) {
+                    break
+                }
+                val activeRoot = try { rootInActiveWindow } catch (_: Throwable) { null }
+                if (activeRoot == null || activeRoot.packageName?.toString() != targetPkg) continue
+
+                val burstNodes = mutableListOf<PositionedText>()
+                collectPositionedTexts(activeRoot, burstNodes, depth = 0, requireVisible = false)
+                if (burstNodes.isEmpty()) continue
+
+                val mergedLines = mergeSameRowNodes(burstNodes)
+                val normalizedTexts = BrazilianOfferParser.normalizeFragmentedNodes(mergedLines)
+                val candidateRating = BrazilianOfferParser.extractPassengerRating(normalizedTexts)
+
+                if (candidateRating != null && candidateRating in 3.00..5.00) {
+                    var enrichedAny = false
+                    val enrichedOffers = current.map { off ->
+                        if (off.passengerRating == null && !off.passengerIsNew && off.sourceApp == SourceApp.NINETY_NINE_DRIVER) {
+                            enrichedAny = true
+                            off.copy(passengerRating = candidateRating)
+                        } else {
+                            off
+                        }
+                    }
+                    if (enrichedAny) {
+                        recentlyDisplayedOffers = enrichedOffers
+                        val config = app.preferencesRepository.getInMemoryConfig()
+                        val evaluations = enrichedOffers.map { FinancialEngine.evaluate(it, config) }
+                            .filter { it.verdict != com.creativeam.goorno.model.TrafficLightVerdict.GRAY_NEUTRAL }
+                        if (evaluations.isNotEmpty()) {
+                            mainHandler.post {
+                                if (app.overlayPanel.isCardCurrentlyVisible()) {
+                                    app.overlayPanel.updateRatingsWithoutReset(evaluations)
+                                }
+                            }
+                        }
+                        break
+                    }
+                }
+            }
         }
     }
 
