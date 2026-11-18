@@ -1969,7 +1969,10 @@ fun GoOrNoComposeApp(
 
                                                     val previewFontFamily = try {
                                                         if (overlayFontFamily.uppercase().startsWith("SPACE")) {
-                                                            FontFamily(Font(com.creativeam.goorno.R.font.space_grotesk))
+                                                            FontFamily(
+                                                                Font(com.creativeam.goorno.R.font.space_grotesk_bold, FontWeight.Bold),
+                                                                Font(com.creativeam.goorno.R.font.space_grotesk, FontWeight.Normal)
+                                                            )
                                                         } else {
                                                             FontFamily.Default
                                                         }

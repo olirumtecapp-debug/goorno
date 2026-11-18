@@ -2183,7 +2183,8 @@ class FloatingOverlayPanel(private val context: Context) {
             text = "$seqTag$minStr • $distStr"
             setTextColor(primaryTextColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, summaryValSp)
-            typeface = cardTypeface
+            setTypeface(cardTypeface, Typeface.BOLD)
+            paint.isFakeBoldText = true
             setSingleLine(true)
             ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -2239,7 +2240,8 @@ class FloatingOverlayPanel(private val context: Context) {
                     text = label
                     setTextColor(secondaryTextColor)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarLblSp)
-                    typeface = cardTypeface
+                    setTypeface(cardTypeface, Typeface.BOLD)
+                    paint.isFakeBoldText = true
                     gravity = Gravity.CENTER
                 }
                 addView(tvL)
@@ -2263,9 +2265,10 @@ class FloatingOverlayPanel(private val context: Context) {
                     text = valueText
                     setTextColor(primaryTextColor)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
-                    typeface = cardTypeface
+                    setTypeface(cardTypeface, Typeface.BOLD)
+                    paint.isFakeBoldText = true
                     if (fontFamilyPref.uppercase().startsWith("SPACE")) {
-                        letterSpacing = -0.025f
+                        letterSpacing = -0.015f
                     }
                     gravity = Gravity.CENTER
                 }
@@ -2516,9 +2519,10 @@ class FloatingOverlayPanel(private val context: Context) {
                     text = valueStr
                     setTextColor(Color.WHITE)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
-                    typeface = cardTypeface
+                    setTypeface(cardTypeface, Typeface.BOLD)
+                    paint.isFakeBoldText = true
                     if (fontFamilyPrefCompact.uppercase().startsWith("SPACE")) {
-                        letterSpacing = -0.025f
+                        letterSpacing = -0.015f
                     }
                 }
                 addView(tvVal)
@@ -3668,16 +3672,21 @@ class FloatingOverlayPanel(private val context: Context) {
         return try {
             when (fontFamilyPref.uppercase()) {
                 "SPACE_GROTESK", "SPACEGROTESK" -> {
-                    androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.space_grotesk)
-                        ?: Typeface.create("sans-serif-medium", Typeface.BOLD)
+                    val font = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.space_grotesk_bold)
+                        ?: androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.space_grotesk)
+                    if (font != null) {
+                        Typeface.create(font, Typeface.BOLD)
+                    } else {
+                        Typeface.DEFAULT_BOLD
+                    }
                 }
                 "MONTSERRAT" -> {
-                    androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.montserrat)
-                        ?: Typeface.DEFAULT_BOLD
+                    val font = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.montserrat)
+                    if (font != null) Typeface.create(font, Typeface.BOLD) else Typeface.DEFAULT_BOLD
                 }
                 "INTER" -> {
-                    androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.inter)
-                        ?: Typeface.DEFAULT_BOLD
+                    val font = androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.inter)
+                    if (font != null) Typeface.create(font, Typeface.BOLD) else Typeface.DEFAULT_BOLD
                 }
                 else -> Typeface.DEFAULT_BOLD
             }
