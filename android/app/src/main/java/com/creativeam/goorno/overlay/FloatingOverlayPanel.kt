@@ -2264,6 +2264,9 @@ class FloatingOverlayPanel(private val context: Context) {
                     setTextColor(primaryTextColor)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, pillarValSp)
                     typeface = cardTypeface
+                    if (fontFamilyPref.uppercase().startsWith("SPACE")) {
+                        letterSpacing = -0.025f
+                    }
                     gravity = Gravity.CENTER
                 }
                 valRow.addView(tvV)
@@ -2476,7 +2479,8 @@ class FloatingOverlayPanel(private val context: Context) {
         timerRow.addView(btnClose)
         root.addView(timerRow)
 
-        val cardTypeface = getOverlayTypeface(lastKnownConfig?.overlayFontFamily ?: "ROBOTO")
+        val fontFamilyPrefCompact = lastKnownConfig?.overlayFontFamily ?: "SPACE_GROTESK"
+        val cardTypeface = getOverlayTypeface(fontFamilyPrefCompact)
 
         val decisionPill = TextView(context).apply {
             text = verdictLabel
@@ -2513,6 +2517,9 @@ class FloatingOverlayPanel(private val context: Context) {
                     setTextColor(Color.WHITE)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
                     typeface = cardTypeface
+                    if (fontFamilyPrefCompact.uppercase().startsWith("SPACE")) {
+                        letterSpacing = -0.025f
+                    }
                 }
                 addView(tvVal)
 
@@ -3658,7 +3665,25 @@ class FloatingOverlayPanel(private val context: Context) {
     }
 
     private fun getOverlayTypeface(fontFamilyPref: String): Typeface {
-        return Typeface.DEFAULT_BOLD
+        return try {
+            when (fontFamilyPref.uppercase()) {
+                "SPACE_GROTESK", "SPACEGROTESK" -> {
+                    androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.space_grotesk)
+                        ?: Typeface.create("sans-serif-medium", Typeface.BOLD)
+                }
+                "MONTSERRAT" -> {
+                    androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.montserrat)
+                        ?: Typeface.DEFAULT_BOLD
+                }
+                "INTER" -> {
+                    androidx.core.content.res.ResourcesCompat.getFont(context, com.creativeam.goorno.R.font.inter)
+                        ?: Typeface.DEFAULT_BOLD
+                }
+                else -> Typeface.DEFAULT_BOLD
+            }
+        } catch (e: Exception) {
+            Typeface.DEFAULT_BOLD
+        }
     }
 
     private fun roundedBg(hexColor: String, radiusDp: Float): GradientDrawable {

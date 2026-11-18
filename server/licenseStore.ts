@@ -383,9 +383,9 @@ export async function checkOrActivateLicense(params: {
   let record = await getLicense(phone);
   const now = new Date();
 
-  // If new user, create 7-day Trial
+  // If new user, create 15-day Trial
   if (!record) {
-    const trialEnds = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const trialEnds = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000);
     record = {
       id: phone,
       whatsapp: formatPhoneBr(phone),
@@ -410,9 +410,9 @@ export async function checkOrActivateLicense(params: {
       allowed: true,
       status: "trial",
       plano: "trial",
-      trialDaysRemaining: 7,
+      trialDaysRemaining: 15,
       validoAte: trialEnds.toISOString(),
-      message: "Bem-vindo ao GoOrNo! Seu período de teste de 7 dias grátis foi ativado.",
+      message: "Bem-vindo ao GoOrNo! Seu período de teste de 15 dias grátis foi ativado.",
       hasPinSet: Boolean(record.pin),
       license: record,
     };
@@ -562,7 +562,7 @@ export async function checkOrActivateLicense(params: {
         plano: "trial",
         trialDaysRemaining: 0,
         validoAte: record.trialEndsAt,
-        message: "Seu teste gratuito de 7 dias expirou. Ative o plano Pro para continuar rodando com o copiloto!",
+        message: "Seu teste gratuito de 15 dias expirou. Ative o plano Pro para continuar rodando com o copiloto!",
         license: record,
       };
     }

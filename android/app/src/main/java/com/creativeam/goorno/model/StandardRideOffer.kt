@@ -215,7 +215,7 @@ data class DriverFinancialConfig(
     val overlayDisplayStyle: String = OverlayDisplayStyle.COMPLETO.name,
     val overlayTheme: String = "COLORIDO", // "COLORIDO", "ESCURO" ou "CLARO"
     val overlayFontSize: String = "G", // "M", "G", "GG"
-    val overlayFontFamily: String = "SISTEMA", // "SISTEMA"
+    val overlayFontFamily: String = "SPACE_GROTESK", // "SPACE_GROTESK" ou "SISTEMA"
     val overlayBubblePosition: String = "BELOW",
     val overlayHorizontalPosition: String = "RIGHT",
     val showFloatingShortcutBubble: Boolean = false,

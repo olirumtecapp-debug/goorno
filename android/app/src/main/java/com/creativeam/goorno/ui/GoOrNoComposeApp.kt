@@ -1967,7 +1967,15 @@ fun GoOrNoComposeApp(
                                                         else -> Color(0xFF94A3B8)
                                                     }
 
-                                                    val previewFontFamily = FontFamily.Default
+                                                    val previewFontFamily = try {
+                                                        if (overlayFontFamily.uppercase().startsWith("SPACE")) {
+                                                            FontFamily(Font(com.creativeam.goorno.R.font.space_grotesk))
+                                                        } else {
+                                                            FontFamily.Default
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        FontFamily.Default
+                                                    }
                                                     val previewPillarFontSize = when (overlayFontSize) {
                                                         "M" -> 22.sp
                                                         "G" -> 25.sp
@@ -2358,6 +2366,64 @@ fun GoOrNoComposeApp(
                                                     color = if (isSel) Color.White else PetrolDarkText,
                                                     fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
                                                     fontSize = 11.5.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = CleanCardBorder)
+
+                                // Estilo da Tipografia / Fonte
+                                Text(
+                                    text = "Fonte dos Números e Cartão",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PetrolDarkText
+                                )
+                                Text(
+                                    text = "Escolha a tipografia exibida no cartão flutuante",
+                                    fontSize = 11.5.sp,
+                                    color = MutedText
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(
+                                        Pair("SPACE_GROTESK", "Space Grotesk"),
+                                        Pair("SISTEMA", "Padrão Sistema")
+                                    ).forEach { (fontKey, label) ->
+                                        val isSel = overlayFontFamily.uppercase() == fontKey || (fontKey == "SPACE_GROTESK" && overlayFontFamily.uppercase().startsWith("SPACE"))
+                                        Surface(
+                                            color = if (isSel) PetrolHeader else SoftSurfaceVariant,
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.5.dp, if (isSel) PetrolHeader else CleanCardBorder),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable {
+                                                    overlayFontFamily = fontKey
+                                                    savedFlag = false
+                                                    val updated = config.copy(overlayFontFamily = fontKey)
+                                                    scope.launch {
+                                                         app.preferencesRepository.saveConfig(updated)
+                                                         app.overlayPanel.applyConfig(updated)
+                                                         notifyUser("Fonte alterada: $label")
+                                                    }
+                                                }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    color = if (isSel) Color.White else PetrolDarkText,
+                                                    fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
+                                                    fontSize = 12.sp,
                                                     maxLines = 1,
                                                     softWrap = false
                                                 )

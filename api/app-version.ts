@@ -6,19 +6,17 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.status(200).json({
-    versionName: "3.3.113",
-    versionCode: 134,
-    releaseDate: "2026-11-15",
+    versionName: "3.3.114",
+    versionCode: 135,
+    releaseDate: "2026-11-18",
     apkUrl: "https://raw.githubusercontent.com/olirumtecapp-debug/goorno/main/GoOrNo.apk",
     directDownload: "/GoOrNo.apk",
-    fileSizeBytes: 57250581,
-    fileSizeFormatted: "54.7 MB",
+    fileSizeBytes: 57400000,
+    fileSizeFormatted: "54.8 MB",
     changelog: [
-      "⚡ Immediate Burst Hook: disparo instantâneo da captura de nota assim que o card de oferta abre.",
-      "🪟 Multi-Window Scan: varredura em janelas secundárias se o overlay roubar o foco da 99.",
-      "🎯 Fallback Visual em 200ms: OCR prioritário de nota caso a árvore de nós atrase.",
-      "🛡️ Zero Latency: notificationTimeout ajustado para 0ms eliminando o freio do Android.",
-      "⭐ Fusão Incremental de Campos: nota confirmada nunca mais é apagada ou substituída por tracinhos."
+      "✨ Tipografia Space Grotesk: nova fonte premium e nítida com alinhamento compacto para rápida leitura no trânsito.",
+      "⚙️ Seletor de Fonte nas Configurações: escolha entre Space Grotesk ou Padrão do Sistema a qualquer momento.",
+      "🛡️ Blindagem Total: todas as regras de leitura, OCR de nota da 99 e persistência mantidas 100% intactas."
     ],
     mandatory: true,
   });
