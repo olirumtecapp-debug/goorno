@@ -246,7 +246,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         val eventTexts = event?.text?.joinToString(" ") ?: ""
         val eventContentDesc = event?.contentDescription?.toString() ?: ""
         val eventCombined = "$eventTexts $eventContentDesc"
-        val isLikelyOfferEvent = isAppTransitionToDriver ||
+        val eventType = event?.eventType ?: 0
+        val isWindowStateChange = eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED
+        val isLikelyOfferEvent = isAppTransitionToDriver || isWindowStateChange ||
             eventCombined.contains("R$") ||
             eventCombined.contains("Pop", ignoreCase = true) ||
             eventCombined.contains("Aceitar", ignoreCase = true) ||
@@ -270,6 +272,14 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             eventCombined.contains("deslize", ignoreCase = true)
 
         scanCurrentScreen(eventPkg = effectivePkg, forceThrottleBypass = isLikelyOfferEvent)
+        if (isWindowStateChange && isActiveDriverPkg) {
+            serviceScope.launch {
+                delay(35)
+                scanCurrentScreen(eventPkg = effectivePkg, forceThrottleBypass = true)
+                delay(65)
+                scanCurrentScreen(eventPkg = effectivePkg, forceThrottleBypass = true)
+            }
+        }
     }
 
     private fun scanCurrentScreen(eventPkg: String?, forceThrottleBypass: Boolean) {
@@ -306,24 +316,24 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 2. Coleta nós da janela ativa em primeiro plano
+        // 2. Coleta unificada de nós de TODAS as janelas do aplicativo alvo (Mapa de fundo + Card de Oferta sobreposto)
         val positionedNodes = mutableListOf<PositionedText>()
+        val visitedRoots = mutableSetOf<android.view.accessibility.AccessibilityNodeInfo>()
         if (activeRoot != null && activeRoot.packageName?.toString() == targetPkg) {
+            visitedRoots.add(activeRoot)
             collectPositionedTexts(activeRoot, positionedNodes, depth = 0, requireVisible = false)
         }
-        // Se a janela principal não retornou nós (ex: bottom sheet em janela secundária da 99),
-        // coleta estritamente das janelas pertencentes ao mesmo aplicativo alvo (targetPkg)
-        if (positionedNodes.isEmpty()) {
-            try {
-                val windowList = windows
-                for (w in windowList) {
-                    val wRoot = w.root ?: continue
-                    if (wRoot.packageName?.toString() == targetPkg) {
-                        collectPositionedTexts(wRoot, positionedNodes, depth = 0, requireVisible = false)
-                    }
+        // SEMPRE varre as outras janelas interativas do app alvo (captura bottom sheets, popups e dialogs da 99 e Uber)
+        try {
+            val windowList = windows
+            for (w in windowList) {
+                val wRoot = w.root ?: continue
+                if (wRoot.packageName?.toString() == targetPkg && !visitedRoots.contains(wRoot)) {
+                    visitedRoots.add(wRoot)
+                    collectPositionedTexts(wRoot, positionedNodes, depth = 0, requireVisible = false)
                 }
-            } catch (_: Throwable) {}
-        }
+            }
+        } catch (_: Throwable) {}
 
         if (positionedNodes.isEmpty()) {
             currentLifecycleState = OfferLifecycleState.ALLOWED_NO_OFFER
@@ -1228,21 +1238,22 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                 }
 
                 val burstNodes = mutableListOf<PositionedText>()
+                val visitedBurstRoots = mutableSetOf<android.view.accessibility.AccessibilityNodeInfo>()
                 val activeRoot = try { rootInActiveWindow } catch (_: Throwable) { null }
                 if (activeRoot != null && (activeRoot.packageName?.toString() == targetPkg || SourceApp.isAllowedDriverPackage(activeRoot.packageName?.toString()))) {
+                    visitedBurstRoots.add(activeRoot)
                     collectPositionedTexts(activeRoot, burstNodes, depth = 0, requireVisible = false)
                 }
-                if (burstNodes.isEmpty()) {
-                    try {
-                        val windowList = windows
-                        for (w in windowList) {
-                            val wRoot = w.root ?: continue
-                            if (wRoot.packageName?.toString() == targetPkg || SourceApp.isAllowedDriverPackage(wRoot.packageName?.toString())) {
-                                collectPositionedTexts(wRoot, burstNodes, depth = 0, requireVisible = false)
-                            }
+                try {
+                    val windowList = windows
+                    for (w in windowList) {
+                        val wRoot = w.root ?: continue
+                        if ((wRoot.packageName?.toString() == targetPkg || SourceApp.isAllowedDriverPackage(wRoot.packageName?.toString())) && !visitedBurstRoots.contains(wRoot)) {
+                            visitedBurstRoots.add(wRoot)
+                            collectPositionedTexts(wRoot, burstNodes, depth = 0, requireVisible = false)
                         }
-                    } catch (_: Throwable) {}
-                }
+                    }
+                } catch (_: Throwable) {}
 
                 if (burstNodes.isNotEmpty()) {
                     val mergedLines = mergeSameRowNodes(burstNodes)
