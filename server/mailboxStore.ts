@@ -161,7 +161,7 @@ export async function markMessageStatus(
   const target = all.find((m) => m.id === id);
   if (!target) return false;
 
-  target.status = status;
+  target.status = adminReply ? "respondida" : status;
   if (adminReply !== undefined) {
     target.adminReply = adminReply;
     target.repliedAt = new Date().toISOString();
@@ -219,8 +219,12 @@ export async function listDriverMessages(phoneOrEmail: string): Promise<MailboxM
 
   return all.filter((m) => {
     const cleanMsgContact = (m.contact || "").replace(/\D/g, "");
-    if (cleanTarget.length >= 8 && cleanMsgContact.includes(cleanTarget.slice(-8))) {
-      return true;
+    if (cleanTarget.length >= 8 && cleanMsgContact.length >= 8) {
+      if (cleanTarget === cleanMsgContact) return true;
+      const targetLast8 = cleanTarget.slice(-8);
+      const msgLast8 = cleanMsgContact.slice(-8);
+      if (targetLast8 === msgLast8) return true;
+      if (cleanMsgContact.includes(targetLast8) || cleanTarget.includes(msgLast8)) return true;
     }
     if (phoneOrEmail.includes("@") && m.email && m.email.toLowerCase() === phoneOrEmail.toLowerCase().trim()) {
       return true;

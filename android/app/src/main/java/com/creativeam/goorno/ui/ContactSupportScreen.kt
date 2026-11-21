@@ -229,7 +229,7 @@ fun ContactSupportScreenCard(
                     }
                 }
 
-                val repliedCount = driverMessages.count { it.status == "respondida" && !it.adminReply.isNullOrBlank() }
+                val repliedCount = driverMessages.count { !it.adminReply.isNullOrBlank() || it.status == "respondida" || it.status == "replied" }
                 Surface(
                     color = if (activeTab == "mensagens") PetrolHeader else SoftSurfaceVariant,
                     shape = RoundedCornerShape(10.dp),
@@ -756,7 +756,7 @@ fun ContactSupportScreenCard(
                         }
                     } else {
                         driverMessages.forEach { item ->
-                            val isReplied = item.status == "respondida" && !item.adminReply.isNullOrBlank()
+                            val isReplied = !item.adminReply.isNullOrBlank() || item.status == "respondida" || item.status == "replied"
                             Surface(
                                 color = if (isReplied) TrafficGreenSoft else SoftSurfaceVariant,
                                 shape = RoundedCornerShape(14.dp),

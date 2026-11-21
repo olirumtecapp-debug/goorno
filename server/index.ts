@@ -34,7 +34,7 @@ import {
 } from "./licenseStore.js";
 import { createPixCharge, verifyPaymentStatus, getPendingPixPhone } from "./asaas.js";
 import { sendFraudAlertEmail } from "./fraudAlert.js";
-import { saveMessage, listAllMessages, markMessageStatus, deleteMessage } from "./mailboxStore.js";
+import { saveMessage, listAllMessages, markMessageStatus, deleteMessage, listDriverMessages } from "./mailboxStore.js";
 import { notifyAdminByEmail, sendVisitorConfirmationEmail } from "./emailService.js";
 
 export const app = express();
@@ -1103,6 +1103,25 @@ app.post("/api/redeem-voucher", async (req, res) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || "Erro ao enviar mensagem para a caixa postal." });
+  }
+});
+
+// 14b. Driver Route: List messages for a specific driver (Caixa Postal do Motorista no App)
+app.get("/api/contact/driver", async (req, res) => {
+  try {
+    const rawTarget = String(req.query.phone || req.query.contact || req.query.whatsapp || req.query.email || "").trim();
+    if (!rawTarget) {
+      return res.status(400).json({ ok: false, error: "Telefone ou email é obrigatório", messages: [] });
+    }
+    const rawMessages = await listDriverMessages(rawTarget);
+    const messages = rawMessages.map((m) => ({
+      ...m,
+      status: m.adminReply ? "respondida" : ((m.status as string) === "read" ? "lida" : m.status)
+    }));
+    res.json({ ok: true, messages, total: messages.length });
+  } catch (err: any) {
+    console.error("[Mailbox] Erro ao buscar mensagens do motorista:", err);
+    res.status(500).json({ ok: false, error: err?.message || "Erro ao buscar mensagens.", messages: [] });
   }
 });
 
