@@ -220,6 +220,38 @@ fun GoOrNoComposeApp(
             matchesApp && matchesStatus && matchesSearch
         }
     }
+
+    // Identificação Inteligente de Chamados Repetidos:
+    // Garante que re-ofertas não somem múltiplas vezes no faturamento diário
+    val repeatedOfferIds = remember(realHistory) {
+        val repeatedSet = mutableSetOf<String>()
+        val chronological = realHistory.sortedBy { it.timestampMillis }
+        for (i in chronological.indices) {
+            val curr = chronological[i]
+            if (curr.reasonsSummary.contains("Chamado repetido", ignoreCase = true)) {
+                repeatedSet.add(curr.id)
+                continue
+            }
+            for (j in (i - 1) downTo 0) {
+                val prev = chronological[j]
+                val diffMs = curr.timestampMillis - prev.timestampMillis
+                if (diffMs > 600_000L) break
+                val sameApp = curr.sourceApp.equals(prev.sourceApp, ignoreCase = true) ||
+                    (curr.sourceApp.contains("99", ignoreCase = true) && prev.sourceApp.contains("99", ignoreCase = true)) ||
+                    (curr.sourceApp.contains("Uber", ignoreCase = true) && prev.sourceApp.contains("Uber", ignoreCase = true))
+                val priceDiff = kotlin.math.abs(curr.offeredPrice - prev.offeredPrice)
+                val kmDiff = kotlin.math.abs((curr.totalDistanceKm ?: 0.0) - (prev.totalDistanceKm ?: 0.0))
+                val sameRoute = (!curr.originAddress.isNullOrBlank() && curr.originAddress == prev.originAddress) ||
+                    (!curr.destinationAddress.isNullOrBlank() && curr.destinationAddress == prev.destinationAddress)
+
+                if (sameApp && priceDiff <= 0.60 && (kmDiff <= 0.35 || sameRoute)) {
+                    repeatedSet.add(curr.id)
+                    break
+                }
+            }
+        }
+        repeatedSet
+    }
     var showAccessibilityDisclosureDialog by remember { mutableStateOf(false) }
     var showDeleteAccountConfirmDialog by remember { mutableStateOf(false) }
     var isDeletingAccount by remember { mutableStateOf(false) }
@@ -4368,12 +4400,14 @@ fun GoOrNoComposeApp(
                 // TELA 7: HISTÓRICO DE ANÁLISES E CONFERÊNCIA DE VALOR
                 // =====================================================
                 GoOrNoScreen.HISTORY -> {
-                    val totalAnalyzedSum = filteredHistory.sumOf { it.offeredPrice }
-                    val totalAnalyzedCount = filteredHistory.size
+                    val unrepeatedHistory = filteredHistory.filter { it.id !in repeatedOfferIds }
+                    val repeatedCount = filteredHistory.size - unrepeatedHistory.size
+                    val totalAnalyzedSum = unrepeatedHistory.sumOf { it.offeredPrice }
+                    val totalAnalyzedCount = unrepeatedHistory.size
                     val avgPerRide = if (totalAnalyzedCount > 0) totalAnalyzedSum / totalAnalyzedCount else 0.0
-                    val validHrOffers = filteredHistory.filter { (it.grossPerHour ?: 0.0) > 0.0 }
+                    val validHrOffers = unrepeatedHistory.filter { (it.grossPerHour ?: 0.0) > 0.0 }
                     val avgPerHour = if (validHrOffers.isNotEmpty()) validHrOffers.mapNotNull { it.grossPerHour }.average() else 0.0
-                    val validKmOffers = filteredHistory.filter { (it.grossPerKm ?: 0.0) > 0.0 }
+                    val validKmOffers = unrepeatedHistory.filter { (it.grossPerKm ?: 0.0) > 0.0 }
                     val avgPerKm = if (validKmOffers.isNotEmpty()) validKmOffers.mapNotNull { it.grossPerKm }.average() else 0.0
 
                     val countTodas = realHistory.size
@@ -4592,7 +4626,7 @@ fun GoOrNoComposeApp(
                                     color = Color(0xFF0F172A)
                                 )
                                 Text(
-                                    text = "$totalAnalyzedCount Solicitações analisadas",
+                                    text = if (repeatedCount > 0) "$totalAnalyzedCount Solicitações ($repeatedCount repetições desconsideradas)" else "$totalAnalyzedCount Solicitações analisadas",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = Color(0xFF64748B)
@@ -4743,6 +4777,7 @@ fun GoOrNoComposeApp(
                         }
                     } else {
                         items(filteredHistory, key = { it.id }) { item ->
+                            val isRepeated = item.id in repeatedOfferIds || item.reasonsSummary.contains("Chamado repetido", ignoreCase = true)
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = PureWhiteSurface),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
@@ -4753,6 +4788,7 @@ fun GoOrNoComposeApp(
                                     HistoricalOfferCardContent(
                                         entity = item,
                                         config = config,
+                                        isRepeated = isRepeated,
                                         onOpenStreetView = { addr -> openStreetViewExternal(context, addr) },
                                         onMarkAddressAsRisk = promptMarkAddressAsRisk,
                                         onMarkAddressAsFavorite = promptMarkAddressAsFavorite,
@@ -7818,6 +7854,7 @@ private fun EvaluationDetailCardContent(
 private fun HistoricalOfferCardContent(
     entity: RideOfferEntity,
     config: DriverFinancialConfig,
+    isRepeated: Boolean = entity.reasonsSummary.contains("Chamado repetido", ignoreCase = true),
     onOpenStreetView: (String) -> Unit,
     onMarkAddressAsRisk: (String) -> Unit,
     onMarkAddressAsFavorite: (String) -> Unit = {},
@@ -7890,7 +7927,7 @@ private fun HistoricalOfferCardContent(
                     text = "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%.2f", entity.offeredPrice),
                     fontWeight = FontWeight.Black,
                     fontSize = 16.5.sp,
-                    color = Color(0xFF0F172A)
+                    color = if (isRepeated) Color(0xFF64748B) else Color(0xFF0F172A)
                 )
                 Text(
                     text = "· $dateStr",
@@ -7906,6 +7943,28 @@ private fun HistoricalOfferCardContent(
                 fontWeight = FontWeight.Bold,
                 color = verdictColor
             )
+        }
+
+        // INDICADOR DISCRETO: CHAMADO REPETIDO (NÃO COMPUTADO)
+        if (isRepeated) {
+            Surface(
+                color = Color(0xFFF1F5F9),
+                shape = RoundedCornerShape(6.dp),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "🔁 Chamado repetido (não computado)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF475569)
+                    )
+                }
+            }
         }
 
         // LINHA 2: DISTÂNCIA/TEMPO E BOTÃO "✓ ACEITEI / CONFIRMAR" COM DIÁLOGO

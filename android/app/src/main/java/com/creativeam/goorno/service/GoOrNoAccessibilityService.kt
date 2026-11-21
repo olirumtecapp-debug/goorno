@@ -901,9 +901,9 @@ class GoOrNoAccessibilityService : AccessibilityService() {
         wasViewing99List = false
         last99ListSignature = ""
 
-        // Remove chaves que expiraram há mais de 120 segundos
+        // Remove chaves que expiraram há mais de 300 segundos (5 minutos)
         val expiredKeys = shownOfferTimestamps.entries
-            .filter { now - it.value > 120_000L }
+            .filter { now - it.value > 300_000L }
             .map { it.key }
         expiredKeys.forEach { shownOfferTimestamps.remove(it) }
 
@@ -919,7 +919,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
             if (lastShown == null) {
                 // Primeira vez que esta oferta toca
                 validOffers.add(offer.copy(isRepeatedOffer = false))
-            } else if (now - lastShown >= 15_000L && now - lastShown <= 120_000L) {
+            } else if (now - lastShown >= 15_000L && now - lastShown <= 300_000L) {
                 // Já tocou há mais de 15 segundos (nova chamada/re-oferta do app)
                 validOffers.add(offer.copy(isRepeatedOffer = true))
             } else {
@@ -1082,7 +1082,7 @@ class GoOrNoAccessibilityService : AccessibilityService() {
                     val isLegitOffer = isSanePrice && totalKm >= 0.2 && totalMin > 0 && hasAddresses && !offer.hasFieldConflict
 
                     if (!offer.isSimulated && isLegitOffer &&
-                        buildStableOfferKey(offer) !in alreadyShownBeforeList) {
+                        (!alreadyShownBeforeList.contains(buildStableOfferKey(offer)) || offer.isRepeatedOffer)) {
                         val dao = app.database.rideOfferDao()
                         val recentOffers = dao.findRecentOffers(offer.sourceApp.displayName, now - 25_000L)
                         val duplicate = recentOffers.firstOrNull { existing ->
