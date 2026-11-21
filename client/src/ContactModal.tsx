@@ -7,12 +7,11 @@ import {
   AlertTriangle,
   Phone,
   User,
-  MessageSquare,
-  HelpCircle,
-  Lightbulb,
-  Bug,
-  ThumbsUp,
-  FileQuestion
+  ShieldCheck,
+  Lock,
+  ArrowRight,
+  LogOut,
+  Download
 } from 'lucide-react';
 
 interface ContactModalProps {
@@ -22,10 +21,13 @@ interface ContactModalProps {
 }
 
 export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalProps) {
-  const [name, setName] = useState('');
-  const [contact, setContact] = useState('');
-  const [email, setEmail] = useState('');
-  const [preferredReply, setPreferredReply] = useState<'whatsapp' | 'email'>('whatsapp');
+  // Motorista Verificado (obrigatório no site)
+  const [verifiedDriver, setVerifiedDriver] = useState<{ name: string; phone: string } | null>(null);
+  const [loginPhone, setLoginPhone] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Formulário de Mensagem
   const [category, setCategory] = useState<'duvida' | 'sugestao' | 'problema' | 'elogio' | 'outro'>('duvida');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -34,6 +36,39 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  // Verificação de Motorista no Site
+  const handleVerifyDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanDigits = loginPhone.replace(/\D/g, '');
+    if (cleanDigits.length < 8) {
+      setAuthError('Por favor, informe seu WhatsApp ou celular com DDD.');
+      return;
+    }
+
+    setIsVerifying(true);
+    setAuthError(null);
+
+    try {
+      const res = await fetch('/api/driver/verify-contact-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanDigits })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.message || 'Cadastro não localizado no GoOrNo.');
+      }
+      setVerifiedDriver({
+        name: data.name || 'Motorista GoOrNo',
+        phone: data.phone || cleanDigits
+      });
+    } catch (err: any) {
+      setAuthError(err.message || 'Falha ao validar cadastro.');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,15 +80,18 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
     setIsSubmitting(true);
     setErrorMessage(null);
 
+    const driverName = verifiedDriver?.name || 'Motorista GoOrNo';
+    const driverPhone = verifiedDriver?.phone || loginPhone.replace(/\D/g, '');
+
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim() || 'Motorista Autônomo',
-          contact: contact.trim(),
-          email: email.trim(),
-          preferredReply,
+          name: driverName,
+          contact: driverPhone,
+          email: '',
+          preferredReply: 'app',
           category,
           subject: subject.trim() || 'Contato via Caixa Postal',
           message: message.trim(),
@@ -67,10 +105,6 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
       }
 
       setSuccessTicket(data.ticketId || `TKT-${Date.now().toString().slice(-6)}`);
-      setName('');
-      setContact('');
-      setEmail('');
-      setPreferredReply('whatsapp');
       setSubject('');
       setMessage('');
     } catch (err: any) {
@@ -83,8 +117,11 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
   const handleReset = () => {
     setSuccessTicket(null);
     setErrorMessage(null);
+    setAuthError(null);
     onClose();
   };
+
+  const isWebUnauthenticated = source === 'web' && !verifiedDriver;
 
   return (
     <div
@@ -112,7 +149,7 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                 </span>
               </h3>
               <p className="text-[11.5px] text-[#94a89d] mt-1 leading-none font-medium">
-                Canal direto com o desenvolvedor do GoOrNo
+                Canal exclusivo para motoristas cadastrados
               </p>
             </div>
           </div>
@@ -126,8 +163,9 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
           </button>
         </div>
 
-        {/* CORPO DO FORMULÁRIO */}
+        {/* CORPO DO MODAL */}
         <div className="p-5 sm:p-6 bg-[#071d19]">
+          {/* SUCESSO */}
           {successTicket ? (
             <div className="text-center py-6 sm:py-8 space-y-3">
               <div className="w-14 h-14 rounded-full bg-[#092b24] text-[#d9ff4f] grid place-items-center mx-auto border border-[#1b3830] shadow-[0_0_25px_rgba(217,255,79,0.25)]">
@@ -137,11 +175,11 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                 Mensagem Entregue com Sucesso!
               </h4>
               <p className="text-xs sm:text-sm text-[#94a89d] max-w-sm mx-auto leading-relaxed">
-                Sua solicitação foi registrada na Caixa Postal com o protocolo{' '}
+                Sua solicitação foi registrada com o protocolo{' '}
                 <span className="font-mono font-bold text-[#d9ff4f] bg-[#051915] px-2 py-0.5 rounded border border-[#1b3830]">
                   #{successTicket}
                 </span>
-                . A resposta do desenvolvedor será enviada diretamente para a Caixa Postal do GoOrNo no seu aplicativo. Acompanhe a notificação por lá!
+                . A resposta será enviada diretamente para a <strong>Caixa Postal</strong> do seu aplicativo GoOrNo!
               </p>
               <div className="pt-2">
                 <button
@@ -152,8 +190,86 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                 </button>
               </div>
             </div>
+          ) : isWebUnauthenticated ? (
+            /* TRAVA DE LOGIN EXCLUSIVA PARA MOTORISTAS CADASTRADOS NO SITE */
+            <form onSubmit={handleVerifyDriver} className="space-y-4">
+              <div className="text-center space-y-2 pb-2 border-b border-[#132c25]">
+                <div className="w-12 h-12 rounded-2xl bg-[#092b24] text-[#d9ff4f] grid place-items-center mx-auto border border-[#1b3830]">
+                  <Lock className="w-6 h-6 text-[#d9ff4f]" />
+                </div>
+                <h4 className="font-space text-base sm:text-lg font-bold text-white">
+                  Identificação do Motorista
+                </h4>
+                <p className="text-xs text-[#94a89d] max-w-sm mx-auto leading-relaxed">
+                  Para garantir que sua resposta seja entregue na sua Caixa Postal interna, confirme o telefone cadastrado no seu app.
+                </p>
+              </div>
+
+              {authError && (
+                <div className="p-3 bg-rose-950/60 border border-rose-800/80 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#94a89d] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-[#d9ff4f]" />
+                  WhatsApp / Celular Cadastrado no App
+                </label>
+                <input
+                  type="text"
+                  value={loginPhone}
+                  onChange={(e) => setLoginPhone(e.target.value)}
+                  placeholder="DDD + Número (ex: 11999998888)"
+                  className="w-full bg-[#051915] border border-[#1b3830] focus:border-[#d9ff4f] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-[#4e6359] focus:outline-none focus:ring-1 focus:ring-[#d9ff4f]/30 transition shadow-inner font-mono"
+                  autoFocus
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isVerifying}
+                className="w-full bg-[#d9ff4f] hover:bg-[#c8f038] text-[#071d19] font-space font-black text-xs sm:text-sm py-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(217,255,79,0.3)] disabled:opacity-50"
+              >
+                <span>{isVerifying ? 'Verificando...' : 'Acessar Fale Conosco'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <div className="pt-2 text-center text-[11px] text-[#71857c] border-t border-[#132c25]">
+                Ainda não tem o aplicativo instalado?{' '}
+                <a
+                  href="/GoOrNo.apk"
+                  className="text-[#d9ff4f] font-bold hover:underline inline-flex items-center gap-1"
+                >
+                  Baixar GoOrNo
+                  <Download className="w-3 h-3" />
+                </a>
+              </div>
+            </form>
           ) : (
+            /* FORMULÁRIO DE ENVIO PARA MOTORISTA IDENTIFICADO */
             <form onSubmit={handleSubmit} className="space-y-3">
+              {/* BANNER DE MOTORISTA IDENTIFICADO */}
+              {verifiedDriver && (
+                <div className="p-2.5 bg-[#092b24] border border-[#1b3830] rounded-xl flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-[#d9ff4f]" />
+                    <span className="text-white font-medium">
+                      Conectado como: <strong>{verifiedDriver.name}</strong> ({verifiedDriver.phone})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVerifiedDriver(null)}
+                    className="text-[#94a89d] hover:text-white text-[11px] flex items-center gap-1 border-0 bg-transparent cursor-pointer"
+                  >
+                    <LogOut className="w-3 h-3" />
+                    Sair
+                  </button>
+                </div>
+              )}
+
               {errorMessage && (
                 <div className="p-3 bg-rose-950/60 border border-rose-800/80 rounded-xl text-rose-300 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
@@ -161,92 +277,35 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                 </div>
               )}
 
-              {/* Linha 1: Nome e WhatsApp lado a lado */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <User className="w-3 h-3 text-[#d9ff4f]" />
-                    Seu Nome (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Ex: Carlos Motorista"
-                    className="w-full bg-[#051915] border border-[#1b3830] focus:border-[#d9ff4f] rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-[#4e6359] focus:outline-none focus:ring-1 focus:ring-[#d9ff4f]/30 transition shadow-inner"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Phone className="w-3 h-3 text-[#d9ff4f]" />
-                    WhatsApp / Celular (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
-                    placeholder="DDD + Número (ex: 11999998888)"
-                    className="w-full bg-[#051915] border border-[#1b3830] focus:border-[#d9ff4f] rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-[#4e6359] focus:outline-none focus:ring-1 focus:ring-[#d9ff4f]/30 transition shadow-inner"
-                  />
-                </div>
-              </div>
-
-              {/* Linha 2: E-mail e Canal de Retorno no App */}
-              <div className="space-y-2">
-                <div>
-                  <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Mail className="w-3 h-3 text-[#d9ff4f]" />
-                    E-mail de Contato (Opcional)
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seuemail@exemplo.com"
-                    className="w-full bg-[#051915] border border-[#1b3830] focus:border-[#d9ff4f] rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-[#4e6359] focus:outline-none focus:ring-1 focus:ring-[#d9ff4f]/30 transition shadow-inner"
-                  />
-                </div>
-
-                <div className="bg-[#051915]/80 border border-[#1b3830] rounded-xl p-2.5 flex items-center gap-2 text-xs text-[#94a89d]">
-                  <MessageSquare className="w-4 h-4 text-[#d9ff4f] shrink-0" />
-                  <span>
-                    A resposta do desenvolvedor será enviada <strong>diretamente para a Caixa Postal do app GoOrNo</strong>.
-                  </span>
-                </div>
-              </div>
-
-              {/* Linha 3: Motivo do Contato em pílulas com glow */}
+              {/* Categoria */}
               <div>
-                <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1.5">
+                <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1">
                   Motivo do Contato
                 </label>
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   {[
-                    { id: 'duvida', label: 'Dúvida', icon: '❓' },
-                    { id: 'sugestao', label: 'Sugestão', icon: '💡' },
-                    { id: 'problema', label: 'Problema', icon: '⚠️' },
-                    { id: 'elogio', label: 'Elogio', icon: '👏' },
-                    { id: 'outro', label: 'Outro', icon: '📌' }
+                    { id: 'duvida', label: 'Dúvida' },
+                    { id: 'sugestao', label: 'Sugestão' },
+                    { id: 'problema', label: 'Problema' },
+                    { id: 'elogio', label: 'Elogio' }
                   ].map((cat) => (
                     <button
-                      type="button"
                       key={cat.id}
+                      type="button"
                       onClick={() => setCategory(cat.id as any)}
-                      className={`text-xs py-1 px-3 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer border ${
+                      className={`py-1.5 px-2 rounded-xl text-xs font-space font-bold border transition cursor-pointer text-center ${
                         category === cat.id
-                          ? 'bg-[#d9ff4f] text-[#071d19] border-[#d9ff4f] shadow-[0_0_14px_rgba(217,255,79,0.35)] scale-[1.02]'
-                          : 'bg-[#051915] text-[#94a89d] border-[#1b3830] hover:border-[#d9ff4f]/40 hover:text-white'
+                          ? 'bg-[#d9ff4f] text-[#071d19] border-[#d9ff4f]'
+                          : 'bg-[#051915] text-[#94a89d] border-[#1b3830] hover:text-white'
                       }`}
                     >
-                      <span>{cat.icon}</span>
-                      <span>{cat.label}</span>
+                      {cat.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Linha 4: Assunto */}
+              {/* Assunto */}
               <div>
                 <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1">
                   Assunto
@@ -255,51 +314,34 @@ export function ContactModal({ isOpen, onClose, source = 'web' }: ContactModalPr
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Ex: Sugestão para o leitor de chamadas da 99"
+                  placeholder="Ex: Sugestão para o card ou dúvida sobre corrida"
                   className="w-full bg-[#051915] border border-[#1b3830] focus:border-[#d9ff4f] rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-[#4e6359] focus:outline-none focus:ring-1 focus:ring-[#d9ff4f]/30 transition shadow-inner"
                 />
               </div>
 
-              {/* Linha 5: Mensagem */}
+              {/* Mensagem */}
               <div>
-                <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <MessageSquare className="w-3 h-3 text-[#d9ff4f]" />
-                    Mensagem *
-                  </span>
-                  <span className="text-[10px] text-[#4e6359] font-mono">
-                    {message.length}/1000
-                  </span>
+                <label className="block text-[10.5px] font-bold text-[#94a89d] uppercase tracking-wider mb-1">
+                  Mensagem
                 </label>
                 <textarea
-                  rows={3}
-                  maxLength={1000}
+                  rows={4}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Conte com detalhes o que você precisa ou deixe sua sugestão..."
-                  required
-                  className="w-full bg-[#051915] border border-[#1b3830] focus:border-[#d9ff4f] rounded-xl p-3 text-xs sm:text-sm text-white placeholder-[#4e6359] focus:outline-none focus:ring-1 focus:ring-[#d9ff4f]/30 resize-none transition shadow-inner"
+                  placeholder="Escreva sua mensagem aqui com todos os detalhes..."
+                  className="w-full bg-[#051915] border border-[#1b3830] focus:border-[#d9ff4f] rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-[#4e6359] focus:outline-none focus:ring-1 focus:ring-[#d9ff4f]/30 transition shadow-inner resize-none"
                 />
               </div>
 
-              {/* Linha 6: Botões de Ação */}
-              <div className="pt-2 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-[#94a89d] hover:text-white hover:bg-white/5 transition cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !message.trim()}
-                  className="bg-[#d9ff4f] hover:bg-[#c8f038] disabled:opacity-40 text-[#071d19] font-space font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-[0_4px_16px_rgba(217,255,79,0.35)] hover:shadow-[0_6px_22px_rgba(217,255,79,0.5)] transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <Send className="w-3.5 h-3.5 text-[#071d19]" />
-                  <span>{isSubmitting ? 'Enviando...' : 'Enviar Mensagem'}</span>
-                </button>
-              </div>
+              {/* BOTÃO ENVIAR */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-[#d9ff4f] hover:bg-[#c8f038] text-[#071d19] font-space font-black text-xs sm:text-sm py-2.5 sm:py-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(217,255,79,0.3)] hover:shadow-[0_6px_20px_rgba(217,255,79,0.45)] disabled:opacity-50"
+              >
+                <Send className="w-4 h-4 text-[#071d19]" />
+                <span>{isSubmitting ? 'Entregando na Caixa Postal...' : 'Enviar para Caixa Postal'}</span>
+              </button>
             </form>
           )}
         </div>

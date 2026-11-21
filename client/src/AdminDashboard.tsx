@@ -92,6 +92,8 @@ interface ContactMessage {
   message: string;
   createdAt: string;
   status: 'unread' | 'read' | 'replied';
+  adminReply?: string;
+  repliedAt?: string;
   replyNotes?: string;
 }
 
@@ -1401,16 +1403,12 @@ ${window.location.origin}
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <span className="font-space font-bold text-sm text-[#071d19]">{msg.name}</span>
                           {msg.whatsapp && (
-                            <a
-                              href={waLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="font-mono text-xs text-[#6b8900] bg-[#dff4af]/60 hover:bg-[#dff4af] px-2 py-0.5 rounded-lg flex items-center gap-1 transition font-bold"
-                              title="Conversar no WhatsApp"
+                            <span
+                              className="font-mono text-xs text-[#071d19] bg-[#f0f4eb] border border-[#d2dec5] px-2 py-0.5 rounded-lg font-bold"
+                              title="Telefone do Motorista"
                             >
-                              <span>{msg.whatsapp}</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
+                              {msg.whatsapp}
+                            </span>
                           )}
                           {msg.email && (
                             <a
@@ -1460,44 +1458,76 @@ ${window.location.origin}
                       </div>
 
                       {/* CONTEÚDO DA MENSAGEM */}
-                      <div className="bg-[#fbfcf7] p-3.5 rounded-xl border border-[rgba(7,29,25,0.08)] text-xs sm:text-sm text-[#071d19] whitespace-pre-wrap leading-relaxed mb-4">
+                      <div className="bg-[#fbfcf7] p-3.5 rounded-xl border border-[rgba(7,29,25,0.08)] text-xs sm:text-sm text-[#071d19] whitespace-pre-wrap leading-relaxed mb-3">
                         {msg.message}
                       </div>
+
+                      {/* RESPOSTA NA CAIXA POSTAL (SE HOUVER) */}
+                      {msg.adminReply && (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 mb-3 text-xs">
+                          <div className="flex items-center justify-between text-emerald-800 font-bold mb-1">
+                            <span className="flex items-center gap-1.5">
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                              Sua Resposta na Caixa Postal do App:
+                            </span>
+                            {msg.repliedAt && (
+                              <span className="text-[10px] text-emerald-600 font-normal">
+                                {new Date(msg.repliedAt).toLocaleString('pt-BR')}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-emerald-950 whitespace-pre-wrap">{msg.adminReply}</p>
+                        </div>
+                      )}
+
+                      {/* FORMULÁRIO INLINE DE RESPOSTA INTERNA */}
+                      {replyingMessageId === msg.id && (
+                        <div className="bg-[#f0f4eb] border border-[#d2dec5] rounded-xl p-3.5 mb-3 space-y-2">
+                          <label className="block text-xs font-bold text-[#071d19]">
+                            Digite a resposta para a Caixa Postal do motorista:
+                          </label>
+                          <textarea
+                            value={replyDraftText}
+                            onChange={(e) => setReplyDraftText(e.target.value)}
+                            placeholder="Escreva sua resposta... O motorista receberá diretamente no aplicativo GoOrNo."
+                            rows={3}
+                            className="w-full p-2.5 bg-white border border-[#c1d1b3] rounded-lg text-xs text-[#071d19] focus:outline-none focus:border-[#071d19]"
+                          />
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleSendMailboxReply(msg.id)}
+                              disabled={isSendingReply || !replyDraftText.trim()}
+                              className="px-3.5 py-1.5 bg-[#071d19] text-[#d9ff4f] rounded-lg text-xs font-space font-bold hover:bg-[#0c2f29] disabled:opacity-50 transition cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Send className="w-3 h-3 text-[#d9ff4f]" />
+                              <span>{isSendingReply ? 'Enviando...' : 'Enviar Resposta para a Caixa Postal'}</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setReplyingMessageId(null);
+                                setReplyDraftText('');
+                              }}
+                              className="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-space font-medium hover:bg-slate-300 transition cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* BARRA DE AÇÕES */}
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[rgba(7,29,25,0.06)]">
                         <div className="flex items-center gap-2 flex-wrap">
-                          {msg.whatsapp && (
-                            <a
-                              href={waLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={() => {
-                                if (msg.status === 'unread') {
-                                  handleUpdateMessageStatus(msg.id, 'replied');
-                                }
-                              }}
-                              className="inline-flex items-center gap-1.5 bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-space font-bold px-3 py-1.5 rounded-xl transition shadow-2xs"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              <span>Responder no WhatsApp</span>
-                            </a>
-                          )}
-
-                          {msg.email && (
-                            <a
-                              href={`mailto:${msg.email}?subject=${encodeURIComponent('GoOrNo: Resposta à sua mensagem')}`}
-                              onClick={() => {
-                                if (msg.status === 'unread') {
-                                  handleUpdateMessageStatus(msg.id, 'replied');
-                                }
-                              }}
-                              className="inline-flex items-center gap-1.5 bg-[#071d19] hover:bg-[#0d302a] text-[#d9ff4f] text-xs font-space font-bold px-3 py-1.5 rounded-xl transition shadow-2xs"
-                            >
-                              <Mail className="w-3.5 h-3.5" />
-                              <span>Responder por E-mail</span>
-                            </a>
-                          )}
+                          <button
+                            onClick={() => {
+                              setReplyingMessageId(msg.id);
+                              setReplyDraftText(msg.adminReply || '');
+                            }}
+                            className="inline-flex items-center gap-1.5 bg-[#071d19] hover:bg-[#0c2f29] text-[#d9ff4f] text-xs font-space font-bold px-3 py-1.5 rounded-xl transition shadow-2xs cursor-pointer border-0"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-[#d9ff4f]" />
+                            <span>{msg.adminReply ? 'Editar Resposta' : 'Responder na Caixa Postal'}</span>
+                          </button>
 
                           {msg.status !== 'read' && (
                             <button

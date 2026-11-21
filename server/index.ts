@@ -998,7 +998,45 @@ app.post("/api/redeem-voucher", async (req, res) => {
 
 
 // 13. Public Route: Driver submits message to Caixa Postal (Fale Conosco)
-app.post("/api/contact", async (req, res) => {
+
+  // 12.5. Verify registered driver for website Contact Modal
+  app.post("/api/driver/verify-contact-access", async (req, res) => {
+    try {
+      const { phone } = req.body || {};
+      const cleanPhone = String(phone || "").replace(/\D/g, "");
+      if (!cleanPhone || cleanPhone.length < 8) {
+        return res.status(400).json({ ok: false, message: "Informe o telefone cadastrado no app." });
+      }
+      const lic = await getLicense(cleanPhone);
+      if (lic) {
+        return res.json({
+          ok: true,
+          isRegistered: true,
+          name: (lic as any).name || "Motorista GoOrNo",
+          phone: cleanPhone
+        });
+      }
+      const altPhone = cleanPhone.startsWith("55") ? cleanPhone.slice(2) : ('55' + cleanPhone);
+      const altLic = await getLicense(altPhone);
+      if (altLic) {
+        return res.json({
+          ok: true,
+          isRegistered: true,
+          name: (altLic as any).name || "Motorista GoOrNo",
+          phone: altPhone
+        });
+      }
+      return res.status(404).json({
+        ok: false,
+        isRegistered: false,
+        message: "Motorista não localizado. O Fale Conosco e a Caixa Postal são exclusivos para motoristas cadastrados no aplicativo GoOrNo."
+      });
+    } catch (err: any) {
+      res.status(500).json({ ok: false, message: err?.message || "Erro ao verificar motorista." });
+    }
+  });
+
+  app.post("/api/contact", async (req, res) => {
   try {
     const { name, contact, email = "", preferredReply = "whatsapp", category = "duvida", subject = "", message, source = "web" } = req.body || {};
     if (!message || String(message).trim().length === 0) {
@@ -1094,8 +1132,8 @@ app.patch("/api/contact/:id", async (req, res) => {
   }
   try {
     const { id } = req.params;
-    const { status } = req.body || {};
-    const ok = await markMessageStatus(id, status);
+    const { status, adminReply } = req.body || {};
+    const ok = await markMessageStatus(id, status, adminReply);
     res.json({ ok });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || "Erro ao atualizar status da mensagem." });

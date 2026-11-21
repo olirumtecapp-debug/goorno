@@ -6798,22 +6798,47 @@ fun GoOrNoComposeApp(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Uma nova versão com melhorias de velocidade, estabilidade e precisão foi disponibilizada para seu aplicativo.",
-                        fontSize = 11.5.sp,
-                        color = PetrolDarkText,
-                        lineHeight = 16.sp
+                        text = "O que foi atualizado nesta versão:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PetrolDarkText
                     )
-                    Text(
-                        text = "Toque no botão abaixo para baixar e atualizar. As novidades completas serão exibidas assim que o aplicativo abrir após a instalação.",
-                        fontSize = 10.5.sp,
-                        color = MutedText,
-                        lineHeight = 14.5.sp
-                    )
+                    Surface(
+                        color = SoftSurfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, CleanCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            val itemsToShow = if (info.changelog.isNotEmpty()) info.changelog else listOf("Melhorias gerais e correções de estabilidade.")
+                            itemsToShow.forEach { item ->
+                                Row(
+                                    verticalAlignment = Alignment.Top,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text("✓", color = TrafficGreen, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                                    Text(
+                                        text = item,
+                                        fontSize = 11.sp,
+                                        lineHeight = 14.5.sp,
+                                        color = PetrolDarkText
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
+                        try {
+                            val changelogJson = org.json.JSONArray(info.changelog).toString()
+                            versionPrefs.edit().putString("last_changelog_json", changelogJson).putStringSet("last_changelog_items", info.changelog.toSet()).apply()
+                        } catch (_: Exception) {}
                         val downloadUrl = if (info.apkUrl.isNotBlank()) info.apkUrl else "https://goorno-app.vercel.app/GoOrNo.apk"
                         try {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)).apply {
@@ -6861,14 +6886,33 @@ fun GoOrNoComposeApp(
     // -------------------------------------------------------------
     // DIALOG PÓS-ATUALIZAÇÃO: O QUE HÁ DE NOVO NA VERSÃO
     // -------------------------------------------------------------
-    if (showWhatsNewDialog) {
-        val currentWhatsNewList = listOf(
-            "Alerta de Área de Risco 100% informativo: a decisão é sua e a região de risco não força mais card vermelho.",
-            "Distância de embarque respeita estritamente o seu limite configurado (ex: 2.0 km sem alertas precoces).",
-            "Identificação ampliada de paradas em viagens da 99 e Uber.",
-            "Trava anti-delay: bloqueia cards atrasados sobre o mapa vazio.",
-            "Blindagem contra fechamento ao usar WhatsApp ou outros aplicativos."
-        )
+        if (showWhatsNewDialog) {
+        val savedChangelog = try {
+            val jsonStr = versionPrefs.getString("last_changelog_json", null)
+            if (!jsonStr.isNullOrBlank()) {
+                val arr = org.json.JSONArray(jsonStr)
+                val list = mutableListOf<String>()
+                for (i in 0 until arr.length()) {
+                    list.add(arr.getString(i))
+                }
+                list
+            } else {
+                versionPrefs.getStringSet("last_changelog_items", null)?.toList()
+            }
+        } catch (_: Exception) {
+            null
+        }
+
+        val currentWhatsNewList = if (!savedChangelog.isNullOrEmpty()) {
+            savedChangelog
+        } else {
+            listOf(
+                "🔁 Chamados Repetidos Inteligentes: ofertas repetidas não somam mais no total diário.",
+                "📊 Histórico com Métricas Reais: badge discreto 'Chamado repetido (não computado)'.",
+                "💬 Suporte 100% Interno: Fale Conosco e Caixa Postal exclusivos para motoristas cadastrados.",
+                "✨ Novidades da Versão: o resumo agora exibe exatamente o que foi atualizado."
+            )
+        }
 
         AlertDialog(
             onDismissRequest = {
